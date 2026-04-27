@@ -1261,25 +1261,6 @@ a {
   width: 256px;
 }
 
-.ck-lineart-style-row {
-  width: 100%;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.ck-lineart-style-card {
-  min-height: 68px;
-  padding: 14px 12px;
-}
-
-.ck-lineart-style-card .ck-mode-card-head {
-  margin-bottom: 0;
-}
-
-.ck-lineart-style-card .ck-mode-card-head strong {
-  font-size: 14px;
-  line-height: 20px;
-}
-
 .ck-adaptive-choice-grid {
   display: grid;
   gap: 8px;
@@ -1307,6 +1288,201 @@ a {
   background: #635ff2;
   color: #ffffff;
   box-shadow: none;
+}
+
+.ck-mask-draw-card {
+  min-height: 270px;
+  border-radius: 14px;
+  background: #eef1f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ck-mask-draw-trigger {
+  min-width: 164px;
+  height: 62px;
+  border: 2px solid #b9dd7f;
+  border-radius: 12px;
+  background: #3e3e3e;
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.ck-mask-draw-preview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.ck-mask-draw-preview img {
+  max-width: 100%;
+  max-height: 210px;
+  display: block;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.ck-mask-editor-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.44);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ck-mask-editor-modal {
+  width: min(96vw, 1760px);
+  height: min(92vh, 1320px);
+  border-radius: 22px;
+  background: #ffffff;
+  padding: 18px 22px 28px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 18px;
+}
+
+.ck-mask-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.ck-mask-editor-tools {
+  flex: 0 0 auto;
+}
+
+.ck-mask-editor-color {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #4b5568;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+}
+
+.ck-mask-editor-swatch {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  border: 1px solid #f4d958;
+  background:
+    linear-gradient(45deg, #ffe761 25%, transparent 25%, transparent 75%, #ffe761 75%, #ffe761),
+    linear-gradient(45deg, #ffe761 25%, transparent 25%, transparent 75%, #ffe761 75%, #ffe761);
+  background-size: 18px 18px;
+  background-position: 0 0, 9px 9px;
+}
+
+.ck-mask-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.ck-mask-editor-actions button {
+  width: 72px;
+  height: 56px;
+  border: 0;
+  border-radius: 12px;
+  background: #f1f4f9;
+  color: #5b6478;
+  font-size: 28px;
+}
+
+.ck-mask-editor-stage {
+  position: relative;
+  border-radius: 18px;
+  background: #f8f9fc;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ck-mask-editor-canvas-wrap {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.ck-mask-editor-canvas-wrap img,
+.ck-mask-editor-canvas-wrap canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.ck-mask-editor-canvas-wrap canvas {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.ck-mask-editor-zoom {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+  height: 58px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.ck-mask-editor-zoom button {
+  border: 0;
+  background: transparent;
+  color: #4d5568;
+  font-size: 28px;
+}
+
+.ck-mask-editor-zoom span {
+  color: #3b4355;
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.ck-mask-editor-footer {
+  display: flex;
+  justify-content: center;
+  gap: 42px;
+}
+
+.ck-mask-editor-secondary,
+.ck-mask-editor-primary {
+  min-width: 156px;
+  height: 72px;
+  border-radius: 12px;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.ck-mask-editor-secondary {
+  border: 1px solid #d8deeb;
+  background: #ffffff;
+  color: #475167;
+}
+
+.ck-mask-editor-primary {
+  border: 0;
+  background: #d7ff16;
+  color: #1a1a1a;
 }
 
 .ck-mode-card-primary,

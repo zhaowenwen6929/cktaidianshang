@@ -606,6 +606,7 @@ type ToolModuleSectionKey =
   | "set-pack-style-analysis"
   | "image-upscale-resolution"
   | "image-lineart-style"
+  | "mask-draw"
   | "baseline-model-setup"
   | "video-main-script-setup"
   | "upload-main"
@@ -5204,7 +5205,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "image-watermark": {
     creationModeConfigKey: "default",
-    sectionOrder: ["upload-main", "mode-choice"],
+    sectionOrder: ["upload-main", "mode-choice", "mask-draw"],
     uploads: {
       main: {
         label: "上传商品图",
@@ -5212,6 +5213,19 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
         maxCount: 24,
         singleUploadMeta: "（单次最多上传{count}张）",
         hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "image-remove": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "mask-draw"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传1张）",
+        hintTemplate: "最多1张，支持JPG/PNG/WebP"
       }
     }
   },
@@ -9266,39 +9280,373 @@ function LineartStyleSection({
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
 }) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
   const options = ["清稿", "草图/速写", "精细素描"];
   const [lineartStyle, setLineartStyle] = useState(selectedValues?.lineartStyle ?? options[0]);
 
   useEffect(() => {
-    const nextStyle = typeof selectedValues?.lineartStyle === "string" ? selectedValues.lineartStyle : options[0];
-    if (nextStyle !== lineartStyle) {
-      setLineartStyle(nextStyle);
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
     }
+    const nextStyle = typeof selectedValues?.lineartStyle === "string" ? selectedValues.lineartStyle : options[0];
+    const nextSignature = JSON.stringify({ lineartStyle: nextStyle });
+    if (nextSignature === lastSelectedValuesSignatureRef.current) return;
+    lastSelectedValuesSignatureRef.current = nextSignature;
+    setLineartStyle((current) => (current === nextStyle ? current : nextStyle));
   }, [lineartStyle, selectedValues]);
 
   useEffect(() => {
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({ lineartStyle });
     onSelectionMapChange?.({ lineartStyle });
     onSelectionChange?.([lineartStyle]);
   }, [lineartStyle, onSelectionChange, onSelectionMapChange]);
 
   return (
-    <div className="ck-form-block">
-      <FieldTitle label="线条类型" required />
-      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary ck-lineart-style-row">
-        {options.map((option) => (
+    <AdaptiveChoiceField
+      label="线条类型"
+      onChange={setLineartStyle}
+      options={options.map((option) => ({ key: option, label: option }))}
+      required
+      value={lineartStyle}
+    />
+  );
+}
+
+function MaskEditorModal({
+  imageSrc,
+  initialMaskDataUrl,
+  onClose,
+  onSave
+}: {
+  imageSrc: string;
+  initialMaskDataUrl?: string;
+  onClose: () => void;
+  onSave: (maskDataUrl: string) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [tool, setTool] = useState<"brush" | "rect" | "circle" | "text" | "eraser">("circle");
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [redoHistory, setRedoHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+    const image = imageRef.current;
+    const canvas = canvasRef.current;
+    if (!image || !canvas) return;
+
+    const drawInitialMask = (context: CanvasRenderingContext2D) => {
+      if (!initialMaskDataUrl) return;
+      const maskImage = new Image();
+      maskImage.onload = () => {
+        context.drawImage(maskImage, 0, 0, canvas.width, canvas.height);
+      };
+      maskImage.src = initialMaskDataUrl;
+    };
+
+    const handleLoad = () => {
+      const maxWidth = 760;
+      const maxHeight = 920;
+      const scale = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight, 1);
+      const width = Math.max(240, Math.round(image.naturalWidth * scale));
+      const height = Math.max(240, Math.round(image.naturalHeight * scale));
+      canvas.width = width;
+      canvas.height = height;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      image.style.width = `${width}px`;
+      image.style.height = `${height}px`;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.clearRect(0, 0, width, height);
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      drawInitialMask(context);
+      setHistory(canvas.toDataURL("image/png") ? [canvas.toDataURL("image/png")] : []);
+      setRedoHistory([]);
+    };
+
+    if (image.complete) {
+      handleLoad();
+    } else {
+      image.onload = handleLoad;
+    }
+  }, [imageSrc, initialMaskDataUrl]);
+
+  const getContext = () => canvasRef.current?.getContext("2d") ?? null;
+
+  const getPoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+  };
+
+  const pushHistory = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    setHistory((current) => [...current, dataUrl]);
+    setRedoHistory([]);
+  };
+
+  const restoreDataUrl = (dataUrl?: string) => {
+    const canvas = canvasRef.current;
+    const context = getContext();
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (!dataUrl) return;
+    const image = new Image();
+    image.onload = () => {
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    };
+    image.src = dataUrl;
+  };
+
+  const handleUndo = () => {
+    if (history.length <= 1) return;
+    const nextHistory = history.slice(0, -1);
+    const last = history[history.length - 1];
+    setHistory(nextHistory);
+    setRedoHistory((current) => [last, ...current]);
+    restoreDataUrl(nextHistory[nextHistory.length - 1]);
+  };
+
+  const handleRedo = () => {
+    if (!redoHistory.length) return;
+    const [next, ...rest] = redoHistory;
+    setRedoHistory(rest);
+    setHistory((current) => [...current, next]);
+    restoreDataUrl(next);
+  };
+
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    const context = getContext();
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    pushHistory();
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const point = getPoint(event);
+    const context = getContext();
+    if (!point || !context) return;
+    setIsDrawing(true);
+    setLastPoint(point);
+    context.globalCompositeOperation = tool === "eraser" ? "destination-out" : "source-over";
+    context.strokeStyle = "#ffe34d";
+    context.fillStyle = "rgba(255, 227, 77, 0.18)";
+    context.lineWidth = tool === "eraser" ? 22 : 14;
+
+    if (tool === "brush" || tool === "eraser") {
+      context.beginPath();
+      context.moveTo(point.x, point.y);
+    }
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const point = getPoint(event);
+    const context = getContext();
+    if (!point || !context || !lastPoint) return;
+
+    if (tool === "brush" || tool === "eraser") {
+      context.lineTo(point.x, point.y);
+      context.stroke();
+      setLastPoint(point);
+    }
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const point = getPoint(event);
+    const context = getContext();
+    if (!context) return;
+
+    if (isDrawing && lastPoint && point && (tool === "rect" || tool === "circle")) {
+      const width = point.x - lastPoint.x;
+      const height = point.y - lastPoint.y;
+      context.globalCompositeOperation = "source-over";
+      context.strokeStyle = "#ffe34d";
+      context.fillStyle = "rgba(255, 227, 77, 0.18)";
+      context.lineWidth = 4;
+      if (tool === "rect") {
+        context.strokeRect(lastPoint.x, lastPoint.y, width, height);
+        context.fillRect(lastPoint.x, lastPoint.y, width, height);
+      } else {
+        context.beginPath();
+        context.ellipse(
+          lastPoint.x + width / 2,
+          lastPoint.y + height / 2,
+          Math.abs(width / 2),
+          Math.abs(height / 2),
+          0,
+          0,
+          Math.PI * 2
+        );
+        context.fill();
+        context.stroke();
+      }
+    }
+
+    if (isDrawing) {
+      pushHistory();
+    }
+    setIsDrawing(false);
+    setLastPoint(null);
+  };
+
+  return (
+    <div className="ck-mask-editor-mask">
+      <div className="ck-mask-editor-modal">
+        <div className="ck-mask-editor-toolbar">
+          <div className="ck-task-rail-mode-switch ck-mask-editor-tools">
+            {[
+              ["brush", "画笔"],
+              ["rect", "框选"],
+              ["circle", "画框"],
+              ["text", "文字"],
+              ["eraser", "橡皮擦"]
+            ].map(([key, label]) => (
+              <button
+                className={tool === key ? "active" : ""}
+                key={key}
+                onClick={() => setTool(key as typeof tool)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="ck-mask-editor-color">
+            <span>选择颜色</span>
+            <div className="ck-mask-editor-swatch" />
+          </div>
+          <div className="ck-mask-editor-actions">
+            <button onClick={handleUndo} type="button">↶</button>
+            <button onClick={handleRedo} type="button">↷</button>
+            <button onClick={handleClear} type="button">↻</button>
+          </div>
+        </div>
+        <div className="ck-mask-editor-stage" ref={containerRef}>
+          <div className="ck-mask-editor-canvas-wrap">
+            <img alt="待编辑图片" ref={imageRef} src={imageSrc} />
+            <canvas
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              ref={canvasRef}
+            />
+          </div>
+          <div className="ck-mask-editor-zoom">
+            <button type="button">+</button>
+            <span>23%</span>
+            <button type="button">−</button>
+          </div>
+        </div>
+        <div className="ck-mask-editor-footer">
+          <button className="ck-mask-editor-secondary" onClick={onClose} type="button">
+            关闭
+          </button>
           <button
-            className={`ck-mode-card ck-mode-card-primary ck-lineart-style-card${lineartStyle === option ? " active" : ""}`}
-            key={option}
-            onClick={() => setLineartStyle(option)}
+            className="ck-mask-editor-primary"
+            onClick={() => {
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+              onSave(canvas.toDataURL("image/png"));
+            }}
             type="button"
           >
-            <div className="ck-mode-card-head">
-              <strong>{option}</strong>
-              <span className={`ck-check${lineartStyle === option ? " active" : ""}`} />
-            </div>
+            编辑完成
           </button>
-        ))}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function MaskDrawSection({
+  title = "绘制蒙版",
+  buttonText = "开始涂抹",
+  uploads,
+  selectedValues,
+  maskKey,
+  onSelectionChange,
+  onSelectionMapChange,
+  onToast
+}: {
+  title?: string;
+  buttonText?: string;
+  uploads: UploadItem[];
+  selectedValues?: AdvancedSelectionMap;
+  maskKey: string;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onToast: (message: string, tone?: "warning") => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const maskDataUrl = typeof selectedValues?.[maskKey] === "string" ? selectedValues[maskKey] : "";
+  const primaryImage = uploads[0]?.previewSrc || uploads[0]?.src || "/assets/upload-preview.png";
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label={title} required />
+      <div className="ck-mask-draw-card">
+        {maskDataUrl ? (
+          <div className="ck-mask-draw-preview">
+            <img alt="蒙版预览" src={maskDataUrl} />
+            <button
+              className="ck-mask-draw-trigger"
+              onClick={() => {
+                if (!uploads.length) {
+                  onToast("请先上传图片后再绘制蒙版", "warning");
+                  return;
+                }
+                setIsOpen(true);
+              }}
+              type="button"
+            >
+              重新绘制
+            </button>
+          </div>
+        ) : (
+          <button
+            className="ck-mask-draw-trigger"
+            onClick={() => {
+              if (!uploads.length) {
+                onToast("请先上传图片后再绘制蒙版", "warning");
+                return;
+              }
+              setIsOpen(true);
+            }}
+            type="button"
+          >
+            {buttonText}
+          </button>
+        )}
+      </div>
+
+      {isOpen ? (
+        <MaskEditorModal
+          imageSrc={primaryImage}
+          initialMaskDataUrl={maskDataUrl}
+          onClose={() => setIsOpen(false)}
+          onSave={(nextMaskDataUrl) => {
+            onSelectionMapChange?.({ [maskKey]: nextMaskDataUrl });
+            onSelectionChange?.(["已绘制蒙版"]);
+            setIsOpen(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -12332,6 +12680,55 @@ function ConfigPanel({
             });
           }}
           selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "mask-draw" && tool.key === "image-watermark") {
+      if (advancedSettingSelections.watermarkModeKey !== "manual") {
+        return null;
+      }
+      return (
+        <MaskDrawSection
+          buttonText="开始涂抹"
+          maskKey="watermarkMaskDataUrl"
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["watermarkMaskDataUrl"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads[mainUploadKey] ?? []}
+        />
+      );
+    }
+
+    if (section === "mask-draw" && tool.key === "image-remove") {
+      return (
+        <MaskDrawSection
+          buttonText="开始涂抹"
+          maskKey="removeMaskDataUrl"
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["removeMaskDataUrl"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads[mainUploadKey] ?? []}
         />
       );
     }
