@@ -1384,20 +1384,11 @@ a {
 }
 
 .ck-mask-editor-header {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
   align-items: center;
-  gap: 18px;
+  justify-content: flex-start;
   padding: 2px 2px 12px;
   border-bottom: 1px solid #edf1f7;
-}
-
-.ck-mask-editor-title {
-  color: #1f2940;
-  font-size: 13px;
-  line-height: 22px;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .ck-mask-editor-toolbar {
@@ -1406,6 +1397,7 @@ a {
   justify-content: flex-start;
   gap: 10px;
   min-height: 36px;
+  width: 100%;
 }
 
 .ck-mask-editor-tools {

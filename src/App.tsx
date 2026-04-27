@@ -9210,7 +9210,7 @@ function WatermarkModeSection({
 }) {
   const skipSelectedValuesSyncRef = useRef(false);
   const lastSelectedValuesSignatureRef = useRef("");
-  const isManualSupported = uploads.length === 1;
+  const isManualSupported = uploads.length <= 1;
   const [watermarkMode, setWatermarkMode] = useState<"smart" | "manual">(
     selectedValues?.watermarkModeKey === "manual" ? "manual" : "smart"
   );
@@ -9274,7 +9274,7 @@ function WatermarkModeSection({
             <strong>手动涂抹去水印</strong>
             <span className={`ck-check${watermarkMode === "manual" ? " active" : ""}`} />
           </div>
-          <p>通过手动圈定或涂抹区域，更精准地处理复杂水印。仅支持单张图片。</p>
+          <p>通过手动圈定或涂抹区域，更精准地处理复杂水印。上传后仅支持单张图片。</p>
         </button>
       </div>
     </div>
@@ -9392,7 +9392,7 @@ function MaskEditorModal({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [tool, setTool] = useState<"brush" | "circle" | "eraser">("brush");
+  const [tool, setTool] = useState<"brush" | "rect" | "circle">("rect");
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
@@ -9505,12 +9505,12 @@ function MaskEditorModal({
     if (!point || !context) return;
     setIsDrawing(true);
     setLastPoint(point);
-    context.globalCompositeOperation = tool === "eraser" ? "destination-out" : "source-over";
+    context.globalCompositeOperation = "source-over";
     context.strokeStyle = "#ffe34d";
     context.fillStyle = "rgba(255, 227, 77, 0.18)";
-    context.lineWidth = tool === "eraser" ? 22 : 14;
+    context.lineWidth = 14;
 
-    if (tool === "brush" || tool === "eraser") {
+    if (tool === "brush") {
       context.beginPath();
       context.moveTo(point.x, point.y);
     }
@@ -9522,7 +9522,7 @@ function MaskEditorModal({
     const context = getContext();
     if (!point || !context || !lastPoint) return;
 
-    if (tool === "brush" || tool === "eraser") {
+    if (tool === "brush") {
       context.lineTo(point.x, point.y);
       context.stroke();
       setLastPoint(point);
@@ -9534,25 +9534,30 @@ function MaskEditorModal({
     const context = getContext();
     if (!context) return;
 
-    if (isDrawing && lastPoint && point && tool === "circle") {
+    if (isDrawing && lastPoint && point && (tool === "rect" || tool === "circle")) {
       const width = point.x - lastPoint.x;
       const height = point.y - lastPoint.y;
       context.globalCompositeOperation = "source-over";
       context.strokeStyle = "#ffe34d";
       context.fillStyle = "rgba(255, 227, 77, 0.18)";
       context.lineWidth = 4;
-      context.beginPath();
-      context.ellipse(
-        lastPoint.x + width / 2,
-        lastPoint.y + height / 2,
-        Math.abs(width / 2),
-        Math.abs(height / 2),
-        0,
-        0,
-        Math.PI * 2
-      );
-      context.fill();
-      context.stroke();
+      if (tool === "rect") {
+        context.fillRect(lastPoint.x, lastPoint.y, width, height);
+        context.strokeRect(lastPoint.x, lastPoint.y, width, height);
+      } else {
+        context.beginPath();
+        context.ellipse(
+          lastPoint.x + width / 2,
+          lastPoint.y + height / 2,
+          Math.abs(width / 2),
+          Math.abs(height / 2),
+          0,
+          0,
+          Math.PI * 2
+        );
+        context.fill();
+        context.stroke();
+      }
     }
 
     if (isDrawing) {
@@ -9566,13 +9571,12 @@ function MaskEditorModal({
     <div className="ck-mask-editor-mask">
       <div className="ck-mask-editor-modal">
         <div className="ck-mask-editor-header">
-          <span className="ck-mask-editor-title">图片处理</span>
           <div className="ck-mask-editor-toolbar">
             <div className="ck-task-rail-mode-switch ck-mask-editor-tools">
               {[
-                ["brush", "画笔"],
-                ["circle", "画框"],
-                ["eraser", "橡皮擦"]
+                ["brush", "涂抹"],
+                ["rect", "框选"],
+                ["circle", "圈选"]
               ].map(([key, label]) => (
                 <button
                   className={tool === key ? "active" : ""}
@@ -12122,7 +12126,12 @@ function ConfigPanel({
     toolModuleConfig.creationModeConfigKey ?? creationModeConfigByToolKey[tool.key] ?? panelKind ?? "default";
   const creationModeConfig = creationModeConfigs[creationModeConfigKey] ?? creationModeConfigs.default;
   const supplementAiPolishConfig = supplementAiPolishConfigs[tool.key];
-  const mainUploadCountLimit = mainUploadConfig.maxCount ?? uploadCountLimit;
+  const [creationModeSelection, setCreationModeSelection] = useState<CreationModeSelection | null>(null);
+  const [advancedSettingValues, setAdvancedSettingValues] = useState<string[]>([]);
+  const [advancedSettingSelections, setAdvancedSettingSelections] = useState<AdvancedSelectionMap>({});
+  const [targetLanguageValue, setTargetLanguageValue] = useState("");
+  const isWatermarkManualMode = tool.key === "image-watermark" && advancedSettingSelections.watermarkModeKey === "manual";
+  const mainUploadCountLimit = isWatermarkManualMode ? 1 : mainUploadConfig.maxCount ?? uploadCountLimit;
   const refUploadCountLimit = refUploadConfig?.maxCount ?? uploadCountLimit;
   const videoUploadCountLimit = videoUploadConfig?.maxCount ?? uploadCountLimit;
   const mainUploadHint = mainUploadConfig.hintTemplate?.replace("{count}", String(mainUploadCountLimit)) ?? `最多${mainUploadCountLimit}张，支持JPG/PNG/WebP`;
@@ -12131,10 +12140,6 @@ function ConfigPanel({
     mainUploadConfig.meta?.replace("{count}", String(mainUploadCountLimit));
   const refUploadHint = refUploadConfig?.hintTemplate?.replace("{count}", String(refUploadCountLimit)) ?? `最多${refUploadCountLimit}张，支持JPG/PNG/WebP`;
   const videoUploadHint = videoUploadConfig?.hintTemplate?.replace("{count}", String(videoUploadCountLimit)) ?? `最多${videoUploadCountLimit}个，支持MP4/MOV`;
-  const [creationModeSelection, setCreationModeSelection] = useState<CreationModeSelection | null>(null);
-  const [advancedSettingValues, setAdvancedSettingValues] = useState<string[]>([]);
-  const [advancedSettingSelections, setAdvancedSettingSelections] = useState<AdvancedSelectionMap>({});
-  const [targetLanguageValue, setTargetLanguageValue] = useState("");
   const uploadImageCount = uploads[mainUploadKey]?.length ?? 0;
   const referenceUploadCount = uploads[refUploadKey]?.length ?? 0;
   const videoUploadCount = uploads[videoUploadKey]?.length ?? 0;
