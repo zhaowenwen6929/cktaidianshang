@@ -8757,19 +8757,6 @@ function PodPartialEditSetupSection({
     setInstructionText(value);
     if (requirement === "自定义提示词") {
       setFieldValues({ customPrompt: value });
-      return;
-    }
-    const parsed = safeParseJson<{ fields?: Array<{ key: string; value: string }> }>(value);
-    if (parsed?.fields?.length) {
-      setFieldValues((current) => {
-        const nextValues = { ...current };
-        parsed.fields?.forEach((field) => {
-          if (field.key) {
-            nextValues[field.key] = field.value ?? "";
-          }
-        });
-        return nextValues;
-      });
     }
   };
 
@@ -8888,24 +8875,22 @@ function PodPartialEditSetupSection({
         </div>
       ) : null}
 
-      <div className="ck-form-block">
-        <FieldTitle label={requirement === "自定义提示词" ? "提示词输入" : "结构化指令"} required />
-        <div className="ck-textarea-wrap">
-          <textarea
-            maxLength={3000}
-            onChange={(event) => handleInstructionTextChange(event.target.value)}
-            placeholder={
-              requirement === "自定义提示词"
-                ? "请输入局部改图指令，例如：保留主体结构，只替换包装中心文案与角标元素。"
-                : "结构化指令会显示在这里，可继续手动补充或修改。"
-            }
-            value={instructionText}
-          />
-          <div className="ck-textarea-actions">
-            <span>{instructionText.length}/3000</span>
+      {requirement === "自定义提示词" ? (
+        <div className="ck-form-block">
+          <FieldTitle label="提示词输入" required />
+          <div className="ck-textarea-wrap">
+            <textarea
+              maxLength={3000}
+              onChange={(event) => handleInstructionTextChange(event.target.value)}
+              placeholder="请输入局部改图指令，例如：保留主体结构，只替换包装中心文案与角标元素。"
+              value={instructionText}
+            />
+            <div className="ck-textarea-actions">
+              <span>{instructionText.length}/3000</span>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <CountField label="出图数量" onChange={setOutputCount} options={[...podPartialEditOutputCountOptions]} required value={outputCount} />
     </div>
@@ -9370,6 +9355,9 @@ function PodVariationSetupSection({
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
 }) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
+  const hasManualCategoryRef = useRef(Boolean(selectedValues?.podVariationCategory));
   const [category, setCategory] = useState<string>(selectedValues?.podVariationCategory ?? inferPodVariationCategory(uploads));
   const [mode, setMode] = useState<PodVariationModeKey>(
     (podVariationModeOptions.find((item) => item === selectedValues?.podVariationMode) ?? podVariationModeOptions[0]) as PodVariationModeKey
@@ -9393,11 +9381,14 @@ function PodVariationSetupSection({
   const [outputCount, setOutputCount] = useState(Number(selectedValues?.podVariationOutputCount ?? "1") || 1);
 
   useEffect(() => {
+    if (hasManualCategoryRef.current || selectedValues?.podVariationCategory) {
+      return;
+    }
     const inferred = inferPodVariationCategory(uploads);
     if (inferred !== category) {
       setCategory(inferred);
     }
-  }, [category, uploads]);
+  }, [category, selectedValues?.podVariationCategory, uploads]);
 
   useEffect(() => {
     const nextValue = Number(selectedValues?.podVariationReferenceStrength ?? "0.5");
@@ -9407,12 +9398,40 @@ function PodVariationSetupSection({
   }, [referenceStrength, selectedValues]);
 
   useEffect(() => {
+    if (!selectedValues) return;
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+
+    const nextSignature = JSON.stringify({
+      category: selectedValues.podVariationCategory ?? inferPodVariationCategory(uploads),
+      mode: selectedValues.podVariationMode ?? podVariationModeOptions[0],
+      referenceStyleLevel: selectedValues.podVariationReferenceStyleLevel ?? podVariationReferenceStyleLevels[2],
+      referenceStrength: selectedValues.podVariationReferenceStrength ?? "0.5",
+      divergenceLevel: selectedValues.podVariationDivergenceLevel ?? podVariationDivergenceLevels[0],
+      backgroundColor: selectedValues.podVariationBackgroundColor ?? "随机",
+      burstContent: selectedValues.podVariationBurstContent ?? podVariationBurstOptions[0],
+      contentEnabled: selectedValues.podVariationContentEnabled ?? "false",
+      shape: selectedValues.podVariationShape ?? "默认",
+      outputCount: selectedValues.podVariationOutputCount ?? "1"
+    });
+
+    if (nextSignature === lastSelectedValuesSignatureRef.current) {
+      return;
+    }
+    lastSelectedValuesSignatureRef.current = nextSignature;
+
     const nextMode = selectedValues?.podVariationMode;
     if (nextMode && podVariationModeOptions.includes(nextMode as PodVariationModeKey) && nextMode !== mode) {
       setMode(nextMode as PodVariationModeKey);
     }
-    if (selectedValues?.podVariationCategory && selectedValues.podVariationCategory !== category) {
-      setCategory(selectedValues.podVariationCategory);
+    const nextCategory = selectedValues?.podVariationCategory ?? inferPodVariationCategory(uploads);
+    if (nextCategory !== category) {
+      setCategory(nextCategory);
+    }
+    if (selectedValues?.podVariationCategory) {
+      hasManualCategoryRef.current = true;
     }
     if (
       selectedValues?.podVariationReferenceStyleLevel &&
@@ -9457,12 +9476,13 @@ function PodVariationSetupSection({
     outputCount,
     referenceStyleLevel,
     selectedValues,
-    shape
+    shape,
+    uploads
   ]);
 
   useEffect(() => {
     const commonContent = "仅裂变素材中的图片部分";
-    onSelectionMapChange?.({
+    const nextSelectionMap = {
       podVariationCategory: category,
       podVariationMode: mode,
       podVariationReferenceStyleLevel: referenceStyleLevel,
@@ -9474,7 +9494,21 @@ function PodVariationSetupSection({
       podVariationContent: mode === "爆款二创" ? burstContent : contentEnabled ? commonContent : "未开启",
       podVariationShape: shape,
       podVariationOutputCount: String(outputCount)
+    };
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({
+      category: nextSelectionMap.podVariationCategory,
+      mode: nextSelectionMap.podVariationMode,
+      referenceStyleLevel: nextSelectionMap.podVariationReferenceStyleLevel,
+      referenceStrength: nextSelectionMap.podVariationReferenceStrength,
+      divergenceLevel: nextSelectionMap.podVariationDivergenceLevel,
+      backgroundColor: nextSelectionMap.podVariationBackgroundColor,
+      burstContent: nextSelectionMap.podVariationBurstContent,
+      contentEnabled: nextSelectionMap.podVariationContentEnabled,
+      shape: nextSelectionMap.podVariationShape,
+      outputCount: nextSelectionMap.podVariationOutputCount
     });
+    onSelectionMapChange?.(nextSelectionMap);
     onSelectionChange?.(
       [
         category,
@@ -9512,7 +9546,11 @@ function PodVariationSetupSection({
             <button
               className={`ck-adaptive-choice-item${option === category ? " active" : ""}`}
               key={option}
-              onClick={() => setCategory(option)}
+              onClick={() => {
+                skipSelectedValuesSyncRef.current = true;
+                hasManualCategoryRef.current = true;
+                setCategory(option);
+              }}
               type="button"
             >
               {option}
@@ -9528,7 +9566,10 @@ function PodVariationSetupSection({
             <button
               className={`ck-mode-card ck-mode-card-primary ck-mode-card-title-only${mode === option ? " active" : ""}`}
               key={option}
-              onClick={() => setMode(option)}
+              onClick={() => {
+                skipSelectedValuesSyncRef.current = true;
+                setMode(option);
+              }}
               type="button"
             >
               <div className="ck-mode-card-head">
@@ -9545,7 +9586,10 @@ function PodVariationSetupSection({
           label="参考样式"
           max={2}
           min={0}
-          onChange={(next) => setReferenceStyleLevel(podVariationReferenceStyleLevels[Math.round(next)] ?? "高")}
+          onChange={(next) => {
+            skipSelectedValuesSyncRef.current = true;
+            setReferenceStyleLevel(podVariationReferenceStyleLevels[Math.round(next)] ?? "高");
+          }}
           step={1}
           value={podVariationReferenceStyleLevels.indexOf(referenceStyleLevel)}
           valueFormatter={(current) => podVariationReferenceStyleLevels[Math.round(current)] ?? "高"}
@@ -9557,7 +9601,10 @@ function PodVariationSetupSection({
           label="原图参考强度"
           max={1}
           min={0.1}
-          onChange={setReferenceStrength}
+          onChange={(next) => {
+            skipSelectedValuesSyncRef.current = true;
+            setReferenceStrength(next);
+          }}
           step={0.05}
           value={referenceStrength}
           valueFormatter={(current) => current.toFixed(2)}
@@ -9570,14 +9617,27 @@ function PodVariationSetupSection({
             label="创意发散强度"
             max={2}
             min={0}
-            onChange={(next) => setDivergenceLevel(podVariationDivergenceLevels[Math.round(next)] ?? "低")}
+            onChange={(next) => {
+              skipSelectedValuesSyncRef.current = true;
+              setDivergenceLevel(podVariationDivergenceLevels[Math.round(next)] ?? "低");
+            }}
             step={1}
             value={podVariationDivergenceLevels.indexOf(divergenceLevel)}
             valueFormatter={(current) => podVariationDivergenceLevels[Math.round(current)] ?? "低"}
           />
           <div className="ck-inline-field">
             <FieldTitle label="指定背景色" required />
-            <SelectField hideLabel label="指定背景色" onChange={setBackgroundColor} options={["随机", "黑色", "白色"]} required value={backgroundColor} />
+            <SelectField
+              hideLabel
+              label="指定背景色"
+              onChange={(value) => {
+                skipSelectedValuesSyncRef.current = true;
+                setBackgroundColor(value);
+              }}
+              options={["随机", "黑色", "白色"]}
+              required
+              value={backgroundColor}
+            />
           </div>
         </>
       ) : null}
@@ -9585,16 +9645,40 @@ function PodVariationSetupSection({
       {mode === "爆款二创" ? (
         <div className="ck-inline-field">
           <FieldTitle label="裂变内容" required />
-          <SelectField hideLabel label="裂变内容" onChange={setBurstContent} options={[...podVariationBurstOptions]} required value={burstContent} />
+          <SelectField
+            hideLabel
+            label="裂变内容"
+            onChange={(value) => {
+              skipSelectedValuesSyncRef.current = true;
+              setBurstContent(value);
+            }}
+            options={[...podVariationBurstOptions]}
+            required
+            value={burstContent}
+          />
         </div>
       ) : (
         <div className="ck-inline-field">
           <FieldTitle label="裂变内容" required />
           <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 120 }}>
-            <button className={!contentEnabled ? "active" : ""} onClick={() => setContentEnabled(false)} type="button">
+            <button
+              className={!contentEnabled ? "active" : ""}
+              onClick={() => {
+                skipSelectedValuesSyncRef.current = true;
+                setContentEnabled(false);
+              }}
+              type="button"
+            >
               未开启
             </button>
-            <button className={contentEnabled ? "active" : ""} onClick={() => setContentEnabled(true)} type="button">
+            <button
+              className={contentEnabled ? "active" : ""}
+              onClick={() => {
+                skipSelectedValuesSyncRef.current = true;
+                setContentEnabled(true);
+              }}
+              type="button"
+            >
               开启
             </button>
           </div>
@@ -9604,11 +9688,31 @@ function PodVariationSetupSection({
       {mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? (
         <div className="ck-inline-field">
           <FieldTitle label="形状" required />
-          <SelectField hideLabel label="形状" onChange={setShape} options={[...podVariationShapeOptions]} required value={shape} />
+          <SelectField
+            hideLabel
+            label="形状"
+            onChange={(value) => {
+              skipSelectedValuesSyncRef.current = true;
+              setShape(value);
+            }}
+            options={[...podVariationShapeOptions]}
+            required
+            value={shape}
+          />
         </div>
       ) : null}
 
-      <NumberStepperField label="出图数量" max={8} min={1} onChange={setOutputCount} required value={outputCount} />
+      <NumberStepperField
+        label="出图数量"
+        max={8}
+        min={1}
+        onChange={(value) => {
+          skipSelectedValuesSyncRef.current = true;
+          setOutputCount(value);
+        }}
+        required
+        value={outputCount}
+      />
     </div>
   );
 }
@@ -9723,6 +9827,7 @@ function PatternRepeatSetupSection({
   onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
   const mainUploadKey = "video-pattern-repeat:main";
+  const skipSelectedValuesSyncRef = useRef(false);
   const [repeatType, setRepeatType] = useState<string>(selectedValues?.patternRepeatType ?? patternRepeatTypeOptions[0]);
   const [createMode, setCreateMode] = useState<string>(selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0]);
   const [generateMode, setGenerateMode] = useState<string>(selectedValues?.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0]);
@@ -9731,6 +9836,10 @@ function PatternRepeatSetupSection({
   const lastSyncedValuesRef = useRef("");
 
   useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
     const nextSyncKey = JSON.stringify({
       patternRepeatType: selectedValues?.patternRepeatType ?? patternRepeatTypeOptions[0],
       patternRepeatCreateMode: selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0],
@@ -9765,6 +9874,14 @@ function PatternRepeatSetupSection({
       nextSelectionMap.patternRepeatRatio = ratio;
     }
 
+    skipSelectedValuesSyncRef.current = true;
+    lastSyncedValuesRef.current = JSON.stringify({
+      patternRepeatType: nextSelectionMap.patternRepeatType ?? patternRepeatTypeOptions[0],
+      patternRepeatCreateMode: nextSelectionMap.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0],
+      patternRepeatGenerateMode: nextSelectionMap.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0],
+      patternRepeatRatio: nextSelectionMap.patternRepeatRatio ?? patternRepeatRatioOptions[0],
+      patternRepeatPrompts: nextSelectionMap.patternRepeatPrompts ?? ""
+    });
     onSelectionMapChange?.(nextSelectionMap);
     onSelectionChange?.(
       [
@@ -9788,11 +9905,31 @@ function PatternRepeatSetupSection({
 
   return (
     <div className="ck-form-block">
-      <AdaptiveSegmentedField fullWidth label="" onChange={setRepeatType} options={[...patternRepeatTypeOptions]} required value={repeatType} />
+      <AdaptiveSegmentedField
+        fullWidth
+        label=""
+        onChange={(value) => {
+          skipSelectedValuesSyncRef.current = true;
+          setRepeatType(value);
+        }}
+        options={[...patternRepeatTypeOptions]}
+        required
+        value={repeatType}
+      />
 
       {repeatType === "四方连续" ? (
         <>
-          <AdaptiveSegmentedField fullWidth label="" onChange={setCreateMode} options={[...patternRepeatCreateModeOptions]} required value={createMode} />
+          <AdaptiveSegmentedField
+            fullWidth
+            label=""
+            onChange={(value) => {
+              skipSelectedValuesSyncRef.current = true;
+              setCreateMode(value);
+            }}
+            options={[...patternRepeatCreateModeOptions]}
+            required
+            value={createMode}
+          />
 
           {createMode === "图生图" ? (
             <>
@@ -9814,14 +9951,23 @@ function PatternRepeatSetupSection({
 
               <AdaptiveChoiceField
                 label="生成模式"
-                onChange={setGenerateMode}
+                onChange={(value) => {
+                  skipSelectedValuesSyncRef.current = true;
+                  setGenerateMode(value);
+                }}
                 options={patternRepeatGenerateModeOptions.map((option) => ({ key: option, label: option }))}
                 required
                 value={generateMode}
               />
             </>
           ) : (
-            <PatternRepeatPromptList onChange={setPromptItems} promptItems={promptItems} />
+            <PatternRepeatPromptList
+              onChange={(items) => {
+                skipSelectedValuesSyncRef.current = true;
+                setPromptItems(items);
+              }}
+              promptItems={promptItems}
+            />
           )}
         </>
       ) : (
@@ -9844,7 +9990,17 @@ function PatternRepeatSetupSection({
 
           <div className="ck-inline-field ck-aligned-inline-field">
             <FieldTitle label="尺寸比例" required />
-            <SelectField hideLabel label="尺寸比例" onChange={setRatio} options={[...patternRepeatRatioOptions]} required value={ratio} />
+            <SelectField
+              hideLabel
+              label="尺寸比例"
+              onChange={(value) => {
+                skipSelectedValuesSyncRef.current = true;
+                setRatio(value);
+              }}
+              options={[...patternRepeatRatioOptions]}
+              required
+              value={ratio}
+            />
           </div>
         </>
       )}
@@ -9950,7 +10106,7 @@ function VideoSceneGridSetupSection({
       videoSceneGridUnitCreditCost: "5",
       videoSceneGridTotalCreditCost: String(totalCredits)
     });
-    onSelectionChange?.([mode, variation, ...detailDimensions, `出图比例 ${ratio}`, `生图数量 ${outputCount}`, `积分消耗 ${totalCredits}`]);
+    onSelectionChange?.([mode, variation, ...detailDimensions, `出图比例 ${ratio}`, `生图数量 ${outputCount}`]);
     onCreationModeChange?.({
       modeId: `video-scene-grid-${mode}-${variation}`,
       modeLabel: `${mode}·${variation}`,
@@ -10018,13 +10174,6 @@ function VideoSceneGridSetupSection({
       </div>
 
       <NumberStepperField label="生图数量" max={10} min={2} onChange={setOutputCount} required value={outputCount} />
-
-      <div className="ck-inline-field">
-        <FieldTitle label="积分消耗" required />
-        <div className="ck-inline-static-value ck-video-scene-grid-credit">
-          {uploadCount > 0 ? `5积分/张 × ${outputCount}张 × ${uploadCount}个素材 = ${totalCredits}积分` : "生成单图5积分，上传素材后自动计算"}
-        </div>
-      </div>
     </div>
   );
 }
@@ -12133,6 +12282,8 @@ function AdvancedSettingsSection({
   const [isAiAssistLoading, setIsAiAssistLoading] = useState(false);
   const skipSelectedValuesSyncRef = useRef(false);
   const lastSelectedValuesSignatureRef = useRef("");
+  const lastSelectionValuesEmitSignatureRef = useRef("");
+  const lastSelectionMapEmitSignatureRef = useRef("");
 
   const selectedPlatform = platformOptions.find((item) => item.id === selectedPlatformId);
   const [selectedRegionId, setSelectedRegionId] = useState("");
@@ -12179,6 +12330,11 @@ function AdvancedSettingsSection({
       conditionalDetailValue
     ]).filter(Boolean);
 
+    const nextValuesSignature = JSON.stringify(nextValues);
+    if (nextValuesSignature === lastSelectionValuesEmitSignatureRef.current) {
+      return;
+    }
+    lastSelectionValuesEmitSignatureRef.current = nextValuesSignature;
     onSelectionChange?.(nextValues);
   }, [conditionalDetailValue, config.extraSelects, config.fields, onSelectionChange, selectedExtraValues, selectedLanguage, selectedPlatform, selectedRegion]);
 
@@ -12192,6 +12348,11 @@ function AdvancedSettingsSection({
       if (value) nextSelectionMap[item.key] = value;
     });
     if (conditionalDetailValue) nextSelectionMap.platformRuleDetail = conditionalDetailValue;
+    const nextSelectionMapSignature = JSON.stringify(nextSelectionMap);
+    if (nextSelectionMapSignature === lastSelectionMapEmitSignatureRef.current) {
+      return;
+    }
+    lastSelectionMapEmitSignatureRef.current = nextSelectionMapSignature;
     onSelectionMapChange?.(nextSelectionMap);
   }, [conditionalDetailValue, config.extraSelects, config.fields, onSelectionMapChange, selectedExtraValues, selectedLanguage, selectedPlatform, selectedRegion]);
 
@@ -12307,6 +12468,29 @@ function AdvancedSettingsSection({
         return accumulator;
       }, {})
     });
+    lastSelectionMapEmitSignatureRef.current = JSON.stringify(
+      (() => {
+        const nextSelectionMap: AdvancedSelectionMap = {};
+        if (values.platform) nextSelectionMap.platform = values.platform;
+        if (values.region) nextSelectionMap.region = values.region;
+        if (values.language) nextSelectionMap.language = values.language;
+        (config.extraSelects ?? []).forEach((item) => {
+          const value = values[item.key];
+          if (typeof value === "string" && value) nextSelectionMap[item.key] = value;
+        });
+        if (values.platformRuleDetail) nextSelectionMap.platformRuleDetail = values.platformRuleDetail;
+        return nextSelectionMap;
+      })()
+    );
+    lastSelectionValuesEmitSignatureRef.current = JSON.stringify(
+      dedupeStrings([
+        values.platform ?? "",
+        values.region ?? "",
+        values.language ?? "",
+        ...(config.extraSelects ?? []).map((item) => (typeof values[item.key] === "string" ? values[item.key] : "")),
+        values.platformRuleDetail ?? ""
+      ]).filter(Boolean)
+    );
   };
 
   useEffect(() => {
@@ -12462,6 +12646,8 @@ function AdvancedSettingsSection({
                   placeholder="请选择场景"
                   value={field.value}
                 />
+              ) : field.mode === "select" ? (
+                <SelectField fullWidth hideLabel label={field.label} onChange={field.onSelect} options={field.options} value={field.value} />
               ) : (
                 <div className="ck-select-dropdown full">
                   {field.mode === "input-select" ? (
