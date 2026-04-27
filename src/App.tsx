@@ -621,6 +621,7 @@ type ToolModuleSectionKey =
   | "model-try-setup"
   | "pod-crop-mode"
   | "pod-extract-setup"
+  | "pod-variation-strength"
   | "creation-mode"
   | "supplement"
   | "mode-choice"
@@ -6006,6 +6007,19 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       }
     }
   },
+  "pod-variation": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "pod-variation-strength"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
   "model-try": {
     creationModeConfigKey: "spoke",
     sectionOrder: ["model-try-setup", "creation-mode"],
@@ -8060,22 +8074,89 @@ function PodExtractSetupSection({
         value={scene}
       />
 
-      <div className="ck-form-block">
+      <div className="ck-inline-field">
         <FieldTitle label="出图比例" required />
-        <div className="ck-adaptive-choice-grid ck-adaptive-choice-grid-row ck-pod-extract-ratio-row">
-          {podExtractRatioOptions[mode].map((option) => (
-            <button
-              className={`ck-adaptive-choice-item${option === ratio ? " active" : ""}`}
-              key={option}
-              onClick={() => setRatio(option)}
-              type="button"
-            >
-              {option}
-            </button>
-          ))}
-        </div>
+        <SelectField hideLabel label="出图比例" onChange={setRatio} options={podExtractRatioOptions[mode]} required value={ratio} />
       </div>
     </div>
+  );
+}
+
+function InlineSliderField({
+  label,
+  value,
+  min = 0,
+  max = 1,
+  step = 0.1,
+  valueFormatter,
+  onChange
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  valueFormatter?: (value: number) => string;
+  onChange: (value: number) => void;
+}) {
+  const displayValue = valueFormatter ? valueFormatter(value) : String(value);
+
+  return (
+    <div className="ck-inline-field ck-slider-inline-field">
+      <div className="ck-slider-inline-label">
+        <FieldTitle label={label} required />
+        <span className="ck-slider-inline-help">?</span>
+      </div>
+      <div className="ck-slider-inline-control">
+        <input
+          className="ck-slider-inline-range"
+          max={max}
+          min={min}
+          onChange={(event) => onChange(Number(event.target.value))}
+          step={step}
+          type="range"
+          value={value}
+        />
+        <span className="ck-slider-inline-value">{displayValue}</span>
+      </div>
+    </div>
+  );
+}
+
+function PodVariationStrengthSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+}) {
+  const defaultValue = Number(selectedValues?.podVariationReferenceStrength ?? "0.5");
+  const [referenceStrength, setReferenceStrength] = useState(Number.isFinite(defaultValue) ? defaultValue : 0.5);
+
+  useEffect(() => {
+    const nextValue = Number(selectedValues?.podVariationReferenceStrength ?? "0.5");
+    if (Number.isFinite(nextValue) && nextValue !== referenceStrength) {
+      setReferenceStrength(nextValue);
+    }
+  }, [referenceStrength, selectedValues]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      podVariationReferenceStrength: referenceStrength.toFixed(1)
+    });
+    onSelectionChange?.([`原图参考强度 ${referenceStrength.toFixed(1)}`]);
+  }, [onSelectionChange, onSelectionMapChange, referenceStrength]);
+
+  return (
+    <InlineSliderField
+      label="原图参考强度"
+      onChange={setReferenceStrength}
+      step={0.1}
+      value={referenceStrength}
+      valueFormatter={(current) => current.toFixed(1)}
+    />
   );
 }
 
@@ -12629,6 +12710,25 @@ function ConfigPanel({
               ...current,
               ...values
             }));
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "pod-variation-strength" && tool.key === "pod-variation") {
+      return (
+        <PodVariationStrengthSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["podVariationReferenceStrength"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
           }}
           selectedValues={advancedSettingSelections}
         />
