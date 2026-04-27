@@ -520,6 +520,37 @@ type PlatformMock = {
   regions: PlatformRegionMock[];
 };
 
+type PartialEditFieldType = "text" | "input" | "image" | "select" | "color";
+
+type PartialEditFieldConfig = {
+  key: string;
+  label: string;
+  type: PartialEditFieldType;
+  helperText?: string;
+  placeholder?: string;
+  defaultValue?: string;
+  options?: string[];
+};
+
+type PartialEditTemplateConfig = {
+  key: string;
+  label: string;
+  fields?: PartialEditFieldConfig[];
+};
+
+type PodFusionMode = "两两融合" | "一对多融合";
+
+type PodFusionPairGroup = {
+  id: string;
+  a?: UploadItem;
+  b?: UploadItem;
+};
+
+type PodFusionOneToManySelection = {
+  base?: UploadItem;
+  fusionItems: UploadItem[];
+};
+
 type ApplicablePlatformOption = {
   id: string;
   label: string;
@@ -621,7 +652,9 @@ type ToolModuleSectionKey =
   | "model-try-setup"
   | "pod-crop-mode"
   | "pod-extract-setup"
-  | "pod-variation-strength"
+  | "pod-partial-edit-setup"
+  | "pod-variation-setup"
+  | "pod-fusion-setup"
   | "creation-mode"
   | "supplement"
   | "mode-choice"
@@ -764,7 +797,7 @@ const navGroups: Array<{
       { key: "pod-extract", label: "印花图提取", panelTitle: "印花图提取", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-variation", label: "印花图裂变", panelTitle: "印花图裂变", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-partial-edit", label: "局部改图", panelTitle: "局部改图", resultCount: 5, ratioLabel: "1:1" },
-      { key: "pod-fusion", label: "元素融合印花", panelTitle: "元素融合印花", resultCount: 5, ratioLabel: "1:1" },
+      { key: "pod-fusion", label: "元素融合", panelTitle: "元素融合", resultCount: 5, ratioLabel: "1:1" },
       { key: "video-scene-grid", label: "多联画", panelTitle: "多联画", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-pattern-repeat", label: "四方连续图", panelTitle: "四方连续图", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-pod-mockup", label: "POD样机套图", panelTitle: "POD样机套图", resultCount: 4, ratioLabel: "1:1" },
@@ -2147,6 +2180,14 @@ function getImageGenerationUnitCreditCost(
     );
   }
 
+  if (toolKey === "pod-partial-edit") {
+    return 5;
+  }
+
+  if (toolKey === "pod-fusion") {
+    return 5;
+  }
+
   return null;
 }
 
@@ -2207,6 +2248,66 @@ const podCropModeOptions = [
   { key: "铁皮画", label: "铁皮画" },
   { key: "装饰画", label: "装饰画" }
 ];
+const podVariationCategoryOptions = ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"] as const;
+const podVariationModeOptions = ["艺术设计", "文字强化", "爆款二创", "通用"] as const;
+const podVariationBurstOptions = ["改主体", "改姿势", "改背景", "✨爆改✨"] as const;
+const podVariationShapeOptions = ["默认", "圆形"] as const;
+const podVariationReferenceStyleLevels = ["低", "中", "高"] as const;
+const podVariationDivergenceLevels = ["低", "中", "高"] as const;
+type PodVariationModeKey = (typeof podVariationModeOptions)[number];
+const podPartialEditRequirementOptions = [
+  "替换“文字”和元素",
+  "去除商品印花",
+  "商品换色",
+  "服饰做纹理",
+  "自定义提示词"
+] as const;
+const podPartialEditCategoryOptions = ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"] as const;
+const podPartialEditOutputCountOptions = ["1", "2", "3", "4"] as const;
+const podPartialEditTemplates: Record<string, PartialEditTemplateConfig> = {
+  "替换“文字”和元素": {
+    key: "replace-text-elements",
+    label: "替换“文字”和元素",
+    fields: [
+      { key: "note", label: "说明", type: "text", defaultValue: "适用于海报、挂画、包装等需要替换局部文案和装饰元素的素材。" },
+      { key: "targetText", label: "目标文案", type: "input", placeholder: "请输入需要替换的新文案", defaultValue: "" },
+      { key: "elementDescription", label: "元素描述", type: "input", placeholder: "请输入需要替换或新增的元素说明", defaultValue: "" },
+      { key: "referenceImage", label: "参考图片", type: "image", placeholder: "请输入参考图片链接或说明", defaultValue: "" }
+    ]
+  },
+  "去除商品印花": {
+    key: "remove-print",
+    label: "去除商品印花",
+    fields: [
+      { key: "note", label: "说明", type: "text", defaultValue: "用于删除服饰、杯子、家居等商品表面的原始印花或图案。" },
+      { key: "removeArea", label: "去除区域", type: "select", options: ["胸前区域", "整面图案", "袖口区域", "局部小图", "自定义区域"], defaultValue: "整面图案" },
+      { key: "retainTexture", label: "保留材质", type: "select", options: ["是", "否"], defaultValue: "是" }
+    ]
+  },
+  "商品换色": {
+    key: "recolor-product",
+    label: "商品换色",
+    fields: [
+      { key: "note", label: "说明", type: "text", defaultValue: "适用于保持结构不变，仅替换商品主体或局部颜色。" },
+      { key: "targetPart", label: "目标部位", type: "select", options: ["主体", "边框", "背景", "局部细节", "自定义部位"], defaultValue: "主体" },
+      { key: "targetColor", label: "目标颜色", type: "color", defaultValue: "#111111" }
+    ]
+  },
+  "服饰做纹理": {
+    key: "garment-texture",
+    label: "服饰做纹理",
+    fields: [
+      { key: "note", label: "说明", type: "text", defaultValue: "适用于服饰、布料类商品增加或替换纹理、材质与肌理效果。" },
+      { key: "textureType", label: "纹理类型", type: "select", options: ["牛仔纹理", "针织纹理", "皮革纹理", "做旧纹理", "自定义纹理"], defaultValue: "牛仔纹理" },
+      { key: "textureReference", label: "纹理参考图", type: "image", placeholder: "请输入纹理参考图链接或说明", defaultValue: "" },
+      { key: "textureDirection", label: "纹理方向", type: "input", placeholder: "例如：横向铺满、局部覆盖、沿轮廓分布", defaultValue: "" }
+    ]
+  },
+  "自定义提示词": {
+    key: "custom-prompt",
+    label: "自定义提示词"
+  }
+};
 const podExtractModeCards = [
   { key: "专项提取", label: "专项提取", description: "遮挡少的印花类商品" },
   { key: "全能提取", label: "全能提取", description: "大幅褶皱，遮挡严重" }
@@ -2221,6 +2322,11 @@ const podExtractRatioOptions: Record<PodExtractModeKey, string[]> = {
   "专项提取": ["自动检测比例", "自定义比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
   "全能提取": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"]
 };
+const podFusionModeOptions = ["两两融合", "一对多融合"] as const;
+const podFusionStyleOptions = ["默认", "3D", "皮克斯", "水彩", "像素", "矢量", "复古", "科幻", "赛博朋克"] as const;
+const podFusionBackgroundOptions = ["默认", "简洁", "丰富"] as const;
+const podFusionRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
+const podFusionOutputCountOptions = ["1", "2", "3", "4"] as const;
 const videoReplicaModeOptions = ["普通模式", "高级模式"] as const;
 type VideoReplicaModeKey = (typeof videoReplicaModeOptions)[number];
 const videoReplicaDurationOptions = ["4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s"];
@@ -6007,12 +6113,38 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       }
     }
   },
-  "pod-variation": {
+  "pod-partial-edit": {
     creationModeConfigKey: "default",
-    sectionOrder: ["upload-main", "pod-variation-strength"],
+    sectionOrder: ["upload-main", "pod-partial-edit-setup"],
     uploads: {
       main: {
-        label: "上传商品图",
+        label: "上传素材",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "pod-variation": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "pod-variation-setup"],
+    uploads: {
+      main: {
+        label: "上传参考图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "pod-fusion": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["pod-fusion-setup"],
+    uploads: {
+      main: {
+        label: "添加素材",
         required: true,
         maxCount: 24,
         singleUploadMeta: "（单次最多上传{count}张）",
@@ -6155,6 +6287,29 @@ function getLibraryMediaKindByFieldKey(fieldKey: string) {
 function canRenderVideoPreview(src?: string) {
   if (!src) return false;
   return src.startsWith("blob:") || src.startsWith("data:video") || src.endsWith(".mp4") || src.endsWith(".mov");
+}
+
+function buildUploadItemsFromFiles(files: FileList | File[]) {
+  return Array.from(files).map<UploadItem>((file) => {
+    const objectUrl = URL.createObjectURL(file);
+    return {
+      id: generateRandomTenDigitId(),
+      name: file.name,
+      src: objectUrl,
+      previewSrc: objectUrl,
+      mediaKind: file.type.startsWith("video/") ? "video" : "image",
+      format: (file.name.split(".").pop() ?? "PNG").toUpperCase() as UploadItem["format"],
+      sizeMb: Number((file.size / (1024 * 1024)).toFixed(1)),
+      status: "ready"
+    };
+  });
+}
+
+function cloneUploadItem(item: UploadItem): UploadItem {
+  return {
+    ...item,
+    id: item.id || generateRandomTenDigitId()
+  };
 }
 
 function TopBar({
@@ -8074,7 +8229,7 @@ function PodExtractSetupSection({
         value={scene}
       />
 
-      <div className="ck-inline-field">
+      <div className="ck-inline-field ck-aligned-inline-field">
         <FieldTitle label="出图比例" required />
         <SelectField hideLabel label="出图比例" onChange={setRatio} options={podExtractRatioOptions[mode]} required value={ratio} />
       </div>
@@ -8088,6 +8243,7 @@ function InlineSliderField({
   min = 0,
   max = 1,
   step = 0.1,
+  helpText = "?",
   valueFormatter,
   onChange
 }: {
@@ -8096,6 +8252,7 @@ function InlineSliderField({
   min?: number;
   max?: number;
   step?: number;
+  helpText?: string;
   valueFormatter?: (value: number) => string;
   onChange: (value: number) => void;
 }) {
@@ -8105,7 +8262,7 @@ function InlineSliderField({
     <div className="ck-inline-field ck-slider-inline-field">
       <div className="ck-slider-inline-label">
         <FieldTitle label={label} required />
-        <span className="ck-slider-inline-help">?</span>
+        <span className="ck-slider-inline-help">{helpText}</span>
       </div>
       <div className="ck-slider-inline-control">
         <input
@@ -8123,17 +8280,818 @@ function InlineSliderField({
   );
 }
 
-function PodVariationStrengthSection({
+function inferPodVariationCategory(uploads: UploadItem[]) {
+  const sourceText = uploads
+    .map((item) => `${item.name ?? ""}`.toLowerCase())
+    .join(" ");
+
+  if (!sourceText) return "默认";
+  if (/(fabric|textile|cloth|服装|纺织|布料|面料|服饰)/.test(sourceText)) return "服装/纺织";
+  if (/(phone|case|手机壳|壳)/.test(sourceText)) return "手机壳";
+  if (/(iron|metal|铁艺|图形)/.test(sourceText)) return "铁艺图形";
+  if (/(clock|挂钟)/.test(sourceText)) return "挂钟";
+  if (/(decor|frame|装饰画)/.test(sourceText)) return "装饰画";
+  if (/(tin|plate|铁皮画)/.test(sourceText)) return "铁皮画";
+  return "默认";
+}
+
+function inferPodPartialEditCategory(uploads: UploadItem[]) {
+  const sourceText = uploads
+    .map((item) => `${item.name ?? ""}`.toLowerCase())
+    .join(" ");
+
+  if (!sourceText) return "默认";
+  if (/(fabric|textile|cloth|服装|纺织|布料|面料|服饰)/.test(sourceText)) return "服装/纺织";
+  if (/(phone|case|手机壳|壳)/.test(sourceText)) return "手机壳";
+  if (/(iron|metal|铁艺|图形)/.test(sourceText)) return "铁艺图形";
+  if (/(clock|挂钟)/.test(sourceText)) return "挂钟";
+  if (/(decor|frame|装饰画)/.test(sourceText)) return "装饰画";
+  if (/(tin|plate|铁皮画)/.test(sourceText)) return "铁皮画";
+  return "默认";
+}
+
+function buildPartialEditTemplatePayload(requirement: string, fieldValues: Record<string, string>) {
+  const template = podPartialEditTemplates[requirement];
+  if (!template) return "";
+  if (requirement === "自定义提示词") {
+    return fieldValues.customPrompt ?? "";
+  }
+
+  return JSON.stringify(
+    {
+      type: template.key,
+      title: template.label,
+      fields: (template.fields ?? []).map((field) => ({
+        key: field.key,
+        label: field.label,
+        type: field.type,
+        value: fieldValues[field.key] ?? field.defaultValue ?? ""
+      }))
+    },
+    null,
+    2
+  );
+}
+
+function buildDefaultPartialEditFieldValues(requirement: string) {
+  const template = podPartialEditTemplates[requirement];
+  if (!template?.fields?.length) return requirement === "自定义提示词" ? { customPrompt: "" } : {};
+  return template.fields.reduce<Record<string, string>>((accumulator, field) => {
+    accumulator[field.key] = field.defaultValue ?? "";
+    return accumulator;
+  }, {});
+}
+
+function getPodFusionPairGroups(selectionMap?: AdvancedSelectionMap) {
+  return safeParseJson<PodFusionPairGroup[]>(selectionMap?.podFusionPairGroups, []) ?? [];
+}
+
+function getPodFusionOneToManySelection(selectionMap?: AdvancedSelectionMap) {
+  return (
+    safeParseJson<PodFusionOneToManySelection>(selectionMap?.podFusionOneToManySelection, {
+      fusionItems: []
+    }) ?? { fusionItems: [] }
+  );
+}
+
+function getPodFusionMetrics(selectionMap?: AdvancedSelectionMap) {
+  const mode = (selectionMap?.podFusionMode as PodFusionMode) || "两两融合";
+  const outputCount = Math.max(1, Number(selectionMap?.podFusionOutputCount ?? "1") || 1);
+
+  if (mode === "一对多融合") {
+    const oneToMany = getPodFusionOneToManySelection(selectionMap);
+    const fusionCount = oneToMany.fusionItems.length;
+    return {
+      mode,
+      outputCount,
+      isReady: Boolean(oneToMany.base && fusionCount > 0),
+      groupCount: fusionCount,
+      sourceCount: fusionCount,
+      payloadUploads: [oneToMany.base, ...oneToMany.fusionItems].filter(Boolean) as UploadItem[]
+    };
+  }
+
+  const groups = getPodFusionPairGroups(selectionMap).filter((group) => group.a && group.b);
+  return {
+    mode,
+    outputCount,
+    isReady: groups.length > 0,
+    groupCount: groups.length,
+    sourceCount: groups.length,
+    payloadUploads: groups.flatMap((group) => [group.a, group.b].filter(Boolean) as UploadItem[])
+  };
+}
+
+function buildPodFusionSelectionSummary(selectionMap: AdvancedSelectionMap) {
+  const metrics = getPodFusionMetrics(selectionMap);
+  return [
+    `选择方式 ${selectionMap.podFusionMode ?? "两两融合"}`,
+    selectionMap.podFusionStyle ? `选择风格 ${selectionMap.podFusionStyle}` : "",
+    selectionMap.podFusionBackground ? `背景 ${selectionMap.podFusionBackground}` : "",
+    selectionMap.podFusionRatio ? `比例 ${selectionMap.podFusionRatio}` : "",
+    `素材组数 ${metrics.groupCount}`,
+    `出图数量 ${metrics.outputCount}`
+  ].filter(Boolean);
+}
+
+function PodPartialEditSetupSection({
+  uploads,
   selectedValues,
   onSelectionChange,
-  onSelectionMapChange
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  uploads: UploadItem[];
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const defaultRequirement =
+    selectedValues?.podPartialEditRequirement &&
+    podPartialEditRequirementOptions.includes(selectedValues.podPartialEditRequirement as (typeof podPartialEditRequirementOptions)[number])
+      ? selectedValues.podPartialEditRequirement
+      : podPartialEditRequirementOptions[0];
+  const defaultFieldValues =
+    safeParseJson<Record<string, string>>(selectedValues?.podPartialEditFieldValues, buildDefaultPartialEditFieldValues(defaultRequirement)) ??
+    buildDefaultPartialEditFieldValues(defaultRequirement);
+  const [category, setCategory] = useState<string>(selectedValues?.podPartialEditCategory ?? inferPodPartialEditCategory(uploads));
+  const [requirement, setRequirement] = useState<string>(defaultRequirement);
+  const [outputCount, setOutputCount] = useState<string>(selectedValues?.podPartialEditOutputCount ?? podPartialEditOutputCountOptions[0]);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(defaultFieldValues);
+  const [instructionText, setInstructionText] = useState(
+    selectedValues?.podPartialEditInstructionText ?? buildPartialEditTemplatePayload(defaultRequirement, defaultFieldValues)
+  );
+
+  useEffect(() => {
+    const inferred = inferPodPartialEditCategory(uploads);
+    if (inferred !== category) {
+      setCategory(inferred);
+    }
+  }, [category, uploads]);
+
+  const template = podPartialEditTemplates[requirement];
+
+  const handleRequirementChange = (nextRequirement: string) => {
+    setRequirement(nextRequirement);
+    const nextFieldValues = buildDefaultPartialEditFieldValues(nextRequirement);
+    setFieldValues(nextFieldValues);
+    setInstructionText(buildPartialEditTemplatePayload(nextRequirement, nextFieldValues));
+  };
+
+  const handleFieldValueChange = (key: string, value: string) => {
+    setFieldValues((current) => {
+      const nextValues = { ...current, [key]: value };
+      setInstructionText(buildPartialEditTemplatePayload(requirement, nextValues));
+      return nextValues;
+    });
+  };
+
+  const handleInstructionTextChange = (value: string) => {
+    setInstructionText(value);
+    if (requirement === "自定义提示词") {
+      setFieldValues({ customPrompt: value });
+      return;
+    }
+    const parsed = safeParseJson<{ fields?: Array<{ key: string; value: string }> }>(value);
+    if (parsed?.fields?.length) {
+      setFieldValues((current) => {
+        const nextValues = { ...current };
+        parsed.fields?.forEach((field) => {
+          if (field.key) {
+            nextValues[field.key] = field.value ?? "";
+          }
+        });
+        return nextValues;
+      });
+    }
+  };
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      podPartialEditCategory: category,
+      podPartialEditRequirement: requirement,
+      podPartialEditFieldValues: JSON.stringify(fieldValues),
+      podPartialEditInstructionText: instructionText,
+      podPartialEditOutputCount: outputCount
+    });
+    onSelectionChange?.(
+      [category, requirement, `出图数量 ${outputCount}`, instructionText ? "已配置改图要求" : ""].filter(Boolean)
+    );
+    onCreationModeChange?.({
+      modeId: "pod-partial-edit",
+      modeLabel: requirement,
+      ratio: "1:1",
+      count: Number(outputCount) || 1,
+      unitCreditCost: 5
+    });
+  }, [category, fieldValues, instructionText, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, requirement]);
+
+  return (
+    <div className="ck-form-block">
+      <div className="ck-form-block">
+        <FieldTitle label="品类" required />
+        <div className="ck-adaptive-choice-grid ck-adaptive-choice-grid-row ck-pod-variation-category-row">
+          {podPartialEditCategoryOptions.map((option) => (
+            <button
+              className={`ck-adaptive-choice-item${option === category ? " active" : ""}`}
+              key={option}
+              onClick={() => setCategory(option)}
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <AdaptiveChoiceField
+        label="改图要求"
+        onChange={handleRequirementChange}
+        options={podPartialEditRequirementOptions.map((option) => ({ key: option, label: option }))}
+        required
+        value={requirement}
+      />
+
+      {requirement !== "自定义提示词" && template?.fields?.length ? (
+        <div className="ck-partial-edit-structured-panel">
+          {template.fields.map((field) => {
+            if (field.type === "text") {
+              return (
+                <div className="ck-partial-edit-helper-text" key={field.key}>
+                  {field.defaultValue}
+                </div>
+              );
+            }
+
+            if (field.type === "input" || field.type === "image") {
+              return (
+                <div className="ck-inline-field" key={field.key}>
+                  <FieldTitle label={field.label} required />
+                  <input
+                    className="ck-structured-inline-input"
+                    onChange={(event) => handleFieldValueChange(field.key, event.target.value)}
+                    placeholder={field.placeholder}
+                    type="text"
+                    value={fieldValues[field.key] ?? ""}
+                  />
+                </div>
+              );
+            }
+
+            if (field.type === "select") {
+              return (
+                <div className="ck-inline-field" key={field.key}>
+                  <FieldTitle label={field.label} required />
+                  <SelectField
+                    hideLabel
+                    label={field.label}
+                    onChange={(value) => handleFieldValueChange(field.key, value)}
+                    options={field.options}
+                    required
+                    value={fieldValues[field.key] ?? field.defaultValue ?? ""}
+                  />
+                </div>
+              );
+            }
+
+            if (field.type === "color") {
+              return (
+                <div className="ck-inline-field" key={field.key}>
+                  <FieldTitle label={field.label} required />
+                  <div className="ck-structured-color-field">
+                    <input
+                      className="ck-structured-color-picker"
+                      onChange={(event) => handleFieldValueChange(field.key, event.target.value)}
+                      type="color"
+                      value={fieldValues[field.key] ?? field.defaultValue ?? "#111111"}
+                    />
+                    <input
+                      className="ck-structured-inline-input color-text"
+                      onChange={(event) => handleFieldValueChange(field.key, event.target.value)}
+                      type="text"
+                      value={fieldValues[field.key] ?? field.defaultValue ?? "#111111"}
+                    />
+                  </div>
+                </div>
+              );
+            }
+
+            return null;
+          })}
+        </div>
+      ) : null}
+
+      <div className="ck-form-block">
+        <FieldTitle label={requirement === "自定义提示词" ? "提示词输入" : "结构化指令"} required />
+        <div className="ck-textarea-wrap">
+          <textarea
+            maxLength={3000}
+            onChange={(event) => handleInstructionTextChange(event.target.value)}
+            placeholder={
+              requirement === "自定义提示词"
+                ? "请输入局部改图指令，例如：保留主体结构，只替换包装中心文案与角标元素。"
+                : "结构化指令会显示在这里，可继续手动补充或修改。"
+            }
+            value={instructionText}
+          />
+          <div className="ck-textarea-actions">
+            <span>{instructionText.length}/3000</span>
+          </div>
+        </div>
+      </div>
+
+      <CountField label="出图数量" onChange={setOutputCount} options={[...podPartialEditOutputCountOptions]} required value={outputCount} />
+    </div>
+  );
+}
+
+function PodFusionPairModal({
+  open,
+  initialGroups,
+  onClose,
+  onConfirm
+}: {
+  open: boolean;
+  initialGroups: PodFusionPairGroup[];
+  onClose: () => void;
+  onConfirm: (groups: PodFusionPairGroup[]) => void;
+}) {
+  const [pairGroups, setPairGroups] = useState<PodFusionPairGroup[]>(initialGroups);
+  const [localAssets, setLocalAssets] = useState<UploadItem[]>([]);
+  const localInputRef = useRef<HTMLInputElement | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setPairGroups(initialGroups.length ? initialGroups.map((group) => ({ ...group })) : [{ id: generateRandomTenDigitId() }]);
+      setLocalAssets([]);
+    }
+  }, [initialGroups, open]);
+
+  if (!open) return null;
+
+  const workingGroups =
+    pairGroups.length && pairGroups[pairGroups.length - 1]?.a && pairGroups[pairGroups.length - 1]?.b
+      ? [...pairGroups, { id: generateRandomTenDigitId() }]
+      : pairGroups.length
+        ? pairGroups
+        : [{ id: generateRandomTenDigitId() }];
+
+  const handleFillNextSlot = (asset: UploadItem) => {
+    const nextAsset = cloneUploadItem(asset);
+    setPairGroups((current) => {
+      const baseGroups = current.length ? current.map((group) => ({ ...group })) : [{ id: generateRandomTenDigitId() }];
+      const targetIndex = baseGroups.findIndex((group) => !group.a || !group.b);
+      const index = targetIndex >= 0 ? targetIndex : baseGroups.length;
+      if (!baseGroups[index]) {
+        baseGroups.push({ id: generateRandomTenDigitId() });
+      }
+      const targetGroup = { ...baseGroups[index] };
+      if (!targetGroup.a) {
+        targetGroup.a = nextAsset;
+      } else {
+        targetGroup.b = nextAsset;
+      }
+      baseGroups[index] = targetGroup;
+      return baseGroups;
+    });
+  };
+
+  const handleRemoveGroup = (groupId: string) => {
+    setPairGroups((current) => current.filter((group) => group.id !== groupId));
+  };
+
+  const availableAssets = [
+    ...localAssets,
+    ...libraryAssets
+      .filter((asset) => (asset.mediaKind ?? "image") === "image")
+      .map<UploadItem>((asset) => ({
+        id: generateRandomTenDigitId(),
+        name: asset.name,
+        src: asset.src,
+        previewSrc: asset.previewSrc ?? asset.src,
+        mediaKind: "image",
+        format: asset.format,
+        sizeMb: asset.sizeMb,
+        status: "ready"
+      }))
+  ];
+
+  const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+    setLocalAssets((current) => [...buildUploadItemsFromFiles(files), ...current]);
+    event.target.value = "";
+  };
+
+  return (
+    <div className="ck-library-mask ck-pod-fusion-modal-mask" onClick={onClose}>
+      <div className="ck-pod-fusion-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="ck-pod-fusion-modal-header">
+          <div className="ck-pod-fusion-modal-tabs">
+            <button className="active" type="button">
+              按素材选取
+            </button>
+            <button type="button">从智能检索选取</button>
+          </div>
+          <button aria-label="关闭元素融合素材弹框" className="ck-library-close" onClick={onClose} type="button">
+            ×
+          </button>
+        </div>
+
+        <div className="ck-pod-fusion-modal-toolbar">
+          <button className="ck-library-upload" onClick={() => localInputRef.current?.click()} type="button">
+            上传图片
+          </button>
+          <button className="ck-library-upload" onClick={() => folderInputRef.current?.click()} type="button">
+            上传文件夹
+          </button>
+          <input accept="image/*" hidden multiple onChange={handleFileInputChange} ref={localInputRef} type="file" />
+          <input accept="image/*" hidden multiple onChange={handleFileInputChange} ref={folderInputRef} type="file" />
+        </div>
+
+        <div className="ck-pod-fusion-modal-grid">
+          {availableAssets.map((asset) => (
+            <button className="ck-pod-fusion-asset-card" key={asset.id} onClick={() => handleFillNextSlot(asset)} type="button">
+              <img alt={asset.name ?? "素材"} src={asset.previewSrc ?? asset.src} />
+            </button>
+          ))}
+        </div>
+
+        <div className="ck-pod-fusion-modal-preview">
+          {workingGroups.map((group, index) => (
+            <div className="ck-pod-fusion-pair-preview" key={group.id}>
+              <div className="ck-pod-fusion-pair-preview-card">
+                {group.a ? <img alt={`${index + 1}-A`} src={group.a.previewSrc ?? group.a.src} /> : <span>{`${index + 1}-A`}</span>}
+                <i>{`${index + 1}-A`}</i>
+              </div>
+              <span className="ck-pod-fusion-pair-link">◎</span>
+              <div className="ck-pod-fusion-pair-preview-card">
+                {group.b ? <img alt={`${index + 1}-B`} src={group.b.previewSrc ?? group.b.src} /> : <span>{`${index + 1}-B`}</span>}
+                <i>{`${index + 1}-B`}</i>
+              </div>
+              {group.a && group.b ? (
+                <button className="ck-pod-fusion-remove-pair" onClick={() => handleRemoveGroup(group.id)} type="button">
+                  ×
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </div>
+
+        <div className="ck-pod-fusion-modal-actions">
+          <button className="ck-library-cancel" onClick={onClose} type="button">
+            取消
+          </button>
+          <button
+            className="ck-library-confirm"
+            onClick={() => onConfirm(pairGroups.filter((group) => group.a && group.b))}
+            type="button"
+          >
+            选取
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PodFusionOneToManyLibraryModal({
+  open,
+  maxSelectable,
+  onClose,
+  onConfirm
+}: {
+  open: boolean;
+  maxSelectable: number;
+  onClose: () => void;
+  onConfirm: (items: UploadItem[]) => void;
+}) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedIds([]);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const imageAssets = libraryAssets.filter((asset) => (asset.mediaKind ?? "image") === "image");
+
+  const toggleAsset = (assetId: string) => {
+    setSelectedIds((current) => {
+      if (current.includes(assetId)) {
+        return current.filter((id) => id !== assetId);
+      }
+      if (current.length >= maxSelectable) {
+        return current;
+      }
+      return [...current, assetId];
+    });
+  };
+
+  return (
+    <div className="ck-library-mask" onClick={onClose}>
+      <div className="ck-library-modal ck-pod-fusion-simple-library" onClick={(event) => event.stopPropagation()}>
+        <div className="ck-library-header">
+          <div className="ck-library-title">从资源库选择</div>
+          <button aria-label="关闭资源库" className="ck-library-close" onClick={onClose} type="button">
+            ×
+          </button>
+        </div>
+        <div className="ck-pod-fusion-modal-grid compact">
+          {imageAssets.map((asset) => {
+            const selected = selectedIds.includes(asset.id);
+            return (
+              <button
+                className={`ck-pod-fusion-asset-card${selected ? " selected" : ""}`}
+                key={asset.id}
+                onClick={() => toggleAsset(asset.id)}
+                type="button"
+              >
+                <img alt={asset.name} src={asset.previewSrc ?? asset.src} />
+              </button>
+            );
+          })}
+        </div>
+        <div className="ck-pod-fusion-modal-actions">
+          <button className="ck-library-cancel" onClick={onClose} type="button">
+            取消
+          </button>
+          <button
+            className="ck-library-confirm"
+            onClick={() =>
+              onConfirm(
+                imageAssets.filter((asset) => selectedIds.includes(asset.id)).map((asset) => ({
+                  id: generateRandomTenDigitId(),
+                  name: asset.name,
+                  src: asset.src,
+                  previewSrc: asset.previewSrc ?? asset.src,
+                  mediaKind: "image",
+                  format: asset.format,
+                  sizeMb: asset.sizeMb,
+                  status: "ready"
+                }))
+              )
+            }
+            type="button"
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PodFusionSetupSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
 }: {
   selectedValues?: AdvancedSelectionMap;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
-  const defaultValue = Number(selectedValues?.podVariationReferenceStrength ?? "0.5");
-  const [referenceStrength, setReferenceStrength] = useState(Number.isFinite(defaultValue) ? defaultValue : 0.5);
+  const [mode, setMode] = useState<PodFusionMode>(
+    (podFusionModeOptions.find((item) => item === selectedValues?.podFusionMode) ?? podFusionModeOptions[0]) as PodFusionMode
+  );
+  const [style, setStyle] = useState(selectedValues?.podFusionStyle ?? podFusionStyleOptions[0]);
+  const [background, setBackground] = useState(selectedValues?.podFusionBackground ?? podFusionBackgroundOptions[0]);
+  const [ratio, setRatio] = useState(selectedValues?.podFusionRatio ?? podFusionRatioOptions[0]);
+  const [outputCount, setOutputCount] = useState(selectedValues?.podFusionOutputCount ?? podFusionOutputCountOptions[0]);
+  const [pairGroups, setPairGroups] = useState<PodFusionPairGroup[]>(getPodFusionPairGroups(selectedValues));
+  const [oneToMany, setOneToMany] = useState<PodFusionOneToManySelection>(getPodFusionOneToManySelection(selectedValues));
+  const [pairModalOpen, setPairModalOpen] = useState(false);
+  const [libraryTarget, setLibraryTarget] = useState<"base" | "fusion" | null>(null);
+  const baseLocalInputRef = useRef<HTMLInputElement | null>(null);
+  const fusionLocalInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const nextMode = selectedValues?.podFusionMode;
+    if (nextMode && podFusionModeOptions.includes(nextMode as PodFusionMode) && nextMode !== mode) {
+      setMode(nextMode as PodFusionMode);
+    }
+    if (selectedValues?.podFusionStyle && selectedValues.podFusionStyle !== style) {
+      setStyle(selectedValues.podFusionStyle);
+    }
+    if (selectedValues?.podFusionBackground && selectedValues.podFusionBackground !== background) {
+      setBackground(selectedValues.podFusionBackground);
+    }
+    if (selectedValues?.podFusionRatio && selectedValues.podFusionRatio !== ratio) {
+      setRatio(selectedValues.podFusionRatio);
+    }
+    if (selectedValues?.podFusionOutputCount && selectedValues.podFusionOutputCount !== outputCount) {
+      setOutputCount(selectedValues.podFusionOutputCount);
+    }
+  }, [background, mode, outputCount, ratio, selectedValues, style]);
+
+  useEffect(() => {
+    const nextSelectionMap: AdvancedSelectionMap = {
+      podFusionMode: mode,
+      podFusionStyle: style,
+      podFusionBackground: background,
+      podFusionRatio: ratio,
+      podFusionOutputCount: outputCount,
+      podFusionPairGroups: JSON.stringify(pairGroups),
+      podFusionOneToManySelection: JSON.stringify(oneToMany)
+    };
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(buildPodFusionSelectionSummary(nextSelectionMap));
+    onCreationModeChange?.({
+      modeId: `pod-fusion-${mode}`,
+      modeLabel: mode,
+      ratio,
+      count: Number(outputCount) || 1,
+      unitCreditCost: 5
+    });
+  }, [background, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, oneToMany, outputCount, pairGroups, ratio, style]);
+
+  const handleBaseLocalUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+    setOneToMany((current) => ({ ...current, base: buildUploadItemsFromFiles(files)[0] }));
+    event.target.value = "";
+  };
+
+  const handleFusionLocalUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+    setOneToMany((current) => ({ ...current, fusionItems: [...current.fusionItems, ...buildUploadItemsFromFiles(files)] }));
+    event.target.value = "";
+  };
+
+  return (
+    <div className="ck-form-block">
+      <div className="ck-form-block">
+        <FieldTitle label="选择方式" required />
+        <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 180 }}>
+          {podFusionModeOptions.map((option) => (
+            <button className={option === mode ? "active" : ""} key={option} onClick={() => setMode(option)} type="button">
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ck-form-block">
+        <FieldTitle label="添加素材" required />
+        {mode === "两两融合" ? (
+          <div className="ck-pod-fusion-material-box">
+            <div className="ck-pod-fusion-pair-list">
+              {(pairGroups.length ? pairGroups : [{ id: "placeholder" }]).map((group, index) => (
+                <div className="ck-pod-fusion-pair-chip" key={group.id}>
+                  <div className="ck-pod-fusion-chip-card">
+                    {group.a ? <img alt={`${index + 1}-A`} src={group.a.previewSrc ?? group.a.src} /> : <span>{`${index + 1}-A`}</span>}
+                    <i>{`${index + 1}-A`}</i>
+                  </div>
+                  <span className="ck-pod-fusion-pair-link">◎</span>
+                  <div className="ck-pod-fusion-chip-card">
+                    {group.b ? <img alt={`${index + 1}-B`} src={group.b.previewSrc ?? group.b.src} /> : <span>{`${index + 1}-B`}</span>}
+                    <i>{`${index + 1}-B`}</i>
+                  </div>
+                  {group.a && group.b ? (
+                    <button className="ck-pod-fusion-remove-pair" onClick={() => setPairGroups((current) => current.filter((item) => item.id !== group.id))} type="button">
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            <button className="ck-pod-fusion-open-picker" onClick={() => setPairModalOpen(true)} type="button">
+              从我的空间选取
+            </button>
+          </div>
+        ) : (
+          <div className="ck-pod-fusion-one-to-many-grid">
+            <div className="ck-pod-fusion-dual-card">
+              <div className="ck-pod-fusion-dual-card-title">单一元素</div>
+              <div className="ck-pod-fusion-dual-card-subtitle">作为固定的融合对象</div>
+              <div className="ck-pod-fusion-dual-preview">
+                {oneToMany.base ? <img alt="单一元素" src={oneToMany.base.previewSrc ?? oneToMany.base.src} /> : <span>仅支持1张</span>}
+              </div>
+              <div className="ck-pod-fusion-dual-actions">
+                <button onClick={() => baseLocalInputRef.current?.click()} type="button">
+                  本地上传
+                </button>
+                <button onClick={() => setLibraryTarget("base")} type="button">
+                  资源库选择
+                </button>
+              </div>
+              <input accept="image/*" hidden onChange={handleBaseLocalUpload} ref={baseLocalInputRef} type="file" />
+            </div>
+
+            <div className="ck-pod-fusion-dual-card">
+              <div className="ck-pod-fusion-dual-card-title">融合元素</div>
+              <div className="ck-pod-fusion-dual-card-subtitle">可上传多张图片，分别与单一元素融合</div>
+              <div className="ck-pod-fusion-multi-preview">
+                {oneToMany.fusionItems.length ? (
+                  oneToMany.fusionItems.map((item) => <img alt={item.name ?? "融合元素"} key={item.id} src={item.previewSrc ?? item.src} />)
+                ) : (
+                  <span>可上传多张</span>
+                )}
+              </div>
+              <div className="ck-pod-fusion-dual-actions">
+                <button onClick={() => fusionLocalInputRef.current?.click()} type="button">
+                  本地上传
+                </button>
+                <button onClick={() => setLibraryTarget("fusion")} type="button">
+                  资源库选择
+                </button>
+              </div>
+              <input accept="image/*" hidden multiple onChange={handleFusionLocalUpload} ref={fusionLocalInputRef} type="file" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="ck-inline-field ck-aligned-inline-field">
+        <FieldTitle label="选择风格" required />
+        <SelectField hideLabel label="选择风格" onChange={setStyle} options={[...podFusionStyleOptions]} required value={style} />
+      </div>
+
+      <div className="ck-inline-field ck-aligned-inline-field">
+        <FieldTitle label="背景" required />
+        <SelectField hideLabel label="背景" onChange={setBackground} options={[...podFusionBackgroundOptions]} required value={background} />
+      </div>
+
+      <div className="ck-inline-field ck-aligned-inline-field">
+        <FieldTitle label="比例" required />
+        <SelectField hideLabel label="比例" onChange={setRatio} options={[...podFusionRatioOptions]} required value={ratio} />
+      </div>
+
+      <CountField label="出图数量" onChange={setOutputCount} options={[...podFusionOutputCountOptions]} required value={outputCount} />
+
+      <PodFusionPairModal
+        initialGroups={pairGroups}
+        onClose={() => setPairModalOpen(false)}
+        onConfirm={(groups) => {
+          setPairGroups(groups);
+          setPairModalOpen(false);
+        }}
+        open={pairModalOpen}
+      />
+
+      <PodFusionOneToManyLibraryModal
+        maxSelectable={libraryTarget === "base" ? 1 : 24}
+        onClose={() => setLibraryTarget(null)}
+        onConfirm={(items) => {
+          if (libraryTarget === "base") {
+            setOneToMany((current) => ({ ...current, base: items[0] }));
+          } else if (libraryTarget === "fusion") {
+            setOneToMany((current) => ({ ...current, fusionItems: [...current.fusionItems, ...items] }));
+          }
+          setLibraryTarget(null);
+        }}
+        open={libraryTarget !== null}
+      />
+    </div>
+  );
+}
+
+function PodVariationSetupSection({
+  uploads,
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  uploads: UploadItem[];
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+}) {
+  const [category, setCategory] = useState<string>(selectedValues?.podVariationCategory ?? inferPodVariationCategory(uploads));
+  const [mode, setMode] = useState<PodVariationModeKey>(
+    (podVariationModeOptions.find((item) => item === selectedValues?.podVariationMode) ?? podVariationModeOptions[0]) as PodVariationModeKey
+  );
+  const [referenceStyleLevel, setReferenceStyleLevel] = useState<(typeof podVariationReferenceStyleLevels)[number]>(
+    (podVariationReferenceStyleLevels.find((item) => item === selectedValues?.podVariationReferenceStyleLevel) ?? podVariationReferenceStyleLevels[2]) as (typeof podVariationReferenceStyleLevels)[number]
+  );
+  const defaultReferenceStrength = Number(selectedValues?.podVariationReferenceStrength ?? "0.5");
+  const [referenceStrength, setReferenceStrength] = useState(Number.isFinite(defaultReferenceStrength) ? defaultReferenceStrength : 0.5);
+  const [divergenceLevel, setDivergenceLevel] = useState<(typeof podVariationDivergenceLevels)[number]>(
+    (podVariationDivergenceLevels.find((item) => item === selectedValues?.podVariationDivergenceLevel) ?? podVariationDivergenceLevels[0]) as (typeof podVariationDivergenceLevels)[number]
+  );
+  const [backgroundColor, setBackgroundColor] = useState(selectedValues?.podVariationBackgroundColor ?? "随机");
+  const [burstContent, setBurstContent] = useState(
+    selectedValues?.podVariationBurstContent && podVariationBurstOptions.includes(selectedValues.podVariationBurstContent as typeof podVariationBurstOptions[number])
+      ? selectedValues.podVariationBurstContent
+      : podVariationBurstOptions[0]
+  );
+  const [contentEnabled, setContentEnabled] = useState(selectedValues?.podVariationContentEnabled === "true");
+  const [shape, setShape] = useState(selectedValues?.podVariationShape ?? "默认");
+  const [outputCount, setOutputCount] = useState(Number(selectedValues?.podVariationOutputCount ?? "1") || 1);
+
+  useEffect(() => {
+    const inferred = inferPodVariationCategory(uploads);
+    if (inferred !== category) {
+      setCategory(inferred);
+    }
+  }, [category, uploads]);
 
   useEffect(() => {
     const nextValue = Number(selectedValues?.podVariationReferenceStrength ?? "0.5");
@@ -8143,20 +9101,209 @@ function PodVariationStrengthSection({
   }, [referenceStrength, selectedValues]);
 
   useEffect(() => {
+    const nextMode = selectedValues?.podVariationMode;
+    if (nextMode && podVariationModeOptions.includes(nextMode as PodVariationModeKey) && nextMode !== mode) {
+      setMode(nextMode as PodVariationModeKey);
+    }
+    if (selectedValues?.podVariationCategory && selectedValues.podVariationCategory !== category) {
+      setCategory(selectedValues.podVariationCategory);
+    }
+    if (
+      selectedValues?.podVariationReferenceStyleLevel &&
+      podVariationReferenceStyleLevels.includes(selectedValues.podVariationReferenceStyleLevel as (typeof podVariationReferenceStyleLevels)[number]) &&
+      selectedValues.podVariationReferenceStyleLevel !== referenceStyleLevel
+    ) {
+      setReferenceStyleLevel(selectedValues.podVariationReferenceStyleLevel as (typeof podVariationReferenceStyleLevels)[number]);
+    }
+    if (
+      selectedValues?.podVariationDivergenceLevel &&
+      podVariationDivergenceLevels.includes(selectedValues.podVariationDivergenceLevel as (typeof podVariationDivergenceLevels)[number]) &&
+      selectedValues.podVariationDivergenceLevel !== divergenceLevel
+    ) {
+      setDivergenceLevel(selectedValues.podVariationDivergenceLevel as (typeof podVariationDivergenceLevels)[number]);
+    }
+    if (selectedValues?.podVariationBackgroundColor && selectedValues.podVariationBackgroundColor !== backgroundColor) {
+      setBackgroundColor(selectedValues.podVariationBackgroundColor);
+    }
+    if (selectedValues?.podVariationBurstContent && selectedValues.podVariationBurstContent !== burstContent) {
+      setBurstContent(selectedValues.podVariationBurstContent);
+    }
+    if (selectedValues?.podVariationContentEnabled) {
+      const nextContentEnabled = selectedValues.podVariationContentEnabled === "true";
+      if (nextContentEnabled !== contentEnabled) {
+        setContentEnabled(nextContentEnabled);
+      }
+    }
+    if (selectedValues?.podVariationShape && selectedValues.podVariationShape !== shape) {
+      setShape(selectedValues.podVariationShape);
+    }
+    const nextOutputCount = Number(selectedValues?.podVariationOutputCount ?? outputCount);
+    if (Number.isFinite(nextOutputCount) && nextOutputCount !== outputCount) {
+      setOutputCount(nextOutputCount);
+    }
+  }, [
+    backgroundColor,
+    burstContent,
+    category,
+    contentEnabled,
+    divergenceLevel,
+    mode,
+    outputCount,
+    referenceStyleLevel,
+    selectedValues,
+    shape
+  ]);
+
+  useEffect(() => {
+    const commonContent = "仅裂变素材中的图片部分";
     onSelectionMapChange?.({
-      podVariationReferenceStrength: referenceStrength.toFixed(1)
+      podVariationCategory: category,
+      podVariationMode: mode,
+      podVariationReferenceStyleLevel: referenceStyleLevel,
+      podVariationReferenceStrength: referenceStrength.toFixed(2),
+      podVariationDivergenceLevel: divergenceLevel,
+      podVariationBackgroundColor: backgroundColor,
+      podVariationBurstContent: burstContent,
+      podVariationContentEnabled: String(contentEnabled),
+      podVariationContent: mode === "爆款二创" ? burstContent : contentEnabled ? commonContent : "未开启",
+      podVariationShape: shape,
+      podVariationOutputCount: String(outputCount)
     });
-    onSelectionChange?.([`原图参考强度 ${referenceStrength.toFixed(1)}`]);
-  }, [onSelectionChange, onSelectionMapChange, referenceStrength]);
+    onSelectionChange?.(
+      [
+        category,
+        mode,
+        mode === "艺术设计" ? `参考样式 ${referenceStyleLevel}` : "",
+        mode === "文字强化" || mode === "通用" ? `原图参考强度 ${referenceStrength.toFixed(2)}` : "",
+        mode === "文字强化" ? `创意发散强度 ${divergenceLevel}` : "",
+        mode === "文字强化" ? `指定背景色 ${backgroundColor}` : "",
+        `裂变内容 ${mode === "爆款二创" ? burstContent : contentEnabled ? commonContent : "未开启"}`,
+        mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? `形状 ${shape}` : "",
+        `出图数量 ${outputCount}`
+      ].filter(Boolean)
+    );
+  }, [
+    backgroundColor,
+    burstContent,
+    category,
+    contentEnabled,
+    divergenceLevel,
+    mode,
+    onSelectionChange,
+    onSelectionMapChange,
+    outputCount,
+    referenceStrength,
+    referenceStyleLevel,
+    shape
+  ]);
 
   return (
-    <InlineSliderField
-      label="原图参考强度"
-      onChange={setReferenceStrength}
-      step={0.1}
-      value={referenceStrength}
-      valueFormatter={(current) => current.toFixed(1)}
-    />
+    <div className="ck-form-block">
+      <div className="ck-form-block">
+        <FieldTitle label="品类" required />
+        <div className="ck-adaptive-choice-grid ck-adaptive-choice-grid-row ck-pod-variation-category-row">
+          {podVariationCategoryOptions.map((option) => (
+            <button
+              className={`ck-adaptive-choice-item${option === category ? " active" : ""}`}
+              key={option}
+              onClick={() => setCategory(option)}
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ck-form-block">
+        <FieldTitle label="选择模式" required />
+        <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary ck-pod-variation-mode-row">
+          {podVariationModeOptions.map((option) => (
+            <button
+              className={`ck-mode-card ck-mode-card-primary ck-mode-card-title-only${mode === option ? " active" : ""}`}
+              key={option}
+              onClick={() => setMode(option)}
+              type="button"
+            >
+              <div className="ck-mode-card-head">
+                <strong>{option}</strong>
+                <span className={`ck-check${mode === option ? " active" : ""}`} />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === "艺术设计" ? (
+        <InlineSliderField
+          label="参考样式"
+          max={2}
+          min={0}
+          onChange={(next) => setReferenceStyleLevel(podVariationReferenceStyleLevels[Math.round(next)] ?? "高")}
+          step={1}
+          value={podVariationReferenceStyleLevels.indexOf(referenceStyleLevel)}
+          valueFormatter={(current) => podVariationReferenceStyleLevels[Math.round(current)] ?? "高"}
+        />
+      ) : null}
+
+      {mode === "文字强化" || mode === "通用" ? (
+        <InlineSliderField
+          label="原图参考强度"
+          max={1}
+          min={0.1}
+          onChange={setReferenceStrength}
+          step={0.05}
+          value={referenceStrength}
+          valueFormatter={(current) => current.toFixed(2)}
+        />
+      ) : null}
+
+      {mode === "文字强化" ? (
+        <>
+          <InlineSliderField
+            label="创意发散强度"
+            max={2}
+            min={0}
+            onChange={(next) => setDivergenceLevel(podVariationDivergenceLevels[Math.round(next)] ?? "低")}
+            step={1}
+            value={podVariationDivergenceLevels.indexOf(divergenceLevel)}
+            valueFormatter={(current) => podVariationDivergenceLevels[Math.round(current)] ?? "低"}
+          />
+          <div className="ck-inline-field">
+            <FieldTitle label="指定背景色" required />
+            <SelectField hideLabel label="指定背景色" onChange={setBackgroundColor} options={["随机", "黑色", "白色"]} required value={backgroundColor} />
+          </div>
+        </>
+      ) : null}
+
+      {mode === "爆款二创" ? (
+        <div className="ck-inline-field">
+          <FieldTitle label="裂变内容" required />
+          <SelectField hideLabel label="裂变内容" onChange={setBurstContent} options={[...podVariationBurstOptions]} required value={burstContent} />
+        </div>
+      ) : (
+        <div className="ck-inline-field">
+          <FieldTitle label="裂变内容" required />
+          <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 120 }}>
+            <button className={!contentEnabled ? "active" : ""} onClick={() => setContentEnabled(false)} type="button">
+              未开启
+            </button>
+            <button className={contentEnabled ? "active" : ""} onClick={() => setContentEnabled(true)} type="button">
+              开启
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? (
+        <div className="ck-inline-field">
+          <FieldTitle label="形状" required />
+          <SelectField hideLabel label="形状" onChange={setShape} options={[...podVariationShapeOptions]} required value={shape} />
+        </div>
+      ) : null}
+
+      <NumberStepperField label="出图数量" max={8} min={1} onChange={setOutputCount} required value={outputCount} />
+    </div>
   );
 }
 
@@ -12260,6 +13407,7 @@ function ConfigPanel({
   const uploadImageCount = uploads[mainUploadKey]?.length ?? 0;
   const referenceUploadCount = uploads[refUploadKey]?.length ?? 0;
   const videoUploadCount = uploads[videoUploadKey]?.length ?? 0;
+  const podFusionMetrics = useMemo(() => getPodFusionMetrics(advancedSettingSelections), [advancedSettingSelections]);
   const setPackSelectedTypes = useMemo(() => getSetPackSelectedTypes(advancedSettingSelections), [advancedSettingSelections]);
   const setPackTypeCount = Math.max(1, setPackSelectedTypes.length);
   const resolvedCreationModeSelection = useMemo<CreationModeSelection | null>(() => {
@@ -12282,17 +13430,23 @@ function ConfigPanel({
     };
   }, [advancedSettingSelections, creationModeSelection, tool.key]);
   const batchOutputCount = resolvedCreationModeSelection?.count ?? 1;
-  const generateCost = getSpecialToolGenerateCost(
-    tool.key,
-    uploadImageCount,
-    referenceUploadCount,
-    batchOutputCount,
-    resolvedCreationModeSelection?.unitCreditCost ?? 0
-  );
+  const effectiveSourceCount = tool.key === "pod-fusion" ? podFusionMetrics.sourceCount : uploadImageCount;
+  const generateCost =
+    tool.key === "pod-fusion"
+      ? effectiveSourceCount * (resolvedCreationModeSelection?.unitCreditCost ?? 0) * batchOutputCount
+      : getSpecialToolGenerateCost(
+          tool.key,
+          effectiveSourceCount,
+          referenceUploadCount,
+          batchOutputCount,
+          resolvedCreationModeSelection?.unitCreditCost ?? 0
+        );
   const hasRequiredInputs =
-    uploadImageCount > 0 &&
-    (tool.key === "set-replica" ? referenceUploadCount > 0 : true) &&
-    (tool.key === "video-replica" || tool.key === "video-replace" ? videoUploadCount > 0 : true);
+    tool.key === "pod-fusion"
+      ? podFusionMetrics.isReady
+      : uploadImageCount > 0 &&
+        (tool.key === "set-replica" ? referenceUploadCount > 0 : true) &&
+        (tool.key === "video-replica" || tool.key === "video-replace" ? videoUploadCount > 0 : true);
   const generateCostLabel = hasRequiredInputs ? `消耗${generateCost}积分` : "待上传素材";
   const defaultSectionOrderByPanelKind: Record<PanelKind, ToolModuleSectionKey[]> = {
     retouch: ["upload-main", "advanced-settings", "mode-choice", "creation-mode", "supplement"],
@@ -12716,12 +13870,19 @@ function ConfigPanel({
       );
     }
 
-    if (section === "pod-variation-strength" && tool.key === "pod-variation") {
+    if (section === "pod-partial-edit-setup" && tool.key === "pod-partial-edit") {
       return (
-        <PodVariationStrengthSection
+        <PodPartialEditSetupSection
+          onCreationModeChange={setCreationModeSelection}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            const sectionKeys = ["podVariationReferenceStrength"];
+            const sectionKeys = [
+              "podPartialEditCategory",
+              "podPartialEditRequirement",
+              "podPartialEditFieldValues",
+              "podPartialEditInstructionText",
+              "podPartialEditOutputCount"
+            ];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
@@ -12730,6 +13891,66 @@ function ConfigPanel({
               return { ...nextSelections, ...values };
             });
           }}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads[mainUploadKey] ?? []}
+        />
+      );
+    }
+
+    if (section === "pod-fusion-setup" && tool.key === "pod-fusion") {
+      return (
+        <PodFusionSetupSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "podFusionMode",
+              "podFusionStyle",
+              "podFusionBackground",
+              "podFusionRatio",
+              "podFusionOutputCount",
+              "podFusionPairGroups",
+              "podFusionOneToManySelection"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "pod-variation-setup" && tool.key === "pod-variation") {
+      return (
+        <PodVariationSetupSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "podVariationCategory",
+              "podVariationMode",
+              "podVariationReferenceStyleLevel",
+              "podVariationReferenceStrength",
+              "podVariationDivergenceLevel",
+              "podVariationBackgroundColor",
+              "podVariationBurstContent",
+              "podVariationContent",
+              "podVariationShape",
+              "podVariationOutputCount"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          uploads={uploads[mainUploadKey] ?? []}
           selectedValues={advancedSettingSelections}
         />
       );
@@ -13036,7 +14257,12 @@ function ConfigPanel({
       return;
     }
 
-    if (!uploadImageCount) {
+    if (tool.key === "pod-fusion" && !podFusionMetrics.isReady) {
+      onToast("请先完成素材配对或补充融合素材后再生成", "warning");
+      return;
+    }
+
+    if (!uploadImageCount && tool.key !== "pod-fusion") {
       onToast("请先上传商品图后再生成", "warning");
       return;
     }
@@ -13051,11 +14277,14 @@ function ConfigPanel({
       return;
     }
 
-    const outputCount = getSpecialToolOutputCount(tool.key, uploadImageCount, referenceUploadCount, batchOutputCount);
+    const outputCount =
+      tool.key === "pod-fusion"
+        ? podFusionMetrics.sourceCount * batchOutputCount
+        : getSpecialToolOutputCount(tool.key, uploadImageCount, referenceUploadCount, batchOutputCount);
     const payload = {
       generateCost,
       outputCount,
-      sourceUploads: uploads[mainUploadKey] ?? [],
+      sourceUploads: tool.key === "pod-fusion" ? podFusionMetrics.payloadUploads : uploads[mainUploadKey] ?? [],
       referenceUploads: uploads[refUploadKey] ?? [],
       videoUploads: uploads[videoUploadKey] ?? [],
       advancedSelections: advancedSettingSelections,

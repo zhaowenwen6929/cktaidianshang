@@ -2307,6 +2307,385 @@ a {
   text-align: right;
 }
 
+.ck-pod-variation-category-row {
+  width: 100%;
+  grid-template-columns: none !important;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(92px, max-content);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ck-pod-variation-category-row .ck-adaptive-choice-item {
+  min-height: 42px;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.ck-pod-variation-mode-row {
+  width: 256px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ck-mode-card-title-only {
+  min-height: 48px;
+  padding: 12px;
+}
+
+.ck-mode-card-title-only .ck-mode-card-head {
+  margin-bottom: 0;
+}
+
+.ck-mode-card-title-only strong {
+  line-height: 18px;
+}
+
+.ck-inline-static-value {
+  width: 256px;
+  min-height: 32px;
+  border-radius: 8px;
+  background: #f5f7fd;
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 12px;
+}
+
+.ck-partial-edit-structured-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ck-partial-edit-helper-text {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f7f9fc;
+  color: #5d667d;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-structured-inline-input {
+  width: 256px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: #f5f7fd;
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 12px;
+}
+
+.ck-structured-inline-input.color-text {
+  width: 176px;
+}
+
+.ck-structured-color-field {
+  width: 256px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ck-structured-color-picker {
+  width: 48px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: #f5f7fd;
+  padding: 4px;
+}
+
+.ck-aligned-inline-field .ck-field-title {
+  width: 84px;
+  flex: 0 0 84px;
+}
+
+.ck-pod-fusion-material-box {
+  border: 1px dashed #d8dee9;
+  border-radius: 14px;
+  background: #fafbff;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.ck-pod-fusion-pair-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ck-pod-fusion-pair-chip,
+.ck-pod-fusion-pair-preview {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dbe1ec;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.ck-pod-fusion-chip-card,
+.ck-pod-fusion-pair-preview-card {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border: 1px dashed #dbe1ec;
+  border-radius: 10px;
+  background: #f5f7fd;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a95ab;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+.ck-pod-fusion-chip-card img,
+.ck-pod-fusion-pair-preview-card img,
+.ck-pod-fusion-asset-card img,
+.ck-pod-fusion-dual-preview img,
+.ck-pod-fusion-multi-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ck-pod-fusion-chip-card i,
+.ck-pod-fusion-pair-preview-card i {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  min-width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(99, 95, 242, 0.92);
+  color: #fff;
+  font-style: normal;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  padding: 0 6px;
+}
+
+.ck-pod-fusion-pair-link {
+  color: #8a95ab;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ck-pod-fusion-remove-pair {
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: #3c465d;
+  color: #fff;
+  font-size: 14px;
+  line-height: 20px;
+  padding: 0;
+}
+
+.ck-pod-fusion-open-picker {
+  min-width: 132px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(235, 109, 42, 0.28);
+  background: #fff7f2;
+  color: #eb6d2a;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  justify-self: start;
+  padding: 0 16px;
+}
+
+.ck-pod-fusion-one-to-many-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ck-pod-fusion-dual-card {
+  min-height: 220px;
+  border: 1px solid #dbe1ec;
+  border-radius: 14px;
+  background: #fafbff;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.ck-pod-fusion-dual-card-title {
+  color: #1b2337;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.ck-pod-fusion-dual-card-subtitle {
+  color: #8a95ab;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-pod-fusion-dual-preview {
+  width: 100%;
+  height: 112px;
+  border: 1px dashed #dbe1ec;
+  border-radius: 12px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a95ab;
+  font-size: 12px;
+}
+
+.ck-pod-fusion-multi-preview {
+  min-height: 112px;
+  border: 1px dashed #dbe1ec;
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  color: #8a95ab;
+  font-size: 12px;
+}
+
+.ck-pod-fusion-multi-preview img {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+}
+
+.ck-pod-fusion-dual-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ck-pod-fusion-dual-actions button {
+  flex: 1 1 0;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #dbe1ec;
+  background: #fff;
+  color: #3c465d;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.ck-pod-fusion-modal {
+  width: min(1040px, calc(100vw - 64px));
+  max-height: calc(100vh - 48px);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(20, 32, 62, 0.18);
+  display: grid;
+  overflow: hidden;
+}
+
+.ck-pod-fusion-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #eef2fa;
+}
+
+.ck-pod-fusion-modal-tabs {
+  display: flex;
+  gap: 20px;
+}
+
+.ck-pod-fusion-modal-tabs button {
+  border: 0;
+  background: transparent;
+  color: #5d667d;
+  font-size: 14px;
+  line-height: 20px;
+  padding: 0 0 8px;
+}
+
+.ck-pod-fusion-modal-tabs button.active {
+  color: #eb6d2a;
+  box-shadow: inset 0 -2px 0 #eb6d2a;
+}
+
+.ck-pod-fusion-modal-toolbar {
+  display: flex;
+  gap: 12px;
+  padding: 16px 22px 0;
+}
+
+.ck-pod-fusion-modal-grid {
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 14px;
+  overflow: auto;
+  min-height: 280px;
+}
+
+.ck-pod-fusion-modal-grid.compact {
+  min-height: 240px;
+}
+
+.ck-pod-fusion-asset-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #dbe1ec;
+  border-radius: 12px;
+  background: #f5f7fd;
+  overflow: hidden;
+  padding: 0;
+}
+
+.ck-pod-fusion-asset-card.selected {
+  box-shadow: inset 0 0 0 2px #eb6d2a;
+}
+
+.ck-pod-fusion-modal-preview {
+  min-height: 152px;
+  border-top: 1px solid #eef2fa;
+  background: #fafbff;
+  padding: 18px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ck-pod-fusion-modal-actions {
+  padding: 12px 22px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.ck-pod-fusion-simple-library {
+  max-width: 920px;
+}
+
 .ck-generation-rule-card {
   border: 1px solid #dbe1ec;
   border-radius: 10px;
