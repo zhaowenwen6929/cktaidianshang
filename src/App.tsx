@@ -551,6 +551,12 @@ type PodFusionOneToManySelection = {
   fusionItems: UploadItem[];
 };
 
+type PatternRepeatPromptItem = {
+  id: string;
+  text: string;
+  reverseImage?: UploadItem;
+};
+
 type ApplicablePlatformOption = {
   id: string;
   label: string;
@@ -655,6 +661,9 @@ type ToolModuleSectionKey =
   | "pod-partial-edit-setup"
   | "pod-variation-setup"
   | "pod-fusion-setup"
+  | "video-pattern-repeat-setup"
+  | "video-scene-grid-setup"
+  | "video-print-extend-setup"
   | "creation-mode"
   | "supplement"
   | "mode-choice"
@@ -800,10 +809,10 @@ const navGroups: Array<{
       { key: "pod-fusion", label: "元素融合", panelTitle: "元素融合", resultCount: 5, ratioLabel: "1:1" },
       { key: "video-scene-grid", label: "多联画", panelTitle: "多联画", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-pattern-repeat", label: "四方连续图", panelTitle: "四方连续图", resultCount: 4, ratioLabel: "1:1" },
-      { key: "video-pod-mockup", label: "POD样机套图", panelTitle: "POD样机套图", resultCount: 4, ratioLabel: "1:1" },
+      { key: "video-pod-mockup", label: "POD样机套图（待完善）", panelTitle: "POD样机套图（待完善）", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-print-extend", label: "印花尺寸延展", panelTitle: "印花尺寸延展", resultCount: 4, ratioLabel: "1:1" },
-      { key: "video-2d3d", label: "2D转3D图", panelTitle: "2D转3D图", resultCount: 4, ratioLabel: "1:1" },
-      { key: "video-style-print", label: "风格参考印花", panelTitle: "风格参考印花", resultCount: 4, ratioLabel: "1:1" }
+      { key: "video-2d3d", label: "2D转3D（待完善）", panelTitle: "2D转3D（待完善）", resultCount: 4, ratioLabel: "1:1" },
+      { key: "video-style-print", label: "风格参考印花（待完善）", panelTitle: "风格参考印花（待完善）", resultCount: 4, ratioLabel: "1:1" }
     ]
   },
   {
@@ -2188,7 +2197,35 @@ function getImageGenerationUnitCreditCost(
     return 5;
   }
 
+  if (toolKey === "video-pattern-repeat") {
+    return 5;
+  }
+
   return null;
+}
+
+function getPatternRepeatPromptItems(selectionMap?: AdvancedSelectionMap) {
+  return (
+    safeParseJson<PatternRepeatPromptItem[]>(selectionMap?.patternRepeatPrompts, [
+      { id: generateRandomTenDigitId(), text: "" }
+    ]) ?? [{ id: generateRandomTenDigitId(), text: "" }]
+  );
+}
+
+function getPatternRepeatMetrics(selectionMap?: AdvancedSelectionMap) {
+  const type = selectionMap?.patternRepeatType ?? "四方连续";
+  const createMode = selectionMap?.patternRepeatCreateMode ?? "图生图";
+  const promptItems = getPatternRepeatPromptItems(selectionMap);
+  const promptCount = promptItems.filter((item) => item.text.trim() || item.reverseImage).length;
+
+  return {
+    type,
+    createMode,
+    promptItems,
+    promptCount,
+    requiresMainUploads: type === "二方连续" || createMode === "图生图",
+    isTextReady: type === "四方连续" && createMode === "文生图" && promptCount > 0
+  };
 }
 
 function getResolvedToolUnitCreditCost(
@@ -2217,6 +2254,10 @@ function getSpecialToolOutputCount(toolKey: string, sourceCount: number, referen
     return sourceCount * referenceCount * batchCount;
   }
 
+  if (toolKey === "video-print-extend") {
+    return sourceCount * referenceCount * batchCount;
+  }
+
   return batchCount;
 }
 
@@ -2242,6 +2283,9 @@ function getQueuedResultRefundCredits(toolKey: string, sourceCount: number, unit
 
 const defaultRatioOptions = ["自适应尺寸", "1:1", "3:4", "4:5", "9:16", "2:3", "16:9", "4:3", "5:4", "3:2", "21:9"];
 const defaultCountOptions = ["1", "2"];
+const videoPrintExtendBaseRatioOptions = ["1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9"] as const;
+const videoPrintExtendOutputCountOptions = ["1", "2", "3", "4"] as const;
+const VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST = 5;
 const defaultResolutionOptions = ["1K", "2K", "4K"];
 const podCropModeOptions = [
   { key: "通用", label: "通用" },
@@ -2322,11 +2366,46 @@ const podExtractRatioOptions: Record<PodExtractModeKey, string[]> = {
   "专项提取": ["自动检测比例", "自定义比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
   "全能提取": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"]
 };
+const videoSceneGridModeCards: Array<{ key: "系列图案" | "主副图案" | "情侣图案"; label: string; badge?: string }> = [
+  { key: "系列图案", label: "系列图案" },
+  { key: "主副图案", label: "主副图案" },
+  { key: "情侣图案", label: "情侣图案", badge: "NEW" }
+];
+type VideoSceneGridModeKey = (typeof videoSceneGridModeCards)[number]["key"];
+const videoSceneGridVariationOptions: Record<VideoSceneGridModeKey, string[]> = {
+  "系列图案": ["智能参考", "裂变主体", "裂变主体/文本", "裂变主题", "系列衍生"],
+  "主副图案": ["智能参考", "简洁", "丰富", "反转", "叙事性"],
+  "情侣图案": ["智能参考"]
+};
+const videoSceneGridDetailDimensionMap: Record<VideoSceneGridModeKey, Record<string, string[]>> = {
+  "系列图案": {
+    "智能参考": ["智能识别系列关系", "保留原始风格线索", "自动补齐系列一致性"],
+    "裂变主体": ["主体数量变化", "主体组合方式", "主次节奏控制"],
+    "裂变主体/文本": ["文本位置编排", "图文占比控制", "标题与主体呼应"],
+    "裂变主题": ["主题方向延展", "统一配色氛围", "强化视觉母题"],
+    "系列衍生": ["延展子款内容", "保持套系感", "控制衍生差异度"]
+  },
+  "主副图案": {
+    "智能参考": ["自动识别主副关系", "保留核心构图逻辑", "平衡主次视觉权重"],
+    "简洁": ["主图更突出", "副图弱化点缀", "增加留白感"],
+    "丰富": ["增强层次密度", "补充装饰元素", "提升信息丰富度"],
+    "反转": ["切换主副位置", "重构视觉重心", "生成反差版式"],
+    "叙事性": ["加入故事场景", "强化角色关系", "形成视觉引导线"]
+  },
+  "情侣图案": {
+    "智能参考": ["双人关系识别", "服装元素呼应", "互动姿态统一"]
+  }
+};
+const videoSceneGridRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
 const podFusionModeOptions = ["两两融合", "一对多融合"] as const;
 const podFusionStyleOptions = ["默认", "3D", "皮克斯", "水彩", "像素", "矢量", "复古", "科幻", "赛博朋克"] as const;
 const podFusionBackgroundOptions = ["默认", "简洁", "丰富"] as const;
 const podFusionRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
 const podFusionOutputCountOptions = ["1", "2", "3", "4"] as const;
+const patternRepeatTypeOptions = ["四方连续", "二方连续"] as const;
+const patternRepeatCreateModeOptions = ["图生图", "文生图"] as const;
+const patternRepeatGenerateModeOptions = ["相似", "原图连续"] as const;
+const patternRepeatRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
 const videoReplicaModeOptions = ["普通模式", "高级模式"] as const;
 type VideoReplicaModeKey = (typeof videoReplicaModeOptions)[number];
 const videoReplicaDurationOptions = ["4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s"];
@@ -2590,6 +2669,78 @@ const spokespersonTargetMarketOptions = [
   "东欧"
 ];
 const setPackTargetMarketOptions = spokespersonTargetMarketOptions;
+const sceneTargetMarketOptions = ["国内电商", "欧美市场", "日韩市场", "东南亚市场", "中东市场", "全球通用"];
+const sceneCopyLanguageOptions = ["无需文案", "简体中文", "繁体中文", "英语", "日语", "韩语", "西班牙语", "法语", "德语"];
+const modelTryAtmosphereOptions = [
+  "生活化真实感",
+  "杂志感精致呈现",
+  "松弛感日常氛围",
+  "活力运动氛围",
+  "精致仪式感",
+  "复古怀旧氛围",
+  "潮流个性氛围",
+  "极简高级氛围",
+  "校园青春感",
+  "成熟稳重感",
+  "舒适从容感",
+  "童趣感",
+  "婴幼儿呵护",
+  "可爱宠物"
+];
+const modelTryDisplayFocusOptions = [
+  "版型剪裁呈现",
+  "显瘦修饰效果",
+  "显高拉长效果",
+  "面料质感凸显",
+  "搭配包容性",
+  "舒适度暗示",
+  "风格辨识度",
+  "肤色契合度",
+  "年龄适配度",
+  "性别适配度"
+];
+const modelTrySceneTypeOptions = [
+  "纯白背景",
+  "简单背景",
+  "纯色背景",
+  "日常通勤场景",
+  "休闲逛街场景",
+  "户外出行场景",
+  "正式办公场景",
+  "社交聚会场景",
+  "运动健身场景",
+  "居家放松场景",
+  "节日氛围场景",
+  "校园场景",
+  "商务应酬场景",
+  "康养休闲场景",
+  "宠物居家",
+  "宠物户外"
+];
+const modelTryDisplayLayoutOptions = [
+  "全身穿搭全景",
+  "半身重点展示",
+  "局部细节特写",
+  "多角度拼接排版",
+  "搭配组合排版",
+  "多场景拼接展示",
+  "单场景切图拼接",
+  "单场景展示",
+  "多场景组合",
+  "人物手持代言",
+  "人物互动展示"
+];
+const modelTryBodyTypeOptions = ["标准身形模特", "微胖友好模特", "娇小身形模特", "高挑身形模特", "健硕身形模特"];
+const modelTryAgeRangeOptions = [
+  "婴幼儿（2岁以内）",
+  "儿童（5~12岁）",
+  "青少年（12~18岁）",
+  "青年（19~35岁）",
+  "中年（36~55岁）",
+  "中老年（56岁+）"
+];
+const modelTryGenderSpeciesOptions = ["男性", "女性", "中性风", "宠物类"];
+const modelTryEthnicityOptions = ["亚洲人种", "欧洲人种", "非洲人种", "混血人种", "宠物", "动漫卡通人物", "卡通形象"];
 const modelGenerateTypes: ModelGenerateTypeConfig[] = [
   { key: "real-model", label: "真人模特图" },
   { key: "mannequin-model", label: "人台模特图" },
@@ -2973,7 +3124,8 @@ const advancedAiAssistPromptConfigs: Partial<Record<string, string>> = {
 };
 
 const supplementPlaceholderOverrides: Partial<Record<string, string>> = {
-  "goods-detail": "请输入您对图片的细节补充描述，例如：色调、构图、氛围等。"
+  "goods-detail": "请输入您对图片的细节补充描述，例如：色调、构图、氛围等。",
+  "model-try": "请输入模特试穿细节补充，例如：希望突出上身效果、面料垂感、搭配氛围或人物状态。"
 };
 
 function normalizeUploadClueText(items: UploadItem[]) {
@@ -3188,6 +3340,41 @@ function getSetPackSelectedStyleCards(selectionMap: AdvancedSelectionMap = {}) {
   const selectedIds = (selectionMap.setPackSelectedStyleIds ?? "").split(",").filter(Boolean);
   if (!selectedIds.length) return [];
   return styleCards.filter((item) => selectedIds.includes(item.id));
+}
+
+function parseVideoPrintExtendRatioList(value?: string) {
+  const parsed = safeParseJson<string[]>(value, []);
+  if (Array.isArray(parsed)) {
+    return parsed.filter((item) => typeof item === "string" && item.includes(":")).map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function gcd(a: number, b: number): number {
+  let left = Math.abs(Math.round(a));
+  let right = Math.abs(Math.round(b));
+  while (right) {
+    const temp = left % right;
+    left = right;
+    right = temp;
+  }
+  return left || 1;
+}
+
+function normalizeVideoPrintExtendRatio(width: string, height: string) {
+  const parsedWidth = Number(width);
+  const parsedHeight = Number(height);
+  if (!Number.isFinite(parsedWidth) || !Number.isFinite(parsedHeight) || parsedWidth <= 0 || parsedHeight <= 0) {
+    return "";
+  }
+  const normalizedWidth = Math.round(parsedWidth);
+  const normalizedHeight = Math.round(parsedHeight);
+  const divisor = gcd(normalizedWidth, normalizedHeight);
+  return `${normalizedWidth / divisor}:${normalizedHeight / divisor}`;
+}
+
+function getVideoPrintExtendSelectedRatios(selectionMap: AdvancedSelectionMap = {}) {
+  return parseVideoPrintExtendRatioList(selectionMap.videoPrintExtendSelectedRatios);
 }
 
 function createSetPackTypeItem(template: SetPackTypeTemplate, selectionMap: AdvancedSelectionMap = {}, overrides?: Partial<SetPackTypeItem>): SetPackTypeItem {
@@ -5741,12 +5928,12 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
         {
           key: "targetMarket",
           label: "目标市场",
-          options: ["国内电商", "欧美市场", "日韩市场", "东南亚市场", "中东市场", "全球通用"]
+          options: sceneTargetMarketOptions
         },
         {
           key: "copyLanguage",
           label: "文案语种",
-          options: ["无需文案", "简体中文", "繁体中文", "英语", "日语", "韩语", "西班牙语", "法语", "德语"]
+          options: sceneCopyLanguageOptions
         }
       ]
     },
@@ -6152,14 +6339,133 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       }
     }
   },
+  "video-scene-grid": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "video-scene-grid-setup"],
+    uploads: {
+      main: {
+        label: "上传素材",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "video-pattern-repeat": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["video-pattern-repeat-setup"],
+    uploads: {
+      main: {
+        label: "添加素材",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "video-print-extend": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "video-print-extend-setup"],
+    uploads: {
+      main: {
+        label: "上传素材",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
   "model-try": {
     creationModeConfigKey: "spoke",
-    sectionOrder: ["model-try-setup", "creation-mode"],
+    sectionOrder: ["model-try-setup", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "productType",
+          label: "产品类型",
+          mode: "input-select",
+          options: productTypeInputOptions
+        },
+        {
+          key: "ethnicity",
+          label: "人种肤色",
+          mode: "input-select",
+          options: modelTryEthnicityOptions
+        },
+        {
+          key: "genderSpecies",
+          label: "性别物种",
+          mode: "input-select",
+          options: modelTryGenderSpeciesOptions
+        },
+        {
+          key: "ageRange",
+          label: "年龄维度",
+          mode: "input-select",
+          options: modelTryAgeRangeOptions
+        },
+        {
+          key: "bodyType",
+          label: "身型身材",
+          mode: "input-select",
+          options: modelTryBodyTypeOptions
+        },
+        {
+          key: "displayLayout",
+          label: "展示排版",
+          mode: "input-select",
+          options: modelTryDisplayLayoutOptions
+        },
+        {
+          key: "sceneType",
+          label: "场景类型",
+          mode: "input-select",
+          options: modelTrySceneTypeOptions
+        },
+        {
+          key: "displayFocus",
+          label: "展示重点",
+          mode: "input-select",
+          options: modelTryDisplayFocusOptions
+        },
+        {
+          key: "moodStyle",
+          label: "氛围营造",
+          mode: "input-select",
+          options: modelTryAtmosphereOptions
+        },
+        {
+          key: "copyLanguage",
+          label: "文案语种",
+          mode: "input-select",
+          options: sceneCopyLanguageOptions
+        },
+        {
+          key: "targetMarket",
+          label: "目标市场",
+          mode: "input-select",
+          options: sceneTargetMarketOptions
+        }
+      ]
+    },
     uploads: {
       main: {
         label: "上传商品图",
         required: true,
         maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        optional: true,
+        maxCount: 1,
         singleUploadMeta: "（单次最多上传{count}张）",
         hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
       }
@@ -9307,6 +9613,601 @@ function PodVariationSetupSection({
   );
 }
 
+function PatternRepeatPromptList({
+  promptItems,
+  onChange
+}: {
+  promptItems: PatternRepeatPromptItem[];
+  onChange: (items: PatternRepeatPromptItem[]) => void;
+}) {
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const updatePromptItem = (id: string, updater: (item: PatternRepeatPromptItem) => PatternRepeatPromptItem) => {
+    onChange(promptItems.map((item) => (item.id === id ? updater(item) : item)));
+  };
+
+  const addPromptItem = () => {
+    onChange([...promptItems, { id: generateRandomTenDigitId(), text: "" }]);
+  };
+
+  const removePromptItem = (id: string) => {
+    if (promptItems.length === 1) {
+      onChange([{ id: generateRandomTenDigitId(), text: "" }]);
+      return;
+    }
+    onChange(promptItems.filter((item) => item.id !== id));
+  };
+
+  return (
+    <div className="ck-pattern-repeat-prompt-list">
+      <div className="ck-pattern-repeat-prompt-list-head">
+        <FieldTitle label="提示词列表" required />
+      </div>
+      <div className="ck-pattern-repeat-prompt-list-body">
+        {promptItems.map((item) => (
+          <div className="ck-pattern-repeat-prompt-card" key={item.id}>
+            <textarea
+              maxLength={2000}
+              onChange={(event) => updatePromptItem(item.id, (current) => ({ ...current, text: event.target.value }))}
+              placeholder="描述想要生成的图片"
+              value={item.text}
+            />
+            <div className="ck-pattern-repeat-prompt-card-footer">
+              <button
+                className="ck-pattern-repeat-prompt-upload"
+                onClick={() => inputRefs.current[item.id]?.click()}
+                type="button"
+              >
+                导入图片反推
+              </button>
+              {item.reverseImage ? (
+                <div className="ck-pattern-repeat-prompt-preview">
+                  <img alt={item.reverseImage.name ?? "参考图"} src={item.reverseImage.previewSrc ?? item.reverseImage.src} />
+                  <span>{item.reverseImage.name ?? "已导入参考图"}</span>
+                </div>
+              ) : null}
+              <button className="ck-pattern-repeat-prompt-delete" onClick={() => removePromptItem(item.id)} type="button">
+                删除
+              </button>
+            </div>
+            <input
+              accept="image/*"
+              className="ck-upload-input"
+              onChange={(event) => {
+                const files = event.target.files;
+                if (!files?.length) return;
+                const nextImage = buildUploadItemsFromFiles(files)[0];
+                if (nextImage) {
+                  updatePromptItem(item.id, (current) => ({ ...current, reverseImage: nextImage }));
+                }
+                event.target.value = "";
+              }}
+              ref={(node) => {
+                inputRefs.current[item.id] = node;
+              }}
+              type="file"
+            />
+          </div>
+        ))}
+        <button className="ck-pattern-repeat-prompt-add" onClick={addPromptItem} type="button">
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PatternRepeatSetupSection({
+  uploads,
+  remainingStorageMb,
+  onAddUpload,
+  onRemoveUpload,
+  onOpenLibrary,
+  onRejectedUpload,
+  onAtLimit,
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  uploads: Record<string, UploadItem[]>;
+  remainingStorageMb: number;
+  onAddUpload: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemoveUpload: (fieldKey: string, index: number) => void;
+  onOpenLibrary: (fieldKey: string) => void;
+  onRejectedUpload: (message: string) => void;
+  onAtLimit: () => void;
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const mainUploadKey = "video-pattern-repeat:main";
+  const [repeatType, setRepeatType] = useState<string>(selectedValues?.patternRepeatType ?? patternRepeatTypeOptions[0]);
+  const [createMode, setCreateMode] = useState<string>(selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0]);
+  const [generateMode, setGenerateMode] = useState<string>(selectedValues?.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0]);
+  const [ratio, setRatio] = useState<string>(selectedValues?.patternRepeatRatio ?? patternRepeatRatioOptions[0]);
+  const [promptItems, setPromptItems] = useState<PatternRepeatPromptItem[]>(() => getPatternRepeatPromptItems(selectedValues));
+  const lastSyncedValuesRef = useRef("");
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      patternRepeatType: selectedValues?.patternRepeatType ?? patternRepeatTypeOptions[0],
+      patternRepeatCreateMode: selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0],
+      patternRepeatGenerateMode: selectedValues?.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0],
+      patternRepeatRatio: selectedValues?.patternRepeatRatio ?? patternRepeatRatioOptions[0],
+      patternRepeatPrompts: selectedValues?.patternRepeatPrompts ?? ""
+    });
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setRepeatType(selectedValues?.patternRepeatType ?? patternRepeatTypeOptions[0]);
+    setCreateMode(selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0]);
+    setGenerateMode(selectedValues?.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0]);
+    setRatio(selectedValues?.patternRepeatRatio ?? patternRepeatRatioOptions[0]);
+    setPromptItems(getPatternRepeatPromptItems(selectedValues));
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const nextSelectionMap: AdvancedSelectionMap = {
+      patternRepeatType: repeatType,
+      patternRepeatCreateMode: createMode,
+      patternRepeatPrompts: JSON.stringify(promptItems)
+    };
+
+    if (repeatType === "四方连续") {
+      nextSelectionMap.patternRepeatGenerateMode = generateMode;
+    }
+    if (repeatType === "二方连续") {
+      nextSelectionMap.patternRepeatRatio = ratio;
+    }
+
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(
+      [
+        repeatType,
+        repeatType === "四方连续" ? createMode : "",
+        repeatType === "四方连续" && createMode === "图生图" ? `生成模式 ${generateMode}` : "",
+        repeatType === "二方连续" ? `尺寸比例 ${ratio}` : "",
+        repeatType === "四方连续" && createMode === "文生图"
+          ? `提示词 ${promptItems.filter((item) => item.text.trim() || item.reverseImage).length} 条`
+          : ""
+      ].filter(Boolean)
+    );
+    onCreationModeChange?.({
+      modeId: `video-pattern-repeat-${repeatType}-${repeatType === "四方连续" ? createMode : "image"}`,
+      modeLabel: repeatType === "四方连续" ? `${repeatType}·${createMode}` : repeatType,
+      ratio: repeatType === "二方连续" ? ratio : "1:1",
+      count: 1,
+      unitCreditCost: 5
+    });
+  }, [createMode, generateMode, onCreationModeChange, onSelectionChange, onSelectionMapChange, promptItems, ratio, repeatType]);
+
+  return (
+    <div className="ck-form-block">
+      <AdaptiveSegmentedField fullWidth label="" onChange={setRepeatType} options={[...patternRepeatTypeOptions]} required value={repeatType} />
+
+      {repeatType === "四方连续" ? (
+        <>
+          <AdaptiveSegmentedField fullWidth label="" onChange={setCreateMode} options={[...patternRepeatCreateModeOptions]} required value={createMode} />
+
+          {createMode === "图生图" ? (
+            <>
+              <UploadField
+                fieldKey={mainUploadKey}
+                hint="最多24张，支持JPG/PNG/WebP"
+                label="添加素材"
+                maxCount={24}
+                meta="（单次最多上传24张）"
+                onAdd={onAddUpload}
+                onAtLimit={onAtLimit}
+                onOpenLibrary={onOpenLibrary}
+                onRejectedUpload={onRejectedUpload}
+                onRemove={onRemoveUpload}
+                remainingStorageMb={remainingStorageMb}
+                required
+                values={uploads[mainUploadKey] ?? []}
+              />
+
+              <AdaptiveChoiceField
+                label="生成模式"
+                onChange={setGenerateMode}
+                options={patternRepeatGenerateModeOptions.map((option) => ({ key: option, label: option }))}
+                required
+                value={generateMode}
+              />
+            </>
+          ) : (
+            <PatternRepeatPromptList onChange={setPromptItems} promptItems={promptItems} />
+          )}
+        </>
+      ) : (
+        <>
+          <UploadField
+            fieldKey={mainUploadKey}
+            hint="最多24张，支持JPG/PNG/WebP"
+            label="添加素材"
+            maxCount={24}
+            meta="（单次最多上传24张）"
+            onAdd={onAddUpload}
+            onAtLimit={onAtLimit}
+            onOpenLibrary={onOpenLibrary}
+            onRejectedUpload={onRejectedUpload}
+            onRemove={onRemoveUpload}
+            remainingStorageMb={remainingStorageMb}
+            required
+            values={uploads[mainUploadKey] ?? []}
+          />
+
+          <div className="ck-inline-field ck-aligned-inline-field">
+            <FieldTitle label="尺寸比例" required />
+            <SelectField hideLabel label="尺寸比例" onChange={setRatio} options={[...patternRepeatRatioOptions]} required value={ratio} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function VideoSceneGridPreview({ mode }: { mode: VideoSceneGridModeKey }) {
+  return (
+    <div className={`ck-video-scene-grid-preview ${mode === "情侣图案" ? "couple" : mode === "主副图案" ? "primary-secondary" : "series"}`}>
+      {mode === "系列图案" ? (
+        <>
+          <span className="tile orange" />
+          <span className="tile beige" />
+          <span className="tile green" />
+        </>
+      ) : null}
+      {mode === "主副图案" ? (
+        <>
+          <span className="shirt left" />
+          <span className="shirt right" />
+        </>
+      ) : null}
+      {mode === "情侣图案" ? (
+        <>
+          <span className="person left" />
+          <span className="person right" />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function VideoSceneGridSetupSection({
+  uploadCount,
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  uploadCount: number;
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const defaultMode: VideoSceneGridModeKey =
+    videoSceneGridModeCards.find((item) => item.key === selectedValues?.videoSceneGridMode)?.key ?? videoSceneGridModeCards[0].key;
+  const [mode, setMode] = useState<VideoSceneGridModeKey>(defaultMode);
+  const [variation, setVariation] = useState(selectedValues?.videoSceneGridVariation ?? videoSceneGridVariationOptions[defaultMode][0]);
+  const [ratio, setRatio] = useState(selectedValues?.videoSceneGridRatio ?? videoSceneGridRatioOptions[0]);
+  const [outputCount, setOutputCount] = useState(() => {
+    const nextValue = Number(selectedValues?.videoSceneGridOutputCount ?? 2);
+    return Math.min(10, Math.max(2, Number.isFinite(nextValue) ? nextValue : 2));
+  });
+
+  useEffect(() => {
+    const nextOptions = videoSceneGridVariationOptions[mode];
+    if (!nextOptions.includes(variation)) {
+      setVariation(nextOptions[0]);
+    }
+  }, [mode, variation]);
+
+  useEffect(() => {
+    const nextMode = selectedValues?.videoSceneGridMode;
+    if (nextMode && videoSceneGridModeCards.some((item) => item.key === nextMode) && nextMode !== mode) {
+      setMode(nextMode as VideoSceneGridModeKey);
+    }
+  }, [mode, selectedValues]);
+
+  useEffect(() => {
+    const nextVariation = selectedValues?.videoSceneGridVariation;
+    if (nextVariation && videoSceneGridVariationOptions[mode].includes(nextVariation) && nextVariation !== variation) {
+      setVariation(nextVariation);
+    }
+  }, [mode, selectedValues, variation]);
+
+  useEffect(() => {
+    const nextRatio = selectedValues?.videoSceneGridRatio;
+    if (nextRatio && videoSceneGridRatioOptions.includes(nextRatio as (typeof videoSceneGridRatioOptions)[number]) && nextRatio !== ratio) {
+      setRatio(nextRatio);
+    }
+  }, [ratio, selectedValues]);
+
+  useEffect(() => {
+    const nextOutputCount = Number(selectedValues?.videoSceneGridOutputCount ?? outputCount);
+    const normalizedOutputCount = Math.min(10, Math.max(2, Number.isFinite(nextOutputCount) ? nextOutputCount : 2));
+    if (normalizedOutputCount !== outputCount) {
+      setOutputCount(normalizedOutputCount);
+    }
+  }, [outputCount, selectedValues]);
+
+  const detailDimensions = videoSceneGridDetailDimensionMap[mode][variation] ?? [];
+  const totalCredits = uploadCount * outputCount * 5;
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      videoSceneGridMode: mode,
+      videoSceneGridVariation: variation,
+      videoSceneGridDetailDimensions: detailDimensions.join(" / "),
+      videoSceneGridRatio: ratio,
+      videoSceneGridOutputCount: String(outputCount),
+      videoSceneGridUnitCreditCost: "5",
+      videoSceneGridTotalCreditCost: String(totalCredits)
+    });
+    onSelectionChange?.([mode, variation, ...detailDimensions, `出图比例 ${ratio}`, `生图数量 ${outputCount}`, `积分消耗 ${totalCredits}`]);
+    onCreationModeChange?.({
+      modeId: `video-scene-grid-${mode}-${variation}`,
+      modeLabel: `${mode}·${variation}`,
+      ratio,
+      count: outputCount,
+      unitCreditCost: 5
+    });
+  }, [detailDimensions, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, ratio, totalCredits, variation]);
+
+  return (
+    <div className="ck-form-block">
+      <div className="ck-form-block">
+        <FieldTitle label="变化维度" required />
+        <div className="ck-video-scene-grid-mode-row">
+          {videoSceneGridModeCards.map((option) => (
+            <button
+              className={`ck-video-scene-grid-mode-card${mode === option.key ? " active" : ""}`}
+              key={option.key}
+              onClick={() => setMode(option.key)}
+              type="button"
+            >
+              <div className="ck-video-scene-grid-mode-card-head">
+                <strong>{option.label}</strong>
+                {option.badge ? <span className="ck-video-scene-grid-badge">{option.badge}</span> : null}
+              </div>
+              <VideoSceneGridPreview mode={option.key} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ck-form-block">
+        <FieldTitle label="变化方向" required />
+        <div className="ck-video-scene-grid-variation-row">
+          {videoSceneGridVariationOptions[mode].map((option) => (
+            <button
+              className={`ck-video-scene-grid-variation-chip${variation === option ? " active" : ""}`}
+              key={option}
+              onClick={() => setVariation(option)}
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ck-form-block ck-video-scene-grid-detail-panel">
+        <div className="ck-video-scene-grid-detail-head">
+          <FieldTitle label="详细维度" required />
+          <span>{variation}</span>
+        </div>
+        <div className="ck-video-scene-grid-detail-tags">
+          {detailDimensions.map((item) => (
+            <span className="ck-video-scene-grid-detail-tag" key={item}>
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="ck-inline-field ck-aligned-inline-field">
+        <FieldTitle label="出图比例" required />
+        <SelectField hideLabel label="出图比例" onChange={setRatio} options={[...videoSceneGridRatioOptions]} required value={ratio} />
+      </div>
+
+      <NumberStepperField label="生图数量" max={10} min={2} onChange={setOutputCount} required value={outputCount} />
+
+      <div className="ck-inline-field">
+        <FieldTitle label="积分消耗" required />
+        <div className="ck-inline-static-value ck-video-scene-grid-credit">
+          {uploadCount > 0 ? `5积分/张 × ${outputCount}张 × ${uploadCount}个素材 = ${totalCredits}积分` : "生成单图5积分，上传素材后自动计算"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VideoPrintExtendSetupSection({
+  uploadCount,
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  uploadCount: number;
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const customPopoverRef = useRef<HTMLDivElement | null>(null);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customWidth, setCustomWidth] = useState("");
+  const [customHeight, setCustomHeight] = useState("");
+  const [customRatios, setCustomRatios] = useState<string[]>(() => parseVideoPrintExtendRatioList(selectedValues?.videoPrintExtendCustomRatios));
+  const [selectedRatios, setSelectedRatios] = useState<string[]>(() => {
+    const restored = getVideoPrintExtendSelectedRatios(selectedValues);
+    return restored.length ? restored : ["1:1"];
+  });
+  const [outputCount, setOutputCount] = useState(() => {
+    const nextValue = Number(selectedValues?.videoPrintExtendOutputCount ?? 1);
+    return Math.min(4, Math.max(1, Number.isFinite(nextValue) ? nextValue : 1));
+  });
+  const lastSyncedValuesRef = useRef("");
+
+  const ratioOptions = useMemo(
+    () =>
+      [...videoPrintExtendBaseRatioOptions, ...customRatios.filter((item) => !videoPrintExtendBaseRatioOptions.includes(item as (typeof videoPrintExtendBaseRatioOptions)[number]))] as string[],
+    [customRatios]
+  );
+  const ratioCount = selectedRatios.length;
+  const totalResultCount = uploadCount * ratioCount * outputCount;
+  const totalCredits = totalResultCount * VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST;
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      customRatios: parseVideoPrintExtendRatioList(selectedValues?.videoPrintExtendCustomRatios),
+      selectedRatios: getVideoPrintExtendSelectedRatios(selectedValues),
+      outputCount: selectedValues?.videoPrintExtendOutputCount ?? "1"
+    });
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    const nextCustomRatios = parseVideoPrintExtendRatioList(selectedValues?.videoPrintExtendCustomRatios);
+    const nextSelectedRatios = getVideoPrintExtendSelectedRatios(selectedValues);
+    const nextOutputCount = Number(selectedValues?.videoPrintExtendOutputCount ?? 1);
+
+    setCustomRatios(nextCustomRatios);
+    setSelectedRatios(nextSelectedRatios.length ? nextSelectedRatios : ["1:1"]);
+    setOutputCount(Math.min(4, Math.max(1, Number.isFinite(nextOutputCount) ? nextOutputCount : 1)));
+    setCustomOpen(false);
+    setCustomWidth("");
+    setCustomHeight("");
+  }, [selectedValues]);
+
+  useEffect(() => {
+    if (!customOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!customPopoverRef.current?.contains(event.target as Node)) {
+        setCustomOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [customOpen]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      videoPrintExtendSelectedRatios: JSON.stringify(selectedRatios),
+      videoPrintExtendCustomRatios: JSON.stringify(customRatios),
+      videoPrintExtendOutputCount: String(outputCount),
+      videoPrintExtendRatioCount: String(ratioCount),
+      videoPrintExtendTotalResultCount: String(totalResultCount),
+      videoPrintExtendUnitCreditCost: String(VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST),
+      videoPrintExtendTotalCreditCost: String(totalCredits)
+    });
+    onSelectionChange?.([
+      ratioCount ? `比例 ${selectedRatios.join(" / ")}` : "未选择比例",
+      `出图数量 ${outputCount}`,
+      `结果数量 ${totalResultCount}`,
+      `积分消耗 ${totalCredits}`
+    ]);
+    onCreationModeChange?.({
+      modeId: "video-print-extend",
+      modeLabel: "印花尺寸延展",
+      ratio: ratioCount ? selectedRatios.join(" / ") : "未选择比例",
+      count: outputCount,
+      unitCreditCost: VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST
+    });
+  }, [customRatios, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, ratioCount, selectedRatios, totalCredits, totalResultCount]);
+
+  const toggleRatio = (ratio: string) => {
+    setSelectedRatios((current) => (current.includes(ratio) ? current.filter((item) => item !== ratio) : [...current, ratio]));
+  };
+
+  const handleSaveCustomRatio = () => {
+    const normalizedRatio = normalizeVideoPrintExtendRatio(customWidth, customHeight);
+    if (!normalizedRatio) {
+      return;
+    }
+    setCustomRatios((current) => (current.includes(normalizedRatio) ? current : [...current, normalizedRatio]));
+    setSelectedRatios((current) => (current.includes(normalizedRatio) ? current : [...current, normalizedRatio]));
+    setCustomOpen(false);
+    setCustomWidth("");
+    setCustomHeight("");
+  };
+
+  return (
+    <div className="ck-form-block">
+      <div className="ck-form-block">
+        <div className="ck-video-print-extend-head">
+          <FieldTitle label="添加比例" required />
+          <span>已选择 {ratioCount} 个比例</span>
+        </div>
+        <div className="ck-video-print-extend-grid">
+          <div className="ck-video-print-extend-custom-wrap" ref={customPopoverRef}>
+            {customOpen ? (
+              <div className="ck-video-print-extend-custom-popover">
+                <input inputMode="numeric" onChange={(event) => setCustomWidth(event.target.value.replace(/[^\d]/g, ""))} placeholder="宽" value={customWidth} />
+                <span>:</span>
+                <input inputMode="numeric" onChange={(event) => setCustomHeight(event.target.value.replace(/[^\d]/g, ""))} placeholder="高" value={customHeight} />
+                <button className="ghost" onClick={() => setCustomOpen(false)} type="button">
+                  ×
+                </button>
+                <button className="confirm" disabled={!normalizeVideoPrintExtendRatio(customWidth, customHeight)} onClick={handleSaveCustomRatio} type="button">
+                  ✓
+                </button>
+              </div>
+            ) : null}
+            <button className={`ck-video-print-extend-card ck-video-print-extend-custom-card${customOpen ? " active" : ""}`} onClick={() => setCustomOpen((current) => !current)} type="button">
+              <span className="ck-video-print-extend-plus">+</span>
+              <strong>自定义</strong>
+            </button>
+          </div>
+
+          {ratioOptions.map((ratio) => {
+            const [widthText, heightText] = ratio.split(":");
+            const width = Number(widthText) || 1;
+            const height = Number(heightText) || 1;
+            const scale = Math.min(18 / width, 22 / height);
+            const indicatorStyle = {
+              width: `${Math.max(8, width * scale)}px`,
+              height: `${Math.max(8, height * scale)}px`
+            };
+            const isSelected = selectedRatios.includes(ratio);
+
+            return (
+              <button className={`ck-video-print-extend-card${isSelected ? " active" : ""}`} key={ratio} onClick={() => toggleRatio(ratio)} type="button">
+                <span className={`ck-video-print-extend-check${isSelected ? " active" : ""}`}>✓</span>
+                <span className="ck-video-print-extend-ratio-icon" style={indicatorStyle} />
+                <strong>{ratio}</strong>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <CountField label="出图数量" onChange={(value) => setOutputCount(Math.min(4, Math.max(1, Number(value) || 1)))} options={[...videoPrintExtendOutputCountOptions]} required value={String(outputCount)} />
+
+      <div className="ck-inline-field">
+        <FieldTitle label="积分消耗" required />
+        <div className="ck-inline-static-value ck-video-print-extend-credit">
+          {uploadCount > 0 && ratioCount > 0
+            ? `${uploadCount}张原图 × ${ratioCount}个比例 × ${outputCount}张出图 × ${VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST}积分 = ${totalCredits}积分`
+            : `总消耗 = 原图数 × 比例数 × 出图张数 × ${VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST}积分`}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VideoReplicaSetupSection({
   selectedValues,
   onSelectionChange,
@@ -11670,6 +12571,8 @@ function SetPackStrategySection({
 }) {
   const platformOptions = useMemo(() => platformMockData.filter((item) => setPackPlatformIds.includes(item.id)), []);
   const defaultPlatform = platformOptions[0];
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
   const [platformId, setPlatformId] = useState(selectedValues?.platform ? platformOptions.find((item) => item.label === selectedValues.platform)?.id ?? defaultPlatform?.id ?? "" : defaultPlatform?.id ?? "");
   const selectedPlatform = platformOptions.find((item) => item.id === platformId) ?? defaultPlatform;
   const [targetMarket, setTargetMarket] = useState(selectedValues?.targetMarket ?? selectedValues?.region ?? "北美");
@@ -11677,42 +12580,65 @@ function SetPackStrategySection({
   const [visualStyle, setVisualStyle] = useState(selectedValues?.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? "");
 
   useEffect(() => {
-    const nextPlatform = selectedValues?.platform ? platformOptions.find((item) => item.label === selectedValues.platform) : null;
-    if (nextPlatform?.id && nextPlatform.id !== platformId) {
-      setPlatformId(nextPlatform.id);
+    if (!selectedValues) return;
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
     }
-  }, [platformId, platformOptions, selectedValues]);
 
-  useEffect(() => {
-    const nextTargetMarket = selectedValues?.targetMarket ?? selectedValues?.region ?? "北美";
+    const nextSignature = JSON.stringify({
+      platform: selectedValues.platform ?? "",
+      targetMarket: selectedValues.targetMarket ?? selectedValues.region ?? "北美",
+      copyLanguage: selectedValues.copyLanguage ?? selectedValues.language ?? "英文",
+      visualStyle: selectedValues.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? ""
+    });
+
+    if (nextSignature === lastSelectedValuesSignatureRef.current) {
+      return;
+    }
+    lastSelectedValuesSignatureRef.current = nextSignature;
+
+    const nextPlatform = selectedValues.platform ? platformOptions.find((item) => item.label === selectedValues.platform) : null;
+    const nextPlatformId = nextPlatform?.id ?? defaultPlatform?.id ?? "";
+    if (nextPlatformId !== platformId) {
+      setPlatformId(nextPlatformId);
+    }
+
+    const nextTargetMarket = selectedValues.targetMarket ?? selectedValues.region ?? "北美";
     if (nextTargetMarket !== targetMarket) {
       setTargetMarket(nextTargetMarket);
     }
-  }, [selectedValues, targetMarket]);
 
-  useEffect(() => {
-    const nextCopyLanguage = selectedValues?.copyLanguage ?? selectedValues?.language ?? "英文";
+    const nextCopyLanguage = selectedValues.copyLanguage ?? selectedValues.language ?? "英文";
     if (nextCopyLanguage !== copyLanguage) {
       setCopyLanguage(nextCopyLanguage);
     }
-  }, [copyLanguage, selectedValues]);
 
-  useEffect(() => {
-    const nextVisualStyle = selectedValues?.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? "";
+    const nextVisualStyle = selectedValues.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? "";
     if (nextVisualStyle !== visualStyle) {
       setVisualStyle(nextVisualStyle);
     }
-  }, [visualStyle, selectedValues]);
+  }, [copyLanguage, defaultPlatform?.id, platformId, platformOptions, selectedValues, targetMarket, visualStyle]);
 
   useEffect(() => {
     if (!selectedPlatform) return;
-    onSelectionMapChange?.({
+    const nextSelectionMap = {
       platform: selectedPlatform.label,
       region: targetMarket,
       targetMarket,
       language: copyLanguage,
       copyLanguage,
       setPackVisualStyle: visualStyle
+    };
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({
+      platform: nextSelectionMap.platform,
+      targetMarket: nextSelectionMap.targetMarket,
+      copyLanguage: nextSelectionMap.copyLanguage,
+      visualStyle: nextSelectionMap.setPackVisualStyle
+    });
+    onSelectionMapChange?.({
+      ...nextSelectionMap
     });
     onSelectionChange?.([selectedPlatform.label, targetMarket, copyLanguage, visualStyle].filter(Boolean));
   }, [copyLanguage, onSelectionChange, onSelectionMapChange, selectedPlatform, targetMarket, visualStyle]);
@@ -11728,6 +12654,7 @@ function SetPackStrategySection({
           onChange={(value) => {
             const nextPlatform = platformOptions.find((item) => item.label === value);
             if (!nextPlatform) return;
+            skipSelectedValuesSyncRef.current = true;
             setPlatformId(nextPlatform.id);
           }}
           options={platformOptions.map((item) => item.label)}
@@ -11738,7 +12665,10 @@ function SetPackStrategySection({
           fullWidth
           hideLabel
           label="目标市场"
-          onChange={setTargetMarket}
+          onChange={(value) => {
+            skipSelectedValuesSyncRef.current = true;
+            setTargetMarket(value);
+          }}
           options={setPackTargetMarketOptions}
           required
           value={targetMarket}
@@ -11747,7 +12677,10 @@ function SetPackStrategySection({
           fullWidth
           hideLabel
           label="文案语种"
-          onChange={setCopyLanguage}
+          onChange={(value) => {
+            skipSelectedValuesSyncRef.current = true;
+            setCopyLanguage(value);
+          }}
           options={copyLanguageInputOptions}
           required
           value={copyLanguage}
@@ -11756,7 +12689,10 @@ function SetPackStrategySection({
           fullWidth
           hideLabel
           label="视觉风格"
-          onChange={setVisualStyle}
+          onChange={(value) => {
+            skipSelectedValuesSyncRef.current = true;
+            setVisualStyle(value);
+          }}
           options={setPackVisualStyleOptions}
           value={visualStyle}
         />
@@ -13408,6 +14344,8 @@ function ConfigPanel({
   const referenceUploadCount = uploads[refUploadKey]?.length ?? 0;
   const videoUploadCount = uploads[videoUploadKey]?.length ?? 0;
   const podFusionMetrics = useMemo(() => getPodFusionMetrics(advancedSettingSelections), [advancedSettingSelections]);
+  const patternRepeatMetrics = useMemo(() => getPatternRepeatMetrics(advancedSettingSelections), [advancedSettingSelections]);
+  const videoPrintExtendRatioCount = getVideoPrintExtendSelectedRatios(advancedSettingSelections).length;
   const setPackSelectedTypes = useMemo(() => getSetPackSelectedTypes(advancedSettingSelections), [advancedSettingSelections]);
   const setPackTypeCount = Math.max(1, setPackSelectedTypes.length);
   const resolvedCreationModeSelection = useMemo<CreationModeSelection | null>(() => {
@@ -13430,21 +14368,32 @@ function ConfigPanel({
     };
   }, [advancedSettingSelections, creationModeSelection, tool.key]);
   const batchOutputCount = resolvedCreationModeSelection?.count ?? 1;
-  const effectiveSourceCount = tool.key === "pod-fusion" ? podFusionMetrics.sourceCount : uploadImageCount;
+  const effectiveSourceCount =
+    tool.key === "pod-fusion"
+      ? podFusionMetrics.sourceCount
+      : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "四方连续" && patternRepeatMetrics.createMode === "文生图"
+        ? patternRepeatMetrics.promptCount
+        : uploadImageCount;
+  const effectiveReferenceCount = tool.key === "video-print-extend" ? videoPrintExtendRatioCount : referenceUploadCount;
   const generateCost =
     tool.key === "pod-fusion"
       ? effectiveSourceCount * (resolvedCreationModeSelection?.unitCreditCost ?? 0) * batchOutputCount
       : getSpecialToolGenerateCost(
           tool.key,
           effectiveSourceCount,
-          referenceUploadCount,
+          effectiveReferenceCount,
           batchOutputCount,
           resolvedCreationModeSelection?.unitCreditCost ?? 0
         );
   const hasRequiredInputs =
     tool.key === "pod-fusion"
       ? podFusionMetrics.isReady
+      : tool.key === "video-pattern-repeat"
+        ? patternRepeatMetrics.requiresMainUploads
+          ? uploadImageCount > 0
+          : patternRepeatMetrics.isTextReady
       : uploadImageCount > 0 &&
+        (tool.key === "video-print-extend" ? effectiveReferenceCount > 0 : true) &&
         (tool.key === "set-replica" ? referenceUploadCount > 0 : true) &&
         (tool.key === "video-replica" || tool.key === "video-replace" ? videoUploadCount > 0 : true);
   const generateCostLabel = hasRequiredInputs ? `消耗${generateCost}积分` : "待上传素材";
@@ -13925,6 +14874,39 @@ function ConfigPanel({
       );
     }
 
+    if (section === "video-pattern-repeat-setup" && tool.key === "video-pattern-repeat") {
+      return (
+        <PatternRepeatSetupSection
+          onAddUpload={onAddUpload}
+          onAtLimit={onAtLimit}
+          onCreationModeChange={setCreationModeSelection}
+          onOpenLibrary={onOpenLibrary}
+          onRejectedUpload={onRejectedUpload}
+          onRemoveUpload={onRemoveUpload}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "patternRepeatType",
+              "patternRepeatCreateMode",
+              "patternRepeatGenerateMode",
+              "patternRepeatRatio",
+              "patternRepeatPrompts"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          remainingStorageMb={remainingStorageMb}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads}
+        />
+      );
+    }
+
     if (section === "pod-variation-setup" && tool.key === "pod-variation") {
       return (
         <PodVariationSetupSection
@@ -13952,6 +14934,64 @@ function ConfigPanel({
           }}
           uploads={uploads[mainUploadKey] ?? []}
           selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "video-scene-grid-setup" && tool.key === "video-scene-grid") {
+      return (
+        <VideoSceneGridSetupSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "videoSceneGridMode",
+              "videoSceneGridVariation",
+              "videoSceneGridDetailDimensions",
+              "videoSceneGridRatio",
+              "videoSceneGridOutputCount",
+              "videoSceneGridUnitCreditCost",
+              "videoSceneGridTotalCreditCost"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+          uploadCount={uploads[mainUploadKey]?.length ?? 0}
+        />
+      );
+    }
+
+    if (section === "video-print-extend-setup" && tool.key === "video-print-extend") {
+      return (
+        <VideoPrintExtendSetupSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "videoPrintExtendSelectedRatios",
+              "videoPrintExtendCustomRatios",
+              "videoPrintExtendOutputCount",
+              "videoPrintExtendRatioCount",
+              "videoPrintExtendTotalResultCount",
+              "videoPrintExtendUnitCreditCost",
+              "videoPrintExtendTotalCreditCost"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+          uploadCount={uploads[mainUploadKey]?.length ?? 0}
         />
       );
     }
@@ -14262,13 +15302,26 @@ function ConfigPanel({
       return;
     }
 
-    if (!uploadImageCount && tool.key !== "pod-fusion") {
+    if (tool.key === "video-pattern-repeat" && !hasRequiredInputs) {
+      onToast(
+        patternRepeatMetrics.requiresMainUploads ? "请先添加素材后再生成" : "请至少填写一条提示词或导入一张反推图片后再生成",
+        "warning"
+      );
+      return;
+    }
+
+    if (!uploadImageCount && tool.key !== "pod-fusion" && !(tool.key === "video-pattern-repeat" && !patternRepeatMetrics.requiresMainUploads)) {
       onToast("请先上传商品图后再生成", "warning");
       return;
     }
 
     if (tool.key === "set-replica" && !referenceUploadCount) {
       onToast("请先上传参考图后再生成", "warning");
+      return;
+    }
+
+    if (tool.key === "video-print-extend" && !effectiveReferenceCount) {
+      onToast("请至少选择一个延展比例后再生成", "warning");
       return;
     }
 
@@ -14280,11 +15333,16 @@ function ConfigPanel({
     const outputCount =
       tool.key === "pod-fusion"
         ? podFusionMetrics.sourceCount * batchOutputCount
-        : getSpecialToolOutputCount(tool.key, uploadImageCount, referenceUploadCount, batchOutputCount);
+        : getSpecialToolOutputCount(tool.key, uploadImageCount, effectiveReferenceCount, batchOutputCount);
     const payload = {
       generateCost,
       outputCount,
-      sourceUploads: tool.key === "pod-fusion" ? podFusionMetrics.payloadUploads : uploads[mainUploadKey] ?? [],
+      sourceUploads:
+        tool.key === "pod-fusion"
+          ? podFusionMetrics.payloadUploads
+          : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "四方连续" && patternRepeatMetrics.createMode === "文生图"
+            ? patternRepeatMetrics.promptItems.flatMap((item) => (item.reverseImage ? [item.reverseImage] : []))
+            : uploads[mainUploadKey] ?? [],
       referenceUploads: uploads[refUploadKey] ?? [],
       videoUploads: uploads[videoUploadKey] ?? [],
       advancedSelections: advancedSettingSelections,
