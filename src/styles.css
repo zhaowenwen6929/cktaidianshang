@@ -2255,6 +2255,58 @@ a {
   white-space: nowrap;
 }
 
+.ck-slider-inline-field {
+  gap: 12px;
+}
+
+.ck-slider-inline-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ck-slider-inline-label .ck-field-title {
+  margin-bottom: 0;
+}
+
+.ck-slider-inline-help {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #cfd7e6;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a95ab;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.ck-slider-inline-control {
+  width: 256px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ck-slider-inline-range {
+  flex: 1;
+  margin: 0;
+  accent-color: #635ff2;
+}
+
+.ck-slider-inline-value {
+  min-width: 30px;
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  text-align: right;
+}
+
 .ck-generation-rule-card {
   border: 1px solid #dbe1ec;
   border-radius: 10px;
