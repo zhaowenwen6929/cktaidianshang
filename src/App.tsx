@@ -1,0 +1,14949 @@
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent } from "react";
+import { ExportArtworkModal } from "./components/ExportArtworkModal";
+import { MembershipPaymentModal } from "./components/MembershipPaymentModal";
+import { PointsBalancePopover } from "./components/PointsBalancePopover";
+import { PointsPurchaseModal } from "./components/PointsPurchaseModal";
+import { PointsRecordModal, type PointsRecordItem, type PointsRecordTab } from "./components/PointsRecordModal";
+import { UploadCapacityModal } from "./components/UploadCapacityModal";
+import { usePageMeta } from "./hooks/usePageMeta";
+
+const figmaIcons = {
+  topLogoMark: "/assets/top-logo-mark.svg",
+  topLogoWord: "/assets/top-logo-word.svg",
+  creditGem: "/assets/credit-gem.svg",
+  ecommerceSet: "/assets/ecommerce-set.svg",
+  ecommerceSetActive: "/assets/ecommerce-set-active.svg",
+  aiGoodsMain: "/assets/ai-goods-main.svg",
+  aiGoodsBadge: "/assets/ai-goods-badge.svg",
+  aiGoodsMainActive: "/assets/ai-goods-main-active.svg",
+  aiGoodsBadgeActive: "/assets/ai-goods-badge-active.svg",
+  model: "/assets/model.svg",
+  modelActive: "/assets/model-active.svg",
+  videoMain: "/assets/video-main.svg",
+  videoPlay: "/assets/video-play.svg",
+  videoMainActive: "/assets/video-main-active.svg",
+  videoPlayActive: "/assets/video-play-active.svg",
+  image: "/assets/image.svg",
+  imageActive: "/assets/image-active.svg",
+  pod: "/assets/pod.svg",
+  podDot: "/assets/pod-dot.svg",
+  podActive: "/assets/pod-active.svg",
+  podDotActive: "/assets/pod-dot-active.svg",
+  mineBody: "/assets/mine-body.svg",
+  mineHead: "/assets/mine-head.svg",
+  mineBodyActive: "/assets/mine-body-active.svg",
+  mineHeadActive: "/assets/mine-head-active.svg",
+  collapse: "/assets/collapse.svg",
+  download: "/assets/download-figma.svg",
+  failedResult: "/assets/result-failed-figma.png",
+  generateButton: "/assets/generate-button-icon.svg",
+  uploadLocal: "/assets/upload-local.svg",
+  uploadLibraryBody: "/assets/upload-library-body.svg",
+  uploadLibraryArrow: "/assets/upload-library-arrow.svg",
+  deleteBg: "/assets/upload-delete-bg.svg",
+  deleteLine: "/assets/upload-delete-line.svg"
+};
+
+type PrimaryKey = "set" | "goods" | "model" | "video" | "image" | "pod" | "more";
+type AppPage = "workspace" | "mine";
+type MineTab = "creation" | "models";
+type PanelKind = "retouch" | "marketing" | "white" | "translate" | "three-view" | "background" | "basic";
+type ModelSourceType = "upload" | "ai";
+type ModelFilterTab = "all" | "upload" | "ai";
+type UploadItem = {
+  id: string;
+  name?: string;
+  src?: string;
+  previewSrc?: string;
+  mediaKind?: ResultMediaKind;
+  format?: string;
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+  sizeMb: number;
+  status: "loading" | "ready";
+};
+
+type ToastState = {
+  id: number;
+  message: string;
+  tone?: "warning";
+};
+
+type ExportPreference = {
+  preserveVisibleMark: boolean;
+  expiresAt: number;
+};
+
+type ExportPendingAction =
+  | {
+      type: "single";
+      item: ResultItem;
+    }
+  | {
+      type: "batch";
+      tool: ToolConfig;
+    };
+
+type ResultActionConfirmState =
+  | {
+      type: "delete-failed";
+      toolKey: string;
+      itemId: string;
+    }
+  | {
+      type: "cancel-queued";
+      toolKey: string;
+      itemId: string;
+    };
+
+type ScheduledResultUpdate = {
+  timerId: number;
+  itemId?: string;
+  phase?: "start" | "finish" | "retry";
+};
+
+type LimitModalState = {
+  title: string;
+  description: string;
+};
+
+type UserTierId = "free" | "basic-single" | "advanced-team" | "supreme-team" | "flagship";
+
+type UserTierProfile = {
+  id: UserTierId;
+  name: string;
+  label: string;
+  teamLabel: string;
+  membershipButtonLabel: string;
+  avatar: string;
+  uploadCountLimit: number;
+  defaultMaxConcurrentTasks: number;
+  defaultTeamCredits: number;
+  defaultCredits: number;
+  canBuyPointsWhenInsufficient: boolean;
+  defaultRemainingStorageMb: number;
+};
+
+type UserTierMetrics = {
+  teamCredits: number;
+  credits: number;
+  remainingStorageMb: number;
+  maxConcurrentTasks: number;
+};
+
+const defaultPurchaseRecords: PointsRecordItem[] = [
+  {
+    id: "purchase-member-upgrade",
+    userName: "赵文文-微...",
+    avatar: "/assets/member-avatar.png",
+    title: "会员版本升级...",
+    date: "2026-03-30",
+    time: "19:56:09",
+    amount: "+20"
+  }
+];
+
+const defaultConsumeRecords: PointsRecordItem[] = [
+  {
+    id: "consume-1",
+    userName: "赵文文-微...",
+    avatar: "/assets/member-avatar.png",
+    title: "Agent对话",
+    date: "2026-03-30",
+    time: "20:00:09",
+    amount: "-4"
+  },
+  {
+    id: "consume-2",
+    userName: "赵文文-微...",
+    avatar: "/assets/member-avatar.png",
+    title: "Agent对话",
+    date: "2026-03-30",
+    time: "19:57:40",
+    amount: "-4"
+  },
+  {
+    id: "consume-3",
+    userName: "赵文文-微...",
+    avatar: "/assets/member-avatar.png",
+    title: "Agent对话",
+    date: "2026-03-30",
+    time: "19:57:40",
+    amount: "-4"
+  },
+  {
+    id: "consume-4",
+    userName: "赵文文-微...",
+    avatar: "/assets/member-avatar.png",
+    title: "Agent对话",
+    date: "2026-03-30",
+    time: "19:57:40",
+    amount: "-4"
+  },
+  {
+    id: "consume-5",
+    userName: "赵文文-微...",
+    avatar: "/assets/member-avatar.png",
+    title: "Agent对话",
+    date: "2026-03-30",
+    time: "19:57:40",
+    amount: "-4"
+  }
+];
+
+const DEFAULT_UPLOAD_LIMIT = 5;
+const MEMBER_UPLOAD_LIMIT = 24;
+const GENERATE_STORAGE_COST_MB = 24;
+const UPGRADE_PROMO_COPY = "双旦大促·升级会员最低至5折起";
+const EXPORT_PREFERENCE_STORAGE_KEY = "ck-export-preference";
+
+const userTierProfiles: UserTierProfile[] = [
+  {
+    id: "free",
+    name: "赵文文",
+    label: "免费用户",
+    teamLabel: "个人版",
+    membershipButtonLabel: "开通会员",
+    avatar: "/assets/member-avatar.png",
+    uploadCountLimit: DEFAULT_UPLOAD_LIMIT,
+    defaultMaxConcurrentTasks: 1,
+    defaultTeamCredits: 0,
+    defaultCredits: 2000,
+    canBuyPointsWhenInsufficient: false,
+    defaultRemainingStorageMb: 128
+  },
+  {
+    id: "basic-single",
+    name: "赵文文",
+    label: "基础版（单人）",
+    teamLabel: "团队版",
+    membershipButtonLabel: "升级会员",
+    avatar: "/assets/member-avatar.png",
+    uploadCountLimit: MEMBER_UPLOAD_LIMIT,
+    defaultMaxConcurrentTasks: 2,
+    defaultTeamCredits: 0,
+    defaultCredits: 8,
+    canBuyPointsWhenInsufficient: false,
+    defaultRemainingStorageMb: 512
+  },
+  {
+    id: "advanced-team",
+    name: "赵文文",
+    label: "高级版（团队）",
+    teamLabel: "团队版",
+    membershipButtonLabel: "升级会员",
+    avatar: "/assets/member-avatar.png",
+    uploadCountLimit: MEMBER_UPLOAD_LIMIT,
+    defaultMaxConcurrentTasks: 5,
+    defaultTeamCredits: 36,
+    defaultCredits: 6,
+    canBuyPointsWhenInsufficient: false,
+    defaultRemainingStorageMb: 1024
+  },
+  {
+    id: "supreme-team",
+    name: "赵文文",
+    label: "至尊版（团队）",
+    teamLabel: "团队版",
+    membershipButtonLabel: "续费会员",
+    avatar: "/assets/member-avatar.png",
+    uploadCountLimit: MEMBER_UPLOAD_LIMIT,
+    defaultMaxConcurrentTasks: 8,
+    defaultTeamCredits: 128,
+    defaultCredits: 6,
+    canBuyPointsWhenInsufficient: true,
+    defaultRemainingStorageMb: 2048
+  },
+  {
+    id: "flagship",
+    name: "赵文文",
+    label: "旗舰会员",
+    teamLabel: "团队版",
+    membershipButtonLabel: "续费会员",
+    avatar: "/assets/member-avatar.png",
+    uploadCountLimit: MEMBER_UPLOAD_LIMIT,
+    defaultMaxConcurrentTasks: 20,
+    defaultTeamCredits: 188,
+    defaultCredits: 18,
+    canBuyPointsWhenInsufficient: true,
+    defaultRemainingStorageMb: 4096
+  }
+];
+
+const defaultUserMetrics = userTierProfiles.reduce<Record<UserTierId, UserTierMetrics>>((accumulator, profile) => {
+  accumulator[profile.id] = {
+    teamCredits: profile.defaultTeamCredits,
+    credits: profile.defaultCredits,
+    remainingStorageMb: profile.defaultRemainingStorageMb,
+    maxConcurrentTasks: profile.defaultMaxConcurrentTasks
+  };
+  return accumulator;
+}, {} as Record<UserTierId, UserTierMetrics>);
+
+function formatStorageSize(sizeMb: number) {
+  if (sizeMb >= 1024) {
+    return `${(sizeMb / 1024).toFixed(sizeMb % 1024 === 0 ? 0 : 1)}GB`;
+  }
+  return `${sizeMb.toFixed(sizeMb % 1 === 0 ? 0 : 1)}MB`;
+}
+
+function getStorageLimitDescription(remainingStorageMb: number) {
+  if (remainingStorageMb <= 0) {
+    return "当前剩余存储空间已为0MB，扩展容量后可继续上传或生成内容。";
+  }
+  return `当前剩余存储空间为${formatStorageSize(remainingStorageMb)}，存储空间不足时需扩展容量后继续使用。`;
+}
+
+type LibraryFolder = {
+  id: string;
+  name: string;
+};
+
+type LibraryAsset = {
+  id: string;
+  name: string;
+  src: string;
+  previewSrc?: string;
+  sizeMb: number;
+  format: "PNG" | "PSD" | "AI" | "MP4" | "MOV";
+  folderId: string;
+  mediaKind?: ResultMediaKind;
+  shared?: boolean;
+};
+
+type ToolConfig = {
+  key: string;
+  label: string;
+  panelTitle: string;
+  resultCount: number;
+  panelKind?: PanelKind;
+  ratioLabel?: string;
+};
+
+type ResultTabKey = "results" | "cases";
+type ResultMediaKind = "image" | "video";
+type ResultItemStatus = "skeleton" | "queued" | "generating" | "ready" | "failed";
+
+type ResultItem = {
+  id: string;
+  toolKey: string;
+  label: string;
+  fileName: string;
+  taskId: string;
+  mediaKind: ResultMediaKind;
+  status: ResultItemStatus;
+  src?: string;
+  selected: boolean;
+  createdAt: number;
+  roleLabel?: string;
+  overlayText?: string;
+};
+
+type CaseTemplate = {
+  id: string;
+  toolKey: string;
+  title: string;
+  category: string;
+  description: string;
+  sourceImage: string;
+  coverImage: string;
+  resultImages: Array<{
+    id: string;
+    src: string;
+    title: string;
+  }>;
+};
+
+type CaseCollection = {
+  headline: string;
+  subheadline: string;
+  templates: CaseTemplate[];
+};
+
+type GeneratePayload = {
+  generateCost: number;
+  outputCount: number;
+  sourceUploads: UploadItem[];
+  referenceUploads?: UploadItem[];
+  videoUploads?: UploadItem[];
+  advancedSelections: AdvancedSelectionMap;
+  supplementValue: string;
+  creationModeSelection: CreationModeSelection | null;
+};
+
+type AplusPlanStatus = "idle" | "generating" | "ready";
+
+type AplusPlanModule = {
+  id: string;
+  category: string;
+  headline: string;
+  lines: string[];
+};
+
+type AplusPlanState = {
+  status: AplusPlanStatus;
+  signature?: string;
+  summary?: string[];
+  modules: AplusPlanModule[];
+  expanded?: boolean;
+  updatedAt?: number;
+};
+
+type ResultNamingContext = {
+  tool: ToolConfig;
+  uploadId: string;
+  index: number;
+};
+
+type ResultNamingRule = (context: ResultNamingContext) => string;
+
+type ZipEntry = {
+  fileName: string;
+  bytes: Uint8Array;
+};
+
+type TaskRecordStatus = "queued" | "generating" | "completed";
+
+type TaskRecord = {
+  id: string;
+  toolKey: string;
+  taskId: string;
+  createdAt: number;
+  totalCount: number;
+  successCount: number;
+  failCount: number;
+  status: TaskRecordStatus;
+  itemIds: string[];
+  coverSrcs: string[];
+  snapshot: {
+    mainUploads: UploadItem[];
+    referenceUploads: UploadItem[];
+    videoUploads?: UploadItem[];
+    advancedSelections: AdvancedSelectionMap;
+    supplementValue: string;
+    creationModeSelection: CreationModeSelection | null;
+  };
+};
+
+type CreationHistoryMode = "tasks" | "results";
+
+type ModelAsset = {
+  id: string;
+  name: string;
+  src: string;
+  sizeMb: number;
+  createdAt: number;
+  sourceType: ModelSourceType;
+  format?: string;
+  width?: number;
+  height?: number;
+  detailTitle?: string;
+  detailSubtitle?: string;
+  detailGroups?: Array<{ label: string; values: string[] }>;
+};
+
+type CreationModeOption = {
+  id: string;
+  label: string;
+  apiModel: string;
+  logicNote: string;
+  ratioOptions: string[];
+  countOptions: string[];
+  resolutionOptions?: string[];
+  baseUnitCreditCost?: number;
+  resolutionUnitCreditCosts?: Record<string, number>;
+  defaultRatio?: string;
+  defaultCount?: string;
+  defaultResolution?: string;
+};
+
+type CreationModeConfig = {
+  key: string;
+  title?: string;
+  modes: CreationModeOption[];
+  showSupplement: boolean;
+  hideCountField?: boolean;
+  supplementLabel?: string;
+  supplementPlaceholder: string;
+  supplementMaxLength: number;
+};
+
+type CreationModeSelection = {
+  modeId: string;
+  modeLabel: string;
+  ratio: string;
+  resolution?: string;
+  count: number;
+  unitCreditCost: number;
+};
+
+type VideoPricingSelectionMap = {
+  mode?: string;
+  duration?: string;
+  market?: string;
+  ratio?: string;
+  resolution?: string;
+  hasSound?: string;
+};
+
+type VideoPricingConfig = {
+  selectionKeys?: {
+    duration?: string;
+    market?: string;
+    hasSound?: string;
+  };
+  defaultSelections?: VideoPricingSelectionMap;
+  dimensionCosts: {
+    mode?: Record<string, number>;
+    duration?: Record<string, number>;
+    market?: Record<string, number>;
+    ratio?: Record<string, number>;
+    resolution?: Record<string, number>;
+    hasSound?: Record<string, number>;
+  };
+};
+
+type PlatformFieldKey = "platform" | "region" | "language";
+
+type PlatformRegionMock = {
+  id: string;
+  label: string;
+  languages: string[];
+};
+
+type PlatformMock = {
+  id: string;
+  label: string;
+  regions: PlatformRegionMock[];
+};
+
+type ApplicablePlatformOption = {
+  id: string;
+  label: string;
+  markets: string[];
+};
+
+type SupplementAiPolishConfig = {
+  modelLabel: string;
+  prompt: string;
+};
+
+type SupplementAiPolishResult = {
+  content: string;
+  canUse: boolean;
+  englishText?: string;
+  chineseText?: string;
+  applyContent?: string;
+  applyEnglishContent?: string;
+};
+
+type SupplementAiPolishContext = {
+  advancedValues?: string[];
+  creationModeValues?: string[];
+};
+
+type AdvancedSelectionMap = Record<string, string>;
+
+type AdvancedAiAssistResult = {
+  fieldValues: AdvancedSelectionMap;
+  supplementValue?: string;
+};
+
+type AdvancedSettingsConfig = {
+  title: string;
+  showAiAssist?: boolean;
+  fields: PlatformFieldKey[];
+  platformIds: string[];
+  extraSelects?: Array<{
+    key: string;
+    label: string;
+    options?: string[];
+    richOptions?: RichSelectOption[];
+    mode?: "select" | "input-select" | "rich-select";
+  }>;
+  conditionalDetailField?: {
+    triggerFieldKey: string;
+    label: string;
+    placeholder: string;
+  };
+};
+
+type ModelAdjustActionConfig = {
+  key: string;
+  label: string;
+  valueLabel?: string;
+  valueOptions?: string[];
+  detailLabel: string;
+  detailPlaceholder: string;
+};
+
+type ModelGenerateTypeConfig = {
+  key: string;
+  label: string;
+};
+
+type UploadModuleFieldConfig = {
+  label: string;
+  required?: boolean;
+  optional?: boolean;
+  meta?: string;
+  singleUploadMeta?: string;
+  prompt?: string;
+  hintTemplate?: string;
+  maxCount?: number;
+  maxFileSizeMb?: number;
+  minDurationSeconds?: number;
+  maxDurationSeconds?: number;
+};
+
+type ToolModuleSectionKey =
+  | "set-pack-strategy"
+  | "set-pack-selling-points"
+  | "set-pack-type-selector"
+  | "set-pack-style-analysis"
+  | "baseline-model-setup"
+  | "video-main-script-setup"
+  | "upload-main"
+  | "upload-video"
+  | "video-replica-setup"
+  | "target-language"
+  | "applicable-platform"
+  | "advanced-settings"
+  | "generation-rule-notice"
+  | "model-change-action"
+  | "model-generate-setup"
+  | "model-try-setup"
+  | "pod-crop-mode"
+  | "pod-extract-setup"
+  | "creation-mode"
+  | "supplement"
+  | "mode-choice"
+  | "camera-angle"
+  | "upload-reference";
+
+type ToolModuleConfig = {
+  creationModeConfigKey: string;
+  applicablePlatform?: boolean;
+  advancedSettings?: AdvancedSettingsConfig;
+  modelAdjustActions?: ModelAdjustActionConfig[];
+  modelGenerateTypes?: ModelGenerateTypeConfig[];
+  sectionOrder?: ToolModuleSectionKey[];
+  uploads: {
+    main: UploadModuleFieldConfig;
+    reference?: UploadModuleFieldConfig;
+    video?: UploadModuleFieldConfig;
+  };
+};
+
+type SetPackSellingPointDraft = {
+  productName: string;
+  sellingPoints: string;
+  audience: string;
+  scenario: string;
+  parameters: string;
+};
+
+type SetPackStyleCard = {
+  id: string;
+  name: string;
+  description: string;
+  colors: string[];
+  platformTags: string[];
+  keywordHints: string[];
+};
+
+type SetPackTypeTemplate = {
+  id: string;
+  category: string;
+  description: string;
+  tag: string;
+  promptHint: string;
+  defaultRatio: string;
+  defaultResolution: string;
+  keywords: string[];
+};
+
+type SetPackTypeItem = {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  tag: string;
+  prompt: string;
+  ratio: string;
+  resolution: string;
+  count: number;
+};
+
+type SetPackTypeSavedTemplate = {
+  id: string;
+  name: string;
+  coverSrc?: string;
+  types: SetPackTypeItem[];
+};
+
+const navGroups: Array<{
+  key: PrimaryKey;
+  label: string;
+  tools: ToolConfig[];
+}> = [
+  {
+    key: "set",
+    label: "电商套图",
+    tools: [
+      { key: "set-main", label: "电商套图", panelTitle: "电商套图", resultCount: 7, ratioLabel: "1:1" },
+      { key: "set-aplus", label: "A+详情图", panelTitle: "A+详情图", resultCount: 6, ratioLabel: "1:1" },
+      { key: "set-fashion", label: "服饰套图", panelTitle: "服饰套图", resultCount: 6, ratioLabel: "1:1" },
+      { key: "set-replica", label: "爆款套图复刻", panelTitle: "爆款套图复刻", resultCount: 6, ratioLabel: "1:1" }
+    ]
+  },
+  {
+    key: "goods",
+    label: "AI商品图",
+    tools: [
+      { key: "goods-marketing", label: "一键营销主图", panelTitle: "一键营销主图", resultCount: 9, ratioLabel: "自适应尺寸", panelKind: "marketing" },
+      { key: "goods-white", label: "一键白底图", panelTitle: "一键白底图", resultCount: 8, ratioLabel: "自适应尺寸", panelKind: "white" },
+      { key: "goods-buyer", label: "一键买家秀", panelTitle: "一键买家秀", resultCount: 8, ratioLabel: "自适应尺寸", panelKind: "basic" },
+      { key: "goods-scene", label: "一键场景图", panelTitle: "一键场景图", resultCount: 12, ratioLabel: "自适应尺寸", panelKind: "basic" },
+      { key: "goods-detail", label: "一键细节图", panelTitle: "一键细节图", resultCount: 10, ratioLabel: "自适应尺寸", panelKind: "basic" },
+      { key: "goods-sell", label: "一键卖点图", panelTitle: "一键卖点图", resultCount: 8, ratioLabel: "自适应尺寸", panelKind: "basic" },
+      { key: "goods-spoke", label: "一键代言图", panelTitle: "一键代言图", resultCount: 6, ratioLabel: "自适应尺寸", panelKind: "basic" },
+      { key: "goods-view", label: "一键三视角", panelTitle: "一键三视角", resultCount: 6, ratioLabel: "自适应尺寸", panelKind: "three-view" },
+      { key: "goods-retouch", label: "产品精修", panelTitle: "产品精修", resultCount: 9, ratioLabel: "自适应尺寸", panelKind: "retouch" },
+      { key: "goods-bg", label: "AI换背景", panelTitle: "AI换背景", resultCount: 7, ratioLabel: "自适应尺寸", panelKind: "background" },
+      { key: "goods-translate", label: "图片翻译", panelTitle: "图片翻译", resultCount: 4, ratioLabel: "自适应尺寸", panelKind: "translate" },
+      ]
+  },
+  {
+    key: "model",
+    label: "模特图",
+    tools: [
+      { key: "model-try", label: "模特试穿", panelTitle: "模特试穿", resultCount: 6, ratioLabel: "9:16" },
+      { key: "model-change", label: "模特调整", panelTitle: "模特调整", resultCount: 6, ratioLabel: "9:16" },
+      { key: "model-generate", label: "模特生成", panelTitle: "模特生成", resultCount: 6, ratioLabel: "9:16" }
+    ]
+  },
+  {
+    key: "video",
+    label: "视频创作",
+    tools: [
+      { key: "video-main", label: "产品视频", panelTitle: "产品视频", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-replica", label: "爆款复刻", panelTitle: "爆款复刻", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-remix", label: "智能混剪", panelTitle: "智能混剪", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-replace", label: "商品替换", panelTitle: "商品替换", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-match", label: "智能匹配视频", panelTitle: "智能匹配视频", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-ad", label: "广告大片视频", panelTitle: "广告大片视频", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-influencer", label: "达人带货视频", panelTitle: "达人带货视频", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-customer", label: "素人分享视频", panelTitle: "素人分享视频", resultCount: 4, ratioLabel: "16:9" }
+    ]
+  },
+  {
+    key: "image",
+    label: "图片处理",
+    tools: [
+      { key: "image-cutout", label: "一键抠图", panelTitle: "一键抠图", resultCount: 5, ratioLabel: "自适应尺寸" },
+      { key: "image-watermark", label: "去除水印", panelTitle: "去除水印", resultCount: 5, ratioLabel: "自适应尺寸" },
+      { key: "image-upscale", label: "超分提质", panelTitle: "超分提质", resultCount: 5, ratioLabel: "自适应尺寸" },
+      { key: "image-remove", label: "图片消除", panelTitle: "图片消除", resultCount: 5, ratioLabel: "自适应尺寸" },
+      { key: "image-lineart", label: "提取线稿", panelTitle: "提取线稿", resultCount: 5, ratioLabel: "自适应尺寸" },
+      { key: "image-expand", label: "图片扩图", panelTitle: "图片扩图", resultCount: 5, ratioLabel: "自适应尺寸" }
+    ]
+  },
+  {
+    key: "pod",
+    label: "POD印花",
+    tools: [
+      { key: "pod-crop", label: "图片裁剪", panelTitle: "图片裁剪", resultCount: 5, ratioLabel: "1:1" },
+      { key: "pod-extract", label: "印花图提取", panelTitle: "印花图提取", resultCount: 5, ratioLabel: "1:1" },
+      { key: "pod-variation", label: "印花图裂变", panelTitle: "印花图裂变", resultCount: 5, ratioLabel: "1:1" },
+      { key: "pod-partial-edit", label: "局部改图", panelTitle: "局部改图", resultCount: 5, ratioLabel: "1:1" },
+      { key: "pod-fusion", label: "元素融合印花", panelTitle: "元素融合印花", resultCount: 5, ratioLabel: "1:1" },
+      { key: "video-scene-grid", label: "多联画", panelTitle: "多联画", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-pattern-repeat", label: "四方连续图", panelTitle: "四方连续图", resultCount: 4, ratioLabel: "1:1" },
+      { key: "video-pod-mockup", label: "POD样机套图", panelTitle: "POD样机套图", resultCount: 4, ratioLabel: "1:1" },
+      { key: "video-print-extend", label: "印花尺寸延展", panelTitle: "印花尺寸延展", resultCount: 4, ratioLabel: "1:1" },
+      { key: "video-2d3d", label: "2D转3D图", panelTitle: "2D转3D图", resultCount: 4, ratioLabel: "1:1" },
+      { key: "video-style-print", label: "风格参考印花", panelTitle: "风格参考印花", resultCount: 4, ratioLabel: "1:1" }
+    ]
+  },
+  {
+    key: "more",
+    label: "更多工具",
+    tools: [
+      { key: "more-title", label: "批量生成标题", panelTitle: "批量生成标题", resultCount: 3, ratioLabel: "自适应尺寸" },
+      { key: "more-rights", label: "侵权检测", panelTitle: "侵权检测", resultCount: 3, ratioLabel: "自适应尺寸" },
+      { key: "more-collect", label: "电商图采集", panelTitle: "电商图采集", resultCount: 3, ratioLabel: "自适应尺寸" }
+    ]
+  }
+];
+
+const resultAssetPool = [
+  "/assets/result-1.png",
+  "/assets/result-2.png",
+  "/assets/result-3.png",
+  "/assets/result-4.png",
+  "/assets/result-1.png",
+  "/assets/result-2.png",
+  "/assets/result-3.png",
+  "/assets/result-4.png",
+  "/assets/result-1.png",
+  "/assets/result-2.png"
+];
+
+const defaultToolKeys = [
+  "set-main",
+  "set-aplus",
+  "video-main",
+  "video-remix",
+  "video-match",
+  "video-ad",
+  "video-influencer",
+  "video-customer",
+  "video-scene-grid",
+  "video-pattern-repeat",
+  "video-pod-mockup",
+  "video-print-extend",
+  "video-2d3d",
+  "video-style-print",
+  "image-cutout",
+  "image-watermark",
+  "image-upscale",
+  "image-remove",
+  "image-lineart",
+  "image-expand",
+  "pod-variation",
+  "pod-partial-edit",
+  "pod-fusion",
+  "more-title",
+  "more-rights",
+  "more-collect"
+] as const;
+
+const setPackRatioOptions = ["1:1", "3:4", "4:5", "9:16"];
+const setPackVisualStyleOptions = ["简约清新风", "高级质感风", "活泼吸睛风", "复古怀旧风", "场景写实风", "科技未来风", "国风古韵风"];
+const setPackResultRoleLabels = ["平台主图", "卖点图", "细节图", "场景图", "功能图", "参数图", "收尾图"];
+const SET_PACK_TYPE_LIMIT = 15;
+const setPackPlatformIds = ["amazon", "temu", "tiktok-shop", "aliexpress", "shopee", "ozon", "alibaba-international", "shein"];
+const setPackPlatformDefaultRatios: Record<string, string> = {
+  "亚马逊": "1:1",
+  "Temu": "3:4",
+  "TikTok Shop": "9:16",
+  "速卖通": "1:1",
+  "Shopee": "1:1",
+  "OZON": "1:1",
+  "阿里国际站": "1:1",
+  "SHEIN": "4:5"
+};
+const setPackStyleLibrary: SetPackStyleCard[] = [
+  {
+    id: "platform-clean",
+    name: "平台净透陈列",
+    description: "白底或浅灰电商棚拍，强调主体清晰、规整排版与平台合规感。",
+    colors: ["#F8FAFC", "#D9E2EC", "#8FA3BF"],
+    platformTags: ["亚马逊", "Temu", "速卖通", "Shopee"],
+    keywordHints: ["合规", "白底", "参数", "干净"]
+  },
+  {
+    id: "premium-studio",
+    name: "高质感棚拍",
+    description: "适合高客单和品牌化商品，强调材质、反光控制和精致视觉层级。",
+    colors: ["#F2ECE6", "#B99D80", "#4A4037"],
+    platformTags: ["亚马逊", "SHEIN", "阿里国际站"],
+    keywordHints: ["高端", "质感", "premium", "luxury"]
+  },
+  {
+    id: "lifestyle-warm",
+    name: "生活方式暖调",
+    description: "通过日常场景强化使用感和代入感，适合家居、美妆、个护与轻食。",
+    colors: ["#FFF1E6", "#F7C59F", "#C97B63"],
+    platformTags: ["Temu", "Shopee", "TikTok Shop"],
+    keywordHints: ["生活", "温暖", "日常", "居家"]
+  },
+  {
+    id: "tech-contrast",
+    name: "科技对比冲击",
+    description: "用高对比背景与霓光元素突出科技感、速度感和功能表达。",
+    colors: ["#0F172A", "#2563EB", "#22D3EE"],
+    platformTags: ["TikTok Shop", "亚马逊", "Temu"],
+    keywordHints: ["科技", "性能", "黑色", "速度"]
+  },
+  {
+    id: "trend-social",
+    name: "社媒爆款种草",
+    description: "更偏短视频平台的年轻视觉，强化标题钩子、场景氛围和冲击构图。",
+    colors: ["#FFF4F6", "#FB7185", "#7C3AED"],
+    platformTags: ["TikTok Shop", "SHEIN", "Temu"],
+    keywordHints: ["种草", "潮流", "年轻", "爆款"]
+  },
+  {
+    id: "detail-macro",
+    name: "微距细节解构",
+    description: "适合突出结构、面料、纹理和工艺细节，为详情页补充说服力。",
+    colors: ["#F8FAFC", "#94A3B8", "#334155"],
+    platformTags: ["亚马逊", "阿里国际站", "速卖通"],
+    keywordHints: ["细节", "工艺", "材质", "参数"]
+  }
+];
+
+const setPackTypeLibrary: SetPackTypeTemplate[] = [
+  { id: "white-bg", category: "产品白底图", description: "纯白背景，突出商品本体", tag: "商品主图", promptHint: "白底电商首图，清晰展示商品全貌与主体结构", defaultRatio: "1:1", defaultResolution: "1K", keywords: ["白底", "主图", "平台"] },
+  { id: "multi-angle", category: "产品多角度", description: "多视角展示外观结构", tag: "商品主图", promptHint: "多角度拼接展示商品结构、侧面与细节轮廓", defaultRatio: "1:1", defaultResolution: "1K", keywords: ["角度", "结构", "外观"] },
+  { id: "amazon-main", category: "亚马逊主图", description: "符合平台规范的主图", tag: "商品主图", promptHint: "符合亚马逊规范的主图构图，干净合规、主体突出", defaultRatio: "1:1", defaultResolution: "1K", keywords: ["亚马逊", "平台", "主图"] },
+  { id: "detail-closeup", category: "细节特写", description: "放大细节，展示质感工艺", tag: "细节图", promptHint: "近景放大材质、纹理、工艺和装饰细节，强调高级质感", defaultRatio: "1:1", defaultResolution: "1K", keywords: ["细节", "质感", "工艺"] },
+  { id: "detail-showcase", category: "细节展示图", description: "局部细节分点说明", tag: "细节图", promptHint: "通过局部特写和说明点位展示商品关键细节", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["细节", "说明", "局部"] },
+  { id: "hero-visual", category: "首屏视觉图", description: "首屏吸睛，提升点击转化", tag: "场景图", promptHint: "首屏强视觉构图，突出品牌感和点击吸引力", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["首屏", "吸睛", "转化"] },
+  { id: "core-selling", category: "核心卖点图", description: "一句话卖点+图形强化", tag: "卖点图", promptHint: "围绕核心卖点做视觉强化，搭配简洁信息模块和重点文案", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["卖点", "优势", "功能"] },
+  { id: "pain-point", category: "客户痛点展示", description: "指出痛点并给出解决点", tag: "卖点图", promptHint: "先展示用户痛点，再引出商品解决方案和使用收益", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["痛点", "对比", "问题"] },
+  { id: "scene-lifestyle", category: "场景图（非服饰）", description: "真实使用场景带入感", tag: "场景图", promptHint: "还原真实使用场景，提升代入感和生活方式氛围", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["场景", "生活", "氛围"] },
+  { id: "wearing-scene", category: "试穿试戴场景", description: "上身/上手效果展示", tag: "场景图", promptHint: "通过人物上身或上手场景展示商品实际使用效果", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["试穿", "试戴", "人物"] },
+  { id: "endorsement", category: "产品代言互动", description: "人物代言+互动引导购买", tag: "场景图", promptHint: "用人物互动场景提升信任感和转化意图", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["人物", "互动", "代言"] },
+  { id: "comparison", category: "使用对比图", description: "使用前后/竞品对比更直观", tag: "卖点图", promptHint: "对比使用前后或竞品差异，突出功能效果和优势", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["对比", "前后", "竞品"] },
+  { id: "packaging", category: "包装展示图", description: "尺寸参数一图看懂", tag: "包装图", promptHint: "展示包装外观、礼盒组合或配件构成，突出包装质感", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["包装", "礼盒", "配件"] },
+  { id: "shipping-install", category: "运输安装", description: "运输包装与安装步骤说明", tag: "说明图", promptHint: "说明运输保护、开箱步骤或安装流程，降低决策顾虑", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["运输", "安装", "步骤"] },
+  { id: "parameter", category: "规格参数图", description: "尺寸参数一图看懂", tag: "参数图", promptHint: "用清晰参数版式展示尺寸、材质和关键规格", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["参数", "尺寸", "规格"] },
+  { id: "design", category: "产品设计图", description: "结构示意，讲清设计亮点", tag: "说明图", promptHint: "通过结构示意和功能拆解讲清商品设计亮点", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["设计", "结构", "亮点"] },
+  { id: "buyer-show", category: "通用买家秀", description: "真实感买家秀氛围图", tag: "场景图", promptHint: "模拟真实买家秀内容，突出商品融入生活后的效果", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["买家秀", "真实", "分享"] },
+  { id: "poster", category: "活动海报", description: "促销信息海报，用于投放", tag: "活动图", promptHint: "突出活动主题、利益点和节日氛围，用于促销传播", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["活动", "促销", "海报"] }
+];
+
+const aplusModuleLibrary: SetPackTypeTemplate[] = [
+  { id: "aplus-hero", category: "首屏主视觉", description: "传递核心价值", tag: "首屏模块", promptHint: "打造适合A+详情页首屏的主视觉模块，突出商品核心价值、品牌质感和视觉冲击力。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["首屏", "主视觉", "价值"] },
+  { id: "aplus-core-selling", category: "核心卖点图", description: "突出差异优势", tag: "卖点模块", promptHint: "围绕一到两个核心卖点做图文强化，突出差异化优势和用户收益。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["卖点", "优势", "转化"] },
+  { id: "aplus-scene-usage", category: "使用场景图", description: "呈现真实使用场景", tag: "场景模块", promptHint: "通过真实使用场景展示商品在生活或工作中的应用方式和体验。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["场景", "使用", "代入"] },
+  { id: "aplus-multi-angle", category: "多角度图", description: "多角度呈现外观", tag: "展示模块", promptHint: "以多视角构图清晰展示商品正面、侧面、背面及关键结构。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["角度", "外观", "结构"] },
+  { id: "aplus-atmosphere", category: "场景氛围图", description: "展示使用场景", tag: "场景模块", promptHint: "营造更有氛围感的环境画面，强化商品气质与生活方式表达。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["氛围", "场景", "生活方式"] },
+  { id: "aplus-detail", category: "商品细节图", description: "放大材质与工艺", tag: "细节模块", promptHint: "用局部特写放大商品材质、纹理、做工和结构细节，增强信任感。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["细节", "材质", "工艺"] },
+  { id: "aplus-brand-story", category: "品牌故事图", description: "传达品牌理念", tag: "品牌模块", promptHint: "结合品牌调性、产品理念和视觉叙事，输出更具品牌表达的详情模块。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["品牌", "故事", "理念"] },
+  { id: "aplus-size", category: "尺寸/容量/尺码图", description: "展示规格信息", tag: "参数模块", promptHint: "清晰呈现尺寸、容量、尺码或规格信息，版式规整易读。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["尺寸", "容量", "尺码"] },
+  { id: "aplus-compare", category: "效果对比图", description: "使用前后效果对比", tag: "对比模块", promptHint: "通过使用前后或方案对比，直观呈现商品带来的效果提升。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["对比", "前后", "效果"] },
+  { id: "aplus-spec", category: "详细规格/参数表", description: "展示详细商品数据", tag: "参数模块", promptHint: "使用表格或信息卡形式展示详细规格参数、材质信息和产品数据。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["规格", "参数", "表格"] },
+  { id: "aplus-craft", category: "工艺制作图", description: "展示工艺制作过程", tag: "工艺模块", promptHint: "拆解制作工艺、生产流程或结构工法，强化品质背书。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["工艺", "制作", "流程"] },
+  { id: "aplus-accessories", category: "配件/赠品图", description: "明确收货的所有物品", tag: "配件模块", promptHint: "清晰列出随箱配件、赠品或包装内容，避免信息遗漏。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["配件", "赠品", "清单"] },
+  { id: "aplus-series", category: "系列展示图", description: "多色或多SKU展示", tag: "系列模块", promptHint: "展示系列款式、多色、多规格或SKU组合，便于用户横向比较。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["系列", "SKU", "多色"] },
+  { id: "aplus-ingredient", category: "商品成分图", description: "展示配方/材质/成分", tag: "成分模块", promptHint: "图文展示原料、配方、面料或核心成分及其对应价值。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["成分", "配方", "材质"] },
+  { id: "aplus-after-sale", category: "售后保障图", description: "说明质保退换政策", tag: "保障模块", promptHint: "明确售后保障、质保时效、退换政策和服务承诺，降低决策顾虑。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["售后", "保障", "服务"] },
+  { id: "aplus-usage-advice", category: "使用建议图", description: "商品使用的注意事项", tag: "说明模块", promptHint: "补充使用方法、注意事项、保养建议或适用提醒，提升使用体验。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["建议", "注意事项", "使用"] }
+];
+
+const setPackCustomTypePresets: Array<Omit<SetPackTypeItem, "count">> = [
+  {
+    id: "custom-preset-brand-story",
+    category: "品牌故事图",
+    name: "品牌故事图展示",
+    description: "品牌理念与商品气质组合呈现",
+    tag: "自定义",
+    prompt: "结合品牌故事、商品细节和主视觉构图，输出更偏品牌表达的套图画面。",
+    ratio: "3:4",
+    resolution: "1K"
+  },
+  {
+    id: "custom-preset-gift-scene",
+    category: "礼赠氛围图",
+    name: "礼赠氛围展示",
+    description: "强化送礼场景和仪式感氛围",
+    tag: "自定义",
+    prompt: "围绕礼盒、节庆、赠礼对象和氛围布置，突出商品的礼赠价值。",
+    ratio: "4:5",
+    resolution: "1K"
+  },
+  {
+    id: "custom-preset-detail-compare",
+    category: "材质对比图",
+    name: "材质对比展示",
+    description: "对比材质细节和质感优势",
+    tag: "自定义",
+    prompt: "用近景细节和对比版式强调材质、纹理、工艺差异和品质优势。",
+    ratio: "3:4",
+    resolution: "1K"
+  }
+];
+
+const presetCreationTaskRecords: Record<string, TaskRecord[]> = {
+  "goods-marketing": [
+    {
+      id: "goods-marketing-20260425113000",
+      toolKey: "goods-marketing",
+      taskId: "202604251130",
+      createdAt: new Date("2026-04-25T11:30:00+08:00").getTime(),
+      totalCount: 4,
+      successCount: 0,
+      failCount: 0,
+      status: "generating",
+      itemIds: ["preset-marketing-live-1", "preset-marketing-live-2", "preset-marketing-live-3", "preset-marketing-live-4"],
+      coverSrcs: [],
+      snapshot: {
+        mainUploads: [{ id: "6281459073", name: "耳机生成中.png", src: "/assets/upload-preview.png", sizeMb: 6, status: "ready" }],
+        referenceUploads: [],
+        advancedSelections: {
+          productType: "蓝牙耳机",
+          sceneBackground: "产品场景",
+          visualStyle: "时尚潮流",
+          copyLanguage: "简体中文"
+        },
+        supplementValue: "保持年轻电商氛围，突出耳机主体与科技感布光。",
+        creationModeSelection: {
+          modeId: "general",
+          modeLabel: "通用模式",
+          ratio: "自适应尺寸",
+          count: 4,
+          unitCreditCost: 1
+        }
+      }
+    },
+    {
+      id: "goods-marketing-20260425093000",
+      toolKey: "goods-marketing",
+      taskId: "202604250930",
+      createdAt: new Date("2026-04-25T09:30:00+08:00").getTime(),
+      totalCount: 4,
+      successCount: 3,
+      failCount: 1,
+      status: "completed",
+      itemIds: ["preset-marketing-1", "preset-marketing-2", "preset-marketing-3", "preset-marketing-4"],
+      coverSrcs: [resultAssetPool[0], resultAssetPool[1], resultAssetPool[2]],
+      snapshot: {
+        mainUploads: [{ id: "3817264510", name: "耳机主图.png", src: "/assets/upload-preview.png", sizeMb: 6, status: "ready" }],
+        referenceUploads: [],
+        advancedSelections: {
+          productType: "蓝牙耳机",
+          sceneBackground: "产品场景",
+          visualStyle: "轻奢高端",
+          copyLanguage: "简体中文"
+        },
+        supplementValue: "突出耳机主体质感，强调降噪卖点与高级电商氛围。",
+        creationModeSelection: {
+          modeId: "general",
+          modeLabel: "通用模式",
+          ratio: "自适应尺寸",
+          count: 3,
+          unitCreditCost: 1
+        }
+      }
+    }
+  ],
+  "goods-retouch": [
+    {
+      id: "goods-retouch-20260424153000",
+      toolKey: "goods-retouch",
+      taskId: "202604241530",
+      createdAt: new Date("2026-04-24T15:30:00+08:00").getTime(),
+      totalCount: 3,
+      successCount: 2,
+      failCount: 1,
+      status: "completed",
+      itemIds: ["preset-retouch-1", "preset-retouch-2", "preset-retouch-3"],
+      coverSrcs: [resultAssetPool[3], resultAssetPool[0]],
+      snapshot: {
+        mainUploads: [{ id: "9073146285", name: "香水原图.png", src: "/assets/task-thumb-1.png", sizeMb: 4, status: "ready" }],
+        referenceUploads: [],
+        advancedSelections: {
+          platform: "天猫",
+          region: "华东"
+        },
+        supplementValue: "保留瓶身高光与玻璃通透感，提升高级精修质感。",
+        creationModeSelection: {
+          modeId: "general",
+          modeLabel: "通用模式",
+          ratio: "自适应尺寸",
+          count: 2,
+          unitCreditCost: 1
+        }
+      }
+    }
+  ],
+  "goods-scene": [
+    {
+      id: "goods-scene-20260423091000",
+      toolKey: "goods-scene",
+      taskId: "202604230910",
+      createdAt: new Date("2026-04-23T09:10:00+08:00").getTime(),
+      totalCount: 4,
+      successCount: 3,
+      failCount: 1,
+      status: "completed",
+      itemIds: ["preset-scene-1", "preset-scene-2", "preset-scene-3", "preset-scene-4"],
+      coverSrcs: [resultAssetPool[1], resultAssetPool[2], resultAssetPool[3]],
+      snapshot: {
+        mainUploads: [{ id: "4518623097", name: "杯子产品图.png", src: "/assets/task-gallery-5.png", sizeMb: 5, status: "ready" }],
+        referenceUploads: [],
+        advancedSelections: {
+          productType: "饮料",
+          sceneType: "产品场景",
+          moodStyle: "清新明亮",
+          targetMarket: "国内电商"
+        },
+        supplementValue: "营造清新自然的生活方式场景，突出饮品清爽与夏日感。",
+        creationModeSelection: {
+          modeId: "general",
+          modeLabel: "通用模式",
+          ratio: "4:5",
+          count: 4,
+          unitCreditCost: 1
+        }
+      }
+    }
+  ],
+  "model-generate": [
+    {
+      id: "model-generate-20260425160000",
+      toolKey: "model-generate",
+      taskId: "202604251600",
+      createdAt: new Date("2026-04-25T16:00:00+08:00").getTime(),
+      totalCount: 3,
+      successCount: 3,
+      failCount: 0,
+      status: "completed",
+      itemIds: ["preset-model-generate-1", "preset-model-generate-2", "preset-model-generate-3"],
+      coverSrcs: ["/assets/task-gallery-6.png", "/assets/task-gallery-7.png", "/assets/task-gallery-8.png"],
+      snapshot: {
+        mainUploads: [{ id: "7601452389", name: "模特参考图.png", src: "/assets/task-gallery-4.png", sizeMb: 5, status: "ready" }],
+        referenceUploads: [],
+        advancedSelections: {
+          modelGenerateType: "通用模特",
+          gender: "女",
+          age: "25-30岁",
+          bodyType: "高挑",
+          scene: "黑白影棚"
+        },
+        supplementValue: "生成适合女装展示的电商模特，姿态自然，面部清晰。",
+        creationModeSelection: {
+          modeId: "general",
+          modeLabel: "通用模式",
+          ratio: "竖9:16",
+          count: 3,
+          unitCreditCost: 1
+        }
+      }
+    }
+  ]
+};
+
+const presetCreationResultItems: Record<string, ResultItem[]> = {
+  "goods-marketing": [
+    {
+      id: "preset-marketing-live-1",
+      toolKey: "goods-marketing",
+      label: "6281459073_1",
+      fileName: "6281459073_1",
+      taskId: "202604251130",
+      mediaKind: "image",
+      status: "generating",
+      src: resultAssetPool[0],
+      selected: false,
+      createdAt: new Date("2026-04-25T11:31:00+08:00").getTime()
+    },
+    {
+      id: "preset-marketing-live-2",
+      toolKey: "goods-marketing",
+      label: "6281459073_2",
+      fileName: "6281459073_2",
+      taskId: "202604251130",
+      mediaKind: "image",
+      status: "queued",
+      selected: false,
+      createdAt: new Date("2026-04-25T11:31:20+08:00").getTime()
+    },
+    {
+      id: "preset-marketing-live-3",
+      toolKey: "goods-marketing",
+      label: "6281459073_3",
+      fileName: "6281459073_3",
+      taskId: "202604251130",
+      mediaKind: "image",
+      status: "queued",
+      selected: false,
+      createdAt: new Date("2026-04-25T11:31:40+08:00").getTime()
+    },
+    {
+      id: "preset-marketing-live-4",
+      toolKey: "goods-marketing",
+      label: "6281459073_4",
+      fileName: "6281459073_4",
+      taskId: "202604251130",
+      mediaKind: "image",
+      status: "queued",
+      selected: false,
+      createdAt: new Date("2026-04-25T11:32:00+08:00").getTime()
+    },
+    {
+      id: "preset-marketing-1",
+      toolKey: "goods-marketing",
+      label: "3817264510_1",
+      fileName: "3817264510_1",
+      taskId: "202604250930",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[0],
+      selected: false,
+      createdAt: new Date("2026-04-25T09:31:00+08:00").getTime()
+    },
+    {
+      id: "preset-marketing-2",
+      toolKey: "goods-marketing",
+      label: "3817264510_2",
+      fileName: "3817264510_2",
+      taskId: "202604250930",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[1],
+      selected: false,
+      createdAt: new Date("2026-04-25T09:31:20+08:00").getTime()
+    },
+    {
+      id: "preset-marketing-3",
+      toolKey: "goods-marketing",
+      label: "3817264510_3",
+      fileName: "3817264510_3",
+      taskId: "202604250930",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[2],
+      selected: false,
+      createdAt: new Date("2026-04-25T09:31:40+08:00").getTime()
+    },
+    {
+      id: "preset-marketing-4",
+      toolKey: "goods-marketing",
+      label: "3817264510_4",
+      fileName: "3817264510_4",
+      taskId: "202604250930",
+      mediaKind: "image",
+      status: "failed",
+      src: resultAssetPool[3],
+      selected: false,
+      createdAt: new Date("2026-04-25T09:32:00+08:00").getTime()
+    }
+  ],
+  "goods-retouch": [
+    {
+      id: "preset-retouch-1",
+      toolKey: "goods-retouch",
+      label: "9073146285_1",
+      fileName: "9073146285_1",
+      taskId: "202604241530",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[3],
+      selected: false,
+      createdAt: new Date("2026-04-24T15:31:00+08:00").getTime()
+    },
+    {
+      id: "preset-retouch-2",
+      toolKey: "goods-retouch",
+      label: "9073146285_2",
+      fileName: "9073146285_2",
+      taskId: "202604241530",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[0],
+      selected: false,
+      createdAt: new Date("2026-04-24T15:31:20+08:00").getTime()
+    },
+    {
+      id: "preset-retouch-3",
+      toolKey: "goods-retouch",
+      label: "9073146285_3",
+      fileName: "9073146285_3",
+      taskId: "202604241530",
+      mediaKind: "image",
+      status: "failed",
+      src: resultAssetPool[1],
+      selected: false,
+      createdAt: new Date("2026-04-24T15:31:40+08:00").getTime()
+    }
+  ],
+  "goods-scene": [
+    {
+      id: "preset-scene-1",
+      toolKey: "goods-scene",
+      label: "4518623097_1",
+      fileName: "4518623097_1",
+      taskId: "202604230910",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[1],
+      selected: false,
+      createdAt: new Date("2026-04-23T09:11:00+08:00").getTime()
+    },
+    {
+      id: "preset-scene-2",
+      toolKey: "goods-scene",
+      label: "4518623097_2",
+      fileName: "4518623097_2",
+      taskId: "202604230910",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[2],
+      selected: false,
+      createdAt: new Date("2026-04-23T09:11:20+08:00").getTime()
+    },
+    {
+      id: "preset-scene-3",
+      toolKey: "goods-scene",
+      label: "4518623097_3",
+      fileName: "4518623097_3",
+      taskId: "202604230910",
+      mediaKind: "image",
+      status: "ready",
+      src: resultAssetPool[3],
+      selected: false,
+      createdAt: new Date("2026-04-23T09:11:40+08:00").getTime()
+    },
+    {
+      id: "preset-scene-4",
+      toolKey: "goods-scene",
+      label: "4518623097_4",
+      fileName: "4518623097_4",
+      taskId: "202604230910",
+      mediaKind: "image",
+      status: "failed",
+      src: resultAssetPool[0],
+      selected: false,
+      createdAt: new Date("2026-04-23T09:12:00+08:00").getTime()
+    }
+  ],
+  "model-generate": [
+    {
+      id: "preset-model-generate-1",
+      toolKey: "model-generate",
+      label: "7601452389_1",
+      fileName: "7601452389_1",
+      taskId: "202604251600",
+      mediaKind: "image",
+      status: "ready",
+      src: "/assets/task-gallery-6.png",
+      selected: false,
+      createdAt: new Date("2026-04-25T16:01:00+08:00").getTime()
+    },
+    {
+      id: "preset-model-generate-2",
+      toolKey: "model-generate",
+      label: "7601452389_2",
+      fileName: "7601452389_2",
+      taskId: "202604251600",
+      mediaKind: "image",
+      status: "ready",
+      src: "/assets/task-gallery-7.png",
+      selected: false,
+      createdAt: new Date("2026-04-25T16:01:20+08:00").getTime()
+    },
+    {
+      id: "preset-model-generate-3",
+      toolKey: "model-generate",
+      label: "7601452389_3",
+      fileName: "7601452389_3",
+      taskId: "202604251600",
+      mediaKind: "image",
+      status: "ready",
+      src: "/assets/task-gallery-8.png",
+      selected: false,
+      createdAt: new Date("2026-04-25T16:01:40+08:00").getTime()
+    }
+  ]
+};
+
+const defaultUploadedModels: ModelAsset[] = [
+  {
+    id: "local-model-1",
+    name: "通勤女模特-正面.png",
+    src: "/assets/task-thumb-1.png",
+    sizeMb: 4.8,
+    createdAt: new Date("2026-04-25T10:20:00+08:00").getTime(),
+    sourceType: "upload",
+    format: "PNG",
+    width: 1024,
+    height: 1365,
+    detailTitle: "本地上传模特",
+    detailSubtitle: "图片素材",
+    detailGroups: [{ label: "基础信息", values: ["本地上传", "PNG", "1024 × 1365"] }]
+  },
+  {
+    id: "local-model-2",
+    name: "休闲男模特-半身.png",
+    src: "/assets/task-thumb-2.png",
+    sizeMb: 5.2,
+    createdAt: new Date("2026-04-24T18:40:00+08:00").getTime(),
+    sourceType: "upload",
+    format: "PNG",
+    width: 1024,
+    height: 1365,
+    detailTitle: "本地上传模特",
+    detailSubtitle: "图片素材",
+    detailGroups: [{ label: "基础信息", values: ["本地上传", "PNG", "1024 × 1365"] }]
+  },
+  {
+    id: "local-model-3",
+    name: "童装模特-棚拍.png",
+    src: "/assets/upload-preview.png",
+    sizeMb: 3.9,
+    createdAt: new Date("2026-04-23T14:10:00+08:00").getTime(),
+    sourceType: "upload",
+    format: "PNG",
+    width: 960,
+    height: 1280,
+    detailTitle: "本地上传模特",
+    detailSubtitle: "图片素材",
+    detailGroups: [{ label: "基础信息", values: ["本地上传", "PNG", "960 × 1280"] }]
+  }
+];
+
+function getResultMediaKind(toolKey: string): ResultMediaKind {
+  return toolKey.startsWith("video-") ? "video" : "image";
+}
+
+function getResultCardLabel(tool: ToolConfig, index: number) {
+  if (tool.key.startsWith("video-")) {
+    return `视频 ${index + 1}`;
+  }
+  return `${tool.label} ${index + 1}`;
+}
+
+const defaultResultNamingRule: ResultNamingRule = ({ uploadId, index }) => `${uploadId}_${index + 1}`;
+
+const resultNamingRulesByTool: Record<string, ResultNamingRule> = {};
+
+function formatGeneratedResultName(tool: ToolConfig, uploads: UploadItem[], index: number) {
+  const primaryUpload = uploads[0];
+  const uploadId = primaryUpload?.id?.trim() || `${tool.key}-source`;
+  const rule = resultNamingRulesByTool[tool.key] ?? defaultResultNamingRule;
+  return rule({
+    tool,
+    uploadId,
+    index
+  });
+}
+
+function generateRandomTenDigitId() {
+  return String(Math.floor(1000000000 + Math.random() * 9000000000));
+}
+
+function formatTaskTimestamp(timestamp: number) {
+  const date = new Date(timestamp);
+  const parts = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+    String(date.getHours()).padStart(2, "0"),
+    String(date.getMinutes()).padStart(2, "0"),
+    String(date.getSeconds()).padStart(2, "0")
+  ];
+  return parts.join("");
+}
+
+function formatTaskRecordDate(timestamp: number) {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function formatTaskRecordDateTime(timestamp: number) {
+  const date = new Date(timestamp);
+  return `${formatTaskRecordDate(timestamp)} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatModelDateTime(timestamp: number) {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(
+    date.getMinutes()
+  ).padStart(2, "0")}`;
+}
+
+function getModelSourceLabel(sourceType: ModelSourceType) {
+  return sourceType === "ai" ? "AI生成" : "本地上传";
+}
+
+function buildModelDetailGroups(advancedSelections: AdvancedSelectionMap) {
+  const groups: Array<{ label: string; values: string[] }> = [];
+  const identityValues = [advancedSelections.gender, advancedSelections.age, advancedSelections.appearance].filter(Boolean);
+  if (identityValues.length) {
+    groups.push({ label: "基础属性", values: identityValues });
+  }
+
+  const personaValues = [advancedSelections.persona, advancedSelections.bodyType, advancedSelections.scene].filter(Boolean);
+  if (personaValues.length) {
+    groups.push({ label: "生成参数", values: personaValues });
+  }
+
+  const typeValues = [advancedSelections.modelGenerateType, advancedSelections.modelGenerateTypeKey].filter(Boolean);
+  if (typeValues.length) {
+    groups.push({ label: "模特类型", values: typeValues.slice(0, 1) });
+  }
+
+  return groups;
+}
+
+function getImageFormat(fileName: string, fallback = "PNG") {
+  const extension = fileName.split(".").pop()?.toUpperCase();
+  return extension || fallback;
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("文件读取失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageBySrc(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("图片解析失败"));
+    image.src = src;
+  });
+}
+
+async function detectModelFace(image: HTMLImageElement) {
+  const detector = typeof window !== "undefined" ? (window as typeof window & { FaceDetector?: new (options?: { fastMode?: boolean; maxDetectedFaces?: number }) => { detect: (source: CanvasImageSource) => Promise<Array<unknown>> } }).FaceDetector : undefined;
+  if (!detector) return null;
+
+  try {
+    const instance = new detector({ fastMode: true, maxDetectedFaces: 1 });
+    const faces = await instance.detect(image);
+    return faces.length > 0;
+  } catch {
+    return null;
+  }
+}
+
+async function parseModelFile(file: File): Promise<{ item: UploadItem; width: number; height: number }> {
+  const src = await readFileAsDataUrl(file);
+  const image = await loadImageBySrc(src);
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+
+  return {
+    item: {
+      id: generateRandomTenDigitId(),
+      name: file.name,
+      src,
+      sizeMb: Math.max(0.1, Number((file.size / (1024 * 1024)).toFixed(1))),
+      status: "ready",
+      format: getImageFormat(file.name),
+      width,
+      height
+    },
+    width,
+    height
+  };
+}
+
+async function validateModelImageFile(file: File) {
+  const parsed = await parseModelFile(file);
+  const image = await loadImageBySrc(parsed.item.src ?? "");
+  const width = parsed.width;
+  const height = parsed.height;
+  const ratio = width / Math.max(height, 1);
+  const faceDetected = await detectModelFace(image);
+  const heuristicallyValid = width >= 320 && height >= 320 && ratio >= 0.45 && ratio <= 1.8;
+
+  if (faceDetected === false || (faceDetected == null && !heuristicallyValid)) {
+    return {
+      ok: false,
+      reason: `“${file.name}”未检测到清晰正脸，请上传包含单人正脸的模特图。`
+    } as const;
+  }
+
+  return {
+    ok: true,
+    item: parsed.item
+  } as const;
+}
+
+function sanitizeDownloadName(value: string) {
+  return value.replace(/[\\/:*?"<>|]/g, "_");
+}
+
+function inferExtensionFromResult(item: ResultItem) {
+  if (item.src?.startsWith("data:image/png")) return "png";
+  if (item.src?.startsWith("data:image/jpeg")) return "jpg";
+  if (item.src?.startsWith("data:image/webp")) return "webp";
+  if (item.src?.startsWith("data:video/mp4")) return "mp4";
+  const path = item.src?.split("?")[0] ?? "";
+  const matched = path.match(/\.([a-zA-Z0-9]+)$/);
+  if (matched) return matched[1].toLowerCase();
+  return item.mediaKind === "video" ? "mp4" : "png";
+}
+
+async function getResultBlob(item: ResultItem) {
+  if (!item.src) {
+    throw new Error("当前结果缺少可下载资源");
+  }
+
+  if (item.src.startsWith("data:")) {
+    const response = await fetch(item.src);
+    return response.blob();
+  }
+
+  const response = await fetch(item.src);
+  if (!response.ok) {
+    throw new Error("下载资源失败");
+  }
+  return response.blob();
+}
+
+function triggerDownload(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = sanitizeDownloadName(fileName);
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function loadExportPreference() {
+  try {
+    const raw = window.localStorage.getItem(EXPORT_PREFERENCE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ExportPreference;
+    if (!parsed?.expiresAt || parsed.expiresAt < Date.now()) {
+      window.localStorage.removeItem(EXPORT_PREFERENCE_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveExportPreference(preference: ExportPreference) {
+  window.localStorage.setItem(EXPORT_PREFERENCE_STORAGE_KEY, JSON.stringify(preference));
+}
+
+function clearExportPreference() {
+  window.localStorage.removeItem(EXPORT_PREFERENCE_STORAGE_KEY);
+}
+
+async function addAiVisibleWatermark(blob: Blob, item: ResultItem) {
+  if (!blob.type.startsWith("image/")) {
+    return blob;
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const nextImage = new Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error("图片水印处理失败"));
+      nextImage.src = objectUrl;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth || image.width;
+    canvas.height = image.naturalHeight || image.height;
+    const context = canvas.getContext("2d");
+    if (!context) return blob;
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const scale = Math.max(canvas.width, canvas.height) / 1200;
+    const paddingX = Math.max(16, Math.round(22 * scale));
+    const paddingY = Math.max(10, Math.round(14 * scale));
+    const radius = Math.max(10, Math.round(14 * scale));
+    const fontSize = Math.max(18, Math.round(28 * scale));
+    const offset = Math.max(18, Math.round(24 * scale));
+    const text = "AI生成";
+
+    context.font = `600 ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    const textWidth = context.measureText(text).width;
+    const badgeWidth = Math.ceil(textWidth + paddingX * 2);
+    const badgeHeight = Math.ceil(fontSize + paddingY * 2);
+    const x = canvas.width - badgeWidth - offset;
+    const y = canvas.height - badgeHeight - offset;
+
+    context.fillStyle = "rgba(27, 35, 55, 0.64)";
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.arcTo(x + badgeWidth, y, x + badgeWidth, y + badgeHeight, radius);
+    context.arcTo(x + badgeWidth, y + badgeHeight, x, y + badgeHeight, radius);
+    context.arcTo(x, y + badgeHeight, x, y, radius);
+    context.arcTo(x, y, x + badgeWidth, y, radius);
+    context.closePath();
+    context.fill();
+
+    context.fillStyle = "#ffffff";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(text, x + badgeWidth / 2, y + badgeHeight / 2 + 1);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (nextBlob) => {
+          if (nextBlob) {
+            resolve(nextBlob);
+            return;
+          }
+          reject(new Error(`图片水印处理失败: ${item.fileName}`));
+        },
+        blob.type || "image/png",
+        0.96
+      );
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+const crc32Table = (() => {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < 256; index += 1) {
+    let current = index;
+    for (let bit = 0; bit < 8; bit += 1) {
+      current = (current & 1) !== 0 ? 0xedb88320 ^ (current >>> 1) : current >>> 1;
+    }
+    table[index] = current >>> 0;
+  }
+  return table;
+})();
+
+function computeCrc32(bytes: Uint8Array) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc = crc32Table[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function writeUint16(target: Uint8Array, offset: number, value: number) {
+  target[offset] = value & 0xff;
+  target[offset + 1] = (value >>> 8) & 0xff;
+}
+
+function writeUint32(target: Uint8Array, offset: number, value: number) {
+  target[offset] = value & 0xff;
+  target[offset + 1] = (value >>> 8) & 0xff;
+  target[offset + 2] = (value >>> 16) & 0xff;
+  target[offset + 3] = (value >>> 24) & 0xff;
+}
+
+function createZipBlob(entries: ZipEntry[]) {
+  const encoder = new TextEncoder();
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let offset = 0;
+
+  entries.forEach((entry) => {
+    const fileNameBytes = encoder.encode(sanitizeDownloadName(entry.fileName));
+    const crc32 = computeCrc32(entry.bytes);
+    const localHeader = new Uint8Array(30 + fileNameBytes.length);
+    writeUint32(localHeader, 0, 0x04034b50);
+    writeUint16(localHeader, 4, 20);
+    writeUint16(localHeader, 6, 0);
+    writeUint16(localHeader, 8, 0);
+    writeUint16(localHeader, 10, 0);
+    writeUint16(localHeader, 12, 0);
+    writeUint32(localHeader, 14, crc32);
+    writeUint32(localHeader, 18, entry.bytes.length);
+    writeUint32(localHeader, 22, entry.bytes.length);
+    writeUint16(localHeader, 26, fileNameBytes.length);
+    writeUint16(localHeader, 28, 0);
+    localHeader.set(fileNameBytes, 30);
+    localParts.push(localHeader, entry.bytes);
+
+    const centralHeader = new Uint8Array(46 + fileNameBytes.length);
+    writeUint32(centralHeader, 0, 0x02014b50);
+    writeUint16(centralHeader, 4, 20);
+    writeUint16(centralHeader, 6, 20);
+    writeUint16(centralHeader, 8, 0);
+    writeUint16(centralHeader, 10, 0);
+    writeUint16(centralHeader, 12, 0);
+    writeUint16(centralHeader, 14, 0);
+    writeUint32(centralHeader, 16, crc32);
+    writeUint32(centralHeader, 20, entry.bytes.length);
+    writeUint32(centralHeader, 24, entry.bytes.length);
+    writeUint16(centralHeader, 28, fileNameBytes.length);
+    writeUint16(centralHeader, 30, 0);
+    writeUint16(centralHeader, 32, 0);
+    writeUint16(centralHeader, 34, 0);
+    writeUint16(centralHeader, 36, 0);
+    writeUint32(centralHeader, 38, 0);
+    writeUint32(centralHeader, 42, offset);
+    centralHeader.set(fileNameBytes, 46);
+    centralParts.push(centralHeader);
+
+    offset += localHeader.length + entry.bytes.length;
+  });
+
+  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+  const endRecord = new Uint8Array(22);
+  writeUint32(endRecord, 0, 0x06054b50);
+  writeUint16(endRecord, 4, 0);
+  writeUint16(endRecord, 6, 0);
+  writeUint16(endRecord, 8, entries.length);
+  writeUint16(endRecord, 10, entries.length);
+  writeUint32(endRecord, 12, centralSize);
+  writeUint32(endRecord, 16, offset);
+  writeUint16(endRecord, 20, 0);
+
+  const blobParts = [...localParts, ...centralParts, endRecord].map(
+    (part) => part.buffer.slice(part.byteOffset, part.byteOffset + part.byteLength) as ArrayBuffer
+  );
+
+  return new Blob(blobParts, {
+    type: "application/zip"
+  });
+}
+
+function createCaseItems(tool: ToolConfig): ResultItem[] {
+  return resultAssetPool.slice(0, Math.min(6, tool.resultCount)).map((src, index) => {
+    const fileName = `${tool.key}_case_${index + 1}`;
+    return {
+      id: `${tool.key}-case-${index}`,
+      toolKey: tool.key,
+      label: fileName,
+      fileName,
+      taskId: "case",
+      mediaKind: getResultMediaKind(tool.key),
+      status: "ready",
+      src,
+      selected: false,
+      createdAt: index
+    };
+  });
+}
+
+const caseTemplateOverrides: Record<string, CaseCollection> = {
+  "set-main": {
+    headline: "一键生成适配平台上架的爆款套图，覆盖主图、场景图、细节图与卖点图",
+    subheadline: "围绕平台规范、商品卖点和视觉风格，快速拼出一套可直接下载使用的商品图包。",
+    templates: [
+      {
+        id: "set-main-case-beauty",
+        toolKey: "set-main",
+        title: "美妆护肤套图包",
+        category: "跨境电商",
+        description: "通过主图、质感特写、卖点说明和生活方式场景，输出完整的上架素材包。",
+        sourceImage: "/assets/upload-preview.png",
+        coverImage: "/assets/result-1.png",
+        resultImages: [
+          { id: "set-main-beauty-1", src: "/assets/result-1.png", title: "平台主图" },
+          { id: "set-main-beauty-2", src: "/assets/result-2.png", title: "核心卖点" },
+          { id: "set-main-beauty-3", src: "/assets/result-3.png", title: "细节特写" },
+          { id: "set-main-beauty-4", src: "/assets/result-4.png", title: "场景氛围" }
+        ]
+      },
+      {
+        id: "set-main-case-tech",
+        toolKey: "set-main",
+        title: "3C 数码套图包",
+        category: "平台主图",
+        description: "以平台首图为核心，补充功能参数、科技感卖点图和使用场景图。",
+        sourceImage: "/assets/task-gallery-6.png",
+        coverImage: "/assets/task-gallery-7.png",
+        resultImages: [
+          { id: "set-main-tech-1", src: "/assets/task-gallery-7.png", title: "主图合规版" },
+          { id: "set-main-tech-2", src: "/assets/result-2.png", title: "功能卖点图" },
+          { id: "set-main-tech-3", src: "/assets/result-3.png", title: "参数说明图" },
+          { id: "set-main-tech-4", src: "/assets/result-4.png", title: "场景图" }
+        ]
+      }
+    ]
+  },
+  "goods-marketing": {
+    headline: "一键将产品转为真人试戴试穿套图，高度保持模特与产品一致性",
+    subheadline: "专为电商营销打造，支持查看原图与生成案例，并一键套用同款表现。",
+    templates: [
+      {
+        id: "marketing-case-hat",
+        toolKey: "goods-marketing",
+        title: "黑白格纹空顶遮阳帽",
+        category: "服装鞋帽",
+        description: "以夏日户外轻度假场景呈现遮阳帽佩戴效果，覆盖多角度与生活化姿态。",
+        sourceImage: "/assets/upload-preview.png",
+        coverImage: "/assets/result-1.png",
+        resultImages: [
+          { id: "hat-result-1", src: "/assets/result-1.png", title: "江边露台落日 - 江边落日氛围感侧坐" },
+          { id: "hat-result-2", src: "/assets/result-2.png", title: "田园野餐 - 草地野餐扶帽挡光" },
+          { id: "hat-result-3", src: "/assets/result-3.png", title: "城市林荫步道 - 梧桐道漫步侧颜抓拍" },
+          { id: "hat-result-4", src: "/assets/result-4.png", title: "高端棚拍 - 奶白背景静态佩戴展示" },
+          { id: "hat-result-5", src: "/assets/task-gallery-5.png", title: "咖啡馆自然光 - 原木咖啡馆窗边托腮" }
+        ]
+      },
+      {
+        id: "marketing-case-tee",
+        toolKey: "goods-marketing",
+        title: "儿童短袖T恤",
+        category: "服装鞋帽",
+        description: "将基础款短袖生成多套真人试穿展示图，用于详情页与营销位模板。",
+        sourceImage: "/assets/task-gallery-6.png",
+        coverImage: "/assets/task-gallery-7.png",
+        resultImages: [
+          { id: "tee-result-1", src: "/assets/task-gallery-7.png", title: "标准棚拍 - 正面站姿展示" },
+          { id: "tee-result-2", src: "/assets/task-gallery-8.png", title: "轻运动场景 - 街头自然站姿" },
+          { id: "tee-result-3", src: "/assets/result-2.png", title: "电商主图 - 居中构图突出版型" },
+          { id: "tee-result-4", src: "/assets/result-3.png", title: "少年模特 - 侧身展示面料垂感" },
+          { id: "tee-result-5", src: "/assets/result-4.png", title: "中景半身 - 强调图案细节" }
+        ]
+      }
+    ]
+  },
+  "goods-scene": {
+    headline: "一键生成贴合商品气质的场景模板，快速拿到可直接投放的套图",
+    subheadline: "覆盖真实生活、简洁棚拍、氛围大片等场景风格，支持一键查看与套用。",
+    templates: [
+      {
+        id: "scene-case-cup",
+        toolKey: "goods-scene",
+        title: "保温杯晨间场景",
+        category: "生活家居",
+        description: "用清晨通勤与木质桌面环境，强化保温杯的日常陪伴感和品质感。",
+        sourceImage: "/assets/task-gallery-5.png",
+        coverImage: "/assets/result-2.png",
+        resultImages: [
+          { id: "cup-result-1", src: "/assets/result-2.png", title: "窗边晨光 - 桌面静物构图" },
+          { id: "cup-result-2", src: "/assets/result-3.png", title: "办公室工位 - 通勤陪伴场景" },
+          { id: "cup-result-3", src: "/assets/result-4.png", title: "咖啡店桌面 - 氛围感特写" }
+        ]
+      },
+      {
+        id: "scene-case-bag",
+        toolKey: "goods-scene",
+        title: "箱包通勤场景",
+        category: "箱包配饰",
+        description: "打造偏都市感的出行场景，让箱包产品更容易被用于营销落地页。",
+        sourceImage: "/assets/task-gallery-8.png",
+        coverImage: "/assets/task-gallery-7.png",
+        resultImages: [
+          { id: "bag-result-1", src: "/assets/task-gallery-7.png", title: "商圈街拍 - 都市通勤风" },
+          { id: "bag-result-2", src: "/assets/result-1.png", title: "机场大厅 - 出行属性强化" },
+          { id: "bag-result-3", src: "/assets/result-3.png", title: "咖啡馆落座 - 日常生活感" }
+        ]
+      }
+    ]
+  }
+};
+
+function createCaseCollection(tool: ToolConfig): CaseCollection {
+  const override = caseTemplateOverrides[tool.key];
+  if (override) return override;
+
+  return {
+    headline: `平台为「${tool.panelTitle}」精选了可直接参考的案例模板`,
+    subheadline: "可查看原图、结果图与案例思路，并支持一键做同款来快速验证效果。",
+    templates: [
+      {
+        id: `${tool.key}-case-a`,
+        toolKey: tool.key,
+        title: `${tool.panelTitle}案例 A`,
+        category: tool.label,
+        description: `适用于 ${tool.panelTitle} 的高转化模板案例，突出商品主体与画面完整度。`,
+        sourceImage: "/assets/task-gallery-4.png",
+        coverImage: "/assets/result-1.png",
+        resultImages: [
+          { id: `${tool.key}-case-a-1`, src: "/assets/result-1.png", title: "结果示例 1" },
+          { id: `${tool.key}-case-a-2`, src: "/assets/result-2.png", title: "结果示例 2" },
+          { id: `${tool.key}-case-a-3`, src: "/assets/result-3.png", title: "结果示例 3" }
+        ]
+      },
+      {
+        id: `${tool.key}-case-b`,
+        toolKey: tool.key,
+        title: `${tool.panelTitle}案例 B`,
+        category: tool.label,
+        description: `适用于 ${tool.panelTitle} 的另一套平台模板，用于快速体验当前功能效果。`,
+        sourceImage: "/assets/task-gallery-6.png",
+        coverImage: "/assets/result-4.png",
+        resultImages: [
+          { id: `${tool.key}-case-b-1`, src: "/assets/result-4.png", title: "结果示例 1" },
+          { id: `${tool.key}-case-b-2`, src: "/assets/task-gallery-7.png", title: "结果示例 2" },
+          { id: `${tool.key}-case-b-3`, src: "/assets/task-gallery-8.png", title: "结果示例 3" }
+        ]
+      }
+    ]
+  };
+}
+
+function createPendingResultItems(
+  tool: ToolConfig,
+  uploads: UploadItem[],
+  outputCount: number,
+  runSeed: number,
+  taskId: string,
+  advancedSelections: AdvancedSelectionMap = {}
+): ResultItem[] {
+  const mediaKind = getResultMediaKind(tool.key);
+  const sellingPointLines = splitMultilineValues(advancedSelections.setPackSellingPoints);
+  const setPackTypes = getSetPackSelectedTypes(advancedSelections);
+  const isSetPackTool = isSetPackLikeTool(tool.key);
+  const resolvedSetPackItems =
+    isSetPackTool
+      ? (() => {
+          const fallbackTypes =
+            tool.key === "set-aplus"
+              ? aplusModuleLibrary.slice(0, Math.max(outputCount, 6)).map((item) => ({
+                  id: item.id,
+                  category: item.category,
+                  name: item.category,
+                  description: item.description,
+                  tag: item.tag,
+                  prompt: item.promptHint,
+                  ratio: item.defaultRatio,
+                  resolution: item.defaultResolution
+                }))
+              : setPackResultRoleLabels.map((label, index) => ({
+                  id: `fallback-${index}`,
+                  category: label,
+                  name: label,
+                  description: "",
+                  tag: /(主图|卖点)/.test(label) ? "商品主图" : "细节图",
+                  prompt: "",
+                  ratio: "1:1",
+                  resolution: "1K"
+                }));
+          const sourceTypes = setPackTypes.length ? setPackTypes : fallbackTypes;
+          const perTypeCount = Math.max(1, Math.floor(outputCount / Math.max(sourceTypes.length, 1)) || 1);
+          return Array.from({ length: Math.max(1, outputCount) }, (_, index) => {
+            const type = sourceTypes[Math.floor(index / perTypeCount)] ?? sourceTypes[sourceTypes.length - 1];
+            const withinTypeIndex = (index % perTypeCount) + 1;
+            return {
+              category: type.category,
+              prompt: type.prompt,
+              name: perTypeCount > 1 ? `${type.category} ${withinTypeIndex}` : type.category
+            };
+          });
+        })()
+      : [];
+  return Array.from({ length: Math.max(1, outputCount) }, (_, index) => ({
+    id: `${tool.key}-${runSeed}-${index}`,
+    toolKey: tool.key,
+    label: isSetPackTool ? resolvedSetPackItems[index]?.name ?? `${tool.panelTitle}${index + 1}` : formatGeneratedResultName(tool, uploads, index),
+    fileName: isSetPackTool ? `${resolvedSetPackItems[index]?.name ?? `${tool.panelTitle}${index + 1}`}.png` : formatGeneratedResultName(tool, uploads, index),
+    taskId,
+    mediaKind,
+    status: isSetPackTool ? "skeleton" : index === 0 ? "skeleton" : "queued",
+    selected: false,
+    createdAt: runSeed + index,
+    roleLabel: isSetPackTool ? resolvedSetPackItems[index]?.category ?? `${tool.panelTitle}${index + 1}` : undefined,
+    overlayText:
+      tool.key === "set-main"
+        ? /(卖点|参数)/.test(resolvedSetPackItems[index]?.category ?? "")
+          ? sellingPointLines[Math.min(index - 1, Math.max(sellingPointLines.length - 1, 0))] ?? ""
+          : ""
+        : undefined
+  }));
+}
+
+function isVideoGenerationTool(toolKey: string) {
+  return toolKey.startsWith("video-");
+}
+
+function resolveVideoPricingSelections(
+  toolKey: string,
+  creationModeSelection: CreationModeSelection | null,
+  advancedSelections: AdvancedSelectionMap
+): VideoPricingSelectionMap {
+  const config = videoPricingConfigs[toolKey];
+  if (!config) {
+    return {};
+  }
+
+  const durationKey = config.selectionKeys?.duration;
+  const marketKey = config.selectionKeys?.market;
+  const hasSoundKey = config.selectionKeys?.hasSound;
+
+  return {
+    mode: creationModeSelection?.modeLabel ?? config.defaultSelections?.mode,
+    duration: durationKey ? advancedSelections[durationKey] ?? config.defaultSelections?.duration : config.defaultSelections?.duration,
+    market: marketKey ? advancedSelections[marketKey] ?? config.defaultSelections?.market : config.defaultSelections?.market,
+    ratio: creationModeSelection?.ratio ?? config.defaultSelections?.ratio,
+    resolution: creationModeSelection?.resolution ?? config.defaultSelections?.resolution,
+    hasSound: hasSoundKey ? advancedSelections[hasSoundKey] ?? config.defaultSelections?.hasSound : config.defaultSelections?.hasSound
+  };
+}
+
+function getVideoGenerationBaseCreditCost(
+  toolKey: string,
+  creationModeSelection: CreationModeSelection | null,
+  advancedSelections: AdvancedSelectionMap
+) {
+  const config = videoPricingConfigs[toolKey];
+  if (!config) {
+    return creationModeSelection?.unitCreditCost ?? 0;
+  }
+
+  const selections = resolveVideoPricingSelections(toolKey, creationModeSelection, advancedSelections);
+  const baseCost = (Object.entries(config.dimensionCosts) as Array<[keyof VideoPricingSelectionMap, Record<string, number> | undefined]>).reduce((sum, [dimension, costMap]) => {
+    if (!costMap) return sum;
+    const selectedValue = selections[dimension];
+    if (!selectedValue) return sum;
+    return sum + (costMap[selectedValue] ?? 0);
+  }, 0);
+
+  return baseCost || creationModeSelection?.unitCreditCost || 0;
+}
+
+function getResolvedToolUnitCreditCost(
+  toolKey: string,
+  creationModeSelection: CreationModeSelection | null,
+  advancedSelections: AdvancedSelectionMap
+) {
+  if (isVideoGenerationTool(toolKey)) {
+    return getVideoGenerationBaseCreditCost(toolKey, creationModeSelection, advancedSelections);
+  }
+
+  return creationModeSelection?.unitCreditCost ?? 0;
+}
+
+function getSpecialToolOutputCount(toolKey: string, sourceCount: number, referenceCount: number, batchCount: number) {
+  if (isSetPackLikeTool(toolKey)) {
+    return batchCount;
+  }
+
+  if (toolKey === "set-replica") {
+    return sourceCount * referenceCount * batchCount;
+  }
+
+  return batchCount;
+}
+
+function getSpecialToolGenerateCost(toolKey: string, sourceCount: number, referenceCount: number, batchCount: number, unitCreditCost: number) {
+  if (isSetPackLikeTool(toolKey)) {
+    return getSpecialToolOutputCount(toolKey, sourceCount, referenceCount, batchCount) * unitCreditCost;
+  }
+
+  if (toolKey === "set-replica" || isVideoGenerationTool(toolKey)) {
+    return getSpecialToolOutputCount(toolKey, sourceCount, referenceCount, batchCount) * unitCreditCost;
+  }
+
+  return sourceCount * unitCreditCost * batchCount;
+}
+
+function getQueuedResultRefundCredits(toolKey: string, sourceCount: number, unitCreditCost: number) {
+  if (isSetPackLikeTool(toolKey) || toolKey === "set-replica" || isVideoGenerationTool(toolKey)) {
+    return unitCreditCost;
+  }
+
+  return sourceCount * unitCreditCost;
+}
+
+const defaultRatioOptions = ["自适应尺寸", "1:1", "3:4", "4:5", "9:16", "2:3", "16:9", "4:3", "5:4", "3:2", "21:9"];
+const defaultCountOptions = ["1", "2"];
+const defaultResolutionOptions = ["1K", "2K", "4K"];
+const podCropModeOptions = [
+  { key: "通用", label: "通用" },
+  { key: "铁皮画", label: "铁皮画" },
+  { key: "装饰画", label: "装饰画" }
+];
+const podExtractModeCards = [
+  { key: "专项提取", label: "专项提取", description: "遮挡少的印花类商品" },
+  { key: "全能提取", label: "全能提取", description: "大幅褶皱，遮挡严重" }
+] as const;
+type PodExtractModeKey = (typeof podExtractModeCards)[number]["key"];
+
+const podExtractSceneOptions: Record<PodExtractModeKey, string[]> = {
+  "专项提取": ["通用", "手机壳", "家纺", "桌布"],
+  "全能提取": ["全能", "全幅印", "桌布", "手机壳", "凤玲", "挂钟"]
+};
+const podExtractRatioOptions: Record<PodExtractModeKey, string[]> = {
+  "专项提取": ["自动检测比例", "自定义比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
+  "全能提取": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"]
+};
+const videoReplicaModeOptions = ["普通模式", "高级模式"] as const;
+type VideoReplicaModeKey = (typeof videoReplicaModeOptions)[number];
+const videoReplicaDurationOptions = ["4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s"];
+const videoReplicaRatioOptions = ["自适应尺寸", "横16:9", "横4:3", "正1:1", "竖3:4", "竖9:16", "横21:9"];
+const videoReplicaResolutionOptions = ["480p", "720p"];
+const videoPricingConfigs: Partial<Record<string, VideoPricingConfig>> = {
+  "video-replica": {
+    selectionKeys: {
+      duration: "videoReplicaDuration",
+      hasSound: "videoReplicaHasSound"
+    },
+    defaultSelections: {
+      duration: "10s",
+      ratio: "竖9:16",
+      resolution: "480p",
+      hasSound: "无声"
+    },
+    dimensionCosts: {
+      mode: {
+        "普通模式": 30,
+        "高级模式": 50
+      },
+      duration: {
+        "4s": 0,
+        "5s": 4,
+        "6s": 8,
+        "7s": 12,
+        "8s": 16,
+        "9s": 20,
+        "10s": 24,
+        "11s": 28,
+        "12s": 32,
+        "13s": 36,
+        "14s": 40,
+        "15s": 44
+      },
+      ratio: {
+        "自适应尺寸": 0,
+        "横16:9": 6,
+        "横4:3": 6,
+        "正1:1": 8,
+        "竖3:4": 10,
+        "竖9:16": 12,
+        "横21:9": 14
+      },
+      resolution: {
+        "480p": 0,
+        "720p": 18
+      },
+      hasSound: {
+        "无声": 0,
+        "有声": 15
+      }
+    }
+  }
+};
+const productTypeInputOptions = [
+  "智能识别",
+  "服装",
+  "T恤",
+  "背包",
+  "鞋子",
+  "小家电",
+  "电视",
+  "沙发",
+  "吊灯",
+  "化妆品",
+  "香水",
+  "水果",
+  "饮料",
+  "汽车",
+  "集装箱",
+  "蓝牙耳机",
+  "手机",
+  "行李箱",
+  "文具",
+  "机械设备",
+  "项链",
+  "玩具",
+  "瑜伽服",
+  "健身器材",
+  "笔记本电脑",
+  "手办"
+];
+const sceneTypeInputOptions = ["智能生成", "无背景", "简单背景", "产品场景", "纯色背景", "纯色渐变", "图片边框"];
+const backgroundTypeInputOptions = ["电商白底", "实景室内", "室外场景", "商业广告风"];
+const platformInfoInputOptions = [
+  "无平台信息",
+  "淘宝",
+  "天猫",
+  "京东",
+  "拼多多",
+  "1688",
+  "抖音电商",
+  "快手电商",
+  "小红书电商",
+  "亚马逊",
+  "Temu",
+  "TikTok Shop",
+  "阿里国际站",
+  "速卖通",
+  "Shopee",
+  "OZON",
+  "SHEIN"
+];
+const productInfoInputOptions = ["无信息", "智能生成", "名称+卖点", "价格与促销", "名称+卖点+价格+促销"];
+const visualStyleInputOptions = ["自动匹配", "极简简约", "轻奢高端", "时尚潮流", "年轻元气", "专业信任", "强营销", "吸睛爆点"];
+const marketingElementInputOptions = ["无", "折扣标识", "买一送一", "满减活动", "顺丰速达", "京东自营", "本地仓", "双十一促销"];
+const backgroundLightingInputOptions = ["写实自然光", "柔光棚拍风", "日系清新光", "高级杂志风", "人造光氛围"];
+const targetLanguageInputOptions = ["简体中文", "英语", "繁体中文", "日语", "韩语", "西班牙语", "俄语", "法语", "泰语", "印尼语", "阿拉伯语"];
+const videoMainScriptModeOptions = [
+  { key: "ai-script", label: "AI生成脚本" },
+  { key: "custom-script", label: "自定义脚本" }
+];
+const videoMainSellingPointOptions = ["智能识别"];
+const videoMainVideoTypeOptions = [
+  "智能匹配",
+  "电商主图视频",
+  "口播/评测讲解",
+  "场景种草",
+  "品牌形象大片",
+  "主体/细节展示",
+  "穿搭/佩戴展示",
+  "使用教程",
+  "品牌匠心",
+  "活动促销",
+  "痛点解决",
+  "沉浸式开箱",
+  "达人Vlog种草"
+];
+const videoMainMarketingNeedOptions = [
+  "智能匹配",
+  "产品展示/核心卖点",
+  "制造焦虑/放大痛点",
+  "彰显品味/品牌溢价",
+  "极致性价比/促单",
+  "科普评测/建立信任",
+  "猎奇吸睛/强力促停",
+  "颜值暴击/纯享种草"
+];
+const videoMainRhythmOptions = [
+  "智能匹配",
+  "简单分镜",
+  "一镜到底",
+  "多分镜叙述",
+  "黄金三秒痛点法",
+  "娓娓道来",
+  "暴力测评",
+  "流行卡点"
+];
+const videoMainMusicMoodOptions = [
+  "智能匹配",
+  "治愈解压/松弛感",
+  "燃向/高燃动感",
+  "温馨日常/烟火气",
+  "幽默搞笑/趣味",
+  "催泪走心/共情",
+  "高冷克制/距离感",
+  "猎奇悬疑/强吸睛",
+  "自信独立/大女主风",
+  "清新纯净/元气感",
+  "潮酷叛逆/街头感",
+  "高燃动感/荷尔蒙",
+  "软萌可爱/童趣感"
+];
+const videoMainVisualOptions = [
+  "极简白底",
+  "高级棚拍",
+  "生活方式",
+  "轻奢大片",
+  "科技简约",
+  "温馨家居",
+  "时尚大片",
+  "活泼趣味",
+  "品牌极简",
+  "工业硬朗",
+  "黑白光影",
+  "赛博朋克",
+  "运动潮流",
+  "多巴胺/高饱和"
+];
+const videoMainAudienceOptions = [
+  "职场精英/白领",
+  "精致Z世代/潮人",
+  "宝妈/家庭主妇",
+  "学生党/年轻群体",
+  "银发族/中老年",
+  "户外/运动硬核玩家",
+  "泛大众/下沉市场"
+];
+const videoMainCharacterFitOptions = [
+  "无人物",
+  "局部出境",
+  "亚洲时尚女性",
+  "欧美成熟男性",
+  "宠物展示",
+  "动漫角色",
+  "虚拟偶像",
+  "国风端庄女性",
+  "专业人士"
+];
+const spokespersonInteractionOptions = ["穿戴展示", "手持展示", "使用状态展示", "推荐代言", "产品静置人物出现", "身体局部展示"];
+const spokespersonCharacterOptions = [
+  "明星气质",
+  "网络达人",
+  "真实素人",
+  "产品专业人士",
+  "生产工作人员",
+  "卡通人物",
+  "运动风",
+  "商务",
+  "休闲",
+  "青春",
+  "童趣",
+  "慈祥",
+  "搞怪"
+];
+const spokespersonSceneBackgroundOptions = [
+  "无背景",
+  "纯色背景",
+  "简单背景",
+  "真实场景",
+  "居家场景",
+  "摄影棚",
+  "舞台T台",
+  "户外场景",
+  "城市街道",
+  "商业空间"
+];
+const spokespersonLayoutOptions = [
+  "人物全貌展示",
+  "突出产品主体",
+  "多场景拼接",
+  "产品居中，周边搭配使用场景",
+  "同一人物不同场景",
+  "不同人物同一场景"
+];
+const spokespersonSkinToneOptions = ["亚洲", "北美", "欧洲", "南美", "非洲", "东南亚", "中东"];
+const spokespersonGenderStyleOptions = ["男", "女", "中性风", "妩媚", "性冷淡"];
+const spokespersonAgeOptions = ["婴幼儿", "儿童", "少年", "青年", "中年", "老年"];
+const spokespersonFocusOptions = ["产品突出", "人物突出", "全貌展示", "局部特写"];
+const spokespersonTargetMarketOptions = [
+  "大陆",
+  "北美",
+  "韩国",
+  "日本",
+  "俄罗斯",
+  "中东阿拉伯",
+  "港澳",
+  "中国台湾",
+  "土耳其",
+  "南美",
+  "澳洲",
+  "东南亚",
+  "印度",
+  "非洲",
+  "英国",
+  "德国",
+  "法国",
+  "欧洲",
+  "东欧"
+];
+const setPackTargetMarketOptions = spokespersonTargetMarketOptions;
+const modelGenerateTypes: ModelGenerateTypeConfig[] = [
+  { key: "real-model", label: "真人模特图" },
+  { key: "mannequin-model", label: "人台模特图" },
+  { key: "wig-model", label: "假发模特图" }
+];
+const modelGenerateAppearanceOptions = ["欧美白人", "中国人", "亚洲人", "东南亚人", "非裔", "中东人", "拉丁裔"];
+const modelGenerateAgeOptions = ["青少年", "青年", "中年", "老年"];
+const modelGeneratePersonaOptions = ["上班族", "测评博主", "学生", "健身人群", "家庭主妇", "其他"];
+const modelGenerateBodyOptions = ["纤细", "标准", "微胖", "大码"];
+const sellingPointSceneTypeOptions = [
+  "智能匹配",
+  "电商主图",
+  "简单场景",
+  "纯色背景",
+  "无背景纯白色",
+  "彩色渐变",
+  "电商展台",
+  "室内居家",
+  "都市街道",
+  "运动场所",
+  "户外公园",
+  "自然风格",
+  "背景虚化"
+];
+const sellingPointDisplayOptions = ["单细节展示", "多细节拼接展示", "细节 + 功能关联", "细节 + 材质对比", "细节 + 使用痕迹"];
+const sellingPointCoreCopyOptions = [
+  "自动生成单一核心卖点文案展示",
+  "生成两个核心卖点文案对称展示",
+  "生成主卖点搭配2~3个辅卖点",
+  "生成多个核心卖点文案展示"
+];
+const sellingPointPresentationOptions = [
+  "产品居中展示卖点两侧分布",
+  "智能匹配",
+  "产品场景化展示",
+  "卖点分散排版",
+  "产品展示在上卖点相关在下",
+  "产品展示在下卖点相关在上",
+  "左侧展示产品右侧展示卖点",
+  "左侧展示卖点右侧展示产品",
+  "产品微缩展示卖点环绕展示"
+];
+const sellingPointFocusOptions = ["材质优势", "工艺精度", "功能特性", "性能表现", "设计亮点"];
+const sellingPointTitleOptions = ["无标题", "自动生成主标题"];
+const sellingPointSubtitleOptions = ["无副标题", "自动生成副标题"];
+const sellingPointFontStyleOptions = ["粗体", "黑体", "手写体", "标题黑体内容宋体", "卡通风", "科技风", "3d立体", "艺术字体"];
+const sellingPointAssistElementOptions = ["箭头辅助", "图标辅助", "强调框辅助", "数据辅助", "线条辅助", "色块辅助"];
+const buyerShowProductStateOptions = [
+  "完整快递箱",
+  "产品与配件自然陈列",
+  "新品未拆封",
+  "产品自然摆放场景",
+  "安装场景",
+  "使用状态",
+  "穿戴状态",
+  "长期使用状态"
+];
+const buyerShowPresentationOptions = [
+  "主体展示",
+  "细节局部拍摄",
+  "自然摆放",
+  "手持拍摄",
+  "穿戴拍摄",
+  "对镜子自拍",
+  "使用中拍摄",
+  "日常物品大小对比"
+];
+const buyerShowAtmosphereOptions = ["无场景", "居家场景", "局部或模糊场景", "车内场景", "移动运动场景", "日常外出场景", "节日场景"];
+const buyerShowProductRealityOptions = ["包装与产品褶皱", "长期使用磨损", "使用中的真实"];
+const buyerShowEnvironmentRealityOptions = ["杂乱环境", "宠物偶然入镜", "人物局部入镜", "临时摆放随意感", "人物素颜", "人物日常穿搭"];
+const buyerShowShotRealityOptions = ["随手拍摄无美感", "较低像素", "手抖模糊", "反光逆光", "对镜自拍", "手持自拍"];
+type RichSelectOption = {
+  value: string;
+  displayLabel: string;
+  title: string;
+  recommendation: string;
+  description: string;
+  thumbnailSrc?: string;
+};
+
+const cameraAngleOptions: RichSelectOption[] = [
+  {
+    value: "正面",
+    displayLabel: "正面",
+    title: "单面：正面",
+    recommendation: "建议视角：正面",
+    description: "仅生成正面视角，适用于主图或信息展示以正面为主的商品。"
+  },
+  {
+    value: "左侧面",
+    displayLabel: "左侧面",
+    title: "单面：左侧面",
+    recommendation: "建议视角：左侧面",
+    description: "仅生成左侧视角，适合展示产品厚度或局部结构。"
+  },
+  {
+    value: "右侧面",
+    displayLabel: "右侧面",
+    title: "单面：右侧面",
+    recommendation: "建议视角：右侧面",
+    description: "仅生成右侧视角，与左侧面类似，用于补充侧向信息。"
+  },
+  {
+    value: "背面",
+    displayLabel: "背面",
+    title: "单面：背面",
+    recommendation: "建议视角：背面",
+    description: "仅生成背面视角，适合展示标签、背部结构或背面细节。"
+  },
+  {
+    value: "底部",
+    displayLabel: "底部",
+    title: "单面：底部",
+    recommendation: "建议视角：底部",
+    description: "仅生成底部视角，用于展示底部结构、防滑纹或脚钉等。"
+  },
+  {
+    value: "顶部俯拍",
+    displayLabel: "顶部俯拍",
+    title: "单面：顶部俯拍",
+    recommendation: "建议视角：顶部俯拍",
+    description: "仅从顶部垂直俯拍视角展示，适合杯子、餐具、寝具等俯视效果。"
+  },
+  {
+    value: "45°俯拍",
+    displayLabel: "45°俯拍",
+    title: "单面：45°俯拍",
+    recommendation: "建议视角：45°俯拍",
+    description: "从上方45°俯视视角展示，兼具俯视与正面信息，通用性强。"
+  },
+  {
+    value: "服饰类（上衣/连衣裙/外套）",
+    displayLabel: "👕 服饰类（上衣/连衣裙/外套）",
+    title: "👕 服饰类（上衣/连衣裙/外套）",
+    recommendation: "建议视角：正面、45°、侧面、背面",
+    description: "展示整体版型、肩线与剪裁；常规三视图可，如需展示领口/袖口可补俯视或细节。"
+  },
+  {
+    value: "裤装类（牛仔裤/短裤/运动裤）",
+    displayLabel: "👖 裤装类（牛仔裤/短裤/运动裤）",
+    title: "👖 裤装类（牛仔裤/短裤/运动裤）",
+    recommendation: "建议视角：正面、45°、侧面、背面",
+    description: "突出裤型、长度比例与腰线；加入45°更自然，可加入坐姿或细节图增强真实感。"
+  },
+  {
+    value: "鞋靴类",
+    displayLabel: "👟 鞋靴类",
+    title: "👟 鞋靴类",
+    recommendation: "建议视角：正面、45°、侧面、背面",
+    description: "展示鞋面、后跟与鞋底纹路；五视图可呈现鞋底、防滑纹以及厚度结构。"
+  },
+  {
+    value: "包类/箱包",
+    displayLabel: "👜 包类 / 箱包",
+    title: "👜 包类 / 箱包",
+    recommendation: "建议视角：正面、侧面、背面、俯视",
+    description: "突出外形与背带结构；俯视展示容量和开口，底视展示脚钉与做工。"
+  },
+  {
+    value: "美妆护肤类",
+    displayLabel: "💄 美妆护肤类",
+    title: "💄 美妆护肤类",
+    recommendation: "建议视角：正面、45°、背面、顶视",
+    description: "展示瓶身造型、标签与喷头/刷头细节；背面成分信息非常重要。"
+  },
+  {
+    value: "饮料/食品包装",
+    displayLabel: "🥤 饮料 / 食品包装",
+    title: "🥤 饮料 / 食品包装",
+    recommendation: "建议视角：正面、45°、背面、俯视",
+    description: "正面展示识别，背面展示配料表，俯视展示封口和瓶盖结构。"
+  },
+  {
+    value: "小家电（吹风机/榨汁机/音箱）",
+    displayLabel: "🔌 小家电（吹风机/榨汁机/音箱）",
+    title: "🔌 小家电（吹风机/榨汁机/音箱）",
+    recommendation: "建议视角：正面、45°、侧面、背面",
+    description: "强调按钮、出风口与插口布局；45°与俯视可增强立体呈现。"
+  },
+  {
+    value: "数码产品（手机/显示器/平板）",
+    displayLabel: "🖥️ 数码产品（手机/显示器/平板）",
+    title: "🖥️ 数码产品（手机/显示器/平板）",
+    recommendation: "建议视角：正面、侧面、背面、45°",
+    description: "展示屏幕、厚度与接口布局；45°更真实，俯视可补充机身结构。"
+  },
+  {
+    value: "家具（沙发/桌椅/柜体）",
+    displayLabel: "🛋️ 家具（沙发/桌椅/柜体）",
+    title: "🛋️ 家具（沙发/桌椅/柜体）",
+    recommendation: "建议视角：正面、侧面、45°",
+    description: "强调体积感与结构比例；俯视用于辅助空间感与布局判断。"
+  },
+  {
+    value: "家清日化（洗衣液/清洁剂）",
+    displayLabel: "🧴 家清日化（洗衣液/清洁剂）",
+    title: "🧴 家清日化（洗衣液/清洁剂）",
+    recommendation: "建议视角：正面、45°、背面",
+    description: "包装形态和标签信息为主；背面展示配料表，顶视补充瓶口结构。"
+  },
+  {
+    value: "玩具/模型",
+    displayLabel: "🧸 玩具 / 模型",
+    title: "🧸 玩具 / 模型",
+    recommendation: "建议视角：正面、45°、侧面、背面",
+    description: "适合展示整体轮廓、关节结构与局部细节，45°视角通常更有立体感。"
+  },
+  {
+    value: "珠宝饰品",
+    displayLabel: "💍 珠宝饰品",
+    title: "💍 珠宝饰品",
+    recommendation: "建议视角：正面、45°、俯视",
+    description: "突出切工、反射与材质；微距特写对珠宝尤为重要。"
+  },
+  {
+    value: "工具五金",
+    displayLabel: "🛠️ 工具五金",
+    title: "🛠️ 工具五金",
+    recommendation: "建议视角：正面、45°、侧面、背面",
+    description: "强调形状、接口和比例；对结构复杂类建议五视图。"
+  },
+  {
+    value: "旅行箱/拉杆箱",
+    displayLabel: "💼 旅行箱 / 拉杆箱",
+    title: "💼 旅行箱 / 拉杆箱",
+    recommendation: "建议视角：正面、侧面、背面",
+    description: "展示轮子、拉杆与拉链；底视可体现轮子与支撑结构。"
+  },
+  {
+    value: "家纺寝具（床垫/被子/枕头）",
+    displayLabel: "🛏️ 家纺寝具（床垫/被子/枕头）",
+    title: "🛏️ 家纺寝具（床垫/被子/枕头）",
+    recommendation: "建议视角：正面、俯视、45°",
+    description: "展示尺寸与蓬松度；侧视可呈现厚度和结构。"
+  },
+  {
+    value: "家装建材（灯具/水龙头/五金件）",
+    displayLabel: "🏠 家装建材（灯具/水龙头/五金件）",
+    title: "🏠 家装建材（灯具/水龙头/五金件）",
+    recommendation: "建议视角：正面、45°、侧面",
+    description: "强调外观与安装方向；五视图可补充俯视或底部结构。"
+  },
+  {
+    value: "厨房用品（锅具/餐具/收纳）",
+    displayLabel: "🧂 厨房用品（锅具/餐具/收纳）",
+    title: "🧂 厨房用品（锅具/餐具/收纳）",
+    recommendation: "建议视角：正面、侧面、俯视",
+    description: "展示容量、形态与结构；45°增强立体感。"
+  },
+  {
+    value: "电商通用（不规则或结构复杂类）",
+    displayLabel: "📦 电商通用（不规则或结构复杂类）",
+    title: "📦 电商通用（不规则或结构复杂类）",
+    recommendation: "建议视角：正面、侧面、背面",
+    description: "结构复杂、多接口产品建议五视图以提供完整信息。"
+  }
+];
+const modelGenerateSceneOptions: RichSelectOption[] = [
+  { value: "默认场景", displayLabel: "默认场景", title: "默认场景", recommendation: "系统默认推荐", description: "适合大多数模特图生成任务。", thumbnailSrc: "/assets/task-gallery-4.png" },
+  { value: "意式风情街", displayLabel: "意式风情街", title: "意式风情街", recommendation: "街拍氛围", description: "建筑街道与生活感并存。", thumbnailSrc: "/assets/task-gallery-5.png" },
+  { value: "黑白影棚", displayLabel: "黑白影棚", title: "黑白影棚", recommendation: "经典棚拍", description: "简洁背景突出人物主体。", thumbnailSrc: "/assets/task-gallery-6.png" },
+  { value: "度假-热带植物", displayLabel: "度假-热带植物", title: "度假-热带植物", recommendation: "假日感", description: "适合轻松度假与夏日风格。", thumbnailSrc: "/assets/task-gallery-7.png" },
+  { value: "度假-石阶", displayLabel: "度假-石阶", title: "度假-石阶", recommendation: "旅行大片", description: "石阶层次感适合度假穿搭。", thumbnailSrc: "/assets/task-gallery-8.png" },
+  { value: "都市夜景", displayLabel: "都市夜景", title: "都市夜景", recommendation: "夜色都市", description: "适合潮流、通勤和城市时尚。", thumbnailSrc: "/assets/task-thumb-1.png" },
+  { value: "路灯街拍", displayLabel: "路灯街拍", title: "路灯街拍", recommendation: "街头感", description: "自然路灯适合真实街拍氛围。", thumbnailSrc: "/assets/task-thumb-2.png" },
+  { value: "公园草坪", displayLabel: "公园草坪", title: "公园草坪", recommendation: "自然户外", description: "轻松日常与休闲服饰适配。", thumbnailSrc: "/assets/task-gallery-4.png" },
+  { value: "建筑前廊", displayLabel: "建筑前廊", title: "建筑前廊", recommendation: "结构背景", description: "适合气质型人物展示。", thumbnailSrc: "/assets/task-gallery-5.png" },
+  { value: "梨花树下", displayLabel: "梨花树下", title: "梨花树下", recommendation: "清新氛围", description: "适合春日与浅色系造型。", thumbnailSrc: "/assets/task-gallery-6.png" },
+  { value: "樱花街道", displayLabel: "樱花街道", title: "樱花街道", recommendation: "春日街景", description: "适合少女感与轻盈画面。", thumbnailSrc: "/assets/task-gallery-7.png" },
+  { value: "肌理墙面", displayLabel: "肌理墙面", title: "肌理墙面", recommendation: "极简背景", description: "墙面纹理增强层次但不抢主体。", thumbnailSrc: "/assets/task-gallery-8.png" },
+  { value: "马路街拍", displayLabel: "马路街拍", title: "马路街拍", recommendation: "都市抓拍", description: "适合通勤和潮流服饰。", thumbnailSrc: "/assets/task-thumb-1.png" },
+  { value: "店外探店16", displayLabel: "店外探店16", title: "店外探店16", recommendation: "探店氛围", description: "适合生活方式与博主感表达。", thumbnailSrc: "/assets/task-thumb-2.png" },
+  { value: "店内探店", displayLabel: "店内探店", title: "店内探店", recommendation: "室内探店", description: "适合体验感与消费场景。", thumbnailSrc: "/assets/task-gallery-4.png" },
+  { value: "儿童房", displayLabel: "儿童房", title: "儿童房", recommendation: "家居亲子", description: "适合童装和家庭氛围。", thumbnailSrc: "/assets/task-gallery-5.png" },
+  { value: "摄影棚-灰色", displayLabel: "摄影棚-灰色", title: "摄影棚-灰色", recommendation: "干净中性", description: "适合标准商拍与人物主视觉。", thumbnailSrc: "/assets/task-gallery-6.png" },
+  { value: "深灰色摄影棚", displayLabel: "深灰色摄影棚", title: "深灰色摄影棚", recommendation: "高级质感", description: "更偏质感和时装风棚拍。", thumbnailSrc: "/assets/task-gallery-7.png" },
+  { value: "室内角落", displayLabel: "室内角落", title: "室内角落", recommendation: "居家静物感", description: "适合柔和日常和安静情绪。", thumbnailSrc: "/assets/task-gallery-8.png" },
+  { value: "棕色摄影棚", displayLabel: "棕色摄影棚", title: "棕色摄影棚", recommendation: "暖调棚拍", description: "适合复古暖调和秋冬服饰。", thumbnailSrc: "/assets/task-thumb-1.png" }
+];
+const copyLanguageInputOptions = [
+  "无文案",
+  "简体中文",
+  "繁体中文",
+  "英文",
+  "中英文混排",
+  "俄语",
+  "日语",
+  "韩语",
+  "印地语",
+  "德语",
+  "法语",
+  "西班牙语",
+  "葡萄牙语",
+  "阿拉伯语",
+  "泰语",
+  "荷兰语",
+  "土耳其语"
+];
+
+const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig>> = {
+  "goods-marketing": {
+    modelLabel: "创客贴AI营销主图润色",
+    prompt: "优化营销主图细节补充，强调产品卖点、营销氛围、构图和商业质感。"
+  },
+  "goods-scene": {
+    modelLabel: "创客贴AI场景图润色",
+    prompt: "优化场景图细节补充，强调场景搭建、氛围、光线、主体展示和代入感。"
+  },
+  "goods-bg": {
+    modelLabel: "创客贴AI换背景润色",
+    prompt: "优化换背景补充描述，强调背景融合、真实光影、空间关系与主体协调。"
+  },
+  "goods-retouch": {
+    modelLabel: "创客贴AI精修润色",
+    prompt: "优化产品精修补充说明，强调材质、边缘、光感、质感和商业修图效果。"
+  },
+  "goods-translate": {
+    modelLabel: "创客贴AI翻译润色",
+    prompt: "优化图片翻译排版说明，强调版式保留、语言层级、信息清晰度和阅读体验。"
+  },
+  "goods-view": {
+    modelLabel: "创客贴AI三视图润色",
+    prompt: "优化三视图补充说明，强调视角统一、细节完整、背景干净和展示一致性。"
+  },
+  "goods-buyer": {
+    modelLabel: "创客贴AI买家秀润色",
+    prompt: "优化买家秀补充说明，强调真实生活感、主体使用场景、自然氛围和转化感。"
+  },
+  "goods-detail": {
+    modelLabel: "创客贴AI卖点图润色",
+    prompt: "优化卖点图补充说明，强调核心卖点、信息层级、对比关系和画面说服力。"
+  },
+  "goods-sell": {
+    modelLabel: "创客贴AI卖点图润色",
+    prompt: "优化卖点图补充说明，强调核心卖点、信息层级、对比关系和画面说服力。"
+  },
+  "goods-spoke": {
+    modelLabel: "创客贴AI代言图润色",
+    prompt: "优化代言图补充说明，强调人物与产品关系、品牌感、镜头语言和视觉气质。"
+  },
+  "goods-point": {
+    modelLabel: "创客贴AI卖点图润色",
+    prompt: "优化卖点图补充说明，强化视觉重点、文案承载和商业表达。"
+  },
+  "model-try": {
+    modelLabel: "创客贴AI补充说明润色",
+    prompt: "优化试衣补充说明，使描述更具体、清晰、可执行。"
+  },
+  "model-change": {
+    modelLabel: "创客贴AI补充说明润色",
+    prompt: "优化换模特补充说明，使描述更具体、清晰、可执行。"
+  },
+  "model-generate": {
+    modelLabel: "创客贴AI补充说明润色",
+    prompt: "优化模特生成补充说明，使描述更具体、清晰、可执行。"
+  },
+  ...Object.fromEntries(
+    defaultToolKeys.map((key) => [
+      key,
+      {
+        modelLabel: "创客贴AI补充说明润色",
+        prompt: "优化补充说明，使描述更具体、清晰、可执行。"
+      }
+    ])
+  )
+};
+
+const advancedAiAssistPromptConfigs: Partial<Record<string, string>> = {
+  "goods-white": `你是一位电商白底图处理顾问。请根据商品图片判断平台信息是否存在特殊白底、阴影、边缘、主图规范；仅回填“平台信息”字段，若无法判断则回填“无平台信息”，不要编造其他字段。`,
+  "goods-marketing": `你是一位电商营销主图策划师。请根据商品图片与商品线索，分别判断并回填：产品类型、场景背景、平台信息、商品信息、视觉风格、营销元素、文案语种。必须只从当前字段可选项中选择最匹配的值；无法确认时优先回填“智能识别 / 智能生成 / 自动匹配 / 无 / 无文案”等空语义选项。`,
+  "goods-retouch": `你是一位商品精修顾问。请根据商品图片判断更适合的电商平台与地区站点，仅回填当前高级设置中的平台、地区字段；不要补充无关内容。若判断不出则留空。`,
+  "goods-scene": `你是一位电商场景图策划师。请根据商品图片线索，回填：产品类型、场景类型、产品展示、排版呈现、氛围营造、价值导向、目标市场、文案语种。所有字段必须贴合当前商品，不确定时选择最通用或最弱承诺的选项，不要生成字段外内容。`,
+  "goods-bg": `你是一位电商换背景策划师。请根据商品图片与主体特征，回填背景类型、风格与光影两个字段。若主体更适合白底、电商展台、居家、户外、广告风等，请选择最贴近的选项；不要填无关字段。`,
+  "goods-view": `你是一位商品多视角展示顾问。请根据商品图片判断其平台信息对应的展示规范，仅回填“平台信息”字段；若无法识别则回填“无平台信息”。`,
+  "goods-translate": `你是一位跨境电商图片翻译顾问。请根据商品图片与已有视觉线索，回填平台信息，并在需要时为非预置的平台规范触发细节补充；不要默认带出语种或其他无关字段。`,
+  "goods-buyer": `你是一位买家秀策划师。请根据商品图片，回填产品类型、产品状态、呈现方式、场景氛围、产品真实感、环境真实感、拍摄真实感、目标市场。仅从当前字段选项中挑选最符合真实买家秀气质的值。`,
+  "goods-detail": `你是一位商品细节图策划师。请根据商品图片，回填产品类型与展示形式，帮助细节图更明确地表达材质、结构或局部功能。`,
+  "goods-sell": `你是一位商品卖点图策划师。请根据商品图片，回填产品类型、场景类型、文案语种、核心卖点、表现形式、卖点重心、主副标题、副标题、字体风格、元素辅助、目标市场。必须让每个字段服务于“卖点表达”而不是泛化描述。`,
+  "goods-spoke": `你是一位电商代言图策划师。请根据商品图片，回填产品类型、互动方式、人物特点、场景背景、排版方式、人种肤色、性别风格、年龄特点、展示重点、目标市场。所有字段要服务于“人物代言商品”的广告表达。`,
+  "goods-point": `你是一位商品卖点视觉顾问。请根据商品图片识别适用平台并提炼主要卖点方向，只回填当前支持的高级设置字段。`
+};
+
+const supplementPlaceholderOverrides: Partial<Record<string, string>> = {
+  "goods-detail": "请输入您对图片的细节补充描述，例如：色调、构图、氛围等。"
+};
+
+function normalizeUploadClueText(items: UploadItem[]) {
+  return items
+    .map((item) => `${item.name ?? ""} ${item.src ?? ""}`)
+    .join(" ")
+    .toLowerCase();
+}
+
+function inferOptionByKeywords(
+  sourceText: string,
+  rules: Array<{ option: string; keywords: RegExp[] }>,
+  fallback: string
+) {
+  const matchedRule = rules.find((rule) => rule.keywords.some((keyword) => keyword.test(sourceText)));
+  return matchedRule?.option ?? fallback;
+}
+
+function inferProductType(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "蓝牙耳机", keywords: [/耳机|earbud|headphone|earphone/] },
+      { option: "手机", keywords: [/手机|phone|iphone|android/] },
+      { option: "行李箱", keywords: [/行李箱|拉杆箱|suitcase|luggage/] },
+      { option: "背包", keywords: [/背包|双肩包|backpack|bag/] },
+      { option: "鞋子", keywords: [/鞋|sneaker|boot|heel/] },
+      { option: "T恤", keywords: [/t恤|tee\b|t-shirt/] },
+      { option: "服装", keywords: [/服装|穿搭|上衣|裤|裙|外套|dress|fashion|apparel/] },
+      { option: "瑜伽服", keywords: [/瑜伽|legging|sports bra/] },
+      { option: "健身器材", keywords: [/健身|哑铃|跑步机|fitness/] },
+      { option: "化妆品", keywords: [/护肤|面霜|精华|口红|cosmetic|skincare|beauty/] },
+      { option: "香水", keywords: [/香水|perfume|fragrance/] },
+      { option: "饮料", keywords: [/饮料|咖啡|奶茶|苏打|juice|drink|beverage/] },
+      { option: "水果", keywords: [/水果|苹果|橙|柠檬|fruit/] },
+      { option: "笔记本电脑", keywords: [/笔记本|电脑|laptop|notebook/] },
+      { option: "电视", keywords: [/电视|tv|monitor/] },
+      { option: "沙发", keywords: [/沙发|sofa/] },
+      { option: "吊灯", keywords: [/吊灯|灯具|lamp|light/] },
+      { option: "汽车", keywords: [/汽车|car|auto/] },
+      { option: "机械设备", keywords: [/机械|设备|machine|industrial/] },
+      { option: "项链", keywords: [/项链|necklace|jewelry/] },
+      { option: "玩具", keywords: [/玩具|toy/] },
+      { option: "手办", keywords: [/手办|figure|collectible/] },
+      { option: "文具", keywords: [/文具|笔|notebook|stationery/] },
+      { option: "小家电", keywords: [/小家电|电器|吹风机|剃须刀|appliance/] }
+    ],
+    "智能识别"
+  );
+}
+
+function inferBackgroundType(sourceText: string, fallback = "智能生成") {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "无背景", keywords: [/白底|抠图|纯白|无背景|isolated|cutout/] },
+      { option: "简单背景", keywords: [/简单背景|浅色背景|投影|shadow/] },
+      { option: "产品场景", keywords: [/场景|客厅|卧室|桌面|户外|室内|海报|kv|banner|scene|lifestyle/] },
+      { option: "纯色背景", keywords: [/纯色背景|solid background/] },
+      { option: "纯色渐变", keywords: [/渐变|gradient/] },
+      { option: "图片边框", keywords: [/边框|frame|border/] }
+    ],
+    fallback
+  );
+}
+
+function inferBackgroundSceneType(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "电商白底", keywords: [/白底|纯白|抠图|无背景|isolated|cutout/] },
+      { option: "实景室内", keywords: [/室内|家居|客厅|卧室|桌面|室内场景|indoor|interior/] },
+      { option: "室外场景", keywords: [/室外|户外|自然|街景|草地|花园|outdoor|nature/] },
+      { option: "商业广告风", keywords: [/广告|海报|kv|banner|大片|商业|campaign|hero/] }
+    ],
+    "电商白底"
+  );
+}
+
+function inferBackgroundLightingStyle(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "写实自然光", keywords: [/自然光|日光|窗光|realistic|daylight|natural light/] },
+      { option: "柔光棚拍风", keywords: [/棚拍|柔光|影棚|softbox|studio/] },
+      { option: "日系清新光", keywords: [/日系|清新|明亮|airy|fresh/] },
+      { option: "高级杂志风", keywords: [/杂志|高级|轻奢|editorial|premium|luxury/] },
+      { option: "人造光氛围", keywords: [/霓虹|氛围光|人造光|彩光|cinematic|ambient/] }
+    ],
+    "写实自然光"
+  );
+}
+
+function inferPlatformInfo(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "淘宝", keywords: [/淘宝|taobao/] },
+      { option: "天猫", keywords: [/天猫|tmall/] },
+      { option: "京东", keywords: [/京东|jd/] },
+      { option: "拼多多", keywords: [/拼多多|pdd/] },
+      { option: "1688", keywords: [/1688/] },
+      { option: "抖音电商", keywords: [/抖音|douyin|tiktok china/] },
+      { option: "快手电商", keywords: [/快手|kuaishou/] },
+      { option: "小红书电商", keywords: [/小红书|xiaohongshu|rednote/] },
+      { option: "亚马逊", keywords: [/亚马逊|amazon/] },
+      { option: "Temu", keywords: [/temu/] },
+      { option: "TikTok Shop", keywords: [/tiktok shop/] },
+      { option: "阿里国际站", keywords: [/阿里国际站|alibaba international/] },
+      { option: "速卖通", keywords: [/速卖通|aliexpress/] },
+      { option: "Shopee", keywords: [/shopee/] },
+      { option: "OZON", keywords: [/ozon/] },
+      { option: "SHEIN", keywords: [/shein/] }
+    ],
+    "无平台信息"
+  );
+}
+
+function inferProductInfo(sourceText: string) {
+  if (/(¥|\$|折扣|促销|优惠|满减|立减|sale|off)/.test(sourceText) && /(卖点|亮点|详情|特写|feature|benefit)/.test(sourceText)) {
+    return "名称+卖点+价格+促销";
+  }
+  if (/(¥|\$|折扣|促销|优惠|满减|立减|sale|off)/.test(sourceText)) {
+    return "价格与促销";
+  }
+  if (/(卖点|亮点|详情|特写|feature|benefit|主图)/.test(sourceText)) {
+    return "名称+卖点";
+  }
+  return "智能生成";
+}
+
+function inferVisualStyle(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "轻奢高端", keywords: [/香水|珠宝|高端|奢华|premium|luxury/] },
+      { option: "时尚潮流", keywords: [/潮流|时尚|fashion|street/] },
+      { option: "年轻元气", keywords: [/年轻|元气|玩具|零食|活力|youth/] },
+      { option: "专业信任", keywords: [/专业|医疗|设备|办公|business|industrial/] },
+      { option: "强营销", keywords: [/促销|活动|sale|promo|直播|大促/] },
+      { option: "吸睛爆点", keywords: [/爆款|吸睛|冲击|banner|kv/] },
+      { option: "极简简约", keywords: [/极简|简约|minimal|clean/] }
+    ],
+    "自动匹配"
+  );
+}
+
+function inferMarketingElement(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "买一送一", keywords: [/买一送一|buy 1 get 1|bogo/] },
+      { option: "满减活动", keywords: [/满减|立减|满\d|减\d|discount/] },
+      { option: "顺丰速达", keywords: [/顺丰/] },
+      { option: "京东自营", keywords: [/京东自营/] },
+      { option: "本地仓", keywords: [/本地仓|local warehouse/] },
+      { option: "双十一促销", keywords: [/双十一|11\.11|double 11/] },
+      { option: "折扣标识", keywords: [/折扣|促销|sale|coupon|off/] }
+    ],
+    "无"
+  );
+}
+
+function inferCopyLanguage(sourceText: string, sceneMode = false) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: sceneMode ? "英语" : "英文", keywords: [/\benglish\b|英文|amazon|temu|tiktok shop|shopee/] },
+      { option: "简体中文", keywords: [/中文|简体|淘宝|天猫|京东|抖音|快手|小红书/] },
+      { option: "繁体中文", keywords: [/繁体|台湾|hong kong/] },
+      { option: sceneMode ? "英语" : "中英文混排", keywords: [/双语|中英|bilingual/] },
+      { option: "日语", keywords: [/日语|japanese|jp\b/] },
+      { option: "韩语", keywords: [/韩语|korean|kr\b/] },
+      { option: "俄语", keywords: [/俄语|russian|ru\b/] },
+      { option: "法语", keywords: [/法语|french|fr\b/] },
+      { option: "德语", keywords: [/德语|german|de\b/] },
+      { option: "西班牙语", keywords: [/西班牙语|spanish|es\b/] },
+      { option: "葡萄牙语", keywords: [/葡萄牙语|portuguese|pt\b/] },
+      { option: "阿拉伯语", keywords: [/阿拉伯语|arabic|ar\b/] },
+      { option: "泰语", keywords: [/泰语|thai|th\b/] },
+      { option: "荷兰语", keywords: [/荷兰语|dutch|nl\b/] },
+      { option: "土耳其语", keywords: [/土耳其语|turkish|tr\b/] },
+      { option: "印地语", keywords: [/印地语|hindi|hi\b/] }
+    ],
+    sceneMode ? "无需文案" : "无文案"
+  );
+}
+
+function safeParseJson<T>(value?: string, fallback?: T): T | undefined {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function getSetPackDefaultRatio(platformLabel?: string) {
+  return setPackPlatformDefaultRatios[platformLabel ?? ""] ?? "1:1";
+}
+
+function isSetPackLikeTool(toolKey: string) {
+  return toolKey === "set-main" || toolKey === "set-aplus" || toolKey === "set-fashion";
+}
+
+function getSetPackSelectedTypes(selectionMap: AdvancedSelectionMap = {}) {
+  return safeParseJson<SetPackTypeItem[]>(selectionMap.setPackSelectedTypes, []) ?? [];
+}
+
+function getSetPackSelectedStyleCards(selectionMap: AdvancedSelectionMap = {}) {
+  const styleCards = safeParseJson<SetPackStyleCard[]>(selectionMap.setPackStyleCards, []) ?? [];
+  const selectedIds = (selectionMap.setPackSelectedStyleIds ?? "").split(",").filter(Boolean);
+  if (!selectedIds.length) return [];
+  return styleCards.filter((item) => selectedIds.includes(item.id));
+}
+
+function createSetPackTypeItem(template: SetPackTypeTemplate, selectionMap: AdvancedSelectionMap = {}, overrides?: Partial<SetPackTypeItem>): SetPackTypeItem {
+  const productName = selectionMap.setPackProductName || "商品";
+  const sellingPoints = splitMultilineValues(selectionMap.setPackSellingPoints).slice(0, 3).join("、") || "核心卖点";
+  const visualStyle = selectionMap.setPackVisualStyle || "高级质感风";
+  const scenario = selectionMap.setPackScenario || "目标平台场景";
+  const selectedStyleCards = getSetPackSelectedStyleCards(selectionMap);
+  const styleNames = selectedStyleCards.map((item) => item.name).join("、") || visualStyle;
+  const styleKeywords = selectedStyleCards.flatMap((item) => item.keywordHints).slice(0, 4).join("、");
+
+  return {
+    id: overrides?.id ?? `${template.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    category: overrides?.category ?? template.category,
+    name: overrides?.name ?? `${productName}${template.category}展示`,
+    description: overrides?.description ?? template.description,
+    tag: overrides?.tag ?? template.tag,
+    prompt:
+      overrides?.prompt ??
+      `${template.promptHint}；商品为${productName}，重点突出${sellingPoints}；整体视觉风格参考${styleNames}，适配${scenario}表达，避免杂乱背景和低质文案排版${styleKeywords ? `，可强化${styleKeywords}相关视觉线索` : ""}。`,
+    ratio: overrides?.ratio ?? template.defaultRatio,
+    resolution: overrides?.resolution ?? template.defaultResolution,
+    count: overrides?.count ?? 1
+  };
+}
+
+function buildSetPackTypeRecommendations(selectionMap: AdvancedSelectionMap = {}, notes = "", perTypeCount = 1) {
+  const keywordText = [selectionMap.setPackSellingPoints, selectionMap.setPackScenario, selectionMap.setPackAudience, notes].filter(Boolean).join(" ").toLowerCase();
+  const selectedStyleCards = getSetPackSelectedStyleCards(selectionMap);
+  const styleKeywordText = selectedStyleCards
+    .flatMap((item) => [item.name, item.description, ...item.keywordHints])
+    .join(" ")
+    .toLowerCase();
+  const isWearable = /(服饰|穿搭|上身|鞋|包|饰品|珠宝|香水|口红|美妆)/.test(keywordText);
+  const prefersTech = /(科技|tech|性能|速度|霓光|对比)/.test(styleKeywordText);
+  const prefersLifestyle = /(生活|温暖|日常|居家|氛围)/.test(styleKeywordText);
+  const prefersClean = /(合规|白底|干净|净透)/.test(styleKeywordText);
+  const baseIds = prefersTech ? ["hero-visual", "multi-angle", "core-selling", "detail-closeup"] : ["white-bg", "multi-angle", "core-selling", "detail-closeup"];
+  const sceneId = isWearable ? "wearing-scene" : "scene-lifestyle";
+  const extraIds = /(礼盒|送礼|包装)/.test(keywordText)
+    ? ["packaging"]
+    : /(参数|尺寸|规格)/.test(keywordText) || prefersClean
+      ? ["parameter"]
+      : /(活动|促销|折扣)/.test(keywordText)
+        ? ["poster"]
+        : prefersTech
+          ? ["comparison"]
+          : prefersLifestyle
+            ? ["buyer-show"]
+            : ["comparison"];
+  const orderedIds = [...baseIds, sceneId, ...extraIds];
+  const uniqueTemplates = orderedIds
+    .map((id) => setPackTypeLibrary.find((item) => item.id === id))
+    .filter((item): item is SetPackTypeTemplate => Boolean(item));
+  return uniqueTemplates.map((item) => createSetPackTypeItem(item, selectionMap, { count: perTypeCount }));
+}
+
+function buildPresetSetPackTemplateLibrary(selectionMap: AdvancedSelectionMap = {}, perTypeCount = 1): SetPackTypeSavedTemplate[] {
+  const buildTypes = (templateIds: string[]) =>
+    templateIds
+      .map((id) => setPackTypeLibrary.find((item) => item.id === id))
+      .filter((item): item is SetPackTypeTemplate => Boolean(item))
+      .map((item) => createSetPackTypeItem(item, selectionMap, { count: perTypeCount }));
+
+  return [
+    {
+      id: "preset-template-basic-launch",
+      name: "基础上架模板",
+      types: buildTypes(["white-bg", "multi-angle", "core-selling", "detail-closeup"])
+    },
+    {
+      id: "preset-template-scene-convert",
+      name: "场景转化模板",
+      types: buildTypes(["amazon-main", "scene-lifestyle", "hero-visual", "comparison"])
+    },
+    {
+      id: "preset-template-brand-detail",
+      name: "品牌质感模板",
+      types: buildTypes(["white-bg", "detail-closeup", "design", "packaging"])
+    }
+  ];
+}
+
+function buildAplusPlanSignature(payload: GeneratePayload) {
+  return JSON.stringify({
+    uploads: payload.sourceUploads.map((item) => item.id || item.src || item.name || "").filter(Boolean),
+    advancedSelections: payload.advancedSelections,
+    supplementValue: payload.supplementValue,
+    modeId: payload.creationModeSelection?.modeId ?? "",
+    ratio: payload.creationModeSelection?.ratio ?? "",
+    resolution: payload.creationModeSelection?.resolution ?? ""
+  });
+}
+
+function buildFashionSceneSignature(payload: GeneratePayload) {
+  return JSON.stringify({
+    uploads: payload.sourceUploads.map((item) => item.id || item.src || item.name || "").filter(Boolean),
+    baselineModelSource: payload.advancedSelections.baselineModelSource ?? "",
+    selectedModelId: payload.advancedSelections.selectedModelId ?? "",
+    modelGenerateType: payload.advancedSelections.modelGenerateType ?? "",
+    gender: payload.advancedSelections.gender ?? "",
+    appearance: payload.advancedSelections.appearance ?? "",
+    age: payload.advancedSelections.age ?? "",
+    persona: payload.advancedSelections.persona ?? "",
+    bodyType: payload.advancedSelections.bodyType ?? "",
+    supplementValue: payload.supplementValue
+  });
+}
+
+function buildAplusPlanSummary(selectionMap: AdvancedSelectionMap = {}) {
+  const productName = selectionMap.setPackProductName || "当前商品";
+  const sellingPoints = splitMultilineValues(selectionMap.setPackSellingPoints).join(" / ") || "待补充商品卖点";
+  const concerns = selectionMap.setPackParameters || "用户最关心材质、功能、规格与使用体验";
+  const visualFocus = selectionMap.setPackScenario || "围绕核心卖点搭建有节奏的详情模块";
+  return [
+    `产品：${productName}`,
+    `卖点：${sellingPoints}`,
+    `顾虑：${concerns}`,
+    `视觉重心：${visualFocus}`
+  ];
+}
+
+function buildAplusPlanModules(selectionMap: AdvancedSelectionMap = {}) {
+  const selectedTypes = getSetPackSelectedTypes(selectionMap);
+  const productName = selectionMap.setPackProductName || "商品";
+  const sellingPointLines = splitMultilineValues(selectionMap.setPackSellingPoints);
+  const primarySellingPoint = sellingPointLines[0] || "核心卖点";
+  const secondarySellingPoint = sellingPointLines[1] || "补充优势";
+  const market = selectionMap.targetMarket || selectionMap.region || "目标市场";
+  const language = selectionMap.copyLanguage || selectionMap.language || "英文";
+  const visualStyle = selectionMap.setPackVisualStyle || "高级质感风";
+  const scenario = selectionMap.setPackScenario || "真实使用场景";
+
+  return selectedTypes.map((item, index) => {
+    const template = aplusModuleLibrary.find((module) => module.category === item.category);
+    const emphasis =
+      index === 0
+        ? `突出${productName}整体气质与${primarySellingPoint}`
+        : index === 1
+          ? `清晰传达${primarySellingPoint}与${secondarySellingPoint}`
+          : `延展${productName}在${scenario}下的价值表达`;
+    return {
+      id: item.id,
+      category: item.category,
+      headline: `${item.category}：${template?.description ?? emphasis}`,
+      lines: [
+        `主标题：围绕“${primarySellingPoint}”设置简洁标题，语种使用${language}，顶部或左上排版。`,
+        `模块重点：${emphasis}，并兼顾${market}用户对${productName}的阅读习惯。`,
+        `视觉建议：沿用${visualStyle}，保持留白、分区清晰和图文节奏统一。`
+      ]
+    } satisfies AplusPlanModule;
+  });
+}
+
+function buildFashionSceneSummary(selectionMap: AdvancedSelectionMap = {}, uploadCount = 0) {
+  const modelSource = selectionMap.baselineModelSource === "mine" ? "我的模特" : "AI生成";
+  const modelDescriptor =
+    modelSource === "我的模特"
+      ? selectionMap.selectedModelName || "未选择模特"
+      : [selectionMap.gender, selectionMap.age, selectionMap.appearance, selectionMap.persona, selectionMap.bodyType].filter(Boolean).join(" / ") || "未完善模特参数";
+  const outfitFocus = inferProductType(selectionMap.setPackProductName || "");
+
+  return [
+    `服装图：已上传${uploadCount}张服装图片`,
+    `基准模特：${modelSource}`,
+    `模特信息：${modelDescriptor}`,
+    `推荐重点：围绕${outfitFocus === "智能识别" ? "服饰版型、上身效果与场景氛围" : `${outfitFocus}上身效果与穿搭氛围`}生成推荐场景`
+  ];
+}
+
+function buildFashionSceneModules(selectionMap: AdvancedSelectionMap = {}) {
+  const persona = selectionMap.persona || "时尚通勤人群";
+  const appearance = selectionMap.appearance || "亚洲人";
+  const age = selectionMap.age || "青年";
+  const bodyType = selectionMap.bodyType || "标准";
+  const gender = selectionMap.gender || "女";
+  const modelSource = selectionMap.baselineModelSource === "mine" ? "已选模特" : "AI基准模特";
+  const modelName = selectionMap.selectedModelName || `${appearance}${gender}模特`;
+  const sceneBase = [
+    {
+      id: "fashion-scene-hero",
+      category: "首图上身展示",
+      headline: "首图上身展示：突出服装版型与整体气质",
+      lines: [
+        `画面主体：以${modelSource}${selectionMap.baselineModelSource === "mine" ? `“${modelName}”` : ""}进行正面全身展示，突出服装廓形与上身比例。`,
+        `模特设定：${appearance} / ${age} / ${persona} / ${bodyType}，保持${gender === "男" ? "利落挺拔" : "自然舒展"}体态。`,
+        "场景建议：背景干净、光线明亮，适合作为服饰套图首图或平台封面。"
+      ]
+    },
+    {
+      id: "fashion-scene-commute",
+      category: "通勤街拍场景",
+      headline: "通勤街拍场景：强化真实穿搭代入感",
+      lines: [
+        `画面主体：模特自然行走或驻足，展示服装在真实${persona}场景中的穿搭状态。`,
+        "构图建议：中景到全身构图，保留环境层次但不过度抢主体。",
+        "视觉建议：以都市街区、写字楼外立面或商业街为背景，形成高转化穿搭氛围。"
+      ]
+    },
+    {
+      id: "fashion-scene-detail",
+      category: "面料细节特写",
+      headline: "面料细节特写：放大材质与做工亮点",
+      lines: [
+        "画面主体：聚焦领口、袖口、面料纹理、走线或特殊设计点。",
+        "构图建议：半身或局部近景，模特姿态辅助展示垂坠感与材质表现。",
+        "视觉建议：通过柔和侧光增强面料层次，适合作为细节说明场景。"
+      ]
+    },
+    {
+      id: "fashion-scene-motion",
+      category: "动态动作场景",
+      headline: "动态动作场景：突出服装动态与廓形变化",
+      lines: [
+        "画面主体：通过转身、抬手、迈步等动作展示服装动态效果。",
+        "构图建议：保留身体动作延展，重点观察裙摆、裤型、外套下摆等运动状态。",
+        "视觉建议：背景简洁，快门感清晰，体现服饰灵动性与真实穿着效果。"
+      ]
+    },
+    {
+      id: "fashion-scene-half",
+      category: "半身近景场景",
+      headline: "半身近景场景：兼顾表情与上半身搭配",
+      lines: [
+        "画面主体：突出肩颈线条、上装轮廓、配饰搭配与人物神态。",
+        "构图建议：半身或胸像视角，适合展示上衣、外套、针织等重点品类。",
+        "视觉建议：通过人物表情和局部动作增强种草感，适合详情页或社媒封面。"
+      ]
+    },
+    {
+      id: "fashion-scene-lifestyle",
+      category: "生活方式氛围图",
+      headline: "生活方式氛围图：构建完整穿搭故事感",
+      lines: [
+        `画面主体：围绕${persona}日常活动设计有故事性的生活方式场景。`,
+        "构图建议：把服装与空间道具、姿态互动结合，形成情绪化氛围表达。",
+        "视觉建议：适合咖啡馆、居家、展厅或户外休闲等场景，用于补强品牌调性。"
+      ]
+    }
+  ];
+
+  return sceneBase;
+}
+
+function buildFashionSceneTypes(modules: AplusPlanModule[]) {
+  return modules.map((module, index) => ({
+    id: module.id,
+    category: module.category,
+    name: module.category,
+    description: module.headline,
+    tag: "服饰场景",
+    prompt: module.lines.join(" "),
+    ratio: "3:4",
+    resolution: "1K",
+    count: 1,
+    sortOrder: index + 1
+  })) satisfies SetPackTypeItem[];
+}
+
+function getDefaultCreationModeSelection(configKey: string, count: number): CreationModeSelection | null {
+  const config = creationModeConfigs[configKey];
+  const defaultMode = config?.modes[0];
+  if (!defaultMode) return null;
+  const defaultRatio = defaultMode.defaultRatio ?? defaultMode.ratioOptions[0] ?? "1:1";
+  const defaultResolution = defaultMode.defaultResolution ?? defaultMode.resolutionOptions?.[0];
+  const unitCreditCost = defaultResolution
+    ? defaultMode.resolutionUnitCreditCosts?.[defaultResolution] ?? defaultMode.baseUnitCreditCost ?? 0
+    : defaultMode.baseUnitCreditCost ?? 0;
+  return {
+    modeId: defaultMode.id,
+    modeLabel: defaultMode.label,
+    ratio: defaultRatio,
+    resolution: defaultResolution,
+    count,
+    unitCreditCost
+  };
+}
+
+function buildSetPackTypeThinking(selectionMap: AdvancedSelectionMap = {}, notes = "", uploadCount = 0) {
+  const productName = selectionMap.setPackProductName || "未识别商品";
+  const sellingPoint = splitMultilineValues(selectionMap.setPackSellingPoints).join("；") || "未填写核心卖点";
+  const audience = selectionMap.setPackAudience || "泛人群";
+  const scenario = selectionMap.setPackScenario || "待补充场景";
+  const visualStyle = selectionMap.setPackVisualStyle || "未指定风格";
+  const selectedStyleCards = getSetPackSelectedStyleCards(selectionMap);
+  const selectedStyleText = selectedStyleCards.map((item) => item.name).join("、") || "未选择风格卡";
+  return [
+    `商品图：已上传${uploadCount}张商品图`,
+    `核心卖点：1.产品名称：${productName}`,
+    `2.核心卖点：${sellingPoint}`,
+    `3.适用人群：${audience}`,
+    `4.期望场景：${scenario}`,
+    `5.视觉风格：${visualStyle}`,
+    `6.高级设置风格：${selectedStyleText}${notes ? `；补充需求：${notes}` : ""}`
+  ].join("\n");
+}
+
+function buildSetPackTypeAnalysisNarrative(
+  types: SetPackTypeItem[],
+  selectionMap: AdvancedSelectionMap = {},
+  notes = "",
+  uploadCount = 0
+) {
+  const productName = selectionMap.setPackProductName || "当前商品";
+  const market = selectionMap.targetMarket || selectionMap.region || "目标市场";
+  const copyLanguage = selectionMap.copyLanguage || selectionMap.language || "默认语种";
+  const visualStyle = selectionMap.setPackVisualStyle || "高级质感风";
+  const audience = selectionMap.setPackAudience || "泛人群";
+  const scenario = selectionMap.setPackScenario || "核心使用场景";
+
+  const typeSummary = types
+    .map((item, index) => `${index + 1}. ${item.category}：${item.name}`)
+    .join("\n");
+
+  return [
+    `已基于${uploadCount}张商品图、商品卖点与补充需求完成分析。`,
+    `商品：${productName}；目标市场：${market}；文案语种：${copyLanguage}；受众：${audience}。`,
+    `本次优先围绕${scenario}与${visualStyle}视觉表达生成${types.length}个出图类型，兼顾平台首图、卖点说明、细节特写与场景氛围。`,
+    notes ? `补充需求已纳入分析：${notes}` : "未额外补充需求，已按默认商品表达策略生成。",
+    "",
+    typeSummary
+  ].join("\n");
+}
+
+function serializeSetPackTypePlan(types: SetPackTypeItem[]) {
+  return JSON.stringify(
+    types.map((item) => ({
+      cateName: item.category,
+      name: item.name,
+      prompt: item.prompt,
+      imgRatio: item.ratio
+    })),
+    null,
+    2
+  );
+}
+
+function splitMultilineValues(value?: string) {
+  return (value ?? "")
+    .split(/\n|；|;|、/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildSetPackSellingPointDraft(
+  uploads: UploadItem[],
+  platformLabel: string,
+  languageLabel: string
+): SetPackSellingPointDraft {
+  const sourceText = normalizeUploadClueText(uploads);
+  const productType = inferProductType(sourceText);
+  const localizedPlatform = platformLabel || "目标平台";
+  const localizedLanguage = languageLabel || "目标语种";
+  const productName = productType === "通用商品" ? "商品主视觉" : productType;
+  const audience =
+    inferOptionByKeywords(
+      sourceText,
+      [
+        { option: "都市白领 / 通勤人群", keywords: [/通勤|办公|商务|portable|office/] },
+        { option: "年轻潮流消费人群", keywords: [/潮流|时尚|youth|trend|street/] },
+        { option: "家庭日常使用人群", keywords: [/家居|家庭|居家|kitchen|daily/] },
+        { option: "跨境平台冲动型购买人群", keywords: [/amazon|temu|tiktok shop|aliexpress|shopee/] }
+      ],
+      "泛电商消费人群"
+    );
+  const scenario =
+    inferOptionByKeywords(
+      sourceText,
+      [
+        { option: "平台主图 + 对比卖点图 + 生活方式场景图", keywords: [/场景|lifestyle|户外|室内|居家/] },
+        { option: "主图合规展示 + 细节拆解 + 参数说明图", keywords: [/细节|参数|detail|feature|benefit/] },
+        { option: "短视频封面感主图 + 卖点强化图 + 转化说明图", keywords: [/tiktok|douyin|种草|短视频|封面/] }
+      ],
+      "平台主图 + 卖点图 + 场景图组合"
+    );
+  const sellingPoints = [
+    `${productName}主体识别清晰，适合做${localizedPlatform}首图展示`,
+    "核心功能点可拆成 3-5 张卖点图，便于快速传达购买理由",
+    "适合加入生活化或使用中场景，增强转化氛围",
+    `文案建议统一为${localizedLanguage}，保证平台上架体验一致`
+  ].join("\n");
+  const parameters = [
+    "建议输出 7 张成套图片",
+    `优先适配 ${localizedPlatform} 常用比例 ${getSetPackDefaultRatio(platformLabel)}`,
+    "保留干净留白，便于补充标题、参数、促销标签"
+  ].join("\n");
+
+  return {
+    productName,
+    sellingPoints,
+    audience,
+    scenario,
+    parameters
+  };
+}
+
+function formatSetPackDetailText(draft: SetPackSellingPointDraft) {
+  return [
+    draft.productName ? `1. 产品名称：${draft.productName}` : "",
+    draft.sellingPoints ? `2. 核心卖点：${draft.sellingPoints}` : "",
+    draft.audience ? `3. 适用人群：${draft.audience}` : "",
+    draft.scenario ? `4. 期望场景：${draft.scenario}` : "",
+    draft.parameters ? `5. 具体参数：${draft.parameters}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildSetPackStyleRecommendations(selectionMap: AdvancedSelectionMap) {
+  const platform = selectionMap.platform ?? "";
+  const sourceText = normalizeUploadClueText(
+    [selectionMap.setPackProductName, selectionMap.setPackSellingPoints, selectionMap.setPackScenario, selectionMap.setPackAudience]
+      .filter(Boolean)
+      .map((text, index) => ({ id: `set-pack-${index}`, name: text, sizeMb: 0, status: "ready" as const }))
+  );
+
+  return [...setPackStyleLibrary]
+    .sort((left, right) => {
+      const leftScore =
+        (left.platformTags.includes(platform) ? 2 : 0) +
+        left.keywordHints.filter((keyword) => sourceText.includes(keyword.toLowerCase())).length;
+      const rightScore =
+        (right.platformTags.includes(platform) ? 2 : 0) +
+        right.keywordHints.filter((keyword) => sourceText.includes(keyword.toLowerCase())).length;
+      return rightScore - leftScore;
+    })
+    .slice(0, 5);
+}
+
+function buildSetPackTitleRecommendations(selectionMap: AdvancedSelectionMap) {
+  const platform = selectionMap.platform ?? "跨境平台";
+  const region = selectionMap.region ?? "";
+  const language = selectionMap.language ?? "简体中文";
+  const productName = selectionMap.setPackProductName || "商品";
+  const sellingPoints = splitMultilineValues(selectionMap.setPackSellingPoints);
+  const corePoints = sellingPoints.slice(0, 3);
+
+  if (language === "英语" || language === "英文") {
+    return [
+      `${productName} for ${platform} | ${corePoints.join(" | ") || "Hero Image Set"}`,
+      `${productName} ${region ? `for ${region}` : ""} ${corePoints[0] ? `- ${corePoints[0]}` : "- Platform Ready Listing Visuals"}`.trim(),
+      `${productName} Listing Image Pack | ${corePoints[1] ?? "Detail Highlights"} | ${corePoints[2] ?? "Lifestyle Scene"}`
+    ];
+  }
+
+  return [
+    `${productName}${region ? ` ${region}` : ""} ${platform}上架套图 | ${corePoints[0] ?? "主图合规"} | ${corePoints[1] ?? "卖点更清晰"}`,
+    `${productName} 爆款套图方案 | ${corePoints[0] ?? "平台主图"} + ${corePoints[1] ?? "细节卖点"} + ${corePoints[2] ?? "场景转化"}`,
+    `${platform} ${productName} 图包标题建议 | ${corePoints[0] ?? "视觉统一"} | ${corePoints[1] ?? "信息更完整"}`
+  ];
+}
+
+function inferSceneProductDisplay(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "套装组合", keywords: [/组合|礼盒|set|bundle/] },
+      { option: "模特手持", keywords: [/模特|手持|person|model/] },
+      { option: "使用中展示", keywords: [/使用中|lifestyle|scene|佩戴|wearing/] },
+      { option: "局部细节", keywords: [/细节|特写|detail|close-up/] },
+      { option: "悬浮陈列", keywords: [/悬浮|floating/] },
+      { option: "多角度展示", keywords: [/多角度|多视角|angle/] }
+    ],
+    "单品特写"
+  );
+}
+
+function inferSceneLayoutStyle(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "左右分栏", keywords: [/横幅|banner|左右|split/] },
+      { option: "满版铺陈", keywords: [/kv|海报|满版|full bleed/] },
+      { option: "留白极简", keywords: [/极简|留白|minimal/] },
+      { option: "杂志感排版", keywords: [/杂志|editorial/] },
+      { option: "电商主图风", keywords: [/主图|电商|e-commerce/] }
+    ],
+    "居中构图"
+  );
+}
+
+function inferSceneMoodStyle(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "清新明亮", keywords: [/明亮|清新|bright/] },
+      { option: "温暖治愈", keywords: [/温暖|暖色|golden|warm/] },
+      { option: "高级冷淡", keywords: [/冷调|高级|cool|minimal luxury/] },
+      { option: "轻奢质感", keywords: [/轻奢|luxury|premium/] },
+      { option: "梦幻浪漫", keywords: [/梦幻|浪漫|romantic/] },
+      { option: "节日热卖", keywords: [/节日|促销|大促|sale/] },
+      { option: "科技未来", keywords: [/科技|未来|futuristic/] }
+    ],
+    "清新明亮"
+  );
+}
+
+function inferSceneValueFocus(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "突出价格优势", keywords: [/价格|低价|折扣|coupon/] },
+      { option: "突出礼赠属性", keywords: [/礼盒|送礼|gift/] },
+      { option: "突出实用性", keywords: [/实用|功能|日用|practical/] },
+      { option: "突出品牌感", keywords: [/品牌|brand|premium/] },
+      { option: "突出品质", keywords: [/品质|材质|texture|quality/] }
+    ],
+    "突出卖点"
+  );
+}
+
+function inferTargetMarket(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "欧美市场", keywords: [/amazon|temu|欧美|english|europe|us\b/] },
+      { option: "日韩市场", keywords: [/日本|韩国|jp\b|kr\b|japanese|korean/] },
+      { option: "东南亚市场", keywords: [/shopee|东南亚|sea\b|thai|malay|vietnam/] },
+      { option: "中东市场", keywords: [/中东|arabic/] },
+      { option: "全球通用", keywords: [/global|国际站|alibaba international/] }
+    ],
+    "国内电商"
+  );
+}
+
+function inferRegionalTargetMarket(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "北美", keywords: [/美国|加拿大|north america|us\b|usa|canada/] },
+      { option: "欧洲", keywords: [/欧洲|europe|eu\b/] },
+      { option: "英国", keywords: [/英国|uk\b|britain/] },
+      { option: "德国", keywords: [/德国|germany|de\b/] },
+      { option: "法国", keywords: [/法国|france|fr\b/] },
+      { option: "俄罗斯", keywords: [/俄罗斯|russia|ru\b/] },
+      { option: "日本", keywords: [/日本|japan|jp\b/] },
+      { option: "韩国", keywords: [/韩国|korea|kr\b/] },
+      { option: "东南亚", keywords: [/东南亚|sea\b|shopee|lazada|泰国|马来|越南|印尼/] },
+      { option: "印度", keywords: [/印度|india|in\b/] },
+      { option: "中东阿拉伯", keywords: [/中东|arab|阿拉伯|uae|dubai|saudi/] },
+      { option: "南美", keywords: [/南美|latin|brazil|mexico/] },
+      { option: "澳洲", keywords: [/澳洲|australia|au\b/] },
+      { option: "中国台湾", keywords: [/台湾|taiwan/] },
+      { option: "港澳", keywords: [/香港|澳门|hong kong|macao/] }
+    ],
+    "大陆"
+  );
+}
+
+function inferPlatformLabelForField(sourceText: string, platformOptions: PlatformMock[]) {
+  const inferred = inferPlatformInfo(sourceText);
+  return platformOptions.find((item) => item.label === inferred)?.label ?? "";
+}
+
+function inferRegionLabelForPlatform(sourceText: string, platform?: PlatformMock) {
+  if (!platform) return "";
+  const inferred = inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "美国站", keywords: [/美国|us\b|usa/] },
+      { option: "美国", keywords: [/美国|us\b|usa/] },
+      { option: "欧洲站", keywords: [/欧洲|eu\b|europe/] },
+      { option: "欧洲", keywords: [/欧洲|eu\b|europe/] },
+      { option: "英国", keywords: [/英国|uk\b/] },
+      { option: "日本站", keywords: [/日本|jp\b|japan/] },
+      { option: "东南亚", keywords: [/东南亚|sea\b|southeast asia/] },
+      { option: "全球", keywords: [/全球|global/] },
+      { option: "全球站", keywords: [/全球|global/] }
+    ],
+    ""
+  );
+  return platform.regions.find((item) => item.label === inferred)?.label ?? "";
+}
+
+function inferLanguageLabelForRegion(sourceText: string, region?: PlatformRegionMock) {
+  if (!region) return "";
+  const inferred = inferCopyLanguage(sourceText, true);
+  return region.languages.find((item) => item === inferred) ?? "";
+}
+
+function inferSellingPointSceneType(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "无背景纯白色", keywords: [/白底|纯白|无背景|cutout|isolated/] },
+      { option: "纯色背景", keywords: [/纯色|solid background/] },
+      { option: "彩色渐变", keywords: [/渐变|gradient/] },
+      { option: "简单场景", keywords: [/简单背景|浅色背景|简洁背景/] },
+      { option: "电商展台", keywords: [/展台|货架|陈列|display stand/] },
+      { option: "室内居家", keywords: [/室内|家居|客厅|卧室|桌面/] },
+      { option: "都市街道", keywords: [/街道|通勤|城市|urban|street/] },
+      { option: "运动场所", keywords: [/运动|健身|gym|fitness/] },
+      { option: "户外公园", keywords: [/公园|草地|户外|garden|outdoor/] },
+      { option: "自然风格", keywords: [/自然|树木|森系|nature/] },
+      { option: "背景虚化", keywords: [/虚化|bokeh|blur/] }
+    ],
+    "智能匹配"
+  );
+}
+
+function inferSellingPointCoreCopy(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "生成多个核心卖点文案展示", keywords: [/多个卖点|多卖点|丰富信息|multi benefit/] },
+      { option: "生成主卖点搭配2~3个辅卖点", keywords: [/主卖点|辅卖点|层级|benefit hierarchy/] },
+      { option: "生成两个核心卖点文案对称展示", keywords: [/对称|双卖点|两个卖点/] }
+    ],
+    "自动生成单一核心卖点文案展示"
+  );
+}
+
+function inferSellingPointPresentation(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "左侧展示产品右侧展示卖点", keywords: [/左图右文|左侧产品|right copy/] },
+      { option: "左侧展示卖点右侧展示产品", keywords: [/左文右图|右侧产品|left copy/] },
+      { option: "产品展示在上卖点相关在下", keywords: [/上图下文|产品在上/] },
+      { option: "产品展示在下卖点相关在上", keywords: [/上文下图|产品在下/] },
+      { option: "产品居中展示卖点两侧分布", keywords: [/居中|两侧|环绕/] },
+      { option: "产品微缩展示卖点环绕展示", keywords: [/微缩|环绕|surround/] },
+      { option: "产品场景化展示", keywords: [/场景|lifestyle|scene/] },
+      { option: "卖点分散排版", keywords: [/分散|多点位|散点/] }
+    ],
+    "智能匹配"
+  );
+}
+
+function inferBuyerShowProductState(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "开箱中", keywords: [/开箱|拆箱|unbox/] },
+      { option: "手持展示", keywords: [/手持|拿着|holding/] },
+      { option: "上身/上脚/上脸", keywords: [/上身|上脚|上脸|穿着|佩戴|试用/] },
+      { option: "摆拍静物", keywords: [/静物|摆拍|flat lay|平铺/] },
+      { option: "使用中", keywords: [/使用中|正在用|in use/] },
+      { option: "组合套装", keywords: [/套装|组合|多件|bundle/] }
+    ],
+    "手持展示"
+  );
+}
+
+function inferBuyerShowPresentation(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "自拍视角", keywords: [/自拍|selfie/] },
+      { option: "男友/闺蜜视角", keywords: [/男友|闺蜜|朋友拍|third-person/] },
+      { option: "镜子视角", keywords: [/镜子|镜前|mirror/] },
+      { option: "桌面分享", keywords: [/桌面|书桌|桌上|desktop/] },
+      { option: "穿搭展示", keywords: [/穿搭|ootd|look/] },
+      { option: "生活记录", keywords: [/生活记录|vlog|日常/] }
+    ],
+    "生活记录"
+  );
+}
+
+function inferBuyerShowAtmosphere(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "无场景", keywords: [/无场景|无背景|cutout|isolated/] },
+      { option: "居家场景", keywords: [/居家|卧室|客厅|家里|home/] },
+      { option: "局部或模糊场景", keywords: [/模糊|虚化|局部场景|blur/] },
+      { option: "车内场景", keywords: [/车内|汽车|副驾|car/] },
+      { option: "移动运动场景", keywords: [/运动|跑步|骑行|移动中/] },
+      { option: "日常外出场景", keywords: [/外出|通勤|街头|逛街|outdoor/] },
+      { option: "节日场景", keywords: [/节日|圣诞|新年|生日|holiday/] }
+    ],
+    "日常外出场景"
+  );
+}
+
+function inferBuyerShowProductReality(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "包装与产品褶皱", keywords: [/褶皱|包装折痕|折痕/] },
+      { option: "长期使用磨损", keywords: [/磨损|旧痕|长期使用|wear/] },
+      { option: "使用中的真实", keywords: [/真实使用|使用中|生活化|real usage/] }
+    ],
+    "使用中的真实"
+  );
+}
+
+function inferBuyerShowEnvironmentReality(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "杂乱环境", keywords: [/杂乱|凌乱|messy/] },
+      { option: "宠物偶然入镜", keywords: [/宠物|猫|狗|pet/] },
+      { option: "人物局部入镜", keywords: [/局部入镜|手部|腿部|partial body/] },
+      { option: "临时摆放随意感", keywords: [/随意摆放|临时摆放|casual placement/] },
+      { option: "人物素颜", keywords: [/素颜|bare face/] },
+      { option: "人物日常穿搭", keywords: [/日常穿搭|便装|casual outfit/] }
+    ],
+    "人物日常穿搭"
+  );
+}
+
+function inferBuyerShowShotReality(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "随手拍摄无美感", keywords: [/随手拍|抓拍|casual shot/] },
+      { option: "较低像素", keywords: [/低像素|不高清|low resolution/] },
+      { option: "手抖模糊", keywords: [/手抖|模糊|blur/] },
+      { option: "反光逆光", keywords: [/反光|逆光|backlight|glare/] },
+      { option: "对镜自拍", keywords: [/对镜|镜自拍|mirror selfie/] },
+      { option: "手持自拍", keywords: [/手持自拍|selfie/] }
+    ],
+    "随手拍摄无美感"
+  );
+}
+
+function inferSellingPointFocus(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "材质优势", keywords: [/材质|面料|纹理|texture|material/] },
+      { option: "工艺精度", keywords: [/工艺|做工|精度|细节|craft/] },
+      { option: "功能特性", keywords: [/功能|用途|使用|feature/] },
+      { option: "性能表现", keywords: [/性能|续航|速度|参数|performance/] }
+    ],
+    "设计亮点"
+  );
+}
+
+function inferTitleGeneration(sourceText: string, type: "main" | "subtitle") {
+  if (/(无标题|不要标题|no title)/.test(sourceText)) {
+    return type === "main" ? "无标题" : "无副标题";
+  }
+  return type === "main" ? "自动生成主标题" : "自动生成副标题";
+}
+
+function inferFontStyle(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "科技风", keywords: [/科技|future|tech/] },
+      { option: "卡通风", keywords: [/卡通|童趣|cute/] },
+      { option: "手写体", keywords: [/手写|handwritten/] },
+      { option: "艺术字体", keywords: [/艺术|artistic/] },
+      { option: "3d立体", keywords: [/3d|立体/] },
+      { option: "标题黑体内容宋体", keywords: [/黑体.*宋体|标题黑体/] },
+      { option: "黑体", keywords: [/黑体|sans/] }
+    ],
+    "粗体"
+  );
+}
+
+function inferAssistElement(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "箭头辅助", keywords: [/箭头|arrow/] },
+      { option: "图标辅助", keywords: [/图标|icon/] },
+      { option: "强调框辅助", keywords: [/框|描边|outline/] },
+      { option: "数据辅助", keywords: [/数据|数字|parameter/] },
+      { option: "线条辅助", keywords: [/线条|line/] }
+    ],
+    "色块辅助"
+  );
+}
+
+function inferSpokespersonInteraction(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "穿戴展示", keywords: [/穿戴|上身|佩戴|wearing/] },
+      { option: "手持展示", keywords: [/手持|拿着|holding/] },
+      { option: "使用状态展示", keywords: [/使用中|操作|using/] },
+      { option: "推荐代言", keywords: [/推荐|种草|代言|endorse/] },
+      { option: "身体局部展示", keywords: [/局部|特写|close-up/] }
+    ],
+    "产品静置人物出现"
+  );
+}
+
+function inferSpokespersonCharacter(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "明星气质", keywords: [/明星|celebrity/] },
+      { option: "网络达人", keywords: [/达人|博主|influencer|kol/] },
+      { option: "产品专业人士", keywords: [/专业|expert|technician/] },
+      { option: "生产工作人员", keywords: [/工厂|车间|worker/] },
+      { option: "运动风", keywords: [/运动|fitness|sport/] },
+      { option: "商务", keywords: [/商务|formal|office/] },
+      { option: "休闲", keywords: [/休闲|casual|daily/] },
+      { option: "青春", keywords: [/年轻|青春|youth/] },
+      { option: "童趣", keywords: [/儿童|可爱|playful/] },
+      { option: "慈祥", keywords: [/长辈|温和|elder/] },
+      { option: "搞怪", keywords: [/搞怪|夸张|funny/] }
+    ],
+    "真实素人"
+  );
+}
+
+function inferSpokespersonSceneBackground(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "无背景", keywords: [/无背景|抠图|isolated|cutout/] },
+      { option: "纯色背景", keywords: [/纯色|solid background/] },
+      { option: "简单背景", keywords: [/简单背景|浅色背景/] },
+      { option: "居家场景", keywords: [/居家|客厅|卧室|home/] },
+      { option: "摄影棚", keywords: [/摄影棚|影棚|studio/] },
+      { option: "舞台T台", keywords: [/舞台|t台|show/] },
+      { option: "户外场景", keywords: [/户外|公园|自然|outdoor/] },
+      { option: "城市街道", keywords: [/街道|城市|urban|street/] },
+      { option: "商业空间", keywords: [/商场|店铺|展厅|commercial space/] }
+    ],
+    "真实场景"
+  );
+}
+
+function inferSpokespersonLayout(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "人物全貌展示", keywords: [/全身|全貌|full body/] },
+      { option: "突出产品主体", keywords: [/产品突出|聚焦产品|product focus/] },
+      { option: "多场景拼接", keywords: [/拼接|多场景|collage/] },
+      { option: "产品居中，周边搭配使用场景", keywords: [/居中|环绕|surround/] },
+      { option: "同一人物不同场景", keywords: [/同一人物|不同场景/] },
+      { option: "不同人物同一场景", keywords: [/不同人物|同一场景/] }
+    ],
+    "突出产品主体"
+  );
+}
+
+function inferSkinTone(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "北美", keywords: [/欧美白人|white|caucasian|north america/] },
+      { option: "欧洲", keywords: [/欧洲|european/] },
+      { option: "南美", keywords: [/南美|latin/] },
+      { option: "非洲", keywords: [/非裔|black|africa/] },
+      { option: "东南亚", keywords: [/东南亚|sea\b|southeast asia/] },
+      { option: "中东", keywords: [/中东|arab/] }
+    ],
+    "亚洲"
+  );
+}
+
+function inferGenderStyle(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "男", keywords: [/男|male|man/] },
+      { option: "中性风", keywords: [/中性|neutral/] },
+      { option: "妩媚", keywords: [/妩媚|性感|sexy/] },
+      { option: "性冷淡", keywords: [/冷淡|冷感|minimal cool/] }
+    ],
+    "女"
+  );
+}
+
+function inferAgeTrait(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "婴幼儿", keywords: [/婴儿|宝宝|infant/] },
+      { option: "儿童", keywords: [/儿童|kid|child/] },
+      { option: "少年", keywords: [/少年|teen/] },
+      { option: "中年", keywords: [/中年|middle-aged/] },
+      { option: "老年", keywords: [/老年|elder|senior/] }
+    ],
+    "青年"
+  );
+}
+
+function inferDisplayFocus(sourceText: string) {
+  return inferOptionByKeywords(
+    sourceText,
+    [
+      { option: "人物突出", keywords: [/人物突出|person focus|model focus/] },
+      { option: "全貌展示", keywords: [/全貌|full view|full body/] },
+      { option: "局部特写", keywords: [/局部|特写|close-up/] }
+    ],
+    "产品突出"
+  );
+}
+
+function buildExtraDetailsFromClues(sourceText: string, uploads: UploadItem[]) {
+  const details: string[] = [];
+  if (/白色|white/.test(sourceText)) details.push("建议保留白色主体视觉");
+  if (/黑色|black/.test(sourceText)) details.push("建议突出深色材质与轮廓层次");
+  if (/金属|metal/.test(sourceText)) details.push("建议强化金属反光与质感表现");
+  if (/45度|侧面|three-quarter/.test(sourceText)) details.push("建议采用三分之四视角展示主体");
+  if (/细节|detail|close-up/.test(sourceText)) details.push("建议增加局部特写镜头");
+  if (uploads[0]?.name) details.push(`延续“${uploads[0].name}”的核心视觉信息`);
+  return dedupeStrings(details).join("，");
+}
+
+function buildAdvancedAiAssistResult(
+  toolKey: string,
+  uploads: UploadItem[],
+  advancedConfig?: AdvancedSettingsConfig
+): AdvancedAiAssistResult {
+  const sourceText = normalizeUploadClueText(uploads);
+  const platformOptions = platformMockData.filter((item) => advancedConfig?.platformIds.includes(item.id));
+  const inferredPlatformLabel = inferPlatformLabelForField(sourceText, platformOptions);
+  const inferredPlatform = platformOptions.find((item) => item.label === inferredPlatformLabel) ?? platformOptions[0];
+  const inferredRegionLabel = inferRegionLabelForPlatform(sourceText, inferredPlatform);
+  const inferredRegion = inferredPlatform?.regions.find((item) => item.label === inferredRegionLabel) ?? inferredPlatform?.regions[0];
+  const inferredLanguage = inferLanguageLabelForRegion(sourceText, inferredRegion);
+  const extraDetails = buildExtraDetailsFromClues(sourceText, uploads);
+  const fieldValues: AdvancedSelectionMap = {};
+  const finalizeFieldValues = (nextValues: AdvancedSelectionMap) => {
+    const completedValues: AdvancedSelectionMap = {};
+    const extraSelectConfigMap = new Map((advancedConfig?.extraSelects ?? []).map((item) => [item.key, item]));
+
+    Object.entries(nextValues).forEach(([key, rawValue]) => {
+      const value = typeof rawValue === "string" ? rawValue.trim() : "";
+      if (!value) return;
+
+      const fieldConfig = extraSelectConfigMap.get(key);
+      if (!fieldConfig) {
+        completedValues[key] = value;
+        return;
+      }
+
+      const optionValues = fieldConfig.options ?? fieldConfig.richOptions?.map((item) => item.value) ?? [];
+      if (fieldConfig.mode === "select" || fieldConfig.mode === "rich-select") {
+        if (optionValues.includes(value)) {
+          completedValues[key] = value;
+        }
+        return;
+      }
+
+      completedValues[key] = value;
+    });
+
+    return completedValues;
+  };
+
+  if (advancedConfig?.fields.includes("platform")) fieldValues.platform = inferredPlatformLabel;
+  if (advancedConfig?.fields.includes("region")) fieldValues.region = inferredRegionLabel;
+  if (advancedConfig?.fields.includes("language")) fieldValues.language = inferredLanguage;
+
+  switch (toolKey) {
+    case "goods-white":
+      fieldValues.platformInfo = inferPlatformInfo(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-marketing":
+      fieldValues.productType = inferProductType(sourceText);
+      fieldValues.sceneBackground = inferBackgroundType(sourceText, "智能生成");
+      fieldValues.platformInfo = inferPlatformInfo(sourceText);
+      fieldValues.productInfo = inferProductInfo(sourceText);
+      fieldValues.visualStyle = inferVisualStyle(sourceText);
+      fieldValues.marketingElements = inferMarketingElement(sourceText);
+      fieldValues.copyLanguage = inferCopyLanguage(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-scene":
+      fieldValues.productType = inferProductType(sourceText);
+      fieldValues.sceneType = inferBackgroundType(sourceText, "智能生成");
+      fieldValues.productDisplay = inferSceneProductDisplay(sourceText);
+      fieldValues.layoutStyle = inferSceneLayoutStyle(sourceText);
+      fieldValues.moodStyle = inferSceneMoodStyle(sourceText);
+      fieldValues.valueFocus = inferSceneValueFocus(sourceText);
+      fieldValues.targetMarket = inferTargetMarket(sourceText);
+      fieldValues.copyLanguage = inferCopyLanguage(sourceText, true);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-bg":
+      fieldValues.backgroundType = inferBackgroundSceneType(sourceText);
+      fieldValues.lightingStyle = inferBackgroundLightingStyle(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-view":
+      fieldValues.platformInfo = inferPlatformInfo(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-translate":
+      fieldValues.platformInfo = inferPlatformInfo(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-sell":
+      fieldValues.productType = inferProductType(sourceText);
+      fieldValues.sceneType = inferSellingPointSceneType(sourceText);
+      fieldValues.copyLanguage = inferCopyLanguage(sourceText);
+      fieldValues.coreSellingPoint = inferSellingPointCoreCopy(sourceText);
+      fieldValues.presentationForm = inferSellingPointPresentation(sourceText);
+      fieldValues.sellingPointFocus = inferSellingPointFocus(sourceText);
+      fieldValues.mainTitle = inferTitleGeneration(sourceText, "main");
+      fieldValues.subtitle = inferTitleGeneration(sourceText, "subtitle");
+      fieldValues.fontStyle = inferFontStyle(sourceText);
+      fieldValues.assistElement = inferAssistElement(sourceText);
+      fieldValues.targetMarket = inferRegionalTargetMarket(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-buyer":
+      fieldValues.productType = inferProductType(sourceText);
+      fieldValues.productState = inferBuyerShowProductState(sourceText);
+      fieldValues.presentationStyle = inferBuyerShowPresentation(sourceText);
+      fieldValues.sceneAtmosphere = inferBuyerShowAtmosphere(sourceText);
+      fieldValues.productReality = inferBuyerShowProductReality(sourceText);
+      fieldValues.environmentReality = inferBuyerShowEnvironmentReality(sourceText);
+      fieldValues.shotReality = inferBuyerShowShotReality(sourceText);
+      fieldValues.targetMarket = inferRegionalTargetMarket(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-spoke":
+      fieldValues.productType = inferProductType(sourceText);
+      fieldValues.interactionType = inferSpokespersonInteraction(sourceText);
+      fieldValues.characterTrait = inferSpokespersonCharacter(sourceText);
+      fieldValues.sceneBackground = inferSpokespersonSceneBackground(sourceText);
+      fieldValues.layoutStyle = inferSpokespersonLayout(sourceText);
+      fieldValues.skinTone = inferSkinTone(sourceText);
+      fieldValues.genderStyle = inferGenderStyle(sourceText);
+      fieldValues.ageTrait = inferAgeTrait(sourceText);
+      fieldValues.displayFocus = inferDisplayFocus(sourceText);
+      fieldValues.targetMarket = inferRegionalTargetMarket(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    default:
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+  }
+}
+
+type PolishPhrase = {
+  pattern: RegExp;
+  chinese: string;
+  english: string;
+  category: "lighting" | "tone" | "composition" | "texture" | "scene" | "focus" | "style" | "copy" | "angle";
+};
+
+type PolishStrategy = {
+  chinesePrefix: string;
+  englishPrefix: string;
+  chineseSuffix: string[];
+  englishSuffix: string[];
+  minKeywordHint: string;
+  preferredCategories: Array<PolishPhrase["category"]>;
+};
+
+const polishPhraseLibrary: PolishPhrase[] = [
+  { pattern: /(明亮|亮一点|亮一些|通透|清透)/i, chinese: "整体光线明亮通透", english: "bright, airy lighting", category: "lighting" },
+  { pattern: /(暗调|低调|神秘|氛围暗)/i, chinese: "采用低调光线与层次阴影", english: "low-key lighting with layered shadows", category: "lighting" },
+  { pattern: /(自然光|日光|窗边|阳光)/i, chinese: "以自然光塑造柔和光感", english: "soft natural daylight", category: "lighting" },
+  { pattern: /(暖色|温暖|暖调|治愈)/i, chinese: "整体色调偏暖，氛围更有亲和力", english: "warm-toned palette with inviting mood", category: "tone" },
+  { pattern: /(冷色|清冷|冷调|高级冷淡)/i, chinese: "整体色调偏冷，更显利落高级", english: "cool-toned palette with refined mood", category: "tone" },
+  { pattern: /(高级感|高端|轻奢|奢华)/i, chinese: "强化高级质感与商业精致度", english: "premium commercial texture", category: "texture" },
+  { pattern: /(质感|材质|纹理|细节)/i, chinese: "突出材质纹理与细节表现", english: "clear material texture and details", category: "texture" },
+  { pattern: /(干净|简洁|简约|纯净)/i, chinese: "画面保持干净简洁，减少无效干扰", english: "clean and minimal visual presentation", category: "style" },
+  { pattern: /(科技感|未来感)/i, chinese: "融入科技感与未来感表达", english: "futuristic visual styling", category: "style" },
+  { pattern: /(居中|对称|正中)/i, chinese: "采用居中稳定的主体构图", english: "centered and balanced composition", category: "composition" },
+  { pattern: /(左右分栏|分栏)/i, chinese: "采用分栏式信息构图，层级更清晰", english: "split composition with clear hierarchy", category: "composition" },
+  { pattern: /(满版|铺陈|冲击力|张力|吸睛)/i, chinese: "增强画面张力与视觉冲击力", english: "dynamic composition with strong impact", category: "composition" },
+  { pattern: /(留白|极简)/i, chinese: "适当留白，强化主体聚焦", english: "strategic negative space for focus", category: "composition" },
+  { pattern: /(主体突出|突出主体|聚焦产品|产品突出)/i, chinese: "突出产品主体，确保视觉焦点集中", english: "product-focused visual emphasis", category: "focus" },
+  { pattern: /(卖点|亮点|优势)/i, chinese: "强化核心卖点表达与信息可读性", english: "clear presentation of selling points", category: "copy" },
+  { pattern: /(价格|促销|大促|新品|首发)/i, chinese: "强化营销信息识别度与促销氛围", english: "strong promotional callouts", category: "copy" },
+  { pattern: /(生活感|日常感|居家感|真实)/i, chinese: "营造真实自然的生活化氛围", english: "authentic lifestyle atmosphere", category: "scene" },
+  { pattern: /(室内|家居|客厅|卧室)/i, chinese: "场景偏向室内家居环境", english: "indoor lifestyle setting", category: "scene" },
+  { pattern: /(户外|自然|草地|花园|露营)/i, chinese: "场景偏向自然户外环境", english: "outdoor natural setting", category: "scene" },
+  { pattern: /(城市|街头|通勤)/i, chinese: "场景带有都市通勤气质", english: "urban lifestyle setting", category: "scene" },
+  { pattern: /(45度|侧面|斜侧|三分之四)/i, chinese: "采用三分之四侧视角呈现主体", english: "three-quarter product angle", category: "angle" },
+  { pattern: /(正面|正视)/i, chinese: "以正面视角清晰展示主体", english: "front-facing product view", category: "angle" },
+  { pattern: /(背面|背部)/i, chinese: "补充背部视角，确保展示完整", english: "clear back view for completeness", category: "angle" },
+  { pattern: /(版式|排版|布局)/i, chinese: "优化版式结构与信息层级", english: "refined layout and information hierarchy", category: "copy" },
+  { pattern: /(翻译|英文|中文|双语|语种)/i, chinese: "兼顾语义准确与跨语言排版协调", english: "accurate bilingual layout treatment", category: "copy" }
+];
+
+const supplementToolStrategies: Record<string, PolishStrategy> = {
+  "goods-marketing": {
+    chinesePrefix: "建议将营销主图细节补充优化为",
+    englishPrefix: "Marketing hero visual with",
+    chineseSuffix: ["突出营销主信息", "确保主体醒目且具备转化感", "整体更适合电商主图生成"],
+    englishSuffix: ["clear product hierarchy", "commercial hero-shot styling", "conversion-oriented e-commerce presentation"],
+    minKeywordHint: "请补充产品卖点、构图、氛围或营销信息相关描述",
+    preferredCategories: ["focus", "composition", "tone", "copy", "texture"]
+  },
+  "goods-scene": {
+    chinesePrefix: "建议将场景图补充说明优化为",
+    englishPrefix: "Scene-based product visual with",
+    chineseSuffix: ["强化场景代入感", "突出产品与环境关系", "适合电商场景图生成"],
+    englishSuffix: ["immersive atmosphere", "clear product-environment relationship", "e-commerce scene styling"],
+    minKeywordHint: "请补充场景、氛围、光线或产品展示方式",
+    preferredCategories: ["scene", "lighting", "tone", "focus", "style"]
+  },
+  "goods-bg": {
+    chinesePrefix: "建议将换背景补充说明优化为",
+    englishPrefix: "Background replacement visual with",
+    chineseSuffix: ["背景与主体融合自然", "光影关系统一", "整体更真实协调"],
+    englishSuffix: ["natural subject-background integration", "consistent lighting logic", "realistic commercial finish"],
+    minKeywordHint: "请补充背景类型、环境氛围或光线关系",
+    preferredCategories: ["scene", "lighting", "tone", "focus", "style"]
+  },
+  "goods-retouch": {
+    chinesePrefix: "建议将产品精修补充说明优化为",
+    englishPrefix: "Retouched product visual with",
+    chineseSuffix: ["强化材质高级感", "边缘干净自然", "保留真实商品质感"],
+    englishSuffix: ["refined material rendering", "clean edges", "realistic product finish"],
+    minKeywordHint: "请补充质感、材质、光线或背景处理要求",
+    preferredCategories: ["texture", "lighting", "tone", "focus", "style"]
+  },
+  "goods-translate": {
+    chinesePrefix: "建议将图片翻译补充说明优化为",
+    englishPrefix: "Translated visual layout with",
+    chineseSuffix: ["保留原有版式逻辑", "保证阅读清晰度", "兼顾视觉统一性"],
+    englishSuffix: ["preserved original layout", "clear readability", "consistent multilingual hierarchy"],
+    minKeywordHint: "请补充翻译语言、版式保留或信息层级要求",
+    preferredCategories: ["copy", "composition", "style"]
+  },
+  "goods-view": {
+    chinesePrefix: "建议将三视图补充说明优化为",
+    englishPrefix: "Multi-view product set with",
+    chineseSuffix: ["三视图展示完整统一", "光线与角度保持一致", "便于清晰展示产品结构"],
+    englishSuffix: ["consistent multi-view presentation", "matched lighting across views", "clear structural display"],
+    minKeywordHint: "请补充视角、展示重点或背景要求",
+    preferredCategories: ["angle", "lighting", "focus", "style"]
+  },
+  "goods-buyer": {
+    chinesePrefix: "建议将买家秀补充说明优化为",
+    englishPrefix: "Lifestyle buyer-show image with",
+    chineseSuffix: ["增强真实使用场景感", "人物与产品关系自然", "更有种草氛围"],
+    englishSuffix: ["authentic usage scene", "natural human-product interaction", "social-proof visual tone"],
+    minKeywordHint: "请补充使用场景、人物状态或氛围要求",
+    preferredCategories: ["scene", "lighting", "tone", "focus"]
+  },
+  "goods-detail": {
+    chinesePrefix: "建议将卖点图补充说明优化为",
+    englishPrefix: "Selling-point visual with",
+    chineseSuffix: ["核心卖点更集中", "信息层级更清晰", "增强商业说服力"],
+    englishSuffix: ["clear key-benefit hierarchy", "focused value communication", "strong commercial persuasion"],
+    minKeywordHint: "请补充卖点、优势表达或视觉重点",
+    preferredCategories: ["copy", "focus", "composition", "texture"]
+  },
+  "goods-sell": {
+    chinesePrefix: "建议将卖点图补充说明优化为",
+    englishPrefix: "Selling-point visual with",
+    chineseSuffix: ["核心卖点更集中", "信息层级更清晰", "增强商业说服力"],
+    englishSuffix: ["clear key-benefit hierarchy", "focused value communication", "strong commercial persuasion"],
+    minKeywordHint: "请补充卖点、优势表达或视觉重点",
+    preferredCategories: ["copy", "focus", "composition", "texture"]
+  },
+  "goods-spoke": {
+    chinesePrefix: "建议将代言图补充说明优化为",
+    englishPrefix: "Endorsement-style visual with",
+    chineseSuffix: ["人物与产品关系明确", "品牌气质更统一", "整体更具广告感"],
+    englishSuffix: ["clear talent-product relationship", "cohesive brand tone", "editorial advertising style"],
+    minKeywordHint: "请补充人物气质、镜头风格或品牌氛围",
+    preferredCategories: ["style", "tone", "focus", "composition"]
+  },
+  "goods-point": {
+    chinesePrefix: "建议将卖点图补充说明优化为",
+    englishPrefix: "Feature-driven visual with",
+    chineseSuffix: ["重点信息表达明确", "主体与卖点关系更清楚", "适合电商卖点呈现"],
+    englishSuffix: ["clear value emphasis", "strong feature-product connection", "e-commerce feature layout"],
+    minKeywordHint: "请补充卖点、主体重点或风格需求",
+    preferredCategories: ["copy", "focus", "composition", "style"]
+  },
+  default: {
+    chinesePrefix: "建议将补充说明优化为",
+    englishPrefix: "Refined product visual with",
+    chineseSuffix: ["主体清晰突出", "画面风格统一", "更适合电商视觉生成"],
+    englishSuffix: ["clear visual focus", "consistent styling", "e-commerce ready presentation"],
+    minKeywordHint: "请补充风格、构图、光线、材质或场景相关描述",
+    preferredCategories: ["focus", "lighting", "tone", "composition", "texture", "scene", "style", "copy"]
+  }
+};
+
+const supplementVisualKeywordPattern =
+  /(色调|构图|氛围|光影|材质|场景|背景|风格|光线|灯光|镜头|角度|主体|卖点|排版|版式|细节|生活感|高级感|简约|科技感|营销|翻译|语种|自然光|暖|冷|明亮|暗)/i;
+
+function dedupeStrings(items: string[]): string[] {
+  return Array.from(new Set(items.filter(Boolean)));
+}
+
+function splitInputSegments(input: string): string[] {
+  return input
+    .split(/[，。,；;、\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+function detectSupplementLanguage(input: string) {
+  const normalizedInput = input.trim();
+  const chineseCharCount = (normalizedInput.match(/[\u4e00-\u9fff]/g) ?? []).length;
+  const latinWordCount = (normalizedInput.match(/[A-Za-z]+/g) ?? []).length;
+
+  if (chineseCharCount >= 2) return "zh";
+  if (latinWordCount >= 2) return "en";
+  return "zh";
+}
+
+function buildSupplementPolishResult(
+  toolKey: string,
+  input: string,
+  context?: SupplementAiPolishContext
+): SupplementAiPolishResult {
+  const normalizedInput = input.replace(/\s+/g, " ").trim();
+  if (!normalizedInput) {
+    return { content: "请先输入补充说明后再润色", canUse: false };
+  }
+
+  const strategy = supplementToolStrategies[toolKey] ?? supplementToolStrategies.default;
+  const contextValues = dedupeStrings([...(context?.advancedValues ?? []), ...(context?.creationModeValues ?? [])]).filter(
+    (item) => item && item !== "自适应尺寸" && item !== "1" && item !== "普通模式"
+  );
+  const analysisInput = [normalizedInput, ...contextValues].join("，");
+
+  if (!supplementVisualKeywordPattern.test(analysisInput) && normalizedInput.length < 6) {
+    return { content: strategy.minKeywordHint, canUse: false };
+  }
+
+  const matchedPhrases = polishPhraseLibrary.filter((item) => item.pattern.test(analysisInput));
+  const matchedCategories = new Set(matchedPhrases.map((item) => item.category));
+  const segmentHints = [...splitInputSegments(normalizedInput), ...contextValues.slice(0, 4)];
+
+  const preferredMatchedPhrases = matchedPhrases
+    .filter((item) => strategy.preferredCategories.includes(item.category))
+    .slice(0, 5);
+  const fallbackMatchedPhrases = matchedPhrases
+    .filter((item) => !strategy.preferredCategories.includes(item.category))
+    .slice(0, 3);
+
+  const chineseParts = dedupeStrings([
+    ...preferredMatchedPhrases.map((item) => item.chinese),
+    ...fallbackMatchedPhrases.map((item) => item.chinese),
+    ...segmentHints
+      .filter((item) => item.length >= 4)
+      .slice(0, 2)
+      .map((item) => `延续“${item}”的表达重点`)
+  ]).slice(0, 6);
+
+  const englishParts = dedupeStrings([
+    ...preferredMatchedPhrases.map((item) => item.english),
+    ...fallbackMatchedPhrases.map((item) => item.english)
+  ]).slice(0, 6);
+
+  if (!matchedCategories.has("focus")) {
+    chineseParts.unshift("产品主体明确突出");
+    englishParts.unshift("clear product focus");
+  }
+
+  if (!matchedCategories.has("composition") && toolKey !== "goods-retouch") {
+    chineseParts.push("构图层级清晰且画面更平衡");
+    englishParts.push("balanced composition");
+  }
+
+  if (!matchedCategories.has("lighting")) {
+    chineseParts.push("光线表现自然，画面层次更完整");
+    englishParts.push("natural lighting depth");
+  }
+
+  if (!matchedCategories.has("texture")) {
+    chineseParts.push("保留商品真实质感并增强商业精致度");
+    englishParts.push("refined commercial texture");
+  }
+
+  const finalChineseParts = dedupeStrings([...chineseParts, ...strategy.chineseSuffix]).slice(0, 7);
+  const finalEnglishParts = dedupeStrings([...englishParts, ...strategy.englishSuffix]).slice(0, 7);
+  const contextText = contextValues.length ? `，并结合${contextValues.join("、")}等设定` : "";
+  const contextEnglishText = contextValues.length ? ", aligned with the selected setup" : "";
+  const chineseText = `${strategy.chinesePrefix}：${finalChineseParts.join("，")}${contextText}。`;
+  const englishText = `${strategy.englishPrefix} ${finalEnglishParts.join(", ")}${contextEnglishText}.`;
+  const applyContent = chineseText.replace(/^建议将(?:.+?)优化为：/, "").trim();
+  const applyEnglishContent = `${finalEnglishParts.join(", ")}${contextEnglishText}.`;
+
+  return {
+    content: applyContent,
+    applyContent,
+    applyEnglishContent,
+    canUse: true,
+    englishText,
+    chineseText
+  };
+}
+
+async function runSupplementAiPolish(
+  toolKey: string,
+  input: string,
+  context?: SupplementAiPolishContext
+): Promise<SupplementAiPolishResult> {
+  const config = supplementAiPolishConfigs[toolKey];
+  if (!config) {
+    return {
+      content: "当前功能暂未配置AI润色能力",
+      canUse: false
+    };
+  }
+
+  await new Promise((resolve) => window.setTimeout(resolve, 900));
+  return buildSupplementPolishResult(toolKey, input, context);
+}
+
+const platformMockData: PlatformMock[] = [
+  { id: "taobao", label: "淘宝", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  { id: "tmall", label: "天猫", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  { id: "jd", label: "京东", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  { id: "pdd", label: "拼多多", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  { id: "1688", label: "1688", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  { id: "douyin", label: "抖音电商", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  { id: "kuaishou", label: "快手电商", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  { id: "xiaohongshu", label: "小红书电商", regions: [{ id: "cn-mainland", label: "中国大陆", languages: ["简体中文"] }] },
+  {
+    id: "amazon",
+    label: "亚马逊",
+    regions: [
+      { id: "us", label: "美国", languages: ["英文"] },
+      { id: "eu", label: "欧洲", languages: ["英文", "德语", "法语", "意大利语", "西班牙语"] },
+      { id: "jp", label: "日本", languages: ["日语", "英文"] }
+    ]
+  },
+  {
+    id: "temu",
+    label: "Temu",
+    regions: [
+      { id: "us", label: "美国", languages: ["英语"] },
+      { id: "eu", label: "欧洲", languages: ["英语", "德语", "法语", "西班牙语", "意大利语"] },
+      { id: "global", label: "全球站", languages: ["英语"] }
+    ]
+  },
+  {
+    id: "tiktok-shop",
+    label: "TikTok Shop",
+    regions: [
+      { id: "us", label: "美国", languages: ["英语"] },
+      { id: "uk", label: "英国", languages: ["英语"] },
+      { id: "sea", label: "东南亚", languages: ["英语", "泰语", "越南语", "马来语"] }
+    ]
+  },
+  {
+    id: "alibaba-international",
+    label: "阿里国际站",
+    regions: [
+      { id: "global", label: "全球", languages: ["英语"] },
+      { id: "eu", label: "欧洲", languages: ["英语", "法语", "德语", "西班牙语"] }
+    ]
+  },
+  {
+    id: "aliexpress",
+    label: "速卖通",
+    regions: [
+      { id: "eu", label: "欧洲", languages: ["英语", "法语", "西班牙语", "俄语"] },
+      { id: "americas", label: "美洲", languages: ["英语", "西班牙语", "葡萄牙语"] }
+    ]
+  },
+  {
+    id: "shopee",
+    label: "Shopee",
+    regions: [
+      { id: "sea", label: "东南亚", languages: ["英语", "泰语", "越南语", "印尼语", "马来语"] },
+      { id: "tw", label: "中国台湾", languages: ["繁体中文"] }
+    ]
+  },
+  {
+    id: "ozon",
+    label: "OZON",
+    regions: [
+      { id: "ru", label: "俄罗斯", languages: ["俄语"] },
+      { id: "cis", label: "独联体", languages: ["俄语", "英语"] }
+    ]
+  },
+  {
+    id: "shein",
+    label: "SHEIN",
+    regions: [
+      { id: "us", label: "美国", languages: ["英语"] },
+      { id: "eu", label: "欧洲", languages: ["英语", "法语", "德语", "西班牙语", "意大利语"] },
+      { id: "middle-east", label: "中东", languages: ["英语", "阿拉伯语"] }
+    ]
+  },
+  {
+    id: "other",
+    label: "其他",
+    regions: [{ id: "custom", label: "其他地区", languages: ["简体中文", "英语"] }]
+  }
+];
+
+const applicablePlatformOptions: ApplicablePlatformOption[] = [
+  { id: "none", label: "无平台", markets: ["无区域"] },
+  { id: "taobao", label: "淘宝", markets: ["中国大陆"] },
+  { id: "tmall", label: "天猫", markets: ["中国大陆"] },
+  { id: "jd", label: "京东", markets: ["中国大陆"] },
+  { id: "pdd", label: "拼多多", markets: ["中国大陆"] },
+  { id: "1688", label: "1688", markets: ["中国大陆"] },
+  { id: "douyin", label: "抖音电商", markets: ["中国大陆"] },
+  { id: "kuaishou", label: "快手电商", markets: ["中国大陆"] },
+  { id: "xiaohongshu", label: "小红书电商", markets: ["中国大陆"] },
+  {
+    id: "amazon",
+    label: "亚马逊",
+    markets: ["北美", "欧洲", "亚太", "中东和北非"]
+  },
+  {
+    id: "temu",
+    label: "Temu",
+    markets: ["美国", "欧洲", "澳大利亚/新西兰"]
+  },
+  {
+    id: "tiktok-shop",
+    label: "TikTok Shop",
+    markets: ["美国", "英国", "德国", "法国", "意大利", "西班牙", "爱尔兰", "墨西哥", "巴西", "东南亚"]
+  },
+  {
+    id: "alibaba-international",
+    label: "阿里国际站",
+    markets: ["全球"]
+  },
+  {
+    id: "aliexpress",
+    label: "速卖通",
+    markets: ["欧洲", "拉美", "中东", "俄罗斯及独联体"]
+  },
+  {
+    id: "shopee",
+    label: "Shopee",
+    markets: ["新加坡", "马来西亚", "泰国", "越南", "菲律宾", "印度尼西亚", "中国台湾", "巴西"]
+  },
+  {
+    id: "ozon",
+    label: "OZON",
+    markets: ["俄罗斯", "独联体"]
+  },
+  {
+    id: "shein",
+    label: "SHEIN",
+    markets: ["美国", "欧洲", "中东"]
+  }
+];
+
+const modelAdjustActionConfigs: ModelAdjustActionConfig[] = [
+  {
+    key: "replace-model",
+    label: "AI换模特",
+    detailLabel: "需求描述",
+    detailPlaceholder: "请描述您对生成图片的需求，例如：模特的动作、表情、服装等细节要求。"
+  },
+  {
+    key: "change-expression",
+    label: "模特换表情",
+    valueLabel: "模特表情",
+    valueOptions: ["严肃", "微笑", "开心", "大笑"],
+    detailLabel: "表情描述",
+    detailPlaceholder: "请描述您希望模特展现的表情，例如：微笑、严肃、惊讶等。"
+  },
+  {
+    key: "multi-angle",
+    label: "模特多角度",
+    valueLabel: "模特角度",
+    valueOptions: ["正面", "侧面", "背面"],
+    detailLabel: "角度描述",
+    detailPlaceholder: "请描述您希望模特展示的视角，例如：侧面、背面、俯视等。"
+  },
+  {
+    key: "multi-pose",
+    label: "模特多姿势",
+    valueLabel: "模特姿势",
+    valueOptions: ["站姿", "坐着", "侧卧", "平躺"],
+    detailLabel: "姿势描述",
+    detailPlaceholder: "请描述您希望模特摆出的姿势，例如：站立、坐姿、跑步等。"
+  },
+  {
+    key: "hairstyle",
+    label: "模特换发型",
+    valueLabel: "模特发型",
+    valueOptions: ["光头", "短寸", "短发", "中长发", "长发"],
+    detailLabel: "发型描述",
+    detailPlaceholder: "请描述您希望模特更换的发型，例如：长发、短发、卷发等。"
+  },
+  {
+    key: "fine-tune",
+    label: "模特微调",
+    valueLabel: "模特微调",
+    valueOptions: ["肤色自然一些", "戴上眼镜", "去掉眼镜"],
+    detailLabel: "微调描述",
+    detailPlaceholder: "请描述您希望对模特进行的微调，例如：调整身材比例、肤色等。"
+  }
+];
+
+const creationModeConfigs: Record<string, CreationModeConfig> = {
+  default: {
+    key: "default",
+    title: "创作模式",
+    showSupplement: true,
+    supplementPlaceholder: "请输入补充说明，支持输入风格、构图、光影、材质等细节，最长2000字。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://normal-image-v1",
+        logicNote: "使用普通模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 1,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://advanced-image-v2",
+        logicNote: "使用高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 2, "2K": 3, "4K": 5 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      }
+    ]
+  },
+  retouch: {
+    key: "retouch",
+    title: "创作模式",
+    showSupplement: true,
+    supplementPlaceholder: "请输入对所有图片都适用的额外说明，例如：质感更高级，保持暖色光影，背景更干净。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://retouch-standard",
+        logicNote: "使用精修标准模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: ["自适应尺寸", "1:1", "3:4", "4:5"],
+        countOptions: ["1", "2"],
+        baseUnitCreditCost: 2,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://retouch-pro",
+        logicNote: "使用精修高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: ["自适应尺寸", "1:1", "3:4", "4:5"],
+        countOptions: ["1", "2"],
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 3, "2K": 4, "4K": 6 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      }
+    ]
+  },
+  white: {
+    key: "white",
+    title: "创作模式",
+    showSupplement: false,
+    supplementPlaceholder: "请输入对白底图效果的补充说明，例如：阴影自然、边缘更干净、质感更通透。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://white-basic",
+        logicNote: "使用白底基础模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: ["自适应尺寸", "1:1", "4:5", "3:4"],
+        countOptions: ["1", "2"],
+        baseUnitCreditCost: 5,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://white-pro",
+        logicNote: "使用白底高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: ["自适应尺寸", "1:1", "4:5", "3:4"],
+        countOptions: ["1", "2"],
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      }
+    ]
+  },
+  translate: {
+    key: "translate",
+    title: "创作模式",
+    showSupplement: false,
+    supplementPlaceholder: "请输入翻译排版的补充说明，例如：保留原版式、优先英文标题、局部增强对比。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://translate-pro",
+        logicNote: "使用翻译高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      },
+      {
+        id: "smart",
+        label: "智能模式",
+        apiModel: "mock://translate-smart",
+        logicNote: "使用翻译智能模型，可设置出图比例、固定1K分辨率和2张出图数量。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["1", "2"],
+        resolutionOptions: ["1K"],
+        resolutionUnitCreditCosts: { "1K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      },
+      {
+        id: "cn-growth",
+        label: "中文增强",
+        apiModel: "mock://translate-cn-growth",
+        logicNote: "使用翻译中文增长模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 10,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      }
+    ]
+  },
+  "three-view": {
+    key: "three-view",
+    title: "创作模式",
+    showSupplement: false,
+    supplementPlaceholder: "请输入三视图补充说明，例如：正侧背展示完整、保持一致光线、突出产品细节。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://three-view-basic",
+        logicNote: "使用三视角普通模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: ["自适应尺寸", "1:1", "4:3", "3:2"],
+        countOptions: ["1", "2"],
+        baseUnitCreditCost: 2,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://three-view-pro",
+        logicNote: "使用三视角高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: ["自适应尺寸", "1:1", "4:3", "3:2"],
+        countOptions: ["1", "2"],
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 4, "2K": 6, "4K": 8 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      }
+    ]
+  },
+  background: {
+    key: "background",
+    title: "创作模式",
+    showSupplement: true,
+    supplementLabel: "细节补充",
+    supplementPlaceholder: "请输入您对背景替换的细节补充，例如：突出空间纵深、保持主体边缘自然融合、加强商业感布光。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://background-basic",
+        logicNote: "使用换背景基础模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 5,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://background-pro",
+        logicNote: "使用换背景高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      },
+      {
+        id: "text-enhanced",
+        label: "文本增强",
+        apiModel: "mock://background-text-enhanced",
+        logicNote: "使用换背景文本增强模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 10,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      }
+    ]
+  },
+  scene: {
+    key: "scene",
+    title: "创作模式",
+    showSupplement: true,
+    supplementLabel: "补充说明",
+    supplementPlaceholder: "请输入场景图补充说明，例如：高级家居氛围、暖色晨光、突出产品主体与卖点。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://scene-basic",
+        logicNote: "使用场景图普通模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 5,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://scene-pro",
+        logicNote: "使用场景图高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      },
+      {
+        id: "cn-enhanced",
+        label: "中文增强",
+        apiModel: "mock://scene-cn-enhanced",
+        logicNote: "使用场景图中文增强模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 10,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      }
+    ]
+  },
+  spoke: {
+    key: "spoke",
+    title: "创作模式",
+    showSupplement: true,
+    supplementLabel: "细节补充",
+    supplementPlaceholder: "请输入代言图细节补充，例如：人物与产品关系自然、强调使用动作、突出品牌氛围与真实感。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://spoke-basic",
+        logicNote: "使用代言图普通模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 5,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://spoke-pro",
+        logicNote: "使用代言图高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      },
+      {
+        id: "cn-enhanced",
+        label: "中文增强",
+        apiModel: "mock://spoke-cn-enhanced",
+        logicNote: "使用代言图中文增强模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 10,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      }
+    ]
+  },
+  "model-adjust": {
+    key: "model-adjust",
+    title: "创作方式",
+    showSupplement: false,
+    hideCountField: true,
+    supplementPlaceholder: "请输入模特调整补充说明。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://model-adjust-basic",
+        logicNote: "使用模特调整普通模型，可设置出图比例，结果固定输出1张。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["1"],
+        baseUnitCreditCost: 5,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://model-adjust-pro",
+        logicNote: "使用模特调整高级模型，可设置出图比例和分辨率，结果固定输出1张。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      },
+      {
+        id: "cn-enhanced",
+        label: "中文增强",
+        apiModel: "mock://model-adjust-cn-enhanced",
+        logicNote: "使用模特调整中文增强模型，可设置出图比例，结果固定输出1张。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["1"],
+        baseUnitCreditCost: 10,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      }
+    ]
+  },
+  marketing: {
+    key: "marketing",
+    title: "创作模式",
+    showSupplement: true,
+    supplementLabel: "细节补充",
+    supplementPlaceholder: "请输入营销主图的细节补充，例如：突出新品首发、大促价格标签、品牌主色和主视觉氛围。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://marketing-basic",
+        logicNote: "使用营销主图普通模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 5,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://marketing-pro",
+        logicNote: "使用营销主图高级模型，可设置出图比例、分辨率和出图数量三个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      },
+      {
+        id: "cn-enhanced",
+        label: "中文增强",
+        apiModel: "mock://marketing-cn-enhanced",
+        logicNote: "使用营销主图中文增强模型，可设置出图比例和出图数量两个维度参数。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: defaultCountOptions,
+        baseUnitCreditCost: 10,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      }
+    ]
+  },
+  "set-pack": {
+    key: "set-pack",
+    title: "创作模式",
+    showSupplement: false,
+    hideCountField: true,
+    supplementLabel: "运营补充",
+    supplementPlaceholder: "请输入额外运营诉求，例如：更强调促销感、突出参数对比、补充礼赠场景或控制标题口吻。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://set-pack-normal",
+        logicNote: "使用套图普通模型，可设置出图比例。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["7"],
+        baseUnitCreditCost: 5,
+        defaultRatio: "1:1",
+        defaultCount: "7"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://set-pack-advanced",
+        logicNote: "使用套图高级模型，可设置出图比例和分辨率。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["7"],
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
+        defaultRatio: "1:1",
+        defaultCount: "7",
+        defaultResolution: "1K"
+      },
+      {
+        id: "cn-enhanced",
+        label: "中文增强",
+        apiModel: "mock://set-pack-cn-enhanced",
+        logicNote: "使用套图中文增强模型，可设置出图比例。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["7"],
+        baseUnitCreditCost: 15,
+        defaultRatio: "1:1",
+        defaultCount: "7"
+      }
+    ]
+  },
+  "video-replica": {
+    key: "video-replica",
+    title: "创作模式",
+    showSupplement: true,
+    supplementLabel: "视频描述",
+    supplementPlaceholder: "请输入视频描述词，AI会结合参考视频的运镜节奏和产品图主体特征生成新视频",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://video-replica-normal",
+        logicNote: "使用视频复刻普通模型。",
+        ratioOptions: videoReplicaRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: videoReplicaResolutionOptions,
+        resolutionUnitCreditCosts: { "480p": 1, "720p": 1 },
+        defaultRatio: "竖9:16",
+        defaultCount: "1",
+        defaultResolution: "480p"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://video-replica-advanced",
+        logicNote: "使用视频复刻高级模型。",
+        ratioOptions: videoReplicaRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: videoReplicaResolutionOptions,
+        resolutionUnitCreditCosts: { "480p": 1, "720p": 1 },
+        defaultRatio: "竖9:16",
+        defaultCount: "1",
+        defaultResolution: "480p"
+      }
+    ]
+  },
+  "video-main": {
+    key: "video-main",
+    title: "创作模式",
+    showSupplement: false,
+    supplementPlaceholder: "请输入产品视频生成补充说明。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://video-main-normal",
+        logicNote: "使用产品视频普通模型。",
+        ratioOptions: videoReplicaRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: videoReplicaResolutionOptions,
+        resolutionUnitCreditCosts: { "480p": 1, "720p": 1 },
+        defaultRatio: "竖9:16",
+        defaultCount: "1",
+        defaultResolution: "480p"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://video-main-advanced",
+        logicNote: "使用产品视频高级模型。",
+        ratioOptions: videoReplicaRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: videoReplicaResolutionOptions,
+        resolutionUnitCreditCosts: { "480p": 1, "720p": 1 },
+        defaultRatio: "竖9:16",
+        defaultCount: "1",
+        defaultResolution: "480p"
+      }
+    ]
+  },
+  "video-replace": {
+    key: "video-replace",
+    title: "创作模式",
+    showSupplement: true,
+    supplementLabel: "视频描述",
+    supplementPlaceholder: "将视频1中的<产品>替换成参考图中的<产品>，动作和运镜不变。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://video-replace-normal",
+        logicNote: "使用商品替换普通模型。",
+        ratioOptions: videoReplicaRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: videoReplicaResolutionOptions,
+        resolutionUnitCreditCosts: { "480p": 1, "720p": 1 },
+        defaultRatio: "竖9:16",
+        defaultCount: "1",
+        defaultResolution: "480p"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://video-replace-advanced",
+        logicNote: "使用商品替换高级模型。",
+        ratioOptions: videoReplicaRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: videoReplicaResolutionOptions,
+        resolutionUnitCreditCosts: { "480p": 1, "720p": 1 },
+        defaultRatio: "竖9:16",
+        defaultCount: "1",
+        defaultResolution: "480p"
+      }
+    ]
+  }
+};
+
+const defaultCreationModeConfigByToolKey = Object.fromEntries(defaultToolKeys.map((key) => [key, "default"])) as Record<string, string>;
+
+const creationModeConfigByToolKey: Record<string, string> = {
+  ...defaultCreationModeConfigByToolKey,
+  "goods-white": "white",
+  "goods-retouch": "retouch",
+  "goods-translate": "translate",
+  "goods-view": "three-view",
+  "goods-bg": "background",
+  "goods-marketing": "marketing",
+  "goods-buyer": "default",
+  "goods-scene": "scene",
+  "goods-detail": "default",
+  "goods-sell": "default",
+  "goods-spoke": "spoke",
+  "goods-point": "default",
+  "set-replica": "spoke",
+  "model-try": "default",
+  "model-change": "model-adjust",
+  "model-generate": "spoke",
+  "video-replace": "video-replace"
+};
+
+const defaultToolModuleConfigs = Object.fromEntries(
+  defaultToolKeys.map((key) => [
+    key,
+    {
+      creationModeConfigKey: "default",
+      uploads: {
+        main: {
+          label: "上传商品图",
+          required: true,
+          singleUploadMeta: "（单次最多上传{count}张）",
+          hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+        }
+      }
+    } satisfies ToolModuleConfig
+  ])
+) as Record<string, ToolModuleConfig>;
+
+const toolModuleConfigs: Record<string, ToolModuleConfig> = {
+  ...defaultToolModuleConfigs,
+  "set-main": {
+    creationModeConfigKey: "set-pack",
+    sectionOrder: ["upload-main", "set-pack-selling-points", "set-pack-strategy", "creation-mode", "set-pack-type-selector"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 3,
+        singleUploadMeta: "（单次最多上传3张）",
+        hintTemplate: "同一商品多视角图，最多3张"
+      }
+    }
+  },
+  "set-aplus": {
+    creationModeConfigKey: "set-pack",
+    sectionOrder: ["upload-main", "set-pack-selling-points", "set-pack-strategy", "creation-mode", "set-pack-type-selector"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 3,
+        singleUploadMeta: "（单次最多上传3张）",
+        hintTemplate: "同一商品多视角图，最多3张"
+      }
+    }
+  },
+  "goods-white": {
+    creationModeConfigKey: "white",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings"],
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        }
+      ],
+      conditionalDetailField: {
+        triggerFieldKey: "platformInfo",
+        label: "细节补充",
+        placeholder: "请输入平台相关规则说明，例如：白底规范、边缘处理要求、阴影限制或主图尺寸要求。"
+      }
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-retouch": {
+    creationModeConfigKey: "retouch",
+    sectionOrder: ["upload-main", "mode-choice", "creation-mode", "supplement"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: ["platform", "region"],
+      platformIds: ["taobao", "tmall", "jd", "pdd", "amazon", "temu", "tiktok-shop", "shopee", "other"]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-translate": {
+    creationModeConfigKey: "translate",
+    sectionOrder: ["upload-main", "target-language", "creation-mode", "advanced-settings"],
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        }
+      ],
+      conditionalDetailField: {
+        triggerFieldKey: "platformInfo",
+        label: "细节补充",
+        placeholder: "请输入平台相关规则说明，例如：标题语言规范、价格展示要求、活动标签限制、版式注意事项。"
+      }
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-view": {
+    creationModeConfigKey: "three-view",
+    sectionOrder: ["upload-main", "camera-angle", "creation-mode", "advanced-settings"],
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        }
+      ],
+      conditionalDetailField: {
+        triggerFieldKey: "platformInfo",
+        label: "细节补充",
+        placeholder: "请输入平台相关规则说明，例如：主图视角要求、禁用元素、白底规范、尺寸或展示限制。"
+      }
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-bg": {
+    creationModeConfigKey: "background",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings", "supplement"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "backgroundType",
+          label: "背景类型",
+          mode: "input-select",
+          options: backgroundTypeInputOptions
+        },
+        {
+          key: "lightingStyle",
+          label: "风格与光影",
+          mode: "input-select",
+          options: backgroundLightingInputOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-marketing": {
+    creationModeConfigKey: "marketing",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "productType",
+          label: "产品类型",
+          mode: "input-select",
+          options: productTypeInputOptions
+        },
+        {
+          key: "sceneBackground",
+          label: "场景背景",
+          mode: "input-select",
+          options: sceneTypeInputOptions
+        },
+        {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        },
+        {
+          key: "productInfo",
+          label: "商品信息",
+          mode: "input-select",
+          options: productInfoInputOptions
+        },
+        {
+          key: "visualStyle",
+          label: "视觉风格",
+          mode: "input-select",
+          options: visualStyleInputOptions
+        },
+        {
+          key: "marketingElements",
+          label: "营销元素",
+          mode: "input-select",
+          options: marketingElementInputOptions
+        },
+        {
+          key: "copyLanguage",
+          label: "文案语种",
+          options: copyLanguageInputOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "参考图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-buyer": {
+    creationModeConfigKey: "spoke",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "productType",
+          label: "产品类型",
+          mode: "input-select",
+          options: productTypeInputOptions
+        },
+        {
+          key: "productState",
+          label: "产品状态",
+          mode: "input-select",
+          options: buyerShowProductStateOptions
+        },
+        {
+          key: "presentationStyle",
+          label: "呈现方式",
+          mode: "input-select",
+          options: buyerShowPresentationOptions
+        },
+        {
+          key: "sceneAtmosphere",
+          label: "场景氛围",
+          mode: "input-select",
+          options: buyerShowAtmosphereOptions
+        },
+        {
+          key: "productReality",
+          label: "产品真实感",
+          mode: "input-select",
+          options: buyerShowProductRealityOptions
+        },
+        {
+          key: "environmentReality",
+          label: "环境真实感",
+          mode: "input-select",
+          options: buyerShowEnvironmentRealityOptions
+        },
+        {
+          key: "shotReality",
+          label: "拍摄真实感",
+          mode: "input-select",
+          options: buyerShowShotRealityOptions
+        },
+        {
+          key: "targetMarket",
+          label: "目标市场",
+          mode: "input-select",
+          options: spokespersonTargetMarketOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-scene": {
+    creationModeConfigKey: "scene",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings", "supplement"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "productType",
+          label: "产品类型",
+          mode: "input-select",
+          options: productTypeInputOptions
+        },
+        {
+          key: "sceneType",
+          label: "场景类型",
+          mode: "input-select",
+          options: sceneTypeInputOptions
+        },
+        {
+          key: "productDisplay",
+          label: "产品展示",
+          options: ["单品特写", "多角度展示", "套装组合", "模特手持", "使用中展示", "局部细节", "悬浮陈列"]
+        },
+        {
+          key: "layoutStyle",
+          label: "排版呈现",
+          options: ["居中构图", "左右分栏", "满版铺陈", "留白极简", "杂志感排版", "电商主图风"]
+        },
+        {
+          key: "moodStyle",
+          label: "氛围营造",
+          options: ["清新明亮", "温暖治愈", "高级冷淡", "轻奢质感", "梦幻浪漫", "节日热卖", "科技未来"]
+        },
+        {
+          key: "valueFocus",
+          label: "价值导向",
+          options: ["突出卖点", "突出品质", "突出价格优势", "突出礼赠属性", "突出实用性", "突出品牌感"]
+        },
+        {
+          key: "targetMarket",
+          label: "目标市场",
+          options: ["国内电商", "欧美市场", "日韩市场", "东南亚市场", "中东市场", "全球通用"]
+        },
+        {
+          key: "copyLanguage",
+          label: "文案语种",
+          options: ["无需文案", "简体中文", "繁体中文", "英语", "日语", "韩语", "西班牙语", "法语", "德语"]
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-detail": {
+    creationModeConfigKey: "spoke",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "productType",
+          label: "产品类型",
+          mode: "input-select",
+          options: productTypeInputOptions
+        },
+        {
+          key: "displayType",
+          label: "展示形式",
+          mode: "input-select",
+          options: sellingPointDisplayOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-sell": {
+    creationModeConfigKey: "spoke",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "productType",
+          label: "产品类型",
+          mode: "input-select",
+          options: productTypeInputOptions
+        },
+        {
+          key: "sceneType",
+          label: "场景类型",
+          mode: "input-select",
+          options: sellingPointSceneTypeOptions
+        },
+        {
+          key: "copyLanguage",
+          label: "文案语种",
+          mode: "input-select",
+          options: copyLanguageInputOptions
+        },
+        {
+          key: "coreSellingPoint",
+          label: "核心卖点",
+          mode: "input-select",
+          options: sellingPointCoreCopyOptions
+        },
+        {
+          key: "presentationForm",
+          label: "表现形式",
+          mode: "input-select",
+          options: sellingPointPresentationOptions
+        },
+        {
+          key: "sellingPointFocus",
+          label: "卖点重心",
+          mode: "input-select",
+          options: sellingPointFocusOptions
+        },
+        {
+          key: "mainTitle",
+          label: "主副标题",
+          mode: "input-select",
+          options: sellingPointTitleOptions
+        },
+        {
+          key: "subtitle",
+          label: "副标题",
+          mode: "input-select",
+          options: sellingPointSubtitleOptions
+        },
+        {
+          key: "fontStyle",
+          label: "字体风格",
+          mode: "input-select",
+          options: sellingPointFontStyleOptions
+        },
+        {
+          key: "assistElement",
+          label: "元素辅助",
+          mode: "input-select",
+          options: sellingPointAssistElementOptions
+        },
+        {
+          key: "targetMarket",
+          label: "目标市场",
+          mode: "input-select",
+          options: spokespersonTargetMarketOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "goods-spoke": {
+    creationModeConfigKey: "spoke",
+    sectionOrder: ["upload-main", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    advancedSettings: {
+      title: "高级设置",
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "productType",
+          label: "产品类型",
+          mode: "input-select",
+          options: productTypeInputOptions
+        },
+        {
+          key: "interactionType",
+          label: "互动方式",
+          mode: "input-select",
+          options: spokespersonInteractionOptions
+        },
+        {
+          key: "characterTrait",
+          label: "人物特点",
+          mode: "input-select",
+          options: spokespersonCharacterOptions
+        },
+        {
+          key: "sceneBackground",
+          label: "场景背景",
+          mode: "input-select",
+          options: spokespersonSceneBackgroundOptions
+        },
+        {
+          key: "layoutStyle",
+          label: "排版方式",
+          mode: "input-select",
+          options: spokespersonLayoutOptions
+        },
+        {
+          key: "skinTone",
+          label: "人种肤色",
+          mode: "input-select",
+          options: spokespersonSkinToneOptions
+        },
+        {
+          key: "genderStyle",
+          label: "性别风格",
+          mode: "input-select",
+          options: spokespersonGenderStyleOptions
+        },
+        {
+          key: "ageTrait",
+          label: "年龄特点",
+          mode: "input-select",
+          options: spokespersonAgeOptions
+        },
+        {
+          key: "displayFocus",
+          label: "展示重点",
+          mode: "input-select",
+          options: spokespersonFocusOptions
+        },
+        {
+          key: "targetMarket",
+          label: "目标市场",
+          mode: "input-select",
+          options: spokespersonTargetMarketOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "参考图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "set-replica": {
+    creationModeConfigKey: "spoke",
+    sectionOrder: ["upload-reference", "upload-main", "generation-rule-notice", "creation-mode", "supplement"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "set-fashion": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "baseline-model-setup"],
+    modelGenerateTypes,
+    uploads: {
+      main: {
+        label: "上传服装图片",
+        required: true,
+        maxCount: 5,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多5张，请上传同一件衣服不同视角图"
+      }
+    }
+  },
+  "video-replica": {
+    creationModeConfigKey: "video-replica",
+    sectionOrder: ["upload-video", "upload-main", "video-replica-setup", "supplement"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 5,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多5张，请上传同一产品多视角图片"
+      },
+      video: {
+        label: "上传参考视频",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}个）",
+        hintTemplate: "请上传1个参考视频，时长2~15s，小于50M，支持MP4/MOV",
+        maxFileSizeMb: 50,
+        minDurationSeconds: 2,
+        maxDurationSeconds: 15
+      }
+    }
+  },
+  "video-main": {
+    creationModeConfigKey: "video-main",
+    sectionOrder: ["upload-main", "video-replica-setup", "video-main-script-setup"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 5,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多5张，请上传同一产品多视角图片"
+      }
+    }
+  },
+  "video-replace": {
+    creationModeConfigKey: "video-replace",
+    sectionOrder: ["upload-video", "upload-main", "video-replica-setup", "supplement"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 5,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多5张，请上传同一产品多视角图片"
+      },
+      video: {
+        label: "上传视频",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}个）",
+        hintTemplate: "请上传1个视频，时长2~15s，小于50M，支持MP4/MOV",
+        maxFileSizeMb: 50,
+        minDurationSeconds: 2,
+        maxDurationSeconds: 15
+      }
+    }
+  },
+  "goods-point": {
+    creationModeConfigKey: "default",
+    advancedSettings: {
+      title: "高级设置",
+      fields: ["platform"],
+      platformIds: ["taobao", "tmall", "jd", "pdd", "amazon", "temu"]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "pod-crop": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "pod-crop-mode"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "pod-extract": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "pod-extract-setup"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "model-try": {
+    creationModeConfigKey: "spoke",
+    sectionOrder: ["model-try-setup", "creation-mode"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "model-change": {
+    creationModeConfigKey: "model-adjust",
+    sectionOrder: ["upload-main", "model-change-action", "creation-mode", "upload-reference"],
+    modelAdjustActions: modelAdjustActionConfigs,
+    uploads: {
+      main: {
+        label: "上传模特图",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "model-generate": {
+    creationModeConfigKey: "spoke",
+    sectionOrder: ["upload-main", "model-generate-setup", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    modelGenerateTypes,
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "scene",
+          label: "场景",
+          mode: "rich-select",
+          richOptions: modelGenerateSceneOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传模特图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  }
+};
+
+const libraryFolders: LibraryFolder[] = [
+  { id: "channel", name: "渠道发展部" },
+  { id: "brand", name: "品牌对外资料" },
+  { id: "hr", name: "人力行政中心" },
+  { id: "service", name: "中台支持中心" },
+  { id: "creative", name: "创意服务中心" },
+  { id: "product", name: "产研中心" },
+  { id: "smb", name: "个人与SMB运营部" },
+  { id: "market", name: "企业营销部" }
+];
+
+const libraryAssets: LibraryAsset[] = [
+  { id: "asset-1", name: "女装新品白底主图", src: "/assets/task-gallery-4.png", sizeMb: 12, format: "PSD", folderId: "channel" },
+  { id: "asset-2", name: "保温杯场景海报", src: "/assets/task-gallery-5.png", sizeMb: 8, format: "PNG", folderId: "brand" },
+  { id: "asset-3", name: "耳机详情页KV", src: "/assets/task-gallery-6.png", sizeMb: 16, format: "AI", folderId: "creative" },
+  { id: "asset-4", name: "家清组合促销封面", src: "/assets/task-gallery-7.png", sizeMb: 14, format: "PSD", folderId: "product", shared: true },
+  { id: "asset-5", name: "鞋服上新电商横幅", src: "/assets/task-gallery-8.png", sizeMb: 10, format: "PNG", folderId: "service" },
+  { id: "asset-6", name: "零食礼盒直播封面", src: "/assets/task-thumb-1.png", sizeMb: 9, format: "PNG", folderId: "market", shared: true },
+  { id: "asset-7", name: "护肤品卖点长图", src: "/assets/task-thumb-2.png", sizeMb: 11, format: "PSD", folderId: "creative" },
+  { id: "asset-8", name: "箱包通勤场景图", src: "/assets/upload-preview.png", sizeMb: 13, format: "AI", folderId: "hr" },
+  {
+    id: "asset-video-1",
+    name: "耳机爆款复刻素材.mp4",
+    src: "",
+    previewSrc: "/assets/task-gallery-6.png",
+    sizeMb: 24,
+    format: "MP4",
+    folderId: "creative",
+    mediaKind: "video"
+  },
+  {
+    id: "asset-video-2",
+    name: "箱包种草短片.mov",
+    src: "",
+    previewSrc: "/assets/task-gallery-8.png",
+    sizeMb: 32,
+    format: "MOV",
+    folderId: "market",
+    mediaKind: "video",
+    shared: true
+  }
+];
+
+const sensitiveUploadPatterns = [
+  /porn|sex|nsfw|nude|adult|xxx/i,
+  /黄图|色情|成人视频|裸照|裸聊|成人视频|成人视频|成人视频|约炮|援交/,
+  /casino|gambl|bet|lottery|poker|blackjack|roulette/i,
+  /赌博|博彩|赌场|赌局|棋牌|彩票|下注|百家乐|德州/,
+  /drug|cocaine|heroin|meth|weed|marijuana|opium|ecstasy/i,
+  /毒品|吸毒|冰毒|海洛因|大麻|鸦片|摇头丸|可卡因/
+];
+
+function isSensitiveUpload(file: File) {
+  const target = `${file.name} ${file.type}`.toLowerCase();
+  return sensitiveUploadPatterns.some((pattern) => pattern.test(target));
+}
+
+function getLibraryMediaKindByFieldKey(fieldKey: string) {
+  return fieldKey.endsWith(":video") ? "video" : "image";
+}
+
+function canRenderVideoPreview(src?: string) {
+  if (!src) return false;
+  return src.startsWith("blob:") || src.startsWith("data:video") || src.endsWith(".mp4") || src.endsWith(".mov");
+}
+
+function TopBar({
+  currentUser,
+  credits,
+  onOpenUserMenu,
+  onOpenMembership,
+  onOpenPointsBalance
+}: {
+  currentUser: UserTierProfile;
+  credits: number;
+  onOpenUserMenu: () => void;
+  onOpenMembership: () => void;
+  onOpenPointsBalance: () => void;
+}) {
+  return (
+    <header className="ck-topbar">
+      <div className="ck-topbar-left">
+        <div className="ck-logo-wrap">
+          <img alt="创客贴" className="ck-logo-mark-img" src={figmaIcons.topLogoMark} />
+          <img alt="创客贴" className="ck-logo-word-img" src={figmaIcons.topLogoWord} />
+        </div>
+        <div className="ck-divider" />
+        <div className="ck-channel">AI电商</div>
+      </div>
+      <div className="ck-topbar-right">
+        <button className="ck-credit" onClick={onOpenPointsBalance} type="button">
+          <img alt="" src={figmaIcons.creditGem} />
+          {credits}
+        </button>
+        <button className="ck-vip" onClick={onOpenMembership} type="button">
+          {currentUser.membershipButtonLabel}
+        </button>
+        <button className="ck-user-entry" onClick={onOpenUserMenu} type="button">
+          <img alt={currentUser.name} className="ck-user-entry-avatar" src={currentUser.avatar} />
+          <span className="ck-user-entry-copy">
+            <strong>{currentUser.name}</strong>
+            <em>{currentUser.label}</em>
+          </span>
+          <span className="ck-user-entry-caret">⌄</span>
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function RailIcon({ type, active }: { type: PrimaryKey | "mine"; active?: boolean }) {
+  if (type === "set") {
+    return (
+      <img
+        alt=""
+        className="ck-figma-icon set"
+        src={active ? figmaIcons.ecommerceSetActive : figmaIcons.ecommerceSet}
+      />
+    );
+  }
+
+  if (type === "goods") {
+    return (
+      <span className="ck-figma-icon goods">
+        <img alt="" className="goods-main" src={active ? figmaIcons.aiGoodsMainActive : figmaIcons.aiGoodsMain} />
+        <img
+          alt=""
+          className="goods-badge"
+          src={active ? figmaIcons.aiGoodsBadgeActive : figmaIcons.aiGoodsBadge}
+        />
+      </span>
+    );
+  }
+
+  if (type === "model") {
+    return <img alt="" className="ck-figma-icon model" src={active ? figmaIcons.modelActive : figmaIcons.model} />;
+  }
+
+  if (type === "video") {
+    return (
+      <span className="ck-figma-icon video">
+        <img alt="" className="video-main" src={active ? figmaIcons.videoMainActive : figmaIcons.videoMain} />
+        <img alt="" className="video-play" src={active ? figmaIcons.videoPlayActive : figmaIcons.videoPlay} />
+      </span>
+    );
+  }
+
+  if (type === "image") {
+    return <img alt="" className="ck-figma-icon image" src={active ? figmaIcons.imageActive : figmaIcons.image} />;
+  }
+
+  if (type === "pod") {
+    return (
+      <span className="ck-figma-icon pod">
+        <img alt="" className="pod-main" src={active ? figmaIcons.podActive : figmaIcons.pod} />
+        <img alt="" className="pod-dot" src={active ? figmaIcons.podDotActive : figmaIcons.podDot} />
+      </span>
+    );
+  }
+
+  if (type === "mine") {
+    return (
+      <span className="ck-figma-icon mine">
+        <img alt="" className="mine-body" src={active ? figmaIcons.mineBodyActive : figmaIcons.mineBody} />
+        <img alt="" className="mine-head" src={active ? figmaIcons.mineHeadActive : figmaIcons.mineHead} />
+      </span>
+    );
+  }
+
+  return (
+    <span className={`ck-figma-icon more${active ? " active" : ""}`}>
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
+function SideRail({
+  activePrimary,
+  isMineActive,
+  onOpenMine,
+  onSelectPrimary
+}: {
+  activePrimary: PrimaryKey;
+  isMineActive: boolean;
+  onOpenMine: () => void;
+  onSelectPrimary: (key: PrimaryKey) => void;
+}) {
+  return (
+    <aside className="ck-rail">
+      <div className="ck-rail-list">
+        {navGroups.map((item) => {
+          const isActive = item.key === activePrimary;
+
+          return (
+            <button
+              key={item.key}
+              className={`ck-rail-item${isActive ? " active" : ""}`}
+              onClick={() => onSelectPrimary(item.key)}
+              type="button"
+            >
+              <span className={`ck-rail-icon-box${isActive ? " active" : ""}`}>
+                <RailIcon active={isActive} type={item.key} />
+              </span>
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <button className={`ck-rail-item bottom${isMineActive ? " active" : ""}`} onClick={onOpenMine} type="button">
+        <span className={`ck-rail-icon-box${isMineActive ? " active" : ""}`}>
+          <RailIcon active={isMineActive} type="mine" />
+        </span>
+        <span>我的</span>
+      </button>
+    </aside>
+  );
+}
+
+function SecondaryMenu({
+  title,
+  tools,
+  activeTool,
+  collapsed,
+  onSelectTool,
+  onToggle
+}: {
+  title: string;
+  tools: ToolConfig[];
+  activeTool: string;
+  collapsed: boolean;
+  onSelectTool: (key: string) => void;
+  onToggle: () => void;
+}) {
+  if (collapsed) {
+    return (
+      <aside className="ck-secondary collapsed">
+        <button aria-label="展开工具栏" className="ck-collapse-handle expand" onClick={onToggle} type="button">
+          <span className="ck-collapse-arrow expand">
+            <img alt="" src={figmaIcons.collapse} />
+          </span>
+        </button>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="ck-secondary">
+      <div className="ck-secondary-inner">
+        <div className="ck-secondary-title">{title}</div>
+        <div className="ck-secondary-list">
+          {tools.map((item, index) => (
+            <button
+              key={item.key}
+              className={`ck-secondary-item${item.key === activeTool ? " active" : ""}${index === 8 ? " divider-top" : ""}`}
+              onClick={() => onSelectTool(item.key)}
+              type="button"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <button aria-label="收起工具栏" className="ck-collapse-handle collapse" onClick={onToggle} type="button">
+          <span className="ck-collapse-arrow collapse">
+            <img alt="" src={figmaIcons.collapse} />
+          </span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function MineSecondaryMenu({
+  activeTab,
+  onSelectTab
+}: {
+  activeTab: MineTab;
+  onSelectTab: (tab: MineTab) => void;
+}) {
+  return (
+    <aside className="ck-secondary mine">
+      <div className="ck-secondary-inner">
+        <div className="ck-secondary-title">我的</div>
+        <div className="ck-secondary-list">
+          <button className={`ck-secondary-item${activeTab === "creation" ? " active" : ""}`} onClick={() => onSelectTab("creation")} type="button">
+            我的创作
+          </button>
+          <button className={`ck-secondary-item${activeTab === "models" ? " active" : ""}`} onClick={() => onSelectTab("models")} type="button">
+            我的模特
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function FieldTitle({
+  label,
+  required,
+  optional,
+  meta
+}: {
+  label: string;
+  required?: boolean;
+  optional?: boolean;
+  meta?: string;
+}) {
+  return (
+    <div className="ck-field-title">
+      {label}
+      {required ? <span>*</span> : null}
+      {optional ? <em>（选填）</em> : null}
+      {meta ? <em>{meta}</em> : null}
+    </div>
+  );
+}
+
+function UploadField({
+  fieldKey,
+  label,
+  values,
+  onAdd,
+  onRemove,
+  onOpenLibrary,
+  onRejectedUpload,
+  onAtLimit,
+  required,
+  optional,
+  meta,
+  prompt = "点击或拖拽上传",
+  maxCount = DEFAULT_UPLOAD_LIMIT,
+  remainingStorageMb,
+  hint = `最多${maxCount}张，支持JPG/PNG/WebP`
+}: {
+  fieldKey: string;
+  label: string;
+  values: UploadItem[];
+  onAdd: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemove: (fieldKey: string, index: number) => void;
+  onOpenLibrary: (fieldKey: string) => void;
+  onRejectedUpload: (message: string) => void;
+  onAtLimit: () => void;
+  required?: boolean;
+  optional?: boolean;
+  meta?: string;
+  prompt?: string;
+  hint?: string;
+  maxCount?: number;
+  remainingStorageMb: number;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const galleryRef = useRef<HTMLDivElement | null>(null);
+  const dragDepthRef = useRef(0);
+  const canAddMore = values.length < maxCount;
+  const totalTiles = values.length + (canAddMore ? 1 : 0);
+  const visibleRows = Math.ceil(totalTiles / 2);
+  const galleryHeight = Math.min(420, visibleRows * 124 + Math.max(0, visibleRows - 1) * 8);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showFade, setShowFade] = useState(false);
+
+  const refreshFade = () => {
+    const gallery = galleryRef.current;
+    if (!gallery) {
+      setShowFade(false);
+      return;
+    }
+    const maxScrollTop = gallery.scrollHeight - gallery.clientHeight;
+    setShowFade(maxScrollTop > 1 && gallery.scrollTop < maxScrollTop - 1);
+  };
+
+  const openPicker = () => {
+    if (!canAddMore) {
+      onAtLimit();
+      return;
+    }
+    inputRef.current?.click();
+  };
+
+  const appendFiles = (files: File[]) => {
+    const candidateFiles = files.filter((file) => file.type.startsWith("image/"));
+    const remainingCount = Math.max(0, maxCount - values.length);
+    const filteredFiles = candidateFiles.filter((file) => !isSensitiveUpload(file));
+    const countLimitedFiles = filteredFiles.slice(0, remainingCount);
+    const storageFittedFiles: File[] = [];
+    let availableStorageMb = remainingStorageMb;
+
+    countLimitedFiles.forEach((file) => {
+      const fileSizeMb = Math.max(0.1, Number((file.size / (1024 * 1024)).toFixed(1)));
+      if (fileSizeMb <= availableStorageMb) {
+        storageFittedFiles.push(file);
+        availableStorageMb = Number(Math.max(0, availableStorageMb - fileSizeMb).toFixed(1));
+      }
+    });
+
+    const safeFiles = storageFittedFiles;
+    const rejectedCount = candidateFiles.length - safeFiles.length;
+    if (rejectedCount > 0) {
+      onRejectedUpload("图片未通过审核请重新上传");
+    }
+    if (!safeFiles.length) {
+      if (filteredFiles.length > 0) {
+        onAtLimit();
+      }
+      return;
+    }
+    const baseValues = values;
+    const loadingItems = safeFiles.map((file) => ({
+      id: generateRandomTenDigitId(),
+      sizeMb: Math.max(0.1, Number((file.size / (1024 * 1024)).toFixed(1))),
+      status: "loading" as const
+    }));
+    const nextList = [...loadingItems, ...baseValues];
+    onAdd(fieldKey, nextList);
+    Promise.all(
+      safeFiles.map(
+        (file, index) =>
+          new Promise<UploadItem>((resolve) => {
+            const reader = new FileReader();
+            const itemId = loadingItems[index].id;
+            reader.onload = () =>
+              resolve({
+                id: itemId,
+                name: file.name,
+                src: typeof reader.result === "string" ? reader.result : "",
+                sizeMb: loadingItems[index].sizeMb,
+                status: "ready"
+              });
+            reader.readAsDataURL(file);
+          })
+      )
+    ).then((readyItems) => {
+      onAdd(
+        fieldKey,
+        nextList.map((item) => readyItems.find((ready) => ready.id === item.id) ?? item)
+      );
+      if (filteredFiles.length > remainingCount) {
+        onAtLimit();
+      } else if (countLimitedFiles.length > storageFittedFiles.length) {
+        onAtLimit();
+      }
+    });
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    appendFiles(files);
+    event.target.value = "";
+  };
+
+  const handleDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes("Files")) return;
+    event.preventDefault();
+    if (!canAddMore) {
+      onAtLimit();
+      return;
+    }
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes("Files")) return;
+    event.preventDefault();
+    if (!canAddMore) {
+      event.dataTransfer.dropEffect = "none";
+      return;
+    }
+    event.dataTransfer.dropEffect = "copy";
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (_event: DragEvent<HTMLDivElement>) => {
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes("Files")) return;
+    event.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+    if (!canAddMore) {
+      onAtLimit();
+      return;
+    }
+    appendFiles(Array.from(event.dataTransfer.files ?? []));
+  };
+
+  useEffect(() => {
+    refreshFade();
+  }, [values.length]);
+
+  useEffect(() => {
+    const gallery = galleryRef.current;
+    if (!gallery) return;
+
+    const onScroll = () => refreshFade();
+    gallery.addEventListener("scroll", onScroll);
+    const resizeObserver = new ResizeObserver(() => refreshFade());
+    resizeObserver.observe(gallery);
+    refreshFade();
+
+    return () => {
+      gallery.removeEventListener("scroll", onScroll);
+      resizeObserver.disconnect();
+    };
+  }, [values.length]);
+
+  return (
+    <div
+      className={`ck-form-block ck-upload-dropzone${isDragging ? " dragging" : ""}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <FieldTitle label={label} meta={meta} optional={optional} required={required} />
+      <input accept="image/*" className="ck-upload-input" multiple onChange={handleFileChange} ref={inputRef} type="file" />
+      {values.length === 0 ? (
+        <div className={`ck-upload-box full${isDragging ? " dragging" : ""}`}>
+          <div className="ck-upload-copy">
+            <strong>{prompt}</strong>
+            <span>{hint}</span>
+          </div>
+          <div className="ck-upload-actions">
+            <button onClick={openPicker} type="button">
+              <img alt="" src={figmaIcons.uploadLocal} />
+              本地上传
+            </button>
+            <button onClick={() => onOpenLibrary(fieldKey)} type="button">
+              <span className="ck-upload-library-icon">
+                <img alt="" className="library-body" src={figmaIcons.uploadLibraryBody} />
+                <img alt="" className="library-arrow" src={figmaIcons.uploadLibraryArrow} />
+              </span>
+              资源库
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="ck-upload-gallery-shell" style={{ height: `${galleryHeight}px` }}>
+          <div className="ck-upload-gallery" ref={galleryRef} style={{ height: `${galleryHeight}px` }}>
+            {isDragging && canAddMore ? (
+              <div className="ck-upload-drop-overlay">
+                <strong>拖拽到此处上传</strong>
+                <span>{hint}</span>
+              </div>
+            ) : null}
+            <div className="ck-upload-grid">
+              {canAddMore ? (
+                <div className={`ck-upload-box full compact${isDragging ? " dragging" : ""}`}>
+                  <div className="ck-upload-actions">
+                    <button onClick={openPicker} type="button">
+                      <img alt="" src={figmaIcons.uploadLocal} />
+                      本地上传
+                    </button>
+                    <button onClick={() => onOpenLibrary(fieldKey)} type="button">
+                      <span className="ck-upload-library-icon">
+                        <img alt="" className="library-body" src={figmaIcons.uploadLibraryBody} />
+                        <img alt="" className="library-arrow" src={figmaIcons.uploadLibraryArrow} />
+                      </span>
+                      资源库
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {values.map((value, index) => (
+                <div className="ck-upload-filled" key={`${fieldKey}-${index}`}>
+                  {value.status === "ready" && value.src ? <img alt={`${label}${index + 1}`} src={value.src} /> : <span className="ck-upload-loading" />}
+                  {value.status === "ready" ? (
+                    <button className="ck-upload-delete" onClick={() => onRemove(fieldKey, index)} type="button">
+                      <img alt="" className="ck-upload-delete-bg" src={figmaIcons.deleteBg} />
+                      <img alt="" className="ck-upload-delete-line" src={figmaIcons.deleteLine} />
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            {showFade ? <div className="ck-upload-gallery-fade" /> : null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UploadVideoField({
+  fieldKey,
+  label,
+  values,
+  onAdd,
+  onRemove,
+  onOpenLibrary,
+  onRejectedUpload,
+  onAtLimit,
+  required,
+  optional,
+  meta,
+  prompt = "点击或拖拽上传",
+  maxCount = DEFAULT_UPLOAD_LIMIT,
+  remainingStorageMb,
+  hint = `最多${maxCount}个，支持MP4/MOV`,
+  maxFileSizeMb,
+  minDurationSeconds,
+  maxDurationSeconds
+}: {
+  fieldKey: string;
+  label: string;
+  values: UploadItem[];
+  onAdd: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemove: (fieldKey: string, index: number) => void;
+  onOpenLibrary: (fieldKey: string) => void;
+  onRejectedUpload: (message: string) => void;
+  onAtLimit: () => void;
+  required?: boolean;
+  optional?: boolean;
+  meta?: string;
+  prompt?: string;
+  hint?: string;
+  maxCount?: number;
+  remainingStorageMb: number;
+  maxFileSizeMb?: number;
+  minDurationSeconds?: number;
+  maxDurationSeconds?: number;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const galleryRef = useRef<HTMLDivElement | null>(null);
+  const dragDepthRef = useRef(0);
+  const canAddMore = values.length < maxCount;
+  const totalTiles = values.length + (canAddMore ? 1 : 0);
+  const visibleRows = Math.ceil(totalTiles / 2);
+  const galleryHeight = Math.min(420, visibleRows * 124 + Math.max(0, visibleRows - 1) * 8);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showFade, setShowFade] = useState(false);
+
+  const refreshFade = () => {
+    const gallery = galleryRef.current;
+    if (!gallery) {
+      setShowFade(false);
+      return;
+    }
+    const maxScrollTop = gallery.scrollHeight - gallery.clientHeight;
+    setShowFade(maxScrollTop > 1 && gallery.scrollTop < maxScrollTop - 1);
+  };
+
+  const openPicker = () => {
+    if (!canAddMore) {
+      onAtLimit();
+      return;
+    }
+    inputRef.current?.click();
+  };
+
+  const appendFiles = async (files: File[]) => {
+    const candidateFiles = files.filter((file) => file.type.startsWith("video/") || /\.(mp4|mov)$/i.test(file.name));
+    const remainingCount = Math.max(0, maxCount - values.length);
+    const filteredFiles = candidateFiles.filter((file) => !isSensitiveUpload(file));
+    const sizeLimitedFiles = filteredFiles.filter((file) => !maxFileSizeMb || file.size / (1024 * 1024) <= maxFileSizeMb);
+    const countLimitedFiles = sizeLimitedFiles.slice(0, remainingCount);
+    const validatedFiles: Array<{ file: File; durationSeconds: number }> = [];
+    let availableStorageMb = remainingStorageMb;
+
+    for (const file of countLimitedFiles) {
+      const durationSeconds = await new Promise<number | null>((resolve) => {
+        const objectUrl = URL.createObjectURL(file);
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.onloadedmetadata = () => {
+          const duration = Number.isFinite(video.duration) ? video.duration : null;
+          URL.revokeObjectURL(objectUrl);
+          resolve(duration);
+        };
+        video.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve(null);
+        };
+        video.src = objectUrl;
+      });
+
+      if (durationSeconds == null) {
+        continue;
+      }
+      if ((minDurationSeconds && durationSeconds < minDurationSeconds) || (maxDurationSeconds && durationSeconds > maxDurationSeconds)) {
+        continue;
+      }
+
+      const fileSizeMb = Math.max(0.1, Number((file.size / (1024 * 1024)).toFixed(1)));
+      if (fileSizeMb > availableStorageMb) {
+        continue;
+      }
+
+      validatedFiles.push({ file, durationSeconds });
+      availableStorageMb = Number(Math.max(0, availableStorageMb - fileSizeMb).toFixed(1));
+    }
+
+    if (candidateFiles.length !== validatedFiles.length) {
+      const durationHint =
+        minDurationSeconds || maxDurationSeconds ? `，时长需在${minDurationSeconds ?? 0}~${maxDurationSeconds ?? "不限"}秒` : "";
+      const sizeHint = maxFileSizeMb ? `，大小需小于${maxFileSizeMb}M` : "";
+      onRejectedUpload(`视频未通过校验，请重新上传${durationHint}${sizeHint}`);
+    }
+    if (!validatedFiles.length) {
+      if (filteredFiles.length > 0) {
+        onAtLimit();
+      }
+      return;
+    }
+
+    const loadingItems = validatedFiles.map(({ file, durationSeconds }) => ({
+      id: generateRandomTenDigitId(),
+      name: file.name,
+      sizeMb: Math.max(0.1, Number((file.size / (1024 * 1024)).toFixed(1))),
+      status: "loading" as const,
+      mediaKind: "video" as const,
+      format: file.name.toLowerCase().endsWith(".mov") ? "MOV" : "MP4",
+      durationSeconds
+    }));
+    const nextList = [...loadingItems, ...values];
+    onAdd(fieldKey, nextList);
+
+    Promise.all(
+      validatedFiles.map(
+        ({ file, durationSeconds }, index) =>
+          Promise.resolve<UploadItem>({
+            id: loadingItems[index].id,
+            name: file.name,
+            src: URL.createObjectURL(file),
+            sizeMb: loadingItems[index].sizeMb,
+            status: "ready",
+            mediaKind: "video",
+            format: loadingItems[index].format,
+            durationSeconds
+          })
+      )
+    ).then((readyItems) => {
+      onAdd(
+        fieldKey,
+        nextList.map((item) => readyItems.find((ready) => ready.id === item.id) ?? item)
+      );
+      if (sizeLimitedFiles.length > remainingCount || countLimitedFiles.length > validatedFiles.length) {
+        onAtLimit();
+      }
+    });
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    void appendFiles(files);
+    event.target.value = "";
+  };
+
+  const handleDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes("Files")) return;
+    event.preventDefault();
+    if (!canAddMore) {
+      onAtLimit();
+      return;
+    }
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes("Files")) return;
+    event.preventDefault();
+    if (!canAddMore) {
+      event.dataTransfer.dropEffect = "none";
+      return;
+    }
+    event.dataTransfer.dropEffect = "copy";
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes("Files")) return;
+    event.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+    if (!canAddMore) {
+      onAtLimit();
+      return;
+    }
+    void appendFiles(Array.from(event.dataTransfer.files ?? []));
+  };
+
+  useEffect(() => {
+    refreshFade();
+  }, [values.length]);
+
+  useEffect(() => {
+    const gallery = galleryRef.current;
+    if (!gallery) return;
+
+    const onScroll = () => refreshFade();
+    gallery.addEventListener("scroll", onScroll);
+    const resizeObserver = new ResizeObserver(() => refreshFade());
+    resizeObserver.observe(gallery);
+    refreshFade();
+
+    return () => {
+      gallery.removeEventListener("scroll", onScroll);
+      resizeObserver.disconnect();
+    };
+  }, [values.length]);
+
+  return (
+    <div
+      className={`ck-form-block ck-upload-dropzone${isDragging ? " dragging" : ""}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <FieldTitle label={label} meta={meta} optional={optional} required={required} />
+      <input
+        accept="video/mp4,video/quicktime,.mp4,.mov"
+        className="ck-upload-input"
+        multiple
+        onChange={handleFileChange}
+        ref={inputRef}
+        type="file"
+      />
+      {values.length === 0 ? (
+        <div className={`ck-upload-box full${isDragging ? " dragging" : ""}`}>
+          <div className="ck-upload-copy">
+            <strong>{prompt}</strong>
+            <span>{hint}</span>
+          </div>
+          <div className="ck-upload-actions">
+            <button onClick={openPicker} type="button">
+              <img alt="" src={figmaIcons.uploadLocal} />
+              本地上传
+            </button>
+            <button onClick={() => onOpenLibrary(fieldKey)} type="button">
+              <span className="ck-upload-library-icon">
+                <img alt="" className="library-body" src={figmaIcons.uploadLibraryBody} />
+                <img alt="" className="library-arrow" src={figmaIcons.uploadLibraryArrow} />
+              </span>
+              资源库
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="ck-upload-gallery-shell" style={{ height: `${galleryHeight}px` }}>
+          <div className="ck-upload-gallery" ref={galleryRef} style={{ height: `${galleryHeight}px` }}>
+            {isDragging && canAddMore ? (
+              <div className="ck-upload-drop-overlay">
+                <strong>拖拽到此处上传</strong>
+                <span>{hint}</span>
+              </div>
+            ) : null}
+            <div className="ck-upload-grid">
+              {canAddMore ? (
+                <div className={`ck-upload-box full compact${isDragging ? " dragging" : ""}`}>
+                  <div className="ck-upload-actions">
+                    <button onClick={openPicker} type="button">
+                      <img alt="" src={figmaIcons.uploadLocal} />
+                      本地上传
+                    </button>
+                    <button onClick={() => onOpenLibrary(fieldKey)} type="button">
+                      <span className="ck-upload-library-icon">
+                        <img alt="" className="library-body" src={figmaIcons.uploadLibraryBody} />
+                        <img alt="" className="library-arrow" src={figmaIcons.uploadLibraryArrow} />
+                      </span>
+                      资源库
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {values.map((value, index) => (
+                <div className="ck-upload-filled video" key={`${fieldKey}-${index}`}>
+                  {value.status === "ready" ? (
+                    canRenderVideoPreview(value.src) ? (
+                      <video className="ck-upload-video" muted playsInline preload="metadata" src={value.src} />
+                    ) : value.previewSrc ? (
+                      <img alt={`${label}${index + 1}`} src={value.previewSrc} />
+                    ) : (
+                      <div className="ck-upload-video-fallback">{value.format ?? "VIDEO"}</div>
+                    )
+                  ) : (
+                    <span className="ck-upload-loading" />
+                  )}
+                  {value.status === "ready" ? <span className="ck-upload-video-play" aria-hidden="true" /> : null}
+                  {value.format ? <span className="ck-upload-video-format">{value.format}</span> : null}
+                  {value.status === "ready" ? (
+                    <button className="ck-upload-delete" onClick={() => onRemove(fieldKey, index)} type="button">
+                      <img alt="" className="ck-upload-delete-bg" src={figmaIcons.deleteBg} />
+                      <img alt="" className="ck-upload-delete-line" src={figmaIcons.deleteLine} />
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            {showFade ? <div className="ck-upload-gallery-fade" /> : null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResourceLibraryModal({
+  open,
+  mediaKind,
+  maxSelectable,
+  onClose,
+  onConfirm
+}: {
+  open: boolean;
+  mediaKind: ResultMediaKind;
+  maxSelectable: number;
+  onClose: () => void;
+  onConfirm: (items: UploadItem[]) => void;
+}) {
+  const [activeFolder, setActiveFolder] = useState<string>("all");
+  const [searchValue, setSearchValue] = useState("");
+  const [showChildAssets, setShowChildAssets] = useState(true);
+  const [foldersExpanded, setFoldersExpanded] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const visibleAssets = useMemo(() => {
+    const keyword = searchValue.trim().toLowerCase();
+    return libraryAssets.filter((asset) => {
+      const assetMediaKind = asset.mediaKind ?? "image";
+      const matchesFolder = activeFolder === "all" || asset.folderId === activeFolder || showChildAssets;
+      const matchesKeyword = !keyword || asset.name.toLowerCase().includes(keyword);
+      return matchesFolder && matchesKeyword && assetMediaKind === mediaKind;
+    });
+  }, [activeFolder, mediaKind, searchValue, showChildAssets]);
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedIds([]);
+      setSearchValue("");
+      setActiveFolder("all");
+      setShowChildAssets(true);
+      setFoldersExpanded(true);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const toggleAsset = (assetId: string) => {
+    setSelectedIds((current) => {
+      if (current.includes(assetId)) {
+        return current.filter((id) => id !== assetId);
+      }
+      if (current.length >= maxSelectable) return current;
+      return [...current, assetId];
+    });
+  };
+
+  const handleConfirm = () => {
+    const items = libraryAssets
+      .filter((asset) => selectedIds.includes(asset.id))
+      .slice(0, maxSelectable)
+      .map<UploadItem>((asset) => ({
+        id: generateRandomTenDigitId(),
+        name: asset.name,
+        src: asset.src,
+        previewSrc: asset.previewSrc,
+        mediaKind: asset.mediaKind ?? "image",
+        format: asset.format,
+        sizeMb: asset.sizeMb,
+        status: "ready"
+      }));
+    onConfirm(items);
+    onClose();
+  };
+
+  return (
+    <div className="ck-library-mask" onClick={onClose}>
+      <div className="ck-library-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="ck-library-header">
+          <div className="ck-library-title">选择资源</div>
+          <button aria-label="关闭资源库" className="ck-library-close" onClick={onClose} type="button">
+            ×
+          </button>
+        </div>
+
+        <div className="ck-library-body">
+          <div className="ck-library-topbar">
+            <div className="ck-library-topbar-main">
+              <div className="ck-library-company">北京艺源酷科技有限公司 三</div>
+            </div>
+
+            <div className="ck-library-tools">
+              <label className="ck-library-search">
+                <input onChange={(event) => setSearchValue(event.target.value)} placeholder="搜索当前库" value={searchValue} />
+                <span>⌕</span>
+              </label>
+              <button className="ck-library-upload" type="button">
+                ＋ 上传
+              </button>
+              <div className="ck-library-progress">29.83%</div>
+            </div>
+          </div>
+
+          <div className="ck-library-folder-bar">
+            <button className="ck-library-breadcrumb" onClick={() => setFoldersExpanded((value) => !value)} type="button">
+              {foldersExpanded ? "收起文件夹" : "展开文件夹"}
+              <span>{foldersExpanded ? "▲" : "▼"}</span>
+            </button>
+            <div className="ck-library-folder-toggle">
+              <label>
+                <input checked={showChildAssets} onChange={() => setShowChildAssets((value) => !value)} type="checkbox" />
+                <span>显示子文件夹内的资源</span>
+              </label>
+            </div>
+          </div>
+
+          {foldersExpanded ? (
+            <>
+              <div className="ck-library-folders">
+                {libraryFolders.map((folder) => (
+                  <button
+                    className={`ck-library-folder${activeFolder === folder.id ? " active" : ""}`}
+                    key={folder.id}
+                    onClick={() => setActiveFolder(folder.id)}
+                    type="button"
+                  >
+                    <span className="ck-folder-icon">
+                      <i className="ck-folder-back" />
+                      <i className="ck-folder-front" />
+                    </span>
+                    <span>{folder.name}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          <div className="ck-library-filterbar">
+            <div className="ck-library-filter-left">
+              <strong>资源</strong>
+              <button type="button">标签</button>
+              <button type="button">创建人</button>
+              <button type="button">时间</button>
+            </div>
+            <div className="ck-library-filter-right">
+              <button type="button">创建时间</button>
+              <span className="ck-library-grid-icon">◫</span>
+            </div>
+          </div>
+
+          <div className="ck-library-assets">
+            {visibleAssets.map((asset) => {
+              const selected = selectedIds.includes(asset.id);
+              return (
+                <article
+                  className={`ck-library-card${selected ? " selected" : ""}`}
+                  key={asset.id}
+                  onClick={() => toggleAsset(asset.id)}
+                >
+                  <div className="ck-library-thumb">
+                    <img alt={asset.name} src={asset.previewSrc ?? asset.src} />
+                    {(asset.mediaKind ?? "image") === "video" ? <span className="ck-library-video-play" aria-hidden="true" /> : null}
+                    <span className={`ck-library-card-check${selected ? " selected" : ""}`} />
+                    {asset.shared ? <span className="ck-library-share">分享中</span> : null}
+                    <span className="ck-library-format">{asset.format}</span>
+                  </div>
+                  <div className="ck-library-card-title">{asset.name}</div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="ck-library-footer">
+          <div className="ck-library-selected-tip">
+            已选 {selectedIds.length} 项
+            {maxSelectable > 0 ? `，最多可添加 ${maxSelectable} 项` : ""}
+          </div>
+          <div className="ck-library-footer-actions">
+            <button className="ck-library-confirm" disabled={!selectedIds.length || maxSelectable === 0} onClick={handleConfirm} type="button">
+              确定
+            </button>
+            <button className="ck-library-cancel" onClick={onClose} type="button">
+              取消
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SegmentedField({
+  label,
+  options,
+  required,
+  selected = 0,
+  width = "full",
+  onChange
+}: {
+  label: string;
+  options: string[];
+  required?: boolean;
+  selected?: number;
+  width?: "full" | "compact";
+  onChange?: (index: number) => void;
+}) {
+  const className = width === "compact" ? "ck-mini-switch" : "ck-switch";
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label={label} required={required} />
+      <div className={className} style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
+        {options.map((option, index) => (
+          <button className={index === selected ? "active" : ""} key={option} onClick={() => onChange?.(index)} type="button">
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  required,
+  placeholder,
+  fullWidth,
+  hideLabel,
+  width,
+  options,
+  onChange
+}: {
+  label: string;
+  value?: string;
+  required?: boolean;
+  placeholder?: string;
+  fullWidth?: boolean;
+  hideLabel?: boolean;
+  width?: number;
+  options?: string[];
+  onChange?: (value: string) => void;
+}) {
+  const hasValue = Boolean(value);
+  const displayValue = hasValue ? value ?? "" : placeholder ?? "";
+  const muted = !hasValue;
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const widthStyle = width ? { width: `${width}px` } : undefined;
+
+  useEffect(() => {
+    setOpen(false);
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div className={`ck-form-block${fullWidth ? " ck-form-block-full" : ""}`}>
+      <div className={fullWidth ? "" : "ck-inline-field"}>
+        {hideLabel ? null : <FieldTitle label={label} required={required} />}
+        <div className={`ck-select-dropdown${fullWidth ? " full" : ""}`} ref={dropdownRef} style={widthStyle}>
+          <button
+            className={`ck-select${fullWidth ? " full" : ""}${muted ? " placeholder" : ""}`}
+            onClick={() => setOpen((current) => !current)}
+            style={widthStyle}
+            type="button"
+          >
+            {displayValue}
+            <span>⌄</span>
+          </button>
+          {open && options?.length ? (
+            <div className={`ck-select-dropdown-menu${fullWidth ? " full" : ""}`} style={widthStyle}>
+              {options.map((option) => (
+                <button
+                  className={option === value ? "active" : ""}
+                  key={option}
+                  onClick={() => {
+                    onChange?.(option);
+                    setOpen(false);
+                  }}
+                  type="button"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RichSelectField({
+  label,
+  value,
+  required,
+  placeholder,
+  fullWidth,
+  options,
+  onChange
+}: {
+  label: string;
+  value?: string;
+  required?: boolean;
+  placeholder?: string;
+  fullWidth?: boolean;
+  options: RichSelectOption[];
+  onChange?: (value: string) => void;
+}) {
+  const activeOption = options.find((option) => option.value === value);
+  const displayValue = activeOption?.displayLabel ?? placeholder ?? "";
+  const muted = !activeOption;
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+
+  useEffect(() => {
+    setOpen(false);
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updateMenuPlacement = () => {
+      const triggerRect = dropdownRef.current?.getBoundingClientRect();
+      if (!triggerRect) return;
+
+      const panelElement = dropdownRef.current?.closest(".ck-panel");
+      const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
+      const footerRect = footerElement?.getBoundingClientRect();
+      const lowerBoundary = footerRect ? footerRect.top - 8 : window.innerHeight - 16;
+      const upperBoundary = 16;
+      const spaceBelow = lowerBoundary - triggerRect.bottom - 6;
+      const spaceAbove = triggerRect.top - upperBoundary - 6;
+      const availableBelow = Math.max(120, Math.floor(spaceBelow));
+      const availableAbove = Math.max(120, Math.floor(spaceAbove));
+      const sharedStyle: CSSProperties = {
+        left: triggerRect.left,
+        width: triggerRect.width,
+        maxHeight: Math.min(420, openDirection === "up" ? availableAbove : availableBelow),
+        position: "fixed",
+        zIndex: 40
+      };
+
+      if (spaceBelow < 260 && spaceAbove > spaceBelow) {
+        setOpenDirection("up");
+        setMenuStyle({
+          ...sharedStyle,
+          bottom: window.innerHeight - triggerRect.top + 6,
+          maxHeight: Math.min(420, availableAbove)
+        });
+        return;
+      }
+
+      setOpenDirection("down");
+      setMenuStyle({
+        ...sharedStyle,
+        top: triggerRect.bottom + 6,
+        maxHeight: Math.min(420, availableBelow)
+      });
+    };
+
+    updateMenuPlacement();
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", updateMenuPlacement);
+    window.addEventListener("scroll", updateMenuPlacement, true);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("resize", updateMenuPlacement);
+      window.removeEventListener("scroll", updateMenuPlacement, true);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
+
+  return (
+    <div className={`ck-form-block${fullWidth ? " ck-form-block-full" : ""}`}>
+      <div className={fullWidth ? "" : "ck-inline-field"}>
+        <FieldTitle label={label} required={required} />
+        <div className={`ck-select-dropdown${fullWidth ? " full" : ""}`} ref={dropdownRef}>
+          <button className={`ck-select${fullWidth ? " full" : ""}${muted ? " placeholder" : ""}`} onClick={() => setOpen((current) => !current)} type="button">
+            <span className="ck-rich-select-trigger-label">{displayValue}</span>
+            <span>⌄</span>
+          </button>
+          {open ? (
+            <div
+              className={`ck-select-dropdown-menu ck-rich-select-menu${fullWidth ? " full" : ""}${openDirection === "up" ? " up" : ""}`}
+              style={menuStyle}
+            >
+              {options.map((option) => (
+                <button
+                  className={`ck-rich-select-option${option.value === value ? " active" : ""}`}
+                  key={option.value}
+                  onClick={() => {
+                    onChange?.(option.value);
+                    setOpen(false);
+                  }}
+                  type="button"
+                >
+                  <strong>{option.title}</strong>
+                  <span className="ck-rich-select-recommendation">{option.recommendation}</span>
+                  <span className="ck-rich-select-description">{option.description}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InputSelectInlineField({
+  label,
+  placeholder,
+  value,
+  options,
+  required,
+  dropdownWidth,
+  labelNoWrap,
+  className,
+  onChange
+}: {
+  label: string;
+  placeholder?: string;
+  value: string;
+  options: string[];
+  required?: boolean;
+  dropdownWidth?: number;
+  labelNoWrap?: boolean;
+  className?: string;
+  onChange: (value: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const widthStyle = dropdownWidth ? { width: `${dropdownWidth}px` } : undefined;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div className={`ck-inline-field${className ? ` ${className}` : ""}`}>
+      <div style={labelNoWrap ? { flex: "0 0 auto", whiteSpace: "nowrap", marginRight: "12px" } : undefined}>
+        <FieldTitle label={label} required={required} />
+      </div>
+      <div className={dropdownWidth ? "ck-select-dropdown" : "ck-select-dropdown full"} ref={containerRef} style={widthStyle}>
+        <div
+          className={`ck-input-select${value ? " has-value" : ""}${open ? " active" : ""}`}
+          onClick={() => {
+            if (!open) setOpen(true);
+          }}
+        >
+          <input
+            onChange={(event) => onChange(event.target.value)}
+            onFocus={() => {
+              if (!open) setOpen(true);
+            }}
+            placeholder={placeholder ?? "请选择，或直接输入"}
+            value={value}
+          />
+          {value ? (
+            <button
+              className="ck-input-select-clear"
+              onClick={(event) => {
+                event.stopPropagation();
+                onChange("");
+                setOpen(false);
+              }}
+              type="button"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+        {open ? (
+          <div className={dropdownWidth ? "ck-select-dropdown-menu" : "ck-select-dropdown-menu full"} style={widthStyle}>
+            {options.map((option) => (
+              <button
+                className={option === value ? "active" : ""}
+                key={option}
+                onClick={() => {
+                  setOpen(false);
+                  onChange(option);
+                }}
+                type="button"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function InputSelectField({
+  label,
+  value,
+  options,
+  required,
+  onChange
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  required?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="ck-form-block">
+      <InputSelectInlineField
+        className="ck-input-select-field"
+        label={label}
+        onChange={onChange}
+        options={options}
+        required={required}
+        value={value}
+      />
+    </div>
+  );
+}
+
+function CountField({
+  label,
+  options,
+  required,
+  value,
+  onChange
+}: {
+  label: string;
+  options: string[];
+  required?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
+  const normalizedOptions = options.slice(0, 4);
+  const width = normalizedOptions.length <= 1 ? 58 : normalizedOptions.length === 2 ? 120 : normalizedOptions.length === 3 ? 132 : 176;
+
+  return (
+    <div className="ck-inline-field">
+      <FieldTitle label={label} required={required} />
+      <div className="ck-mini-switch count" style={{ gridTemplateColumns: `repeat(${normalizedOptions.length}, 1fr)`, width }}>
+        {normalizedOptions.map((option, index) => (
+          <button className={option === value || (!value && index === 0) ? "active" : ""} key={option} onClick={() => onChange?.(option)} type="button">
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NumberStepperField({
+  label,
+  required,
+  value,
+  min = 1,
+  max = 20,
+  onChange
+}: {
+  label: string;
+  required?: boolean;
+  value: number;
+  min?: number;
+  max?: number;
+  onChange?: (value: number) => void;
+}) {
+  return (
+    <div className="ck-inline-field ck-number-stepper-field">
+      <FieldTitle label={label} required={required} />
+      <div className="ck-number-stepper">
+        <button disabled={value <= min} onClick={() => onChange?.(Math.max(min, value - 1))} type="button">
+          −
+        </button>
+        <div className="ck-number-stepper-value">{value}</div>
+        <button disabled={value >= max} onClick={() => onChange?.(Math.min(max, value + 1))} type="button">
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BasicGenerateSettingsSection({
+  config,
+  onSelectionChange,
+  value
+}: {
+  config: CreationModeConfig;
+  onSelectionChange?: (selection: CreationModeSelection) => void;
+  value?: CreationModeSelection | null;
+}) {
+  const activeMode = config.modes[0];
+  const [ratioOpen, setRatioOpen] = useState(false);
+  const ratioDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [selectedRatio, setSelectedRatio] = useState(activeMode?.defaultRatio ?? activeMode?.ratioOptions[0] ?? "");
+  const [selectedCount, setSelectedCount] = useState(activeMode?.defaultCount ?? activeMode?.countOptions[0] ?? "");
+
+  useEffect(() => {
+    if (!activeMode) return;
+    setSelectedRatio(activeMode.defaultRatio ?? activeMode.ratioOptions[0] ?? "");
+    setSelectedCount(activeMode.defaultCount ?? activeMode.countOptions[0] ?? "");
+    setRatioOpen(false);
+  }, [activeMode]);
+
+  useEffect(() => {
+    if (!value) return;
+    setSelectedRatio(value.ratio);
+    setSelectedCount(String(value.count));
+    setRatioOpen(false);
+  }, [value]);
+
+  useEffect(() => {
+    if (!ratioOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!ratioDropdownRef.current?.contains(event.target as Node)) {
+        setRatioOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [ratioOpen]);
+
+  useEffect(() => {
+    if (!activeMode) return;
+    onSelectionChange?.({
+      modeId: activeMode.id,
+      modeLabel: activeMode.label,
+      ratio: selectedRatio,
+      count: Number(selectedCount) || 1,
+      unitCreditCost: activeMode.baseUnitCreditCost ?? 0
+    });
+  }, [activeMode, onSelectionChange, selectedCount, selectedRatio]);
+
+  if (!activeMode) return null;
+
+  return (
+    <>
+      <div className="ck-inline-field">
+        <FieldTitle label="出图比例" required />
+        <div className="ck-select-dropdown" ref={ratioDropdownRef}>
+          <button className="ck-select" onClick={() => setRatioOpen((current) => !current)} type="button">
+            {selectedRatio}
+            <span>⌄</span>
+          </button>
+          {ratioOpen ? (
+            <div className="ck-select-dropdown-menu">
+              {activeMode.ratioOptions.map((option) => (
+                <button
+                  className={option === selectedRatio ? "active" : ""}
+                  key={option}
+                  onClick={() => {
+                    setSelectedRatio(option);
+                    setRatioOpen(false);
+                  }}
+                  type="button"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <CountField label="出图数量" onChange={setSelectedCount} options={activeMode.countOptions} required value={selectedCount} />
+    </>
+  );
+}
+
+function SupplementField({
+  label,
+  placeholder,
+  maxLength,
+  value,
+  onChange,
+  aiPolishConfig,
+  onAiPolish,
+  onToast
+}: {
+  label?: string;
+  placeholder: string;
+  maxLength: number;
+  value: string;
+  onChange: (value: string) => void;
+  aiPolishConfig?: SupplementAiPolishConfig;
+  onAiPolish?: (value: string) => Promise<SupplementAiPolishResult>;
+  onToast: (message: string, tone?: "warning") => void;
+}) {
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [polishResult, setPolishResult] = useState<SupplementAiPolishResult | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
+  const detectedLanguage = detectSupplementLanguage(value);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    const updatePopoverPosition = () => {
+      const buttonRect = buttonRef.current?.getBoundingClientRect();
+      if (!buttonRect) return;
+
+      const panelElement = buttonRef.current?.closest(".ck-panel");
+      const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
+      const panelRect = panelElement?.getBoundingClientRect();
+      const footerRect = footerElement?.getBoundingClientRect();
+      const popoverWidth = 280;
+      const popoverHeight = 336;
+      const gap = 12;
+      const viewportPadding = 16;
+      const leftBoundary = panelRect ? Math.max(viewportPadding, panelRect.right + gap) : viewportPadding;
+      const topBoundary = panelRect ? Math.max(viewportPadding, panelRect.top) : viewportPadding;
+      const bottomBoundary = footerRect ? Math.max(topBoundary, footerRect.top - gap) : window.innerHeight - viewportPadding;
+      const availableRight = window.innerWidth - buttonRect.right;
+      const availableLeft = buttonRect.left;
+      const availableBelow = bottomBoundary - buttonRect.bottom;
+      const availableAbove = buttonRect.top - topBoundary;
+      const prefersRight = availableRight >= popoverWidth + gap;
+      const prefersLeft = !prefersRight && availableLeft >= popoverWidth + gap;
+      const nextLeft =
+        prefersRight
+          ? buttonRect.right + gap
+          : prefersLeft
+            ? buttonRect.left - popoverWidth - gap
+            : Math.max(leftBoundary, Math.min(buttonRect.left, window.innerWidth - popoverWidth - viewportPadding));
+      const nextTop =
+        availableBelow >= popoverHeight + gap
+          ? buttonRect.top
+          : availableAbove >= popoverHeight + gap
+            ? buttonRect.bottom - popoverHeight
+            : Math.max(topBoundary, Math.min(buttonRect.top - popoverHeight / 2, bottomBoundary - popoverHeight));
+
+      setPopoverStyle({
+        left: `${nextLeft}px`,
+        top: `${nextTop}px`
+      });
+    };
+
+    updatePopoverPosition();
+    window.addEventListener("resize", updatePopoverPosition);
+    window.addEventListener("scroll", updatePopoverPosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePopoverPosition);
+      window.removeEventListener("scroll", updatePopoverPosition, true);
+    };
+  }, [isGenerating, polishResult, popoverOpen]);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [popoverOpen]);
+
+  const handleGeneratePolish = async () => {
+    if (!value.trim()) {
+      onToast("请先输入细节补充后再润色", "warning");
+      return;
+    }
+    if (!onAiPolish || !aiPolishConfig) return;
+    if (!supplementVisualKeywordPattern.test(value.trim()) && value.trim().length < 6) {
+      onToast("请补充产品卖点、构图、氛围或营销信息相关描述 后再润色", "warning");
+      return;
+    }
+
+    setPopoverOpen(true);
+    setIsGenerating(true);
+    const nextResult = await onAiPolish(value);
+    setPolishResult(nextResult);
+    setIsGenerating(false);
+  };
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label={label ?? "补充说明"} optional />
+      <div className="ck-textarea-wrap">
+        <textarea maxLength={maxLength} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} value={value} />
+        <div className="ck-textarea-actions">
+          {aiPolishConfig ? (
+            <div className="ck-ai-polish" ref={containerRef}>
+              <button onClick={handleGeneratePolish} ref={buttonRef} type="button">
+                AI润色
+              </button>
+              {popoverOpen ? (
+                <div className={`ck-ai-polish-popover${isGenerating ? " is-generating" : ""}`} style={popoverStyle}>
+                  <div className="ck-ai-polish-popover-head">
+                    <div>
+                      <strong>AI润色</strong>
+                    </div>
+                    <button className="ck-ai-polish-close" onClick={() => setPopoverOpen(false)} type="button">
+                      ×
+                    </button>
+                  </div>
+                  <div className="ck-ai-polish-popover-body">
+                    {isGenerating ? (
+                      <div className="ck-ai-polish-loading">
+                        <div className="ck-ai-polish-loading-dots" aria-hidden="true">
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                        <strong>AI 深度思考中...</strong>
+                      </div>
+                    ) : (
+                      <div className="ck-ai-polish-result">
+                        {detectedLanguage === "en" && (polishResult?.applyEnglishContent || polishResult?.englishText) ? (
+                          <div className="ck-ai-polish-result-block">
+                            <p>{polishResult.applyEnglishContent ?? polishResult.englishText}</p>
+                          </div>
+                        ) : null}
+                        {detectedLanguage !== "en" && (polishResult?.applyContent || polishResult?.chineseText) ? (
+                          <div className="ck-ai-polish-result-block">
+                            <p>{polishResult.applyContent ?? polishResult.chineseText}</p>
+                          </div>
+                        ) : null}
+                        {((detectedLanguage === "en" && !polishResult?.englishText) ||
+                          (detectedLanguage !== "en" && !polishResult?.chineseText)) ? (
+                          <pre>{polishResult?.content ?? "点击重新润色后可再次优化当前文案。"}</pre>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  {isGenerating ? (
+                    <div className="ck-ai-polish-popover-actions loading">
+                      <button className="loading-indicator" disabled type="button">
+                        正在润色
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="ck-ai-polish-popover-actions">
+                      <button
+                        className="secondary"
+                        disabled={isGenerating}
+                        onClick={handleGeneratePolish}
+                        type="button"
+                      >
+                        重新润色
+                      </button>
+                      <button
+                        disabled={isGenerating || !polishResult?.canUse}
+                        onClick={() => {
+                          if (!polishResult?.canUse) return;
+                          onChange(
+                            detectedLanguage === "en"
+                              ? polishResult.applyEnglishContent ?? polishResult.englishText ?? polishResult.applyContent ?? polishResult.content
+                              : polishResult.applyContent ?? polishResult.content
+                          );
+                          setPopoverOpen(false);
+                        }}
+                        type="button"
+                      >
+                        确认
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <span>
+            {value.length}/{maxLength}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdaptiveChoiceField({
+  label,
+  options,
+  value,
+  required,
+  onChange
+}: {
+  label: string;
+  options: Array<{ key: string; label: string }>;
+  value: string;
+  required?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const columns = Math.min(3, Math.max(1, options.length));
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label={label} required={required} />
+      <div className="ck-adaptive-choice-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        {options.map((option) => (
+          <button
+            className={`ck-adaptive-choice-item${option.key === value ? " active" : ""}`}
+            key={option.key}
+            onClick={() => onChange(option.key)}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PodCropModeSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const [mode, setMode] = useState(selectedValues?.podCropMode ?? podCropModeOptions[0].key);
+
+  useEffect(() => {
+    if (selectedValues?.podCropMode && selectedValues.podCropMode !== mode) {
+      setMode(selectedValues.podCropMode);
+    }
+  }, [selectedValues]);
+
+  useEffect(() => {
+    onSelectionChange?.([mode]);
+    onSelectionMapChange?.({ podCropMode: mode });
+    onCreationModeChange?.({
+      modeId: "pod-crop",
+      modeLabel: mode,
+      ratio: "1:1",
+      count: 1,
+      unitCreditCost: 5
+    });
+  }, [mode, onCreationModeChange, onSelectionChange, onSelectionMapChange]);
+
+  return <AdaptiveChoiceField label="选择模式" onChange={setMode} options={podCropModeOptions} required value={mode} />;
+}
+
+function PodExtractSetupSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const defaultMode: PodExtractModeKey =
+    selectedValues?.podExtractMode === "专项提取" || selectedValues?.podExtractMode === "全能提取" ? selectedValues.podExtractMode : "专项提取";
+  const [mode, setMode] = useState<PodExtractModeKey>(defaultMode);
+  const [scene, setScene] = useState(selectedValues?.podExtractScene ?? podExtractSceneOptions[defaultMode][0]);
+  const [ratio, setRatio] = useState(selectedValues?.podExtractRatio ?? podExtractRatioOptions[defaultMode][0]);
+
+  useEffect(() => {
+    const nextScenes = podExtractSceneOptions[mode];
+    const nextRatios = podExtractRatioOptions[mode];
+    if (!nextScenes.includes(scene)) {
+      setScene(nextScenes[0]);
+    }
+    if (!nextRatios.includes(ratio)) {
+      setRatio(nextRatios[0]);
+    }
+  }, [mode, ratio, scene]);
+
+  useEffect(() => {
+    const nextMode = selectedValues?.podExtractMode;
+    if ((nextMode === "专项提取" || nextMode === "全能提取") && nextMode !== mode) {
+      setMode(nextMode);
+    }
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const nextScene = selectedValues?.podExtractScene;
+    const nextScenes = podExtractSceneOptions[mode];
+    if (nextScene && nextScenes.includes(nextScene) && nextScene !== scene) {
+      setScene(nextScene);
+    }
+  }, [mode, selectedValues]);
+
+  useEffect(() => {
+    const nextRatio = selectedValues?.podExtractRatio;
+    const nextRatios = podExtractRatioOptions[mode];
+    if (nextRatio && nextRatios.includes(nextRatio) && nextRatio !== ratio) {
+      setRatio(nextRatio);
+    }
+  }, [mode, selectedValues]);
+
+  useEffect(() => {
+    onSelectionChange?.([mode, scene, ratio]);
+    onSelectionMapChange?.({
+      podExtractMode: mode,
+      podExtractScene: scene,
+      podExtractRatio: ratio
+    });
+    onCreationModeChange?.({
+      modeId: `pod-extract-${mode}`,
+      modeLabel: mode,
+      ratio,
+      count: 1,
+      unitCreditCost: 5
+    });
+  }, [mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, scene]);
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="选择模式" required />
+      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary">
+        {podExtractModeCards.map((option) => (
+          <button
+            className={`ck-mode-card ck-mode-card-primary${mode === option.key ? " active" : ""}`}
+            key={option.key}
+            onClick={() => setMode(option.key)}
+            type="button"
+          >
+            <div className="ck-mode-card-head">
+              <strong>{option.label}</strong>
+              <span className={`ck-check${mode === option.key ? " active" : ""}`} />
+            </div>
+            <p>{option.description}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="ck-pod-extract-inline-group">
+        <SelectField fullWidth label="产品场景" onChange={setScene} options={podExtractSceneOptions[mode]} required value={scene} />
+        <SelectField fullWidth label="出图比例" onChange={setRatio} options={podExtractRatioOptions[mode]} required value={ratio} />
+      </div>
+    </div>
+  );
+}
+
+function VideoReplicaSetupSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const defaultMode: VideoReplicaModeKey =
+    selectedValues?.videoReplicaMode === "高级模式" || selectedValues?.videoReplicaMode === "普通模式" ? selectedValues.videoReplicaMode : "普通模式";
+  const [mode, setMode] = useState<VideoReplicaModeKey>(defaultMode);
+  const [duration, setDuration] = useState(selectedValues?.videoReplicaDuration ?? "10s");
+  const [ratio, setRatio] = useState(selectedValues?.videoReplicaRatio ?? "竖9:16");
+  const [resolution, setResolution] = useState(selectedValues?.videoReplicaResolution ?? "480p");
+  const lastSyncedValuesRef = useRef("");
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      mode: selectedValues?.videoReplicaMode ?? "普通模式",
+      duration: selectedValues?.videoReplicaDuration ?? "10s",
+      ratio: selectedValues?.videoReplicaRatio ?? "竖9:16",
+      resolution: selectedValues?.videoReplicaResolution ?? "480p"
+    });
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setMode(defaultMode);
+    setDuration(selectedValues?.videoReplicaDuration ?? "10s");
+    setRatio(selectedValues?.videoReplicaRatio ?? "竖9:16");
+    setResolution(selectedValues?.videoReplicaResolution ?? "480p");
+  }, [defaultMode, selectedValues]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      videoReplicaMode: mode,
+      videoReplicaDuration: duration,
+      videoReplicaRatio: ratio,
+      videoReplicaResolution: resolution
+    });
+    onSelectionChange?.([mode, duration, ratio, resolution]);
+    onCreationModeChange?.({
+      modeId: mode === "高级模式" ? "video-replica-advanced" : "video-replica-normal",
+      modeLabel: mode,
+      ratio,
+      resolution,
+      count: 1,
+      unitCreditCost: 1
+    });
+  }, [duration, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution]);
+
+  return (
+    <div className="ck-creation-mode">
+      <SegmentedField
+        label="创作模式"
+        onChange={(index) => setMode(videoReplicaModeOptions[index] ?? "普通模式")}
+        options={[...videoReplicaModeOptions]}
+        required
+        selected={videoReplicaModeOptions.findIndex((option) => option === mode)}
+      />
+
+      <SelectField label="视频时长" onChange={setDuration} options={videoReplicaDurationOptions} required value={duration} />
+
+      <SelectField label="视频比例" onChange={setRatio} options={videoReplicaRatioOptions} required value={ratio} />
+
+      <CountField label="视频分辨率" onChange={setResolution} options={videoReplicaResolutionOptions} required value={resolution} />
+    </div>
+  );
+}
+
+function GenerationRuleNoticeSection({
+  productCount,
+  referenceCount,
+  batchCount
+}: {
+  productCount: number;
+  referenceCount: number;
+  batchCount: number;
+}) {
+  const totalCount = productCount * referenceCount * batchCount;
+
+  return (
+    <div className="ck-generation-rule-card">
+      <div className="ck-generation-rule-head">生成规则说明</div>
+      <ol className="ck-generation-rule-list">
+        <li>多对多匹配：系统会为您的每一张【商品图】，分别匹配所有【参考图】的风格进行创作。</li>
+        <li>计算公式：总生成数量 = 商品图数量 × 参考图数量 × 每批次出图数量。</li>
+        <li>
+          举例说明：若上传 2 张商品图 and 3 张参考图，每批次出 2 张，则总计会生成 2×3×2=12 张图片。
+        </li>
+      </ol>
+      <div className="ck-generation-rule-summary">
+        当前将生成 {productCount} × {referenceCount} × {batchCount} = {totalCount} 张
+      </div>
+    </div>
+  );
+}
+
+function ModelAdjustSection({
+  actions,
+  supplementValue,
+  onSupplementChange,
+  onSupplementAiPolish,
+  onToast,
+  onSelectionChange,
+  onSelectionMapChange,
+  selectedValues,
+  toolKey
+}: {
+  actions: ModelAdjustActionConfig[];
+  supplementValue: string;
+  onSupplementChange: (value: string) => void;
+  onSupplementAiPolish: (value: string) => Promise<SupplementAiPolishResult>;
+  onToast: (message: string, tone?: "warning") => void;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  selectedValues?: AdvancedSelectionMap;
+  toolKey: string;
+}) {
+  const defaultActionKey = actions[0]?.key ?? "";
+  const [selectedActionKey, setSelectedActionKey] = useState(selectedValues?.modelAdjustActionKey ?? defaultActionKey);
+  const [selectedOptionValues, setSelectedOptionValues] = useState<Record<string, string>>(() =>
+    actions.reduce<Record<string, string>>((accumulator, action) => {
+      accumulator[action.key] = selectedValues?.[`${action.key}:value`] ?? "";
+      return accumulator;
+    }, {})
+  );
+  const lastSyncedValuesRef = useRef("");
+
+  const activeAction = actions.find((item) => item.key === selectedActionKey) ?? actions[0];
+  const activeOptionValue = activeAction ? selectedOptionValues[activeAction.key] ?? "" : "";
+
+  useEffect(() => {
+    const nextState = {
+      modelAdjustActionKey: selectedValues?.modelAdjustActionKey ?? defaultActionKey,
+      optionValues: actions.reduce<Record<string, string>>((accumulator, action) => {
+        accumulator[action.key] = selectedValues?.[`${action.key}:value`] ?? "";
+        return accumulator;
+      }, {})
+    };
+    const nextSyncKey = JSON.stringify(nextState);
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setSelectedActionKey(nextState.modelAdjustActionKey);
+    setSelectedOptionValues(nextState.optionValues);
+  }, [actions, defaultActionKey, selectedValues]);
+
+  useEffect(() => {
+    if (!activeAction) return;
+    lastSyncedValuesRef.current = JSON.stringify({
+      modelAdjustActionKey: activeAction.key,
+      optionValues: selectedOptionValues
+    });
+    const nextSelectionMap: AdvancedSelectionMap = {
+      modelAdjustActionKey: activeAction.key,
+      modelAdjustAction: activeAction.label
+    };
+
+    if (activeAction.valueLabel && activeOptionValue) {
+      nextSelectionMap[`${activeAction.key}:label`] = activeAction.valueLabel;
+      nextSelectionMap[`${activeAction.key}:value`] = activeOptionValue;
+    }
+
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(
+      Object.entries(nextSelectionMap)
+        .filter(([key]) => key !== "modelAdjustActionKey" && !key.endsWith(":label"))
+        .map(([, value]) => value)
+    );
+  }, [activeAction, activeOptionValue, onSelectionChange, onSelectionMapChange]);
+
+  if (!activeAction) return null;
+
+  return (
+    <>
+      <AdaptiveChoiceField
+        label="调整方式"
+        onChange={setSelectedActionKey}
+        options={actions.map((action) => ({ key: action.key, label: action.label }))}
+        required
+        value={selectedActionKey}
+      />
+
+      {activeAction.valueLabel && activeAction.valueOptions?.length ? (
+        <InputSelectInlineField
+          dropdownWidth={256}
+          label={activeAction.valueLabel}
+          labelNoWrap
+          onChange={(value) => {
+            setSelectedOptionValues((current) => ({ ...current, [activeAction.key]: value }));
+          }}
+          options={activeAction.valueOptions}
+          placeholder="请选择，或直接输入"
+          required
+          value={activeOptionValue}
+        />
+      ) : null}
+
+      <SupplementField
+        aiPolishConfig={supplementAiPolishConfigs[toolKey]}
+        label={activeAction.detailLabel}
+        maxLength={2000}
+        onAiPolish={onSupplementAiPolish}
+        onChange={onSupplementChange}
+        onToast={onToast}
+        placeholder={activeAction.detailPlaceholder}
+        value={supplementValue}
+      />
+    </>
+  );
+}
+
+function VideoMainScriptSetupSection({
+  supplementValue,
+  onSupplementChange,
+  onSupplementAiPolish,
+  onToast,
+  onSelectionChange,
+  onSelectionMapChange,
+  selectedValues,
+  toolKey
+}: {
+  supplementValue: string;
+  onSupplementChange: (value: string) => void;
+  onSupplementAiPolish: (value: string) => Promise<SupplementAiPolishResult>;
+  onToast: (message: string, tone?: "warning") => void;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  selectedValues?: AdvancedSelectionMap;
+  toolKey: string;
+}) {
+  const [scriptMode, setScriptMode] = useState(selectedValues?.videoMainScriptMode ?? videoMainScriptModeOptions[0].key);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({
+    videoMainSellingPoint: selectedValues?.videoMainSellingPoint ?? videoMainSellingPointOptions[0],
+    videoMainType: selectedValues?.videoMainType ?? "",
+    videoMainMarketingNeed: selectedValues?.videoMainMarketingNeed ?? "",
+    videoMainRhythm: selectedValues?.videoMainRhythm ?? "",
+    videoMainMusicMood: selectedValues?.videoMainMusicMood ?? "",
+    videoMainVisualStyle: selectedValues?.videoMainVisualStyle ?? "",
+    videoMainAudience: selectedValues?.videoMainAudience ?? "",
+    videoMainCharacterFit: selectedValues?.videoMainCharacterFit ?? ""
+  });
+  const lastSyncedValuesRef = useRef<string>("");
+
+  useEffect(() => {
+    const nextState = {
+      videoMainScriptMode: selectedValues?.videoMainScriptMode ?? videoMainScriptModeOptions[0].key,
+      videoMainSellingPoint: selectedValues?.videoMainSellingPoint ?? videoMainSellingPointOptions[0],
+      videoMainType: selectedValues?.videoMainType ?? "",
+      videoMainMarketingNeed: selectedValues?.videoMainMarketingNeed ?? "",
+      videoMainRhythm: selectedValues?.videoMainRhythm ?? "",
+      videoMainMusicMood: selectedValues?.videoMainMusicMood ?? "",
+      videoMainVisualStyle: selectedValues?.videoMainVisualStyle ?? "",
+      videoMainAudience: selectedValues?.videoMainAudience ?? "",
+      videoMainCharacterFit: selectedValues?.videoMainCharacterFit ?? ""
+    };
+    const nextSyncKey = JSON.stringify(nextState);
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setScriptMode(nextState.videoMainScriptMode);
+    setFieldValues({
+      videoMainSellingPoint: nextState.videoMainSellingPoint,
+      videoMainType: nextState.videoMainType,
+      videoMainMarketingNeed: nextState.videoMainMarketingNeed,
+      videoMainRhythm: nextState.videoMainRhythm,
+      videoMainMusicMood: nextState.videoMainMusicMood,
+      videoMainVisualStyle: nextState.videoMainVisualStyle,
+      videoMainAudience: nextState.videoMainAudience,
+      videoMainCharacterFit: nextState.videoMainCharacterFit
+    });
+  }, [selectedValues]);
+
+  useEffect(() => {
+    lastSyncedValuesRef.current = JSON.stringify({
+      videoMainScriptMode: scriptMode,
+      ...fieldValues
+    });
+
+    const nextMap: AdvancedSelectionMap = {
+      videoMainScriptMode: scriptMode,
+      videoMainScriptModeLabel: videoMainScriptModeOptions.find((item) => item.key === scriptMode)?.label ?? ""
+    };
+
+    if (scriptMode === "ai-script") {
+      Object.entries(fieldValues).forEach(([key, value]) => {
+        if (value) nextMap[key] = value;
+      });
+    }
+
+    onSelectionMapChange?.(nextMap);
+    onSelectionChange?.(
+      [
+        nextMap.videoMainScriptModeLabel,
+        ...(scriptMode === "ai-script" ? Object.values(fieldValues).filter(Boolean) : []),
+        supplementValue
+      ].filter(Boolean)
+    );
+  }, [fieldValues, onSelectionChange, onSelectionMapChange, scriptMode, supplementValue]);
+
+  const inputFields = [
+    { key: "videoMainSellingPoint", label: "卖点名称", options: videoMainSellingPointOptions },
+    { key: "videoMainType", label: "视频类型", options: videoMainVideoTypeOptions },
+    { key: "videoMainMarketingNeed", label: "营销诉求", options: videoMainMarketingNeedOptions },
+    { key: "videoMainRhythm", label: "内容节奏", options: videoMainRhythmOptions },
+    { key: "videoMainMusicMood", label: "音乐氛围", options: videoMainMusicMoodOptions },
+    { key: "videoMainVisualStyle", label: "视觉风格", options: videoMainVisualOptions },
+    { key: "videoMainAudience", label: "受众群体", options: videoMainAudienceOptions },
+    { key: "videoMainCharacterFit", label: "人物适配", options: videoMainCharacterFitOptions }
+  ] as const;
+
+  return (
+    <>
+      <AdaptiveChoiceField
+        label="选择方式"
+        onChange={setScriptMode}
+        options={videoMainScriptModeOptions}
+        required
+        value={scriptMode}
+      />
+
+      {scriptMode === "ai-script" ? (
+        <>
+          {inputFields.map((field) => (
+            <InputSelectInlineField
+              className="ck-video-script-inline-field"
+              dropdownWidth={320}
+              key={field.key}
+              label={field.label}
+              labelNoWrap
+              onChange={(value) => setFieldValues((current) => ({ ...current, [field.key]: value }))}
+              options={[...field.options]}
+              placeholder="请选择，或直接输入"
+              value={fieldValues[field.key] ?? ""}
+            />
+          ))}
+          <SupplementField
+            aiPolishConfig={supplementAiPolishConfigs[toolKey]}
+            label="细节补充"
+            maxLength={2000}
+            onAiPolish={onSupplementAiPolish}
+            onChange={onSupplementChange}
+            onToast={onToast}
+            placeholder="请输入额外镜头、转场、字幕、情绪或人物动作要求，帮助生成更完整的视频脚本。"
+            value={supplementValue}
+          />
+        </>
+      ) : (
+        <SupplementField
+          aiPolishConfig={supplementAiPolishConfigs[toolKey]}
+          label="视频描述"
+          maxLength={2000}
+          onAiPolish={onSupplementAiPolish}
+          onChange={onSupplementChange}
+          onToast={onToast}
+          placeholder="请输入完整视频脚本或镜头描述，AI 将按你的自定义脚本生成产品视频。"
+          value={supplementValue}
+        />
+      )}
+    </>
+  );
+}
+
+function ModelGenerateSetupSection({
+  types,
+  onSelectionChange,
+  onSelectionMapChange,
+  selectedValues
+}: {
+  types: ModelGenerateTypeConfig[];
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  selectedValues?: AdvancedSelectionMap;
+}) {
+  const defaultTypeKey = types[0]?.key ?? "";
+  const [selectedTypeKey, setSelectedTypeKey] = useState(selectedValues?.modelGenerateTypeKey ?? defaultTypeKey);
+  const [gender, setGender] = useState(selectedValues?.gender ?? "女");
+  const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
+  const [age, setAge] = useState(selectedValues?.age ?? "");
+  const [persona, setPersona] = useState(selectedValues?.persona ?? "");
+  const [bodyType, setBodyType] = useState(selectedValues?.bodyType ?? "");
+  const lastSyncedValuesRef = useRef<string>("");
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      modelGenerateTypeKey: selectedValues?.modelGenerateTypeKey ?? defaultTypeKey,
+      gender: selectedValues?.gender ?? "女",
+      appearance: selectedValues?.appearance ?? "",
+      age: selectedValues?.age ?? "",
+      persona: selectedValues?.persona ?? "",
+      bodyType: selectedValues?.bodyType ?? ""
+    });
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setSelectedTypeKey(selectedValues?.modelGenerateTypeKey ?? defaultTypeKey);
+    setGender(selectedValues?.gender ?? "女");
+    setAppearance(selectedValues?.appearance ?? "");
+    setAge(selectedValues?.age ?? "");
+    setPersona(selectedValues?.persona ?? "");
+    setBodyType(selectedValues?.bodyType ?? "");
+  }, [defaultTypeKey, selectedValues]);
+
+  useEffect(() => {
+    const activeType = types.find((item) => item.key === selectedTypeKey) ?? types[0];
+    const nextSelectionMap: AdvancedSelectionMap = {};
+    if (activeType) {
+      nextSelectionMap.modelGenerateTypeKey = activeType.key;
+      nextSelectionMap.modelGenerateType = activeType.label;
+    }
+    if (gender) nextSelectionMap.gender = gender;
+    if (appearance) nextSelectionMap.appearance = appearance;
+    if (age) nextSelectionMap.age = age;
+    if (persona) nextSelectionMap.persona = persona;
+    if (bodyType) nextSelectionMap.bodyType = bodyType;
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(
+      [activeType?.label ?? "", gender, appearance, age, persona, bodyType].filter(Boolean)
+    );
+  }, [age, appearance, bodyType, gender, onSelectionChange, onSelectionMapChange, persona, selectedTypeKey, types]);
+
+  return (
+    <>
+      <AdaptiveChoiceField
+        label="选择类型"
+        onChange={setSelectedTypeKey}
+        options={types.map((item) => ({ key: item.key, label: item.label }))}
+        required
+        value={selectedTypeKey}
+      />
+
+      <ModelGenerateParameterFields
+        age={age}
+        appearance={appearance}
+        bodyType={bodyType}
+        gender={gender}
+        onAgeChange={setAge}
+        onAppearanceChange={setAppearance}
+        onBodyTypeChange={setBodyType}
+        onGenderChange={setGender}
+        onPersonaChange={setPersona}
+        persona={persona}
+      />
+    </>
+  );
+}
+
+function ModelGenerateParameterFields({
+  gender,
+  appearance,
+  age,
+  persona,
+  bodyType,
+  onGenderChange,
+  onAppearanceChange,
+  onAgeChange,
+  onPersonaChange,
+  onBodyTypeChange
+}: {
+  gender: string;
+  appearance: string;
+  age: string;
+  persona: string;
+  bodyType: string;
+  onGenderChange: (value: string) => void;
+  onAppearanceChange: (value: string) => void;
+  onAgeChange: (value: string) => void;
+  onPersonaChange: (value: string) => void;
+  onBodyTypeChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <div className="ck-inline-field ck-model-generate-inline-field">
+        <FieldTitle label="性别" required />
+        <div className="ck-mini-switch count ck-model-generate-gender-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+          {["男", "女"].map((option) => (
+            <button
+              className={gender === option ? "active" : ""}
+              key={option}
+              onClick={() => onGenderChange(option)}
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <InputSelectInlineField
+        className="ck-model-generate-inline-field"
+        dropdownWidth={280}
+        label="外貌特征"
+        labelNoWrap
+        onChange={onAppearanceChange}
+        options={modelGenerateAppearanceOptions}
+        placeholder="请选择，或直接输入"
+        required
+        value={appearance}
+      />
+      <InputSelectInlineField
+        className="ck-model-generate-inline-field"
+        dropdownWidth={280}
+        label="年龄段"
+        labelNoWrap
+        onChange={onAgeChange}
+        options={modelGenerateAgeOptions}
+        placeholder="请选择，或直接输入"
+        required
+        value={age}
+      />
+      <InputSelectInlineField
+        className="ck-model-generate-inline-field"
+        dropdownWidth={280}
+        label="人设"
+        labelNoWrap
+        onChange={onPersonaChange}
+        options={modelGeneratePersonaOptions}
+        placeholder="请选择，或直接输入"
+        required
+        value={persona}
+      />
+      <InputSelectInlineField
+        className="ck-model-generate-inline-field"
+        dropdownWidth={280}
+        label="体型"
+        labelNoWrap
+        onChange={onBodyTypeChange}
+        options={modelGenerateBodyOptions}
+        placeholder="请选择，或直接输入"
+        required
+        value={bodyType}
+      />
+    </>
+  );
+}
+
+function BaselineModelSection({
+  modelAssets,
+  onSelectionChange,
+  onSelectionMapChange,
+  onGenerateBaselineModel,
+  onUploadModels,
+  selectedValues
+}: {
+  modelAssets: ModelAsset[];
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onGenerateBaselineModel: (values: AdvancedSelectionMap) => Promise<string | null>;
+  onUploadModels: (files: File[]) => Promise<ModelAsset[]>;
+  selectedValues?: AdvancedSelectionMap;
+}) {
+  const [activeTab, setActiveTab] = useState<"ai" | "mine">((selectedValues?.baselineModelSource as "ai" | "mine") ?? "ai");
+  const [selectedModelId, setSelectedModelId] = useState(selectedValues?.selectedModelId ?? "");
+  const [gender, setGender] = useState(selectedValues?.gender ?? "女");
+  const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
+  const [age, setAge] = useState(selectedValues?.age ?? "");
+  const [persona, setPersona] = useState(selectedValues?.persona ?? "");
+  const [bodyType, setBodyType] = useState(selectedValues?.bodyType ?? "");
+  const [detailSupplement, setDetailSupplement] = useState(selectedValues?.baselineModelSupplement ?? "");
+  const [isGeneratingModel, setIsGeneratingModel] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastSyncedValuesRef = useRef("");
+  const orderedModelAssets = useMemo(
+    () =>
+      [...modelAssets].sort((left, right) => {
+        if (left.sourceType !== right.sourceType) {
+          return left.sourceType === "upload" ? -1 : 1;
+        }
+        return right.createdAt - left.createdAt;
+      }),
+    [modelAssets]
+  );
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      baselineModelSource: (selectedValues?.baselineModelSource as "ai" | "mine") ?? "ai",
+      selectedModelId: selectedValues?.selectedModelId ?? "",
+      gender: selectedValues?.gender ?? "女",
+      appearance: selectedValues?.appearance ?? "",
+      age: selectedValues?.age ?? "",
+      persona: selectedValues?.persona ?? "",
+      bodyType: selectedValues?.bodyType ?? "",
+      baselineModelSupplement: selectedValues?.baselineModelSupplement ?? ""
+    });
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setActiveTab((selectedValues?.baselineModelSource as "ai" | "mine") ?? "ai");
+    setSelectedModelId(selectedValues?.selectedModelId ?? "");
+    setGender(selectedValues?.gender ?? "女");
+    setAppearance(selectedValues?.appearance ?? "");
+    setAge(selectedValues?.age ?? "");
+    setPersona(selectedValues?.persona ?? "");
+    setBodyType(selectedValues?.bodyType ?? "");
+    setDetailSupplement(selectedValues?.baselineModelSupplement ?? "");
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const selectedModel = orderedModelAssets.find((item) => item.id === selectedModelId);
+    const nextSelectionMap: AdvancedSelectionMap = {
+      baselineModelSource: activeTab
+    };
+
+    if (activeTab === "ai") {
+      nextSelectionMap.modelGenerateTypeKey = "real-model";
+      nextSelectionMap.modelGenerateType = "真人模特图";
+      if (gender) nextSelectionMap.gender = gender;
+      if (appearance) nextSelectionMap.appearance = appearance;
+      if (age) nextSelectionMap.age = age;
+      if (persona) nextSelectionMap.persona = persona;
+      if (bodyType) nextSelectionMap.bodyType = bodyType;
+      if (detailSupplement) nextSelectionMap.baselineModelSupplement = detailSupplement;
+      onSelectionChange?.(["AI生成", "真人模特图", gender, appearance, age, persona, bodyType, detailSupplement].filter(Boolean));
+    } else {
+      if (selectedModelId) nextSelectionMap.selectedModelId = selectedModelId;
+      if (selectedModel?.name) nextSelectionMap.selectedModelName = selectedModel.name;
+      onSelectionChange?.(["我的模特", selectedModel?.name ?? ""].filter(Boolean));
+    }
+
+    onSelectionMapChange?.(nextSelectionMap);
+  }, [activeTab, age, appearance, bodyType, detailSupplement, gender, onSelectionChange, onSelectionMapChange, orderedModelAssets, persona, selectedModelId]);
+
+  const appendModelFiles = async (files: File[]) => {
+    const nextModels = await onUploadModels(files);
+    if (nextModels[0]?.id) {
+      setActiveTab("mine");
+      setSelectedModelId(nextModels[0].id);
+    }
+  };
+
+  const handleOpenAiTab = () => {
+    setActiveTab("ai");
+    setSelectedModelId("");
+    onSelectionMapChange?.({
+      baselineModelSource: "ai"
+    });
+  };
+
+  const handleOpenMineTab = () => {
+    setActiveTab("mine");
+    setSelectedModelId("");
+    onSelectionMapChange?.({
+      baselineModelSource: "mine"
+    });
+  };
+
+  const handleGenerateModel = async () => {
+    if (!gender || !appearance || !age || !persona || !bodyType) {
+      return;
+    }
+    setIsGeneratingModel(true);
+    try {
+      const nextModelId = await onGenerateBaselineModel({
+        baselineModelSource: "ai",
+        modelGenerateTypeKey: "real-model",
+        modelGenerateType: "真人模特图",
+        gender,
+        appearance,
+        age,
+        persona,
+        bodyType,
+        baselineModelSupplement: detailSupplement
+      });
+      if (nextModelId) {
+        setActiveTab("mine");
+        setSelectedModelId(nextModelId);
+      }
+    } finally {
+      setIsGeneratingModel(false);
+    }
+  };
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="基准模特" required />
+      <div className="ck-task-rail-mode-switch ck-baseline-model-tabs">
+        <button className={activeTab === "ai" ? "active" : ""} onClick={handleOpenAiTab} type="button">
+          AI生成
+        </button>
+        <button className={activeTab === "mine" ? "active" : ""} onClick={handleOpenMineTab} type="button">
+          我的模特
+        </button>
+      </div>
+
+      {activeTab === "ai" ? (
+        <div className="ck-baseline-model-panel">
+          <div className="ck-baseline-model-ai-row three">
+            <SelectField fullWidth hideLabel label="性别" onChange={setGender} options={["男", "女"]} placeholder="性别" value={gender} />
+            <SelectField fullWidth hideLabel label="年龄段" onChange={setAge} options={modelGenerateAgeOptions} placeholder="年龄段" value={age} />
+            <SelectField fullWidth hideLabel label="体型" onChange={setBodyType} options={modelGenerateBodyOptions} placeholder="体型" value={bodyType} />
+          </div>
+          <div className="ck-baseline-model-ai-row two">
+            <SelectField fullWidth hideLabel label="人设" onChange={setPersona} options={modelGeneratePersonaOptions} placeholder="人设" value={persona} />
+            <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
+          </div>
+          <div className="ck-baseline-model-supplement">
+            <FieldTitle label="细节补充" optional />
+            <textarea
+              maxLength={600}
+              onChange={(event) => setDetailSupplement(event.target.value)}
+              placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
+              value={detailSupplement}
+            />
+            <span>{detailSupplement.length}/600</span>
+          </div>
+          <div className="ck-baseline-model-ai-actions">
+            <button className="ck-baseline-model-generate-mini" onClick={() => void handleGenerateModel()} type="button">
+              <img alt="" src={figmaIcons.creditGem} />
+              <span>5积分</span>
+              <em>{isGeneratingModel ? "生成中..." : "生成模特"}</em>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="ck-baseline-model-panel">
+          <input
+            accept="image/*"
+            className="ck-upload-input"
+            multiple
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              if (!files.length) return;
+              void appendModelFiles(files);
+              event.target.value = "";
+            }}
+            ref={inputRef}
+            type="file"
+          />
+          <div className="ck-baseline-model-grid">
+            <button className="ck-baseline-model-upload-card" onClick={() => inputRef.current?.click()} type="button">
+              <span className="ck-baseline-model-upload-icon">+</span>
+            </button>
+            {orderedModelAssets.map((item) => (
+              <button
+                className={`ck-baseline-model-card${selectedModelId === item.id ? " active" : ""}`}
+                key={item.id}
+                onClick={() => setSelectedModelId(item.id)}
+                type="button"
+              >
+                <div className="ck-baseline-model-card-visual">
+                  <img alt={item.name ?? "模特图"} src={item.src} />
+                  <span className="ck-baseline-model-card-tag">{getModelSourceLabel(item.sourceType)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          {orderedModelAssets.length === 0 ? <div className="ck-baseline-model-empty">当前还没有模特素材，先上传一张即可使用。</div> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdaptiveSegmentedField({
+  label,
+  options,
+  value,
+  required,
+  fullWidth,
+  onChange
+}: {
+  label: string;
+  options: string[];
+  value: string;
+  required?: boolean;
+  fullWidth?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="ck-form-block">
+      {label ? <FieldTitle label={label} required={required} /> : null}
+      <div className={`ck-mini-switch ck-adaptive-segmented${fullWidth ? " full" : ""}`} style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
+        {options.map((option) => (
+          <button className={value === option ? "active" : ""} key={option} onClick={() => onChange(option)} type="button">
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ModelTrySetupSection({
+  toolKey,
+  uploads,
+  modelAssets,
+  remainingStorageMb,
+  onAddUpload,
+  onRemoveUpload,
+  onOpenLibrary,
+  onRejectedUpload,
+  onAtLimit,
+  onNavigateTool,
+  onUploadModels,
+  onToast,
+  onSelectionChange,
+  onSelectionMapChange,
+  selectedValues,
+  uploadFieldLabel = "上传商品图",
+  uploadFieldMeta,
+  uploadFieldHint,
+  uploadLimitOverride,
+  showTrialMode = true
+}: {
+  toolKey: string;
+  uploads: Record<string, UploadItem[]>;
+  modelAssets: ModelAsset[];
+  remainingStorageMb: number;
+  onAddUpload: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemoveUpload: (fieldKey: string, index: number) => void;
+  onOpenLibrary: (fieldKey: string) => void;
+  onRejectedUpload: (message: string) => void;
+  onAtLimit: () => void;
+  onNavigateTool: (toolKey: string) => void;
+  onUploadModels: (files: File[]) => Promise<ModelAsset[]>;
+  onToast: (message: string, tone?: "warning") => void;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  selectedValues?: AdvancedSelectionMap;
+  uploadFieldLabel?: string;
+  uploadFieldMeta?: string;
+  uploadFieldHint?: string;
+  uploadLimitOverride?: number;
+  showTrialMode?: boolean;
+}) {
+  const mainUploadKey = `${toolKey}:main`;
+  const defaultTrialMode = showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿";
+  const [trialMode, setTrialMode] = useState(defaultTrialMode);
+  const [selectedModelId, setSelectedModelId] = useState(selectedValues?.selectedModelId ?? "");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const trialMainUploads = uploads[mainUploadKey] ?? [];
+  const modelCandidates = modelAssets;
+  const uploadLimit = uploadLimitOverride ?? (trialMode === "单产品试穿" ? 24 : 6);
+  const lastSyncedValuesRef = useRef("");
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      trialMode: showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿",
+      selectedModelId: selectedValues?.selectedModelId ?? ""
+    });
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setTrialMode(showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿");
+    setSelectedModelId(selectedValues?.selectedModelId ?? "");
+  }, [selectedValues, showTrialMode]);
+
+  useEffect(() => {
+    const selectedModel = modelCandidates.find((item) => item.id === selectedModelId);
+    const nextSelectionMap: AdvancedSelectionMap = {
+      trialMode
+    };
+    if (selectedModelId) nextSelectionMap.selectedModelId = selectedModelId;
+    if (selectedModel?.name) nextSelectionMap.selectedModelName = selectedModel.name;
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.([trialMode, selectedModel?.name ?? ""].filter(Boolean));
+  }, [modelCandidates, onSelectionChange, onSelectionMapChange, selectedModelId, trialMode]);
+
+  const appendModelFiles = async (files: File[]) => {
+    const nextModels = await onUploadModels(files);
+    if (!selectedModelId && nextModels[0]?.id) {
+      setSelectedModelId(nextModels[0].id);
+    }
+  };
+
+  return (
+    <>
+      {showTrialMode ? (
+        <AdaptiveSegmentedField
+          fullWidth
+          label=""
+          onChange={setTrialMode}
+          options={["单产品试穿", "多产品搭配"]}
+          required
+          value={trialMode}
+        />
+      ) : null}
+
+      <UploadField
+        fieldKey={mainUploadKey}
+        hint={uploadFieldHint ?? `最多${uploadLimit}张，支持JPG/PNG/WebP`}
+        label={uploadFieldLabel}
+        maxCount={uploadLimit}
+        meta={uploadFieldMeta ?? `（单次最多上传${uploadLimit}张）`}
+        onAdd={onAddUpload}
+        onAtLimit={onAtLimit}
+        onOpenLibrary={onOpenLibrary}
+        onRejectedUpload={onRejectedUpload}
+        onRemove={onRemoveUpload}
+        remainingStorageMb={remainingStorageMb}
+        required
+        values={trialMainUploads}
+      />
+
+      <div className="ck-form-block">
+        <FieldTitle label="选择模特" required />
+        <input
+          accept="image/*"
+          className="ck-upload-input"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            if (!files.length) return;
+            void appendModelFiles(files);
+            event.target.value = "";
+          }}
+          ref={inputRef}
+          type="file"
+        />
+        <div className="ck-model-try-model-actions">
+          <button onClick={() => inputRef.current?.click()} type="button">本地上传</button>
+          <button
+            onClick={() => {
+              onNavigateTool("model-generate");
+              onToast("已跳转到模特生成，可先生成模特后返回试穿", "warning");
+            }}
+            type="button"
+          >
+            AI生成模特
+          </button>
+        </div>
+        {modelCandidates.length ? (
+          <div className="ck-model-try-model-grid">
+            {modelCandidates.map((item) => (
+              <button
+                className={`ck-model-try-model-card${selectedModelId === item.id ? " active" : ""}`}
+                key={item.id}
+                onClick={() => setSelectedModelId(item.id)}
+                type="button"
+              >
+                <img alt={item.name ?? "模特图"} src={item.src} />
+                <span>{getModelSourceLabel(item.sourceType)}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="ck-model-try-empty">
+            <strong>暂无可用模特图</strong>
+            <span>可先本地上传，或跳转到模特生成页生成后返回使用。</span>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function RichImageSelectInlineField({
+  value,
+  options,
+  placeholder,
+  onChange
+}: {
+  value: string;
+  options: RichSelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const activeOption = options.find((item) => item.value === value);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div className="ck-select-dropdown full" ref={containerRef}>
+      <button className={`ck-select full${value ? "" : " placeholder"}`} onClick={() => setOpen((current) => !current)} type="button">
+        {activeOption?.displayLabel ?? placeholder ?? "请选择，或直接输入"}
+        <span>⌄</span>
+      </button>
+      {open ? (
+        <div className="ck-select-dropdown-menu full ck-rich-image-select-menu">
+          {options.map((option) => (
+            <button
+              className={`ck-rich-image-option${option.value === value ? " active" : ""}`}
+              key={option.value}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+              type="button"
+            >
+              <div className="ck-rich-image-option-copy">
+                <strong>{option.title}</strong>
+                <span>{option.recommendation}</span>
+              </div>
+              {option.thumbnailSrc ? <img alt={option.title} src={option.thumbnailSrc} /> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ReferenceUploadSection({
+  fieldKey,
+  config,
+  hint,
+  maxCount,
+  values,
+  onAdd,
+  onRemove,
+  onOpenLibrary,
+  onRejectedUpload,
+  onAtLimit,
+  remainingStorageMb
+}: {
+  fieldKey: string;
+  config: UploadModuleFieldConfig;
+  hint: string;
+  maxCount: number;
+  values: UploadItem[];
+  onAdd: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemove: (fieldKey: string, index: number) => void;
+  onOpenLibrary: (fieldKey: string) => void;
+  onRejectedUpload: (message: string) => void;
+  onAtLimit: () => void;
+  remainingStorageMb: number;
+}) {
+  return (
+    <UploadField
+      fieldKey={fieldKey}
+      hint={hint}
+      label={config.label}
+      maxCount={maxCount}
+      meta={config.meta}
+      onAdd={onAdd}
+      onAtLimit={onAtLimit}
+      onOpenLibrary={onOpenLibrary}
+      onRejectedUpload={onRejectedUpload}
+      onRemove={onRemove}
+      optional={config.optional}
+      remainingStorageMb={remainingStorageMb}
+      values={values}
+    />
+  );
+}
+
+function RetouchModeSection() {
+  const [retouchMode, setRetouchMode] = useState<"original" | "extract">("original");
+  const [extractMode, setExtractMode] = useState<"smart" | "custom">("smart");
+  const [customSubject, setCustomSubject] = useState("");
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="选择模式" required />
+      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary">
+        <button
+          className={`ck-mode-card ck-mode-card-primary${retouchMode === "original" ? " active" : ""}`}
+          onClick={() => setRetouchMode("original")}
+          type="button"
+        >
+          <div className="ck-mode-card-head">
+            <strong>原图精修</strong>
+            <span className={`ck-check${retouchMode === "original" ? " active" : ""}`} />
+          </div>
+          <p>产品图不变，提示产品主体材质与高级感。</p>
+        </button>
+        <button
+          className={`ck-mode-card ck-mode-card-primary${retouchMode === "extract" ? " active" : ""}`}
+          onClick={() => setRetouchMode("extract")}
+          type="button"
+        >
+          <div className="ck-mode-card-head">
+            <strong>提取主体精修</strong>
+            <span className={`ck-check${retouchMode === "extract" ? " active" : ""}`} />
+          </div>
+          <p>提取图片主体产品，进行精修，正面展示。</p>
+        </button>
+      </div>
+
+      {retouchMode === "extract" ? (
+        <div className="ck-retouch-extract-wrap">
+          <FieldTitle label="主体提取方式" required />
+          <div className="ck-choice-row ck-choice-row-retouch">
+            <button
+              className={`ck-mode-card ck-mode-card-extract${extractMode === "smart" ? " active" : ""}`}
+              onClick={() => setExtractMode("smart")}
+              type="button"
+            >
+              <div className="ck-mode-card-head">
+                <strong>智能提取主体</strong>
+                <span className={`ck-check${extractMode === "smart" ? " active" : ""}`} />
+              </div>
+              <p>自动识别主商品主体，适合大多数标准产品图。</p>
+            </button>
+            <button
+              className={`ck-mode-card ck-mode-card-extract${extractMode === "custom" ? " active" : ""}`}
+              onClick={() => setExtractMode("custom")}
+              type="button"
+            >
+              <div className="ck-mode-card-head">
+                <strong>自定义主体</strong>
+                <span className={`ck-check${extractMode === "custom" ? " active" : ""}`} />
+              </div>
+              <p>手动说明要保留的主体范围，适合复杂构图。</p>
+            </button>
+          </div>
+
+          {extractMode === "custom" ? (
+            <div className="ck-textarea-wrap ck-retouch-custom-textarea">
+              <textarea
+                maxLength={500}
+                onChange={(event) => setCustomSubject(event.target.value)}
+                placeholder="请输入需要提取和精修的主体说明，例如：仅保留前景中的玻璃香水瓶，正面展示。"
+                value={customSubject}
+              />
+              <div className="ck-textarea-actions">
+                <span>
+                  {customSubject.length}/500
+                </span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ApplicablePlatformSection() {
+  const [selectedPlatformId, setSelectedPlatformId] = useState("none");
+  const [selectedMarket, setSelectedMarket] = useState("无区域");
+  const [openKey, setOpenKey] = useState<"platform" | "market" | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedPlatform =
+    applicablePlatformOptions.find((item) => item.id === selectedPlatformId) ?? applicablePlatformOptions[0];
+
+  useEffect(() => {
+    setSelectedMarket(selectedPlatform.markets[0] ?? "");
+  }, [selectedPlatform]);
+
+  useEffect(() => {
+    if (!openKey) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpenKey(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [openKey]);
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="使用平台" />
+      <div className="ck-applicable-platform-row" ref={containerRef}>
+        <div className="ck-select-dropdown full">
+          <button className="ck-select full" onClick={() => setOpenKey((current) => (current === "platform" ? null : "platform"))} type="button">
+            {selectedPlatform.label}
+            <span>⌄</span>
+          </button>
+          {openKey === "platform" ? (
+            <div className="ck-select-dropdown-menu full">
+              {applicablePlatformOptions.map((option) => (
+                <button
+                  className={option.id === selectedPlatform.id ? "active" : ""}
+                  key={option.id}
+                  onClick={() => {
+                    setSelectedPlatformId(option.id);
+                    setOpenKey(null);
+                  }}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="ck-select-dropdown full">
+          <button className="ck-select full" onClick={() => setOpenKey((current) => (current === "market" ? null : "market"))} type="button">
+            {selectedMarket}
+            <span>⌄</span>
+          </button>
+          {openKey === "market" ? (
+            <div className="ck-select-dropdown-menu full">
+              {selectedPlatform.markets.map((market) => (
+                <button
+                  className={market === selectedMarket ? "active" : ""}
+                  key={market}
+                  onClick={() => {
+                    setSelectedMarket(market);
+                    setOpenKey(null);
+                  }}
+                  type="button"
+                >
+                  {market}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreationModeSection({
+  config,
+  onSelectionChange,
+  value,
+  typeCountMultiplier = 1
+}: {
+  config: CreationModeConfig;
+  onSelectionChange?: (selection: CreationModeSelection) => void;
+  value?: CreationModeSelection | null;
+  typeCountMultiplier?: number;
+}) {
+  const [activeModeId, setActiveModeId] = useState(config.modes[0]?.id ?? "");
+  const [ratioOpen, setRatioOpen] = useState(false);
+  const ratioDropdownRef = useRef<HTMLDivElement | null>(null);
+  const isSetPackCreationMode = config.key === "set-pack";
+  const [setPackPerTypeCount, setSetPackPerTypeCount] = useState(10);
+
+  const activeMode = config.modes.find((mode) => mode.id === activeModeId) ?? config.modes[0];
+  const [selectedRatio, setSelectedRatio] = useState(activeMode?.defaultRatio ?? activeMode?.ratioOptions[0] ?? "");
+  const [selectedCount, setSelectedCount] = useState(activeMode?.defaultCount ?? activeMode?.countOptions[0] ?? "");
+  const [selectedResolution, setSelectedResolution] = useState(
+    activeMode?.defaultResolution ?? activeMode?.resolutionOptions?.[0] ?? ""
+  );
+
+  useEffect(() => {
+    const nextMode = config.modes.find((mode) => mode.id === activeModeId) ?? config.modes[0];
+    if (!nextMode) return;
+    setSelectedRatio(nextMode.defaultRatio ?? nextMode.ratioOptions[0] ?? "");
+    setSelectedCount(nextMode.defaultCount ?? nextMode.countOptions[0] ?? "");
+    setSelectedResolution(nextMode.defaultResolution ?? nextMode.resolutionOptions?.[0] ?? "");
+    if (isSetPackCreationMode) {
+      setSetPackPerTypeCount(10);
+    }
+    setRatioOpen(false);
+  }, [activeModeId, config.modes, isSetPackCreationMode]);
+
+  useEffect(() => {
+    if (!value) return;
+    setActiveModeId(value.modeId);
+    setSelectedRatio(value.ratio);
+    setSelectedCount(String(value.count));
+    setSelectedResolution(value.resolution ?? "");
+    if (isSetPackCreationMode) {
+      const nextPerTypeCount = Math.max(1, Math.round(value.count / Math.max(typeCountMultiplier, 1)) || 10);
+      setSetPackPerTypeCount(nextPerTypeCount);
+    }
+    setRatioOpen(false);
+  }, [isSetPackCreationMode, typeCountMultiplier, value]);
+
+  useEffect(() => {
+    if (!ratioOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!ratioDropdownRef.current?.contains(event.target as Node)) {
+        setRatioOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [ratioOpen]);
+
+  useEffect(() => {
+    if (!activeMode) return;
+    const unitCreditCost = activeMode.resolutionOptions?.length
+      ? activeMode.resolutionUnitCreditCosts?.[selectedResolution] ?? 0
+      : activeMode.baseUnitCreditCost ?? 0;
+    onSelectionChange?.({
+      modeId: activeMode.id,
+      modeLabel: activeMode.label,
+      ratio: selectedRatio,
+      resolution: activeMode.resolutionOptions?.length ? selectedResolution : undefined,
+      count: isSetPackCreationMode ? setPackPerTypeCount * Math.max(typeCountMultiplier, 1) : Number(selectedCount) || 1,
+      unitCreditCost
+    });
+  }, [activeMode, isSetPackCreationMode, onSelectionChange, selectedCount, selectedRatio, selectedResolution, setPackPerTypeCount, typeCountMultiplier]);
+
+  if (!activeMode) return null;
+
+  return (
+    <div className="ck-creation-mode">
+      <SegmentedField
+        label={config.title ?? "创作模式"}
+        options={config.modes.map((mode) => mode.label)}
+        onChange={(index) => setActiveModeId(config.modes[index]?.id ?? config.modes[0]?.id ?? "")}
+        required
+        selected={config.modes.findIndex((mode) => mode.id === activeMode.id)}
+      />
+
+      <div className="ck-inline-field">
+        <FieldTitle label="出图比例" required />
+        <div className="ck-select-dropdown" ref={ratioDropdownRef}>
+          <button className="ck-select" onClick={() => setRatioOpen((value) => !value)} type="button">
+            {selectedRatio}
+            <span>⌄</span>
+          </button>
+          {ratioOpen ? (
+            <div className="ck-select-dropdown-menu">
+              {activeMode.ratioOptions.map((option) => (
+                <button
+                  className={option === selectedRatio ? "active" : ""}
+                  key={option}
+                  onClick={() => {
+                    setSelectedRatio(option);
+                    setRatioOpen(false);
+                  }}
+                  type="button"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {activeMode.resolutionOptions?.length ? (
+        <div className="ck-inline-field">
+          <FieldTitle label="分辨率" required />
+          <div className="ck-mini-switch" style={{ gridTemplateColumns: `repeat(${activeMode.resolutionOptions.length}, 1fr)` }}>
+            {activeMode.resolutionOptions.map((option) => (
+              <button
+                className={option === selectedResolution ? "active" : ""}
+                key={option}
+                onClick={() => setSelectedResolution(option)}
+                type="button"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {isSetPackCreationMode ? (
+        <NumberStepperField label="每个类型出图数" onChange={setSetPackPerTypeCount} required value={setPackPerTypeCount} />
+      ) : null}
+
+      {config.hideCountField ? null : (
+        <CountField label="出图数量" onChange={setSelectedCount} options={activeMode.countOptions} required value={selectedCount} />
+      )}
+    </div>
+  );
+}
+
+function AdvancedSettingsSection({
+  config,
+  onSelectionChange,
+  onSelectionMapChange,
+  onAiAssist,
+  selectedValues
+}: {
+  config: AdvancedSettingsConfig;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onAiAssist?: (values: string[]) => Promise<AdvancedAiAssistResult | null | void>;
+  selectedValues?: AdvancedSelectionMap;
+}) {
+  const platformOptions = useMemo(
+    () => platformMockData.filter((item) => config.platformIds.includes(item.id)),
+    [config.platformIds]
+  );
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const fieldButtonRefs = useRef<Record<string, HTMLElement | null>>({});
+  const fieldDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [selectedPlatformId, setSelectedPlatformId] = useState("");
+  const [openFieldKey, setOpenFieldKey] = useState<string | null>(null);
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const [isAiAssistLoading, setIsAiAssistLoading] = useState(false);
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
+
+  const selectedPlatform = platformOptions.find((item) => item.id === selectedPlatformId);
+  const [selectedRegionId, setSelectedRegionId] = useState("");
+  const selectedRegion = selectedPlatform?.regions.find((item) => item.id === selectedRegionId);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [selectedExtraValues, setSelectedExtraValues] = useState<Record<string, string>>(
+    () => Object.fromEntries((config.extraSelects ?? []).map((item) => [item.key, ""]))
+  );
+  const [conditionalDetailValue, setConditionalDetailValue] = useState("");
+  const configSelectionSignature = useMemo(
+    () =>
+      JSON.stringify({
+        fields: config.fields,
+        extraSelects: (config.extraSelects ?? []).map((item) => ({
+          key: item.key,
+          mode: item.mode,
+          options: item.options ?? item.richOptions?.map((option) => option.value) ?? []
+        })),
+        conditionalDetailFieldKey: config.conditionalDetailField?.triggerFieldKey ?? ""
+      }),
+    [config.conditionalDetailField?.triggerFieldKey, config.extraSelects, config.fields]
+  );
+
+  useEffect(() => {
+    if (selectedPlatformId && !platformOptions.some((item) => item.id === selectedPlatformId)) {
+      setSelectedPlatformId("");
+    }
+  }, [platformOptions, selectedPlatformId]);
+
+  useEffect(() => {
+    setSelectedPlatformId("");
+    setSelectedRegionId("");
+    setSelectedLanguage("");
+    setSelectedExtraValues(Object.fromEntries((config.extraSelects ?? []).map((item) => [item.key, ""])));
+    setConditionalDetailValue("");
+  }, [configSelectionSignature, config.extraSelects]);
+
+  useEffect(() => {
+    const nextValues = dedupeStrings([
+      config.fields.includes("platform") ? selectedPlatform?.label ?? "" : "",
+      config.fields.includes("region") ? selectedRegion?.label ?? "" : "",
+      config.fields.includes("language") ? selectedLanguage : "",
+      ...(config.extraSelects ?? []).map((item) => selectedExtraValues[item.key] ?? ""),
+      conditionalDetailValue
+    ]).filter(Boolean);
+
+    onSelectionChange?.(nextValues);
+  }, [conditionalDetailValue, config.extraSelects, config.fields, onSelectionChange, selectedExtraValues, selectedLanguage, selectedPlatform, selectedRegion]);
+
+  useEffect(() => {
+    const nextSelectionMap: AdvancedSelectionMap = {};
+    if (config.fields.includes("platform") && selectedPlatform?.label) nextSelectionMap.platform = selectedPlatform.label;
+    if (config.fields.includes("region") && selectedRegion?.label) nextSelectionMap.region = selectedRegion.label;
+    if (config.fields.includes("language") && selectedLanguage) nextSelectionMap.language = selectedLanguage;
+    (config.extraSelects ?? []).forEach((item) => {
+      const value = selectedExtraValues[item.key];
+      if (value) nextSelectionMap[item.key] = value;
+    });
+    if (conditionalDetailValue) nextSelectionMap.platformRuleDetail = conditionalDetailValue;
+    onSelectionMapChange?.(nextSelectionMap);
+  }, [conditionalDetailValue, config.extraSelects, config.fields, onSelectionMapChange, selectedExtraValues, selectedLanguage, selectedPlatform, selectedRegion]);
+
+  useEffect(() => {
+    if (!selectedValues) return;
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+
+    const nextSelectedValuesSignature = JSON.stringify({
+      platform: selectedValues.platform ?? "",
+      region: selectedValues.region ?? "",
+      language: selectedValues.language ?? "",
+      platformRuleDetail: selectedValues.platformRuleDetail ?? "",
+      extras: (config.extraSelects ?? []).reduce<Record<string, string>>((accumulator, item) => {
+        accumulator[item.key] = typeof selectedValues[item.key] === "string" ? selectedValues[item.key] : "";
+        return accumulator;
+      }, {})
+    });
+
+    if (nextSelectedValuesSignature === lastSelectedValuesSignatureRef.current) {
+      return;
+    }
+
+    lastSelectedValuesSignatureRef.current = nextSelectedValuesSignature;
+
+    const nextPlatform = selectedValues.platform ? platformOptions.find((item) => item.label === selectedValues.platform) : null;
+    const nextPlatformId = nextPlatform?.id ?? "";
+    if (nextPlatformId !== selectedPlatformId) {
+      setSelectedPlatformId(nextPlatformId);
+    }
+
+    const nextRegionId =
+      selectedValues.region && nextPlatform
+        ? nextPlatform.regions.find((item) => item.label === selectedValues.region)?.id ?? ""
+        : "";
+    if (nextRegionId !== selectedRegionId) {
+      setSelectedRegionId(nextRegionId);
+    }
+
+    const nextLanguage = typeof selectedValues.language === "string" ? selectedValues.language : "";
+    if (nextLanguage !== selectedLanguage) {
+      setSelectedLanguage(nextLanguage);
+    }
+
+    const nextDetailValue = typeof selectedValues.platformRuleDetail === "string" ? selectedValues.platformRuleDetail : "";
+    if (nextDetailValue !== conditionalDetailValue) {
+      setConditionalDetailValue(nextDetailValue);
+    }
+
+    const nextExtraValues = Object.fromEntries(
+      (config.extraSelects ?? []).map((item) => [item.key, typeof selectedValues[item.key] === "string" ? selectedValues[item.key] : ""])
+    );
+    const hasExtraValueChanged = (config.extraSelects ?? []).some((item) => (selectedExtraValues[item.key] ?? "") !== (nextExtraValues[item.key] ?? ""));
+    if (hasExtraValueChanged) {
+      setSelectedExtraValues(nextExtraValues);
+    }
+  }, [
+    conditionalDetailValue,
+    config.extraSelects,
+    platformOptions,
+    selectedLanguage,
+    selectedPlatformId,
+    selectedRegionId,
+    selectedExtraValues,
+    selectedValues
+  ]);
+
+  const selectedSummaryValues = dedupeStrings([
+    config.fields.includes("platform") ? selectedPlatform?.label ?? "" : "",
+    config.fields.includes("region") ? selectedRegion?.label ?? "" : "",
+    config.fields.includes("language") ? selectedLanguage : "",
+    ...(config.extraSelects ?? []).map((item) => selectedExtraValues[item.key] ?? ""),
+    conditionalDetailValue
+  ]).filter(Boolean);
+
+  const shouldShowConditionalDetail = (() => {
+    const fieldConfig = config.conditionalDetailField;
+    if (!fieldConfig) return false;
+    const triggerField = (config.extraSelects ?? []).find((item) => item.key === fieldConfig.triggerFieldKey);
+    if (!triggerField) return false;
+    const triggerValue = selectedExtraValues[fieldConfig.triggerFieldKey]?.trim() ?? "";
+    if (!triggerValue) return false;
+    return !(triggerField.options ?? []).includes(triggerValue);
+  })();
+
+  const applySelectionMapLocally = (values: AdvancedSelectionMap) => {
+    skipSelectedValuesSyncRef.current = true;
+
+    const nextPlatform = values.platform ? platformOptions.find((item) => item.label === values.platform) : null;
+    setSelectedPlatformId(nextPlatform?.id ?? "");
+
+    const nextRegionId =
+      values.region && nextPlatform ? nextPlatform.regions.find((item) => item.label === values.region)?.id ?? "" : "";
+    setSelectedRegionId(nextRegionId);
+
+    setSelectedLanguage(typeof values.language === "string" ? values.language : "");
+    setConditionalDetailValue(typeof values.platformRuleDetail === "string" ? values.platformRuleDetail : "");
+    setSelectedExtraValues(
+      Object.fromEntries(
+        (config.extraSelects ?? []).map((item) => [item.key, typeof values[item.key] === "string" ? values[item.key] : ""])
+      )
+    );
+
+    lastSelectedValuesSignatureRef.current = JSON.stringify({
+      platform: values.platform ?? "",
+      region: values.region ?? "",
+      language: values.language ?? "",
+      platformRuleDetail: values.platformRuleDetail ?? "",
+      extras: (config.extraSelects ?? []).reduce<Record<string, string>>((accumulator, item) => {
+        accumulator[item.key] = typeof values[item.key] === "string" ? values[item.key] : "";
+        return accumulator;
+      }, {})
+    });
+  };
+
+  useEffect(() => {
+    if (!openFieldKey) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const targetNode = event.target as Node;
+      const activeButton = fieldButtonRefs.current[openFieldKey];
+      const activeDropdown = fieldDropdownRefs.current[openFieldKey];
+      const clickedInsideActiveField =
+        activeButton?.contains(targetNode) || activeDropdown?.contains(targetNode);
+
+      if (!clickedInsideActiveField) {
+        setOpenFieldKey(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [openFieldKey]);
+
+  const fields: Array<{
+    key: string;
+    label: string;
+    value: string;
+    options: string[];
+    richOptions?: RichSelectOption[];
+    mode?: "select" | "input-select" | "rich-select";
+    onSelect: (value: string) => void;
+  }> = [];
+
+  if (config.fields.includes("platform")) {
+    fields.push({
+      key: "platform",
+      label: "电商平台",
+      value: selectedPlatform?.label ?? "",
+      options: platformOptions.map((item) => item.label),
+      onSelect: (value) => {
+        skipSelectedValuesSyncRef.current = true;
+        const nextPlatform = platformOptions.find((item) => item.label === value);
+        setSelectedPlatformId(nextPlatform?.id ?? "");
+        setSelectedRegionId("");
+        setSelectedLanguage("");
+      }
+    });
+  }
+
+  if (config.fields.includes("region")) {
+    fields.push({
+      key: "region",
+      label: "地区",
+      value: selectedRegion?.label ?? "",
+      options: selectedPlatform?.regions.map((item) => item.label) ?? [],
+      onSelect: (value) => {
+        skipSelectedValuesSyncRef.current = true;
+        const nextRegion = selectedPlatform?.regions.find((item) => item.label === value);
+        setSelectedRegionId(nextRegion?.id ?? "");
+        setSelectedLanguage("");
+      }
+    });
+  }
+
+  if (config.fields.includes("language")) {
+    fields.push({
+      key: "language",
+      label: "语言",
+      value: selectedLanguage,
+      options: selectedRegion?.languages ?? [],
+      onSelect: (value) => {
+        skipSelectedValuesSyncRef.current = true;
+        setSelectedLanguage(value);
+      }
+    });
+  }
+
+  (config.extraSelects ?? []).forEach((field) => {
+    fields.push({
+      key: field.key,
+      label: field.label,
+      mode: field.mode,
+      value: selectedExtraValues[field.key] ?? "",
+      options: field.options ?? field.richOptions?.map((item) => item.value) ?? [],
+      richOptions: field.richOptions,
+      onSelect: (value) => {
+        skipSelectedValuesSyncRef.current = true;
+        setSelectedExtraValues((current) => ({
+          ...current,
+          [field.key]: value
+        }));
+      }
+    });
+  });
+
+  const toggleFieldDropdown = (fieldKey: string) => {
+    if (openFieldKey === fieldKey) {
+      setOpenFieldKey(null);
+      return;
+    }
+
+    const buttonRect = fieldButtonRefs.current[fieldKey]?.getBoundingClientRect();
+    if (buttonRect) {
+      const estimatedMenuHeight = 220;
+      const scrollContainer = containerRef.current?.closest(".ck-panel-scroll");
+      const scrollRect = scrollContainer?.getBoundingClientRect();
+      const lowerBoundary = scrollRect ? Math.min(window.innerHeight, scrollRect.bottom) : window.innerHeight;
+      const upperBoundary = scrollRect ? Math.max(0, scrollRect.top) : 0;
+      const spaceBelow = lowerBoundary - buttonRect.bottom;
+      const spaceAbove = buttonRect.top - upperBoundary;
+      setOpenDirection(spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow ? "up" : "down");
+    } else {
+      setOpenDirection("down");
+    }
+
+    setOpenFieldKey(fieldKey);
+  };
+
+  return (
+    <div className="ck-form-block" ref={containerRef}>
+      <div className="ck-advanced-settings-head">
+        <FieldTitle label={config.title} optional />
+        {config.showAiAssist !== false ? (
+          <button
+            className="ck-advanced-settings-ai"
+            disabled={isAiAssistLoading}
+            onClick={async () => {
+              if (!onAiAssist) return;
+              skipSelectedValuesSyncRef.current = false;
+              setIsAiAssistLoading(true);
+              try {
+                const assistResult = await onAiAssist(selectedSummaryValues);
+                if (assistResult?.fieldValues) {
+                  applySelectionMapLocally(assistResult.fieldValues);
+                }
+              } finally {
+                setIsAiAssistLoading(false);
+              }
+            }}
+            type="button"
+          >
+            {isAiAssistLoading ? "帮写中..." : "AI帮写"}
+          </button>
+        ) : null}
+      </div>
+      <div className="ck-platform-grid">
+        {fields.map((field) => (
+          <div className="ck-platform-item" key={field.key}>
+            <div className="ck-platform-item-label">{field.label}</div>
+            <div className="ck-platform-inline-select">
+              {field.mode === "rich-select" && field.richOptions?.length ? (
+                <RichImageSelectInlineField
+                  onChange={field.onSelect}
+                  options={field.richOptions}
+                  placeholder="请选择场景"
+                  value={field.value}
+                />
+              ) : (
+                <div className="ck-select-dropdown full">
+                  {field.mode === "input-select" ? (
+                    <div
+                      className={`ck-input-select${field.value ? " has-value" : ""}${openFieldKey === field.key ? " active" : ""}`}
+                      onClick={() => {
+                        if (openFieldKey !== field.key) toggleFieldDropdown(field.key);
+                      }}
+                      ref={(node) => {
+                        fieldButtonRefs.current[field.key] = node;
+                      }}
+                    >
+                      <input
+                        onChange={(event) => field.onSelect(event.target.value)}
+                        onFocus={() => {
+                          if (openFieldKey !== field.key) toggleFieldDropdown(field.key);
+                        }}
+                        placeholder="请选择或直接输入"
+                        value={field.value}
+                      />
+                      {field.value ? (
+                        <button
+                          className="ck-input-select-clear"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            field.onSelect("");
+                            setOpenFieldKey(null);
+                          }}
+                          type="button"
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <button
+                      className={`ck-select full${field.value ? "" : " placeholder"}`}
+                      onClick={() => toggleFieldDropdown(field.key)}
+                      ref={(node) => {
+                        fieldButtonRefs.current[field.key] = node;
+                      }}
+                      type="button"
+                    >
+                      {field.value || "请选择"}
+                      <span>⌄</span>
+                    </button>
+                  )}
+                  {openFieldKey === field.key ? (
+                    <div
+                      className={`ck-select-dropdown-menu full${openDirection === "up" ? " up" : ""}`}
+                      ref={(node) => {
+                        fieldDropdownRefs.current[field.key] = node;
+                      }}
+                    >
+                      {field.options.map((option) => (
+                        <button
+                          className={option === field.value ? "active" : ""}
+                          key={option}
+                          onClick={() => {
+                            field.onSelect(option);
+                            setOpenFieldKey(null);
+                          }}
+                          type="button"
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {shouldShowConditionalDetail && config.conditionalDetailField ? (
+        <div className="ck-form-block" style={{ marginTop: 12 }}>
+          <FieldTitle label={config.conditionalDetailField.label} optional />
+          <div className="ck-textarea-wrap">
+            <textarea
+              maxLength={500}
+              onChange={(event) => {
+                skipSelectedValuesSyncRef.current = true;
+                setConditionalDetailValue(event.target.value);
+              }}
+              placeholder={config.conditionalDetailField.placeholder}
+              value={conditionalDetailValue}
+            />
+            <div className="ck-textarea-actions">
+              <span>{conditionalDetailValue.length}/500</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SetPackStrategySection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+}) {
+  const platformOptions = useMemo(() => platformMockData.filter((item) => setPackPlatformIds.includes(item.id)), []);
+  const defaultPlatform = platformOptions[0];
+  const [platformId, setPlatformId] = useState(selectedValues?.platform ? platformOptions.find((item) => item.label === selectedValues.platform)?.id ?? defaultPlatform?.id ?? "" : defaultPlatform?.id ?? "");
+  const selectedPlatform = platformOptions.find((item) => item.id === platformId) ?? defaultPlatform;
+  const [targetMarket, setTargetMarket] = useState(selectedValues?.targetMarket ?? selectedValues?.region ?? "北美");
+  const [copyLanguage, setCopyLanguage] = useState(selectedValues?.copyLanguage ?? selectedValues?.language ?? "英文");
+  const [visualStyle, setVisualStyle] = useState(selectedValues?.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? "");
+
+  useEffect(() => {
+    const nextPlatform = selectedValues?.platform ? platformOptions.find((item) => item.label === selectedValues.platform) : null;
+    if (nextPlatform?.id && nextPlatform.id !== platformId) {
+      setPlatformId(nextPlatform.id);
+    }
+  }, [platformId, platformOptions, selectedValues]);
+
+  useEffect(() => {
+    const nextTargetMarket = selectedValues?.targetMarket ?? selectedValues?.region ?? "北美";
+    if (nextTargetMarket !== targetMarket) {
+      setTargetMarket(nextTargetMarket);
+    }
+  }, [selectedValues, targetMarket]);
+
+  useEffect(() => {
+    const nextCopyLanguage = selectedValues?.copyLanguage ?? selectedValues?.language ?? "英文";
+    if (nextCopyLanguage !== copyLanguage) {
+      setCopyLanguage(nextCopyLanguage);
+    }
+  }, [copyLanguage, selectedValues]);
+
+  useEffect(() => {
+    const nextVisualStyle = selectedValues?.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? "";
+    if (nextVisualStyle !== visualStyle) {
+      setVisualStyle(nextVisualStyle);
+    }
+  }, [visualStyle, selectedValues]);
+
+  useEffect(() => {
+    if (!selectedPlatform) return;
+    onSelectionMapChange?.({
+      platform: selectedPlatform.label,
+      region: targetMarket,
+      targetMarket,
+      language: copyLanguage,
+      copyLanguage,
+      setPackVisualStyle: visualStyle
+    });
+    onSelectionChange?.([selectedPlatform.label, targetMarket, copyLanguage, visualStyle].filter(Boolean));
+  }, [copyLanguage, onSelectionChange, onSelectionMapChange, selectedPlatform, targetMarket, visualStyle]);
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="市场配置" />
+      <div className="ck-set-pack-strategy-grid">
+        <SelectField
+          fullWidth
+          hideLabel
+          label="目标平台"
+          onChange={(value) => {
+            const nextPlatform = platformOptions.find((item) => item.label === value);
+            if (!nextPlatform) return;
+            setPlatformId(nextPlatform.id);
+          }}
+          options={platformOptions.map((item) => item.label)}
+          required
+          value={selectedPlatform?.label}
+        />
+        <SelectField
+          fullWidth
+          hideLabel
+          label="目标市场"
+          onChange={setTargetMarket}
+          options={setPackTargetMarketOptions}
+          required
+          value={targetMarket}
+        />
+        <SelectField
+          fullWidth
+          hideLabel
+          label="文案语种"
+          onChange={setCopyLanguage}
+          options={copyLanguageInputOptions}
+          required
+          value={copyLanguage}
+        />
+        <SelectField
+          fullWidth
+          hideLabel
+          label="视觉风格"
+          onChange={setVisualStyle}
+          options={setPackVisualStyleOptions}
+          value={visualStyle}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SetPackSellingPointsSection({
+  uploads,
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onToast
+}: {
+  uploads: UploadItem[];
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onToast: (message: string, tone?: "warning") => void;
+}) {
+  const [detailText, setDetailText] = useState(
+    selectedValues?.setPackSellingPoints ??
+      formatSetPackDetailText({
+        productName: selectedValues?.setPackProductName ?? "",
+        sellingPoints: selectedValues?.setPackSellingPoints ?? "",
+        audience: selectedValues?.setPackAudience ?? "",
+        scenario: selectedValues?.setPackScenario ?? "",
+        parameters: selectedValues?.setPackParameters ?? ""
+      })
+  );
+  const [detailDraft, setDetailDraft] = useState<SetPackSellingPointDraft>({
+    productName: selectedValues?.setPackProductName ?? "",
+    sellingPoints: selectedValues?.setPackSellingPoints ?? "",
+    audience: selectedValues?.setPackAudience ?? "",
+    scenario: selectedValues?.setPackScenario ?? "",
+    parameters: selectedValues?.setPackParameters ?? ""
+  });
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [draft, setDraft] = useState<SetPackSellingPointDraft | null>(null);
+  const [draftText, setDraftText] = useState("");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
+
+  useEffect(() => {
+    const nextDraft = {
+      productName: selectedValues?.setPackProductName ?? "",
+      sellingPoints: selectedValues?.setPackSellingPoints ?? "",
+      audience: selectedValues?.setPackAudience ?? "",
+      scenario: selectedValues?.setPackScenario ?? "",
+      parameters: selectedValues?.setPackParameters ?? ""
+    };
+    setDetailDraft(nextDraft);
+    setDetailText(selectedValues?.setPackSellingPoints ?? formatSetPackDetailText(nextDraft));
+  }, [
+    selectedValues?.setPackAudience,
+    selectedValues?.setPackParameters,
+    selectedValues?.setPackProductName,
+    selectedValues?.setPackScenario,
+    selectedValues?.setPackSellingPoints
+  ]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      setPackProductName: detailDraft.productName,
+      setPackSellingPoints: detailText,
+      setPackAudience: detailDraft.audience,
+      setPackScenario: detailDraft.scenario,
+      setPackParameters: detailDraft.parameters
+    });
+    onSelectionChange?.(
+      [detailDraft.productName, detailText, detailDraft.audience, detailDraft.scenario, detailDraft.parameters].filter(Boolean)
+    );
+  }, [detailDraft, detailText, onSelectionChange, onSelectionMapChange]);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    const updatePopoverPosition = () => {
+      const buttonRect = buttonRef.current?.getBoundingClientRect();
+      if (!buttonRect) return;
+
+      const panelElement = buttonRef.current?.closest(".ck-panel");
+      const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
+      const panelRect = panelElement?.getBoundingClientRect();
+      const footerRect = footerElement?.getBoundingClientRect();
+      const popoverWidth = 280;
+      const popoverHeight = 336;
+      const gap = 12;
+      const viewportPadding = 16;
+      const leftBoundary = panelRect ? Math.max(viewportPadding, panelRect.right + gap) : viewportPadding;
+      const topBoundary = panelRect ? Math.max(viewportPadding, panelRect.top) : viewportPadding;
+      const bottomBoundary = footerRect ? Math.max(topBoundary, footerRect.top - gap) : window.innerHeight - viewportPadding;
+      const availableRight = window.innerWidth - buttonRect.right;
+      const availableLeft = buttonRect.left;
+      const availableBelow = bottomBoundary - buttonRect.bottom;
+      const availableAbove = buttonRect.top - topBoundary;
+      const prefersRight = availableRight >= popoverWidth + gap;
+      const prefersLeft = !prefersRight && availableLeft >= popoverWidth + gap;
+      const nextLeft =
+        prefersRight
+          ? buttonRect.right + gap
+          : prefersLeft
+            ? buttonRect.left - popoverWidth - gap
+            : Math.max(leftBoundary, Math.min(buttonRect.left, window.innerWidth - popoverWidth - viewportPadding));
+      const nextTop =
+        availableBelow >= popoverHeight + gap
+          ? buttonRect.top
+          : availableAbove >= popoverHeight + gap
+            ? buttonRect.bottom - popoverHeight
+            : Math.max(topBoundary, Math.min(buttonRect.top - popoverHeight / 2, bottomBoundary - popoverHeight));
+
+      setPopoverStyle({
+        left: `${nextLeft}px`,
+        top: `${nextTop}px`
+      });
+    };
+
+    updatePopoverPosition();
+    window.addEventListener("resize", updatePopoverPosition);
+    window.addEventListener("scroll", updatePopoverPosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePopoverPosition);
+      window.removeEventListener("scroll", updatePopoverPosition, true);
+    };
+  }, [draftText, isGenerating, popoverOpen]);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [popoverOpen]);
+
+  const handleGenerateAiDraft = async () => {
+    if (!uploads.length) {
+      onToast("请先上传商品图后再使用AI帮写", "warning");
+      return;
+    }
+    setPopoverOpen(true);
+    setIsGenerating(true);
+    const nextDraft = buildSetPackSellingPointDraft(uploads, selectedValues?.platform ?? "", selectedValues?.language ?? "");
+    window.setTimeout(() => {
+      setDraft(nextDraft);
+      setDraftText(formatSetPackDetailText(nextDraft));
+      setIsGenerating(false);
+    }, 320);
+  };
+
+  return (
+    <>
+      <div className="ck-form-block">
+        <div className="ck-advanced-settings-head">
+          <FieldTitle label="商品卖点&要求" optional />
+          <div className="ck-ai-polish" ref={containerRef}>
+            <button className="ck-advanced-settings-ai" onClick={() => void handleGenerateAiDraft()} ref={buttonRef} type="button">
+              AI帮写
+            </button>
+            {popoverOpen ? (
+              <div className={`ck-ai-polish-popover${isGenerating ? " is-generating" : ""}`} style={popoverStyle}>
+                <div className="ck-ai-polish-popover-head">
+                  <div>
+                    <strong>AI帮写</strong>
+                  </div>
+                  <button className="ck-ai-polish-close" onClick={() => setPopoverOpen(false)} type="button">
+                    ×
+                  </button>
+                </div>
+                <div className="ck-ai-polish-popover-body">
+                  {isGenerating ? (
+                    <div className="ck-ai-polish-loading">
+                      <div className="ck-ai-polish-loading-dots" aria-hidden="true">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <strong>AI 深度思考中...</strong>
+                    </div>
+                  ) : (
+                    <div className="ck-ai-polish-result">
+                      <pre>{draftText || "点击重新帮写后可再次生成当前文案。"}</pre>
+                    </div>
+                  )}
+                </div>
+                {isGenerating ? (
+                  <div className="ck-ai-polish-popover-actions loading">
+                    <button className="loading-indicator" disabled type="button">
+                      正在帮写
+                    </button>
+                  </div>
+                ) : (
+                  <div className="ck-ai-polish-popover-actions">
+                    <button className="secondary" disabled={isGenerating} onClick={() => void handleGenerateAiDraft()} type="button">
+                      重新帮写
+                    </button>
+                    <button
+                      disabled={isGenerating || !draft}
+                      onClick={() => {
+                        if (!draft) return;
+                        setDetailDraft(draft);
+                        setDetailText(draftText);
+                        setPopoverOpen(false);
+                      }}
+                      type="button"
+                    >
+                      确认
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="ck-textarea-wrap">
+          <textarea
+            maxLength={2000}
+            onChange={(event) => setDetailText(event.target.value)}
+            placeholder={
+              "建议包含以下信息生成更精准：\n1.产品名称\n2.核心卖点\n3.适用人群\n4.期望场景\n5.具体参数"
+            }
+            value={detailText}
+          />
+          <div className="ck-textarea-actions">
+            <span>{detailText.length}/2000</span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SetPackStyleAnalysisSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onToast
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onToast: (message: string, tone?: "warning") => void;
+}) {
+  const [styles, setStyles] = useState<SetPackStyleCard[]>(safeParseJson<SetPackStyleCard[]>(selectedValues?.setPackStyleCards, []) ?? []);
+  const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>((selectedValues?.setPackSelectedStyleIds ?? "").split(",").filter(Boolean));
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    setStyles(safeParseJson<SetPackStyleCard[]>(selectedValues?.setPackStyleCards, []) ?? []);
+    setSelectedStyleIds((selectedValues?.setPackSelectedStyleIds ?? "").split(",").filter(Boolean));
+  }, [selectedValues?.setPackSelectedStyleIds, selectedValues?.setPackStyleCards]);
+
+  useEffect(() => {
+    const selectedCards = styles.filter((item) => selectedStyleIds.includes(item.id));
+    onSelectionMapChange?.({
+      setPackStyleCards: JSON.stringify(styles),
+      setPackSelectedStyleIds: selectedStyleIds.join(","),
+      setPackSelectedStyleNames: selectedCards.map((item) => item.name).join(" / ")
+    });
+    onSelectionChange?.(selectedCards.map((item) => item.name));
+  }, [onSelectionChange, onSelectionMapChange, selectedStyleIds, styles]);
+
+  const handleAnalyze = () => {
+    if (!selectedValues?.setPackProductName && !selectedValues?.setPackSellingPoints) {
+      onToast("请先填写商品信息或使用 AI 帮写后再分析风格", "warning");
+      return;
+    }
+    setIsAnalyzing(true);
+    window.setTimeout(() => {
+      const nextStyles = buildSetPackStyleRecommendations(selectedValues ?? {});
+      setStyles(nextStyles);
+      setSelectedStyleIds(nextStyles[0]?.id ? [nextStyles[0].id] : []);
+      setIsAnalyzing(false);
+    }, 420);
+  };
+
+  return (
+    <div className="ck-form-block">
+      <div className="ck-advanced-settings-head">
+        <FieldTitle label="爆款风格发现" optional />
+        <button className="ck-advanced-settings-ai" onClick={handleAnalyze} type="button">
+          {isAnalyzing ? "分析中..." : "开始分析"}
+        </button>
+      </div>
+      {styles.length ? (
+        <div className="ck-set-pack-style-grid">
+          {styles.map((item) => {
+            const isActive = selectedStyleIds.includes(item.id);
+            return (
+              <button
+                className={`ck-set-pack-style-card${isActive ? " active" : ""}`}
+                key={item.id}
+                onClick={() =>
+                  setSelectedStyleIds((current) =>
+                    current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id]
+                  )
+                }
+                type="button"
+              >
+                <div className="ck-set-pack-style-card-head">
+                  <strong>{item.name}</strong>
+                  <span>{isActive ? "已选" : "可选"}</span>
+                </div>
+                <p>{item.description}</p>
+                <div className="ck-set-pack-style-swatches">
+                  {item.colors.map((color) => (
+                    <span key={color} style={{ background: color }} />
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="ck-set-pack-style-empty">
+          <strong>还没有风格方案</strong>
+          <span>点击“开始分析”后，将结合平台、卖点和商品特征推荐 4 组以上风格。</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SetPackTypeSection({
+  toolKey,
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onToast,
+  perTypeCount,
+  uploads
+}: {
+  toolKey: string;
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onToast: (message: string, tone?: "warning") => void;
+  perTypeCount: number;
+  uploads: UploadItem[];
+}) {
+  const isAplusTool = toolKey === "set-aplus";
+  const moduleLibrary = isAplusTool ? aplusModuleLibrary : setPackTypeLibrary;
+  const selectionLimit = isAplusTool ? aplusModuleLibrary.length : SET_PACK_TYPE_LIMIT;
+  const defaultAplusTypes = useMemo(
+    () => aplusModuleLibrary.slice(0, 5).map((item) => createSetPackTypeItem(item, selectedValues ?? {}, { count: perTypeCount })),
+    [perTypeCount, selectedValues]
+  );
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const [selectedTypes, setSelectedTypes] = useState<SetPackTypeItem[]>(() => {
+    const restoredTypes = getSetPackSelectedTypes(selectedValues ?? {}).map((item) => ({ ...item, count: item.count ?? perTypeCount }));
+    if (restoredTypes.length) return restoredTypes;
+    return isAplusTool ? defaultAplusTypes : [];
+  });
+  const [savedTemplates, setSavedTemplates] = useState<SetPackTypeSavedTemplate[]>(
+    safeParseJson<SetPackTypeSavedTemplate[]>(selectedValues?.setPackSavedTypeTemplates, []) ?? []
+  );
+  const [modalMode, setModalMode] = useState<"ai" | "manual" | "edit" | "save-template" | null>(null);
+  const [activeTab, setActiveTab] = useState<"recommended" | "custom" | "template">("recommended");
+  const [draftTypes, setDraftTypes] = useState<SetPackTypeItem[]>([]);
+  const [thoughtNotes, setThoughtNotes] = useState("");
+  const [thinkingText, setThinkingText] = useState(buildSetPackTypeThinking(selectedValues ?? {}, "", uploads.length));
+  const [displayThinkingText, setDisplayThinkingText] = useState("");
+  const [analysisPreview, setAnalysisPreview] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiThoughtCollapsed, setAiThoughtCollapsed] = useState(false);
+  const [editingTypeId, setEditingTypeId] = useState("");
+  const [pendingDeleteTypeId, setPendingDeleteTypeId] = useState("");
+  const [drawerStyle, setDrawerStyle] = useState<CSSProperties>({});
+  const [collapsed, setCollapsed] = useState(false);
+  const drawerStyleRef = useRef<CSSProperties>({});
+  const lastSelectedTypesSyncRef = useRef("");
+  const lastSavedTemplatesSyncRef = useRef("");
+  const [templateDraftName, setTemplateDraftName] = useState("未命名组图模板");
+  const [customDraft, setCustomDraft] = useState<SetPackTypeItem>({
+    id: "custom-draft",
+    category: "",
+    name: "",
+    description: "",
+    tag: "自定义",
+    prompt: "",
+    ratio: "1:1",
+    resolution: "1K",
+    count: 1
+  });
+  const customTypeLibrary = useMemo(() => {
+    const dynamicCustomTypes = selectedTypes.filter((item) => item.tag === "自定义");
+    const merged = [...dynamicCustomTypes, ...setPackCustomTypePresets.map((item) => ({ ...item, count: perTypeCount }))];
+    return merged.filter((item, index, array) => array.findIndex((candidate) => candidate.category === item.category) === index);
+  }, [perTypeCount, selectedTypes]);
+  const templateLibrary = useMemo(() => {
+    const presetTemplates = buildPresetSetPackTemplateLibrary(selectedValues ?? {}, perTypeCount);
+    const merged = [...savedTemplates, ...presetTemplates];
+    return merged.filter((item, index, array) => array.findIndex((candidate) => candidate.name === item.name) === index);
+  }, [perTypeCount, savedTemplates, selectedValues]);
+
+  useEffect(() => {
+    const nextSelectedTypes = getSetPackSelectedTypes(selectedValues ?? {}).map((item) => ({ ...item, count: item.count ?? perTypeCount }));
+    const nextSelectedTypesKey = JSON.stringify(nextSelectedTypes);
+    if (!nextSelectedTypes.length && isAplusTool) {
+      const defaultTypesKey = JSON.stringify(defaultAplusTypes);
+      if (defaultTypesKey !== lastSelectedTypesSyncRef.current) {
+        lastSelectedTypesSyncRef.current = defaultTypesKey;
+        setSelectedTypes(defaultAplusTypes);
+      }
+    } else if (nextSelectedTypesKey !== lastSelectedTypesSyncRef.current) {
+      lastSelectedTypesSyncRef.current = nextSelectedTypesKey;
+      setSelectedTypes(nextSelectedTypes);
+    }
+
+    const nextSavedTemplates = (safeParseJson<SetPackTypeSavedTemplate[]>(selectedValues?.setPackSavedTypeTemplates, []) ?? []).map((template) => ({
+      ...template,
+      types: template.types.map((item) => ({ ...item, count: item.count ?? perTypeCount }))
+    }));
+    const nextSavedTemplatesKey = JSON.stringify(nextSavedTemplates);
+    if (nextSavedTemplatesKey !== lastSavedTemplatesSyncRef.current) {
+      lastSavedTemplatesSyncRef.current = nextSavedTemplatesKey;
+      setSavedTemplates(nextSavedTemplates);
+    }
+  }, [defaultAplusTypes, isAplusTool, perTypeCount, selectedValues]);
+
+  useEffect(() => {
+    setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
+  }, [selectedValues, thoughtNotes, uploads.length]);
+
+  useEffect(() => {
+    if (!thinkingText) {
+      setDisplayThinkingText("");
+      return;
+    }
+
+    if (!isAnalyzing) {
+      setDisplayThinkingText(thinkingText);
+      return;
+    }
+
+    setDisplayThinkingText("");
+    let index = 0;
+    const timer = window.setInterval(() => {
+      index += 8;
+      setDisplayThinkingText(thinkingText.slice(0, index));
+      if (index >= thinkingText.length) {
+        window.clearInterval(timer);
+      }
+    }, 28);
+
+    return () => window.clearInterval(timer);
+  }, [isAnalyzing, thinkingText]);
+
+  useEffect(() => {
+    lastSelectedTypesSyncRef.current = JSON.stringify(selectedTypes);
+  }, [selectedTypes]);
+
+  useEffect(() => {
+    lastSavedTemplatesSyncRef.current = JSON.stringify(savedTemplates);
+  }, [savedTemplates]);
+
+  useEffect(() => {
+    if (modalMode !== "ai") return;
+    setAnalysisPreview(draftTypes.length ? serializeSetPackTypePlan(draftTypes) : "");
+  }, [draftTypes, modalMode]);
+
+  useEffect(() => {
+    if (modalMode !== "manual" && modalMode !== "edit") return;
+
+    let frameId = 0;
+    const updateDrawerPosition = () => {
+      const sectionRect = sectionRef.current?.getBoundingClientRect();
+      const currentPanel = sectionRef.current?.closest(".ck-panel");
+      const currentPanelRect = currentPanel?.getBoundingClientRect();
+      const resultPanel = currentPanel?.nextElementSibling instanceof HTMLElement && currentPanel.nextElementSibling.classList.contains("ck-panel")
+        ? currentPanel.nextElementSibling
+        : null;
+      const resultPanelRect = resultPanel?.getBoundingClientRect();
+      const resultToolbar = resultPanel?.querySelector(".ck-results-toolbar") as HTMLElement | null;
+      const resultToolbarRect = resultToolbar?.getBoundingClientRect();
+      if (!currentPanelRect) return;
+
+      const horizontalGap = 16;
+      const verticalGap = 62;
+      const nextLeft = Math.max(16, currentPanelRect.right + horizontalGap);
+      const nextTop = Math.max(16, (resultToolbarRect?.bottom ?? currentPanelRect.top) + verticalGap);
+      const availableWidth = Math.max(320, window.innerWidth - nextLeft - 16);
+      const preferredWidth = (resultPanelRect?.width ?? Math.max(640, availableWidth)) * 0.8;
+      const drawerWidth = Math.min(availableWidth, Math.max(420, preferredWidth));
+      const preferredHeight = (resultPanelRect?.height ?? window.innerHeight - nextTop - 16) * 0.8;
+      const nextHeight = Math.min(window.innerHeight - nextTop - 16, Math.max(420, preferredHeight));
+      const nextStyle = {
+        top: `${nextTop}px`,
+        left: `${nextLeft}px`,
+        width: `${drawerWidth}px`,
+        height: `${Math.max(480, nextHeight)}px`
+      };
+
+      if (
+        drawerStyleRef.current.top === nextStyle.top &&
+        drawerStyleRef.current.left === nextStyle.left &&
+        drawerStyleRef.current.width === nextStyle.width &&
+        drawerStyleRef.current.height === nextStyle.height
+      ) {
+        return;
+      }
+
+      drawerStyleRef.current = nextStyle;
+      setDrawerStyle(nextStyle);
+    };
+
+    updateDrawerPosition();
+    const requestUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateDrawerPosition);
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      requestUpdate();
+    });
+    const sectionNode = sectionRef.current;
+    const currentPanelNode = sectionNode?.closest(".ck-panel");
+    const secondaryNode = document.querySelector(".ck-secondary");
+    const bodyNode = document.querySelector(".ck-body");
+    const resultPanelNode =
+      currentPanelNode?.nextElementSibling instanceof HTMLElement && currentPanelNode.nextElementSibling.classList.contains("ck-panel")
+        ? currentPanelNode.nextElementSibling
+        : null;
+
+    [currentPanelNode, secondaryNode, bodyNode, resultPanelNode].forEach((node) => {
+      if (node instanceof Element) {
+        resizeObserver.observe(node);
+      }
+    });
+
+    window.addEventListener("resize", updateDrawerPosition);
+    window.addEventListener("scroll", updateDrawerPosition, true);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateDrawerPosition);
+      window.removeEventListener("scroll", updateDrawerPosition, true);
+    };
+  }, [modalMode]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      setPackSelectedTypes: JSON.stringify(selectedTypes),
+      setPackSelectedTypeNames: selectedTypes.map((item) => item.category).join(" / "),
+      setPackSavedTypeTemplates: JSON.stringify(savedTemplates)
+    });
+    onSelectionChange?.(selectedTypes.map((item) => item.category));
+  }, [onSelectionChange, onSelectionMapChange, savedTemplates, selectedTypes]);
+
+  const openManualModal = () => {
+    setModalMode("manual");
+    setActiveTab("recommended");
+    setDraftTypes(selectedTypes);
+  };
+
+  const cloneTypeItem = (item: SetPackTypeItem) => ({
+    ...item,
+    id: `${item.id}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  });
+
+  const openAiModal = () => {
+    if (!uploads.length) {
+      onToast("请先上传图片后再使用AI生成", "warning");
+      return;
+    }
+    setModalMode("ai");
+    setDraftTypes([]);
+    setAnalysisPreview("");
+    setAiThoughtCollapsed(false);
+    setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
+  };
+
+  const handleAnalyze = () => {
+    if (!uploads.length) {
+      onToast("请先上传图片后再使用AI生成", "warning");
+      return;
+    }
+    setIsAnalyzing(true);
+    setDraftTypes([]);
+    setAnalysisPreview("");
+    setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
+    const nextTypes = buildSetPackTypeRecommendations(selectedValues ?? {}, thoughtNotes, perTypeCount).slice(0, 5);
+    window.setTimeout(() => {
+      setDraftTypes(nextTypes);
+      setThinkingText(buildSetPackTypeAnalysisNarrative(nextTypes, selectedValues ?? {}, thoughtNotes, uploads.length));
+      setAnalysisPreview(serializeSetPackTypePlan(nextTypes));
+      setIsAnalyzing(false);
+    }, 520);
+  };
+
+  const handleToggleRecommended = (template: SetPackTypeTemplate) => {
+    const existingMatch = selectedTypes.find((item) => item.category === template.category);
+    if (existingMatch) {
+      setSelectedTypes((current) => current.filter((item) => item.category !== template.category));
+      return;
+    }
+    if (selectedTypes.length >= selectionLimit) {
+      onToast(`最多可添加 ${selectionLimit} 个${isAplusTool ? "模块" : "套图类型"}`, "warning");
+      return;
+    }
+    setSelectedTypes((current) => [...current, createSetPackTypeItem(template, selectedValues ?? {})]);
+  };
+
+  const handleApplyDraftTypes = () => {
+    if (!draftTypes.length) {
+      onToast("请至少选择 1 个套图类型", "warning");
+      return;
+    }
+    setSelectedTypes(
+      draftTypes.slice(0, SET_PACK_TYPE_LIMIT).map((item) => ({
+        ...item,
+        count: item.count ?? perTypeCount
+      }))
+    );
+    setModalMode(null);
+  };
+
+  const handleSaveCustomType = () => {
+    if (!customDraft.category.trim()) {
+      onToast("请先填写类型名称", "warning");
+      return;
+    }
+    if (selectedTypes.length >= SET_PACK_TYPE_LIMIT) {
+      onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
+      return;
+    }
+    setSelectedTypes((current) => [
+      ...current,
+      {
+        ...customDraft,
+        id: `custom-${Date.now()}`,
+        name: customDraft.name.trim() || `${customDraft.category.trim()}展示`,
+        description: customDraft.description.trim() || "自定义类型",
+        prompt: customDraft.prompt.trim() || `${customDraft.category.trim()}，突出商品卖点与画面表达。`
+      }
+    ]);
+    setCustomDraft({
+      id: "custom-draft",
+      category: "",
+      name: "",
+      description: "",
+      tag: "自定义",
+      prompt: "",
+      ratio: "1:1",
+      resolution: "1K",
+      count: perTypeCount
+    });
+    setActiveTab("recommended");
+  };
+
+  const openSaveTemplateModal = () => {
+    if (!selectedTypes.length) {
+      onToast("当前没有可保存的套图类型", "warning");
+      return;
+    }
+    setTemplateDraftName(`未命名组图模板`);
+    setModalMode("save-template");
+  };
+
+  const handleSaveTemplate = () => {
+    if (!selectedTypes.length) {
+      onToast("当前没有可保存的套图类型", "warning");
+      return;
+    }
+    const coverSrc = uploads[0]?.previewSrc ?? uploads[0]?.src ?? "";
+    const nextTemplate: SetPackTypeSavedTemplate = {
+      id: `type-template-${Date.now()}`,
+      name: templateDraftName.trim() || `套图模板 ${savedTemplates.length + 1}`,
+      coverSrc,
+      types: selectedTypes.map((item) => ({ ...item }))
+    };
+    setSavedTemplates((current) => [nextTemplate, ...current].slice(0, 10));
+    setModalMode(null);
+    onToast("已保存为模板");
+  };
+
+  const handleApplyTemplate = (template: SetPackTypeSavedTemplate) => {
+    setSelectedTypes((current) => {
+      const availableSlots = SET_PACK_TYPE_LIMIT - current.length;
+      if (availableSlots <= 0) {
+        onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
+        return current;
+      }
+      const nextTypes = template.types.slice(0, availableSlots).map(cloneTypeItem);
+      if (nextTypes.length < template.types.length) {
+        onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
+      }
+      return [...current, ...nextTypes];
+    });
+    setActiveTab("template");
+  };
+
+  const handleApplyCustomType = (item: SetPackTypeItem) => {
+    if (selectedTypes.length >= SET_PACK_TYPE_LIMIT) {
+      onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
+      return;
+    }
+    setSelectedTypes((current) => [...current, cloneTypeItem({ ...item, count: item.count ?? perTypeCount })]);
+  };
+
+  const handleStartEdit = (item: SetPackTypeItem) => {
+    setEditingTypeId(item.id);
+    setCustomDraft(item);
+    setModalMode("edit");
+  };
+
+  const handleConfirmEdit = () => {
+    setSelectedTypes((current) => current.map((item) => (item.id === editingTypeId ? { ...customDraft, id: editingTypeId } : item)));
+    setModalMode(null);
+    setEditingTypeId("");
+  };
+
+  const handleConfirmDelete = () => {
+    setSelectedTypes((current) => current.filter((item) => item.id !== pendingDeleteTypeId));
+    setPendingDeleteTypeId("");
+  };
+
+  const currentEditType = selectedTypes.find((item) => item.id === editingTypeId);
+  const pendingDeleteType = selectedTypes.find((item) => item.id === pendingDeleteTypeId);
+  const drawerMaskStyle =
+    drawerStyle.left && typeof drawerStyle.left === "string" ? { left: `calc(${drawerStyle.left} - 12px)` } : undefined;
+  const drawerPanelStyle =
+    drawerStyle.left && typeof drawerStyle.left === "string" ? { ...drawerStyle, left: "12px" } : drawerStyle;
+
+  if (isAplusTool) {
+    return (
+      <div className="ck-form-block" ref={sectionRef}>
+        <div className="ck-aplus-module-head">
+          <div className="ck-aplus-module-title-wrap">
+            <div className="ck-field-title">
+              包含模块（多选）
+              <span>*</span>
+            </div>
+          </div>
+          <div className="ck-aplus-module-summary">
+            <span>已选 {selectedTypes.length}/{moduleLibrary.length}</span>
+            <button onClick={() => setCollapsed((current) => !current)} type="button">
+              {collapsed ? "展开" : "收起"}
+            </button>
+          </div>
+        </div>
+        {!collapsed ? (
+          <div className="ck-aplus-module-grid">
+            {moduleLibrary.map((item) => {
+              const selected = selectedTypes.some((type) => type.category === item.category);
+              return (
+                <button
+                  className={`ck-aplus-module-card${selected ? " active" : ""}`}
+                  key={item.id}
+                  onClick={() => handleToggleRecommended(item)}
+                  type="button"
+                >
+                  <strong>{item.category}</strong>
+                  <span>{item.description}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="ck-form-block" ref={sectionRef}>
+        <div className="ck-set-pack-type-head">
+          <div className="ck-set-pack-type-title-row">
+            <div className="ck-field-title">
+              出图类型
+              <span>*</span>
+              <em>（已选 {selectedTypes.length}/{SET_PACK_TYPE_LIMIT} 个）</em>
+            </div>
+          </div>
+          <button className="ck-advanced-settings-ai" onClick={openAiModal} type="button">
+            AI生成
+          </button>
+        </div>
+        <div className="ck-set-pack-type-list">
+          {selectedTypes.length ? (
+            <>
+              {selectedTypes.map((item, index) => (
+                <article className="ck-set-pack-type-card" key={item.id}>
+                  <div className="ck-set-pack-type-card-head">
+                    <div className="ck-set-pack-type-title">
+                      <strong>
+                        {index + 1}. {item.category}
+                      </strong>
+                      <span>{item.tag}</span>
+                    </div>
+                    <div className="ck-set-pack-type-card-actions">
+                      <button
+                        onClick={() => {
+                          if (selectedTypes.length >= SET_PACK_TYPE_LIMIT) {
+                            onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
+                            return;
+                          }
+                          setSelectedTypes((current) => [...current, cloneTypeItem(item)]);
+                        }}
+                        type="button"
+                      >
+                        复制
+                      </button>
+                      <button onClick={() => setPendingDeleteTypeId(item.id)} type="button">
+                        删除
+                      </button>
+                      <button onClick={() => handleStartEdit(item)} type="button">
+                        设置
+                      </button>
+                    </div>
+                  </div>
+                  <div className="ck-set-pack-type-meta">数量 {item.count ?? perTypeCount} 比例 {item.ratio} 分辨率 {item.resolution}</div>
+                </article>
+              ))}
+              <button className="ck-set-pack-type-add-entry" onClick={openManualModal} type="button">
+                + 继续添加类型
+              </button>
+            </>
+          ) : (
+            <div className="ck-set-pack-type-empty">
+              <span>请先选择出图类型，最多支持 15 个类型组合生成。</span>
+              <button className="ck-set-pack-type-add-entry" onClick={openManualModal} type="button">
+                + 手动添加类型
+              </button>
+            </div>
+          )}
+        </div>
+        {selectedTypes.length ? (
+          <div className="ck-set-pack-type-bottom">
+            <button className="ck-advanced-settings-ai" onClick={() => setSelectedTypes([])} type="button">
+              清空所有类型
+            </button>
+            <button className="ck-advanced-settings-ai" onClick={openSaveTemplateModal} type="button">
+              另存为模板
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {modalMode === "ai" ? (
+        <div className="ck-set-pack-modal-mask ck-set-pack-ai-modal-mask" onClick={() => setModalMode(null)}>
+          <div className="ck-set-pack-type-modal ck-set-pack-ai-type-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="ck-set-pack-modal-head">
+              <div className="ck-set-pack-ai-modal-title">
+                <strong>AI智能电商组图</strong>
+              </div>
+              <button onClick={() => setModalMode(null)} type="button">
+                ×
+              </button>
+            </div>
+            <div className="ck-set-pack-modal-body">
+              <div className="ck-set-pack-ai-box">
+                <div className="ck-set-pack-ai-box-head">
+                  <div className="ck-set-pack-ai-section-title">AI思考区</div>
+                  <button className="ck-set-pack-ai-collapse" onClick={() => setAiThoughtCollapsed((current) => !current)} type="button">
+                    {aiThoughtCollapsed ? "展开" : "折叠"}
+                  </button>
+                </div>
+                {!aiThoughtCollapsed ? (
+                  <>
+                    <div className="ck-set-pack-ai-input-row">
+                      <div className="ck-set-pack-ai-upload-thumb">
+                        {uploads[0]?.previewSrc || uploads[0]?.src ? <img alt="商品图" src={uploads[0]?.previewSrc ?? uploads[0]?.src} /> : null}
+                      </div>
+                      <div className="ck-set-pack-ai-input-main">
+                        <textarea
+                          maxLength={600}
+                          onChange={(event) => setThoughtNotes(event.target.value)}
+                          placeholder="可选：补充需求（如核心卖点、视觉风格、场景补充）"
+                          value={thoughtNotes}
+                        />
+                        <span>{thoughtNotes.length}/600</span>
+                      </div>
+                      <button disabled={isAnalyzing} onClick={handleAnalyze} type="button">
+                        {isAnalyzing ? "生成中" : analysisPreview ? "重新分析" : "开始分析"}
+                      </button>
+                    </div>
+                    {isAnalyzing || analysisPreview ? (
+                      <div className="ck-set-pack-ai-thinking-wrap">
+                        <div className="ck-set-pack-ai-thinking-status">{isAnalyzing ? "正在分析中..." : "分析完成"}</div>
+                        <div className="ck-set-pack-ai-thinking">{displayThinkingText}</div>
+                        {!isAnalyzing && analysisPreview ? <pre className="ck-set-pack-ai-preview">{analysisPreview}</pre> : null}
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+
+              <div className="ck-set-pack-selected-panel">
+                <div className="ck-set-pack-selected-panel-head">
+                  <strong>出图类型（{draftTypes.length}）</strong>
+                  <button
+                    disabled={!draftTypes.length}
+                    onClick={() => {
+                      setDraftTypes([]);
+                      setAnalysisPreview("");
+                      setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
+                    }}
+                    type="button"
+                  >
+                    清空已选
+                  </button>
+                </div>
+                {isAnalyzing ? (
+                  <div className="ck-set-pack-selected-drafts loading">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <article className="ck-set-pack-draft-card skeleton" key={`skeleton-${index}`}>
+                        <div className="ck-set-pack-skeleton short" />
+                        <div className="ck-set-pack-skeleton" />
+                        <div className="ck-set-pack-skeleton" />
+                        <div className="ck-set-pack-skeleton medium" />
+                      </article>
+                    ))}
+                  </div>
+                ) : draftTypes.length ? (
+                  <div className="ck-set-pack-selected-drafts">
+                    {draftTypes.map((item, index) => (
+                      <article className="ck-set-pack-draft-card" key={item.id}>
+                        <div className="ck-set-pack-draft-head">
+                          <div className="ck-set-pack-draft-title">
+                            <strong>
+                              {index + 1}. {item.category}
+                            </strong>
+                            <span>{item.name}</span>
+                          </div>
+                          <button onClick={() => setDraftTypes((current) => current.filter((type) => type.id !== item.id))} type="button">
+                            删除
+                          </button>
+                        </div>
+                        <div className="ck-set-pack-copy-block">
+                          <FieldTitle label="描述词" />
+                          <textarea
+                            maxLength={2000}
+                            onChange={(event) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, prompt: event.target.value } : type)))}
+                            value={item.prompt}
+                          />
+                          <div className="ck-textarea-actions">
+                            <span>{item.prompt.length}/2000</span>
+                          </div>
+                        </div>
+                        <div className="ck-set-pack-draft-inline">
+                          <SelectField
+                            fullWidth
+                            label="图片比例"
+                            onChange={(value) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, ratio: value } : type)))}
+                            options={setPackRatioOptions}
+                            value={item.ratio}
+                          />
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="ck-set-pack-ai-empty-state">
+                    <strong>分析完成后会自动生成并选用出图类型</strong>
+                    <span>支持结合商品图、商品卖点与补充需求，生成可直接应用到套图的类型方案。</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="ck-set-pack-modal-footer">
+              <button onClick={() => setModalMode(null)} type="button">
+                取消
+              </button>
+              <button disabled={!draftTypes.length} onClick={handleApplyDraftTypes} type="button">
+                应用到套图
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modalMode === "manual" ? (
+        <div
+          className="ck-set-pack-side-drawer-mask"
+          onClick={() => setModalMode(null)}
+          role="presentation"
+          style={drawerMaskStyle}
+        >
+          <div className="ck-set-pack-side-drawer" onClick={(event) => event.stopPropagation()} style={drawerPanelStyle}>
+            <div className="ck-set-pack-side-drawer-head">
+              <strong>出图类型</strong>
+              <button onClick={() => setModalMode(null)} type="button">
+                ×
+              </button>
+            </div>
+            <div className="ck-set-pack-side-drawer-body">
+              <div className="ck-set-pack-type-tabs">
+                {[
+                  ["recommended", "推荐类型"],
+                  ["custom", "自定义类型"],
+                  ["template", "自定义模板"]
+                ].map(([key, label]) => (
+                  <button
+                    className={activeTab === key ? "active" : ""}
+                    key={key}
+                    onClick={() => setActiveTab(key as "recommended" | "custom" | "template")}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {activeTab === "recommended" ? (
+                <div className="ck-set-pack-type-grid">
+                  {setPackTypeLibrary.map((item) => {
+                    const selected = selectedTypes.some((type) => type.category === item.category);
+                    return (
+                      <button className={`ck-set-pack-type-option${selected ? " active" : ""}`} key={item.id} onClick={() => handleToggleRecommended(item)} type="button">
+                        <strong>{item.category}</strong>
+                        <span>{item.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              {activeTab === "custom" ? (
+                <div className="ck-set-pack-type-grid">
+                  {customTypeLibrary.map((item) => (
+                    <button className="ck-set-pack-type-option" key={item.id} onClick={() => handleApplyCustomType(item)} type="button">
+                      <strong>{item.category}</strong>
+                      <span>{item.description}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {activeTab === "template" ? (
+                <div className="ck-set-pack-type-grid">
+                  {templateLibrary.length ? (
+                    templateLibrary.map((item) => (
+                      <button className="ck-set-pack-type-option ck-set-pack-template-option" key={item.id} onClick={() => handleApplyTemplate(item)} type="button">
+                        <strong>{item.name}</strong>
+                        <span>{item.types.map((type) => type.category).join(" / ")}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="ck-set-pack-type-empty">还没有保存的套图模板。</div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modalMode === "edit" && currentEditType ? (
+        <div
+          className="ck-set-pack-side-drawer-mask"
+          onClick={() => setModalMode(null)}
+          role="presentation"
+          style={drawerMaskStyle}
+        >
+          <div className="ck-set-pack-side-drawer ck-set-pack-side-drawer-wide" onClick={(event) => event.stopPropagation()} style={drawerPanelStyle}>
+            <div className="ck-set-pack-side-drawer-head">
+              <div className="ck-set-pack-drawer-title">
+                <strong>{currentEditType.category} 属性设置</strong>
+                <span>可单独调整当前类型的文案、出图数量、比例和分辨率。</span>
+              </div>
+              <button onClick={() => setModalMode(null)} type="button">
+                ×
+              </button>
+            </div>
+            <div className="ck-set-pack-side-drawer-body">
+              <div className="ck-set-pack-edit-layout">
+                <div className="ck-set-pack-edit-column">
+                  <div className="ck-set-pack-edit-section">
+                    <div className="ck-set-pack-edit-section-head">
+                      <strong>个性化设置</strong>
+                    </div>
+                    <div className="ck-set-pack-copy-grid">
+                      <div className="ck-set-pack-copy-block">
+                        <FieldTitle label="类型名称" required />
+                        <input onChange={(event) => setCustomDraft((current) => ({ ...current, category: event.target.value }))} value={customDraft.category} />
+                      </div>
+                      <div className="ck-set-pack-copy-block">
+                        <FieldTitle label="类型标签" />
+                        <input onChange={(event) => setCustomDraft((current) => ({ ...current, tag: event.target.value }))} value={customDraft.tag} />
+                      </div>
+                      <div className="ck-set-pack-copy-block">
+                        <FieldTitle label="类型说明" />
+                        <input onChange={(event) => setCustomDraft((current) => ({ ...current, description: event.target.value }))} value={customDraft.description} />
+                      </div>
+                      <div className="ck-set-pack-copy-block">
+                        <FieldTitle label="展示名称" />
+                        <input onChange={(event) => setCustomDraft((current) => ({ ...current, name: event.target.value }))} value={customDraft.name} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ck-set-pack-edit-section">
+                    <div className="ck-set-pack-edit-section-head">
+                      <strong>补充说明</strong>
+                    </div>
+                    <div className="ck-set-pack-copy-block">
+                      <textarea
+                        maxLength={2000}
+                        onChange={(event) => setCustomDraft((current) => ({ ...current, prompt: event.target.value }))}
+                        placeholder="请输入该类型的画面目标、主体构图和场景要求"
+                        value={customDraft.prompt}
+                      />
+                      <div className="ck-textarea-actions">
+                        <span>{customDraft.prompt.length}/2000</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ck-set-pack-edit-column secondary">
+                  <div className="ck-set-pack-edit-section">
+                    <div className="ck-set-pack-edit-section-head">
+                      <strong>出图设置</strong>
+                    </div>
+                    <div className="ck-set-pack-edit-settings">
+                      <NumberStepperField
+                        label="出图数量"
+                        onChange={(value) => setCustomDraft((current) => ({ ...current, count: value }))}
+                        value={customDraft.count ?? perTypeCount}
+                      />
+                      <SelectField
+                        fullWidth
+                        label="图片比例"
+                        onChange={(value) => setCustomDraft((current) => ({ ...current, ratio: value }))}
+                        options={setPackRatioOptions}
+                        value={customDraft.ratio}
+                      />
+                      <SelectField
+                        fullWidth
+                        label="分辨率"
+                        onChange={(value) => setCustomDraft((current) => ({ ...current, resolution: value }))}
+                        options={defaultResolutionOptions}
+                        value={customDraft.resolution}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="ck-set-pack-modal-footer">
+              <button onClick={openSaveTemplateModal} type="button">
+                另存为模板
+              </button>
+              <button onClick={handleConfirmEdit} type="button">
+                设置完成并关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modalMode === "save-template" ? (
+        <div className="ck-set-pack-modal-mask" onClick={() => setModalMode(null)}>
+          <div className="ck-set-pack-modal edit ck-set-pack-template-save-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="ck-set-pack-modal-head">
+              <strong>另存组图模板</strong>
+              <button onClick={() => setModalMode(null)} type="button">
+                ×
+              </button>
+            </div>
+            <div className="ck-set-pack-modal-body">
+              <div className="ck-set-pack-copy-block">
+                <FieldTitle label="模板名称" required />
+                <div className="ck-set-pack-template-name-wrap">
+                  <input
+                    maxLength={200}
+                    onChange={(event) => setTemplateDraftName(event.target.value)}
+                    placeholder="请输入模板名称"
+                    value={templateDraftName}
+                  />
+                  <span>{templateDraftName.length}/200</span>
+                </div>
+              </div>
+              <div className="ck-set-pack-copy-block">
+                <FieldTitle label="模板封面" optional />
+                <div className="ck-set-pack-template-cover-card">
+                  {uploads[0]?.previewSrc || uploads[0]?.src ? <img alt="模板封面" src={uploads[0]?.previewSrc ?? uploads[0]?.src} /> : <div className="ck-set-pack-template-cover-empty">使用当前商品图作为模板封面</div>}
+                </div>
+              </div>
+            </div>
+            <div className="ck-set-pack-modal-footer">
+              <button onClick={() => setModalMode(null)} type="button">
+                取消
+              </button>
+              <button onClick={handleSaveTemplate} type="button">
+                保存模板
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {pendingDeleteType ? (
+        <div className="ck-result-confirm-mask" onClick={() => setPendingDeleteTypeId("")}>
+          <div className="ck-result-confirm-modal" onClick={(event) => event.stopPropagation()}>
+            <strong>确认删除该类型？</strong>
+            <p>删除后，{pendingDeleteType.category} 将从已选择列表中移除。</p>
+            <div className="ck-result-confirm-actions">
+              <button className="secondary" onClick={() => setPendingDeleteTypeId("")} type="button">
+                取消
+              </button>
+              <button className="primary" onClick={handleConfirmDelete} type="button">
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function AplusPlanEditorSection({
+  plan,
+  stale,
+  onBack,
+  onGenerate,
+  generateCostLabel,
+  onDeleteModule,
+  onMoveModule,
+  onUpdateModule
+}: {
+  plan?: AplusPlanState;
+  stale?: boolean;
+  onBack: () => void;
+  onGenerate: () => void;
+  generateCostLabel: string;
+  onDeleteModule: (moduleId: string) => void;
+  onMoveModule: (dragId: string, targetId: string) => void;
+  onUpdateModule: (moduleId: string, content: Partial<AplusPlanModule>) => void;
+}) {
+  const resolvedPlan = plan ?? { status: "idle", modules: [], summary: [] };
+  const [editingModuleId, setEditingModuleId] = useState("");
+  const [moduleDraft, setModuleDraft] = useState("");
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [draggingModuleId, setDraggingModuleId] = useState("");
+  const summaryLines = resolvedPlan.summary ?? [];
+  const visibleSummaryLines = summaryExpanded ? summaryLines : summaryLines.slice(0, 4);
+  const canGenerate = resolvedPlan.status === "ready" && resolvedPlan.modules.length > 0 && !stale;
+
+  return (
+    <>
+      <div className="ck-aplus-plan-step">
+        <div className="ck-panel-title">模块策略与设计规范</div>
+        {resolvedPlan.status === "generating" ? (
+          <div className="ck-aplus-plan-loading-card in-panel">
+            <div className="ck-aplus-plan-loading-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <strong>生成中...</strong>
+          </div>
+        ) : resolvedPlan.status === "ready" ? (
+          <>
+            <div className="ck-aplus-plan-summary-card compact">
+              <strong>产品与卖点</strong>
+              <div className="ck-aplus-plan-summary-lines">
+                {visibleSummaryLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              {summaryLines.length > 4 ? (
+                <button className="ck-aplus-summary-toggle" onClick={() => setSummaryExpanded((current) => !current)} type="button">
+                  {summaryExpanded ? "收起" : "展开全部"} <span>{summaryExpanded ? "⌃" : "⌄"}</span>
+                </button>
+              ) : null}
+            </div>
+
+            <div className="ck-aplus-plan-section-label">模块内容</div>
+                <div className="ck-aplus-plan-module-list compact">
+                  {resolvedPlan.modules.map((module) => (
+                    <article
+                      className={`ck-aplus-plan-module-card compact${draggingModuleId === module.id ? " dragging" : ""}${editingModuleId === module.id ? " editing" : ""}`}
+                      draggable
+                      key={module.id}
+                      onClick={() => {
+                        setEditingModuleId(module.id);
+                        setModuleDraft(module.lines.join("\n"));
+                  }}
+                  onDragEnd={() => setDraggingModuleId("")}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDragStart={() => setDraggingModuleId(module.id)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (!draggingModuleId || draggingModuleId === module.id) return;
+                    onMoveModule(draggingModuleId, module.id);
+                    setDraggingModuleId("");
+                  }}
+                >
+                      <div className="ck-aplus-plan-module-actions compact">
+                    <button
+                      className="ck-aplus-plan-icon-button compact"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteModule(module.id);
+                      }}
+                      type="button"
+                    >
+                      ⌦
+                    </button>
+                    <button className="ck-aplus-plan-icon-button drag compact" onClick={(event) => event.stopPropagation()} type="button">
+                      ⋮⋮
+                    </button>
+                      </div>
+                      <strong>{module.headline}</strong>
+                      {editingModuleId === module.id ? (
+                        <div className="ck-aplus-plan-module-inline-editor">
+                          <textarea
+                            autoFocus
+                            maxLength={1200}
+                            onBlur={() => {
+                              onUpdateModule(module.id, {
+                                lines: moduleDraft
+                                  .split("\n")
+                                  .map((line) => line.trim())
+                                  .filter(Boolean)
+                              });
+                            }}
+                            onChange={(event) => {
+                              const nextValue = event.target.value;
+                              setModuleDraft(nextValue);
+                              onUpdateModule(module.id, {
+                                lines: nextValue
+                                  .split("\n")
+                                  .map((line) => line.trim())
+                                  .filter(Boolean)
+                              });
+                            }}
+                            onClick={(event) => event.stopPropagation()}
+                            value={moduleDraft}
+                          />
+                        </div>
+                      ) : (
+                        <div className="ck-aplus-plan-module-lines">
+                          {module.lines.map((line) => (
+                            <p key={line}>{line}</p>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+            {stale ? <div className="ck-aplus-plan-stale">第1步参数已变更，请重新生成规划方案。</div> : null}
+          </>
+        ) : (
+          <div className="ck-aplus-plan-empty in-panel">
+            <strong>还没有规划方案</strong>
+            <span>请先返回上一步完成参数输入。</span>
+          </div>
+        )}
+      </div>
+
+      <div className="ck-panel-footer ck-aplus-step-footer">
+        <div className="ck-aplus-plan-footer in-panel">
+          <button className="secondary" onClick={onBack} type="button">
+            上一步
+          </button>
+          <button className="ck-generate-btn ck-generate-btn-aplus-step" disabled={!canGenerate} onClick={onGenerate} type="button">
+            <img alt="" className="ck-generate-icon" src={figmaIcons.generateButton} />
+            <span>立即生成</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function FashionSceneEditorSection({
+  plan,
+  stale,
+  onBack,
+  onGenerate,
+  generateCostLabel,
+  onDeleteModule,
+  onMoveModule,
+  onUpdateModule
+}: {
+  plan?: AplusPlanState;
+  stale?: boolean;
+  onBack: () => void;
+  onGenerate: () => void;
+  generateCostLabel: string;
+  onDeleteModule: (moduleId: string) => void;
+  onMoveModule: (dragId: string, targetId: string) => void;
+  onUpdateModule: (moduleId: string, content: Partial<AplusPlanModule>) => void;
+}) {
+  const resolvedPlan = plan ?? { status: "idle", modules: [], summary: [] };
+  const [editingModuleId, setEditingModuleId] = useState("");
+  const [moduleDraft, setModuleDraft] = useState("");
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [draggingModuleId, setDraggingModuleId] = useState("");
+  const summaryLines = resolvedPlan.summary ?? [];
+  const visibleSummaryLines = summaryExpanded ? summaryLines : summaryLines.slice(0, 4);
+  const canGenerate = resolvedPlan.status === "ready" && resolvedPlan.modules.length > 0 && !stale;
+
+  return (
+    <>
+      <div className="ck-aplus-plan-step">
+        <div className="ck-panel-title">推荐场景</div>
+        {resolvedPlan.status === "generating" ? (
+          <div className="ck-aplus-plan-loading-card in-panel">
+            <div className="ck-aplus-plan-loading-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <strong>AI 正在生成推荐场景...</strong>
+          </div>
+        ) : resolvedPlan.status === "ready" ? (
+          <>
+            <div className="ck-aplus-plan-summary-card compact">
+              <strong>服装与模特信息</strong>
+              <div className="ck-aplus-plan-summary-lines">
+                {visibleSummaryLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              {summaryLines.length > 4 ? (
+                <button className="ck-aplus-summary-toggle" onClick={() => setSummaryExpanded((current) => !current)} type="button">
+                  {summaryExpanded ? "收起" : "展开全部"} <span>{summaryExpanded ? "⌃" : "⌄"}</span>
+                </button>
+              ) : null}
+            </div>
+
+            <div className="ck-aplus-plan-section-label">场景内容</div>
+            <div className="ck-aplus-plan-module-list compact">
+              {resolvedPlan.modules.map((module) => (
+                <article
+                  className={`ck-aplus-plan-module-card compact${draggingModuleId === module.id ? " dragging" : ""}${editingModuleId === module.id ? " editing" : ""}`}
+                  draggable
+                  key={module.id}
+                  onClick={() => {
+                    setEditingModuleId(module.id);
+                    setModuleDraft(module.lines.join("\n"));
+                  }}
+                  onDragEnd={() => setDraggingModuleId("")}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDragStart={() => setDraggingModuleId(module.id)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (!draggingModuleId || draggingModuleId === module.id) return;
+                    onMoveModule(draggingModuleId, module.id);
+                    setDraggingModuleId("");
+                  }}
+                >
+                  <div className="ck-aplus-plan-module-actions compact">
+                    <button
+                      className="ck-aplus-plan-icon-button compact"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteModule(module.id);
+                      }}
+                      type="button"
+                    >
+                      ⌦
+                    </button>
+                    <button className="ck-aplus-plan-icon-button drag compact" onClick={(event) => event.stopPropagation()} type="button">
+                      ⋮⋮
+                    </button>
+                  </div>
+                  <strong>{module.headline}</strong>
+                  {editingModuleId === module.id ? (
+                    <div className="ck-aplus-plan-module-inline-editor">
+                      <textarea
+                        autoFocus
+                        maxLength={1200}
+                        onBlur={() => {
+                          onUpdateModule(module.id, {
+                            lines: moduleDraft
+                              .split("\n")
+                              .map((line) => line.trim())
+                              .filter(Boolean)
+                          });
+                        }}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setModuleDraft(nextValue);
+                          onUpdateModule(module.id, {
+                            lines: nextValue
+                              .split("\n")
+                              .map((line) => line.trim())
+                              .filter(Boolean)
+                          });
+                        }}
+                        onClick={(event) => event.stopPropagation()}
+                        value={moduleDraft}
+                      />
+                    </div>
+                  ) : (
+                    <div className="ck-aplus-plan-module-lines">
+                      {module.lines.map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+            {stale ? <div className="ck-aplus-plan-stale">第1步信息已变更，请重新生成推荐场景。</div> : null}
+          </>
+        ) : (
+          <div className="ck-aplus-plan-empty in-panel">
+            <strong>还没有推荐场景</strong>
+            <span>请先返回上一步完成图片与模特选择。</span>
+          </div>
+        )}
+      </div>
+
+      <div className="ck-panel-footer ck-aplus-step-footer">
+        <div className="ck-aplus-plan-footer in-panel">
+          <button className="secondary" onClick={onBack} type="button">
+            上一步
+          </button>
+          <button className="ck-generate-btn ck-generate-btn-aplus-step" disabled={!canGenerate} onClick={onGenerate} type="button">
+            <img alt="" className="ck-generate-icon" src={figmaIcons.generateButton} />
+            <span>立即生成</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ConfigPanel({
+  tool,
+  uploads,
+  modelAssets,
+  onAddUpload,
+  onRemoveUpload,
+  onOpenLibrary,
+  onRejectedUpload,
+  onAtLimit,
+  onGenerate,
+  onToast,
+  uploadCountLimit,
+  remainingStorageMb,
+  restoredTask,
+  supplementValue,
+  onSupplementChange,
+  onSupplementAiPolish,
+  onSupplementAiAssist,
+  onGenerateAplusPlan,
+  onAplusDraftChange,
+  aplusPlan,
+  aplusPlanStep,
+  aplusPlanStale,
+  fashionPlan,
+  fashionPlanStep,
+  fashionPlanStale,
+  onBackAplusStep,
+  onGenerateAplusDetails,
+  onDeleteAplusModule,
+  onMoveAplusModule,
+  onUpdateAplusModule,
+  onGenerateFashionScenes,
+  onBackFashionStep,
+  onGenerateFashionResults,
+  onDeleteFashionScene,
+  onMoveFashionScene,
+  onUpdateFashionScene,
+  onNavigateTool,
+  onGenerateBaselineModel,
+  onUploadModels,
+  isGeneratingLocked
+}: {
+  tool: ToolConfig;
+  uploads: Record<string, UploadItem[]>;
+  modelAssets: ModelAsset[];
+  onAddUpload: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemoveUpload: (fieldKey: string, index: number) => void;
+  onOpenLibrary: (fieldKey: string) => void;
+  onRejectedUpload: (message: string) => void;
+  onAtLimit: () => void;
+  onGenerate: (tool: ToolConfig, payload: GeneratePayload) => void;
+  onToast: (message: string, tone?: "warning") => void;
+  uploadCountLimit: number;
+  remainingStorageMb: number;
+  restoredTask?: TaskRecord | null;
+  supplementValue: string;
+  onSupplementChange: (toolKey: string, value: string) => void;
+  onSupplementAiPolish: (toolKey: string, value: string, context?: SupplementAiPolishContext) => Promise<SupplementAiPolishResult>;
+  onSupplementAiAssist: (
+    toolKey: string,
+    uploads: UploadItem[],
+    advancedConfig?: AdvancedSettingsConfig,
+    context?: SupplementAiPolishContext
+  ) => Promise<AdvancedAiAssistResult | null>;
+  onGenerateAplusPlan: (tool: ToolConfig, payload: GeneratePayload) => void;
+  onAplusDraftChange: (toolKey: string, payload: GeneratePayload) => void;
+  aplusPlan?: AplusPlanState;
+  aplusPlanStep?: 1 | 2;
+  aplusPlanStale?: boolean;
+  fashionPlan?: AplusPlanState;
+  fashionPlanStep?: 1 | 2;
+  fashionPlanStale?: boolean;
+  onBackAplusStep: () => void;
+  onGenerateAplusDetails: () => void;
+  onDeleteAplusModule: (moduleId: string) => void;
+  onMoveAplusModule: (dragId: string, targetId: string) => void;
+  onUpdateAplusModule: (moduleId: string, content: Partial<AplusPlanModule>) => void;
+  onGenerateFashionScenes: (tool: ToolConfig, payload: GeneratePayload) => void;
+  onBackFashionStep: () => void;
+  onGenerateFashionResults: () => void;
+  onDeleteFashionScene: (moduleId: string) => void;
+  onMoveFashionScene: (dragId: string, targetId: string) => void;
+  onUpdateFashionScene: (moduleId: string, content: Partial<AplusPlanModule>) => void;
+  onNavigateTool: (toolKey: string) => void;
+  onGenerateBaselineModel: (values: AdvancedSelectionMap) => Promise<string | null>;
+  onUploadModels: (files: File[]) => Promise<ModelAsset[]>;
+  isGeneratingLocked: boolean;
+}) {
+  const panelKind = tool.panelKind ?? "basic";
+  const mainUploadKey = `${tool.key}:main`;
+  const refUploadKey = `${tool.key}:reference`;
+  const videoUploadKey = `${tool.key}:video`;
+  const toolModuleConfig = toolModuleConfigs[tool.key] ?? toolModuleConfigs["more-title"];
+  const mainUploadConfig = toolModuleConfig.uploads.main;
+  const refUploadConfig = toolModuleConfig.uploads.reference;
+  const videoUploadConfig = toolModuleConfig.uploads.video;
+  const advancedSettingsConfig = toolModuleConfig.advancedSettings;
+  const creationModeConfigKey =
+    toolModuleConfig.creationModeConfigKey ?? creationModeConfigByToolKey[tool.key] ?? panelKind ?? "default";
+  const creationModeConfig = creationModeConfigs[creationModeConfigKey] ?? creationModeConfigs.default;
+  const supplementAiPolishConfig = supplementAiPolishConfigs[tool.key];
+  const mainUploadCountLimit = mainUploadConfig.maxCount ?? uploadCountLimit;
+  const refUploadCountLimit = refUploadConfig?.maxCount ?? uploadCountLimit;
+  const videoUploadCountLimit = videoUploadConfig?.maxCount ?? uploadCountLimit;
+  const mainUploadHint = mainUploadConfig.hintTemplate?.replace("{count}", String(mainUploadCountLimit)) ?? `最多${mainUploadCountLimit}张，支持JPG/PNG/WebP`;
+  const mainUploadMeta =
+    mainUploadConfig.singleUploadMeta?.replace("{count}", String(mainUploadCountLimit)) ??
+    mainUploadConfig.meta?.replace("{count}", String(mainUploadCountLimit));
+  const refUploadHint = refUploadConfig?.hintTemplate?.replace("{count}", String(refUploadCountLimit)) ?? `最多${refUploadCountLimit}张，支持JPG/PNG/WebP`;
+  const videoUploadHint = videoUploadConfig?.hintTemplate?.replace("{count}", String(videoUploadCountLimit)) ?? `最多${videoUploadCountLimit}个，支持MP4/MOV`;
+  const [creationModeSelection, setCreationModeSelection] = useState<CreationModeSelection | null>(null);
+  const [advancedSettingValues, setAdvancedSettingValues] = useState<string[]>([]);
+  const [advancedSettingSelections, setAdvancedSettingSelections] = useState<AdvancedSelectionMap>({});
+  const [targetLanguageValue, setTargetLanguageValue] = useState("");
+  const uploadImageCount = uploads[mainUploadKey]?.length ?? 0;
+  const referenceUploadCount = uploads[refUploadKey]?.length ?? 0;
+  const videoUploadCount = uploads[videoUploadKey]?.length ?? 0;
+  const setPackSelectedTypes = useMemo(() => getSetPackSelectedTypes(advancedSettingSelections), [advancedSettingSelections]);
+  const setPackTypeCount = Math.max(1, setPackSelectedTypes.length);
+  const resolvedCreationModeSelection = useMemo(() => {
+    if (!creationModeSelection) {
+      return null;
+    }
+
+    return {
+      ...creationModeSelection,
+      unitCreditCost: getResolvedToolUnitCreditCost(tool.key, creationModeSelection, advancedSettingSelections)
+    };
+  }, [advancedSettingSelections, creationModeSelection, tool.key]);
+  const batchOutputCount = resolvedCreationModeSelection?.count ?? 1;
+  const generateCost = getSpecialToolGenerateCost(
+    tool.key,
+    uploadImageCount,
+    referenceUploadCount,
+    batchOutputCount,
+    resolvedCreationModeSelection?.unitCreditCost ?? 0
+  );
+  const hasRequiredInputs =
+    uploadImageCount > 0 &&
+    (tool.key === "set-replica" ? referenceUploadCount > 0 : true) &&
+    (tool.key === "video-replica" || tool.key === "video-replace" ? videoUploadCount > 0 : true);
+  const generateCostLabel = hasRequiredInputs ? `消耗${generateCost}积分` : "待上传素材";
+  const defaultSectionOrderByPanelKind: Record<PanelKind, ToolModuleSectionKey[]> = {
+    retouch: ["upload-main", "advanced-settings", "mode-choice", "creation-mode", "supplement"],
+    white: ["upload-main", "advanced-settings", "creation-mode"],
+    translate: ["upload-main", "advanced-settings", "creation-mode", "supplement"],
+    "three-view": ["upload-main", "advanced-settings", "camera-angle", "creation-mode", "supplement"],
+    background: ["upload-main", "advanced-settings", "camera-angle", "creation-mode", "supplement", "upload-reference"],
+    marketing: ["upload-main", "advanced-settings", "creation-mode", "supplement"],
+    basic: ["upload-main", "advanced-settings", "creation-mode", "supplement"]
+  };
+  const sectionOrder = toolModuleConfig.sectionOrder ?? defaultSectionOrderByPanelKind[panelKind];
+  const isAplusTool = tool.key === "set-aplus";
+  const isFashionTool = tool.key === "set-fashion";
+  const showAplusPlanStep = isAplusTool && aplusPlanStep === 2;
+  const showFashionPlanStep = isFashionTool && fashionPlanStep === 2;
+  const effectiveGenerateCostLabel =
+    showFashionPlanStep && fashionPlan?.modules.length
+      ? (() => {
+          const unitCreditCost = getDefaultCreationModeSelection("set-pack", fashionPlan.modules.length)?.unitCreditCost ?? 0;
+          const totalCost = fashionPlan.modules.length * unitCreditCost;
+          return totalCost > 0 ? `消耗${totalCost}积分` : `共${fashionPlan.modules.length}个场景`;
+        })()
+      : generateCostLabel;
+
+  useEffect(() => {
+    setAdvancedSettingValues([]);
+    setAdvancedSettingSelections({});
+    setTargetLanguageValue("");
+  }, [tool.key]);
+
+  useEffect(() => {
+    setAdvancedSettingValues(
+      Object.entries(advancedSettingSelections)
+        .filter(([key, value]) => Boolean(value) && !key.endsWith("Key") && !key.endsWith(":label"))
+        .map(([, value]) => value)
+    );
+  }, [advancedSettingSelections]);
+
+  useEffect(() => {
+    if (!restoredTask || restoredTask.toolKey !== tool.key) return;
+    setAdvancedSettingSelections(restoredTask.snapshot.advancedSelections);
+    setAdvancedSettingValues(Object.values(restoredTask.snapshot.advancedSelections).filter(Boolean));
+    setTargetLanguageValue(restoredTask.snapshot.advancedSelections.targetLanguage ?? "");
+  }, [restoredTask, tool.key]);
+
+  useEffect(() => {
+    if (!isAplusTool) return;
+    onAplusDraftChange(tool.key, {
+      generateCost,
+      outputCount: Math.max(1, getSetPackSelectedTypes(advancedSettingSelections).length || 1),
+      sourceUploads: uploads[mainUploadKey] ?? [],
+      referenceUploads: uploads[refUploadKey] ?? [],
+      videoUploads: uploads[videoUploadKey] ?? [],
+      advancedSelections: advancedSettingSelections,
+      supplementValue,
+      creationModeSelection: resolvedCreationModeSelection
+    });
+  }, [
+    advancedSettingSelections,
+    generateCost,
+    isAplusTool,
+    mainUploadKey,
+    onAplusDraftChange,
+    refUploadKey,
+    resolvedCreationModeSelection,
+    supplementValue,
+    tool.key,
+    uploads,
+    videoUploadKey
+  ]);
+
+  const renderSection = (section: ToolModuleSectionKey) => {
+    if (section === "upload-main") {
+      return (
+        <UploadField
+          fieldKey={mainUploadKey}
+          hint={mainUploadHint}
+          label={mainUploadConfig.label}
+          maxCount={mainUploadCountLimit}
+          meta={mainUploadMeta}
+          onAdd={onAddUpload}
+          onAtLimit={onAtLimit}
+          onOpenLibrary={onOpenLibrary}
+          onRejectedUpload={onRejectedUpload}
+          onRemove={onRemoveUpload}
+          remainingStorageMb={remainingStorageMb}
+          required={mainUploadConfig.required}
+          values={uploads[mainUploadKey] ?? []}
+        />
+      );
+    }
+
+    if (section === "advanced-settings") {
+      return advancedSettingsConfig ? (
+        <AdvancedSettingsSection
+          config={advancedSettingsConfig}
+          onAiAssist={async () => {
+            const creationModeValues = dedupeStrings([
+              resolvedCreationModeSelection?.modeLabel ?? "",
+              resolvedCreationModeSelection?.ratio ?? "",
+              resolvedCreationModeSelection?.resolution ?? "",
+              resolvedCreationModeSelection?.count ? `${resolvedCreationModeSelection.count}张` : ""
+            ]);
+            const nextAssistResult = await onSupplementAiAssist(tool.key, uploads[mainUploadKey] ?? [], advancedSettingsConfig, {
+              advancedValues: advancedSettingValues,
+              creationModeValues
+            });
+            if (!nextAssistResult) {
+              onToast("请先上传商品图后再使用AI帮写", "warning");
+              return null;
+            }
+            if (nextAssistResult.supplementValue) {
+              onSupplementChange(tool.key, nextAssistResult.supplementValue);
+            }
+            onToast("已帮您完成高级设置写入，请核对");
+            return nextAssistResult;
+          }}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              ...advancedSettingsConfig.fields,
+              ...(advancedSettingsConfig.extraSelects ?? []).map((item) => item.key),
+              "platformRuleDetail"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      ) : null;
+    }
+
+    if (section === "set-pack-strategy" && isSetPackLikeTool(tool.key)) {
+      return (
+        <SetPackStrategySection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["platform", "region", "targetMarket", "language", "copyLanguage", "setPackVisualStyle"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "set-pack-selling-points" && isSetPackLikeTool(tool.key)) {
+      return (
+        <SetPackSellingPointsSection
+          onSelectionChange={(values) => {
+            setAdvancedSettingValues((current) => dedupeStrings([...current, ...values]));
+          }}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["setPackProductName", "setPackSellingPoints", "setPackAudience", "setPackScenario", "setPackParameters"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads[mainUploadKey] ?? []}
+        />
+      );
+    }
+
+    if (section === "set-pack-type-selector" && isSetPackLikeTool(tool.key)) {
+      return (
+        <SetPackTypeSection
+          toolKey={tool.key}
+          onSelectionChange={(values) => {
+            setAdvancedSettingValues((current) => dedupeStrings([...current, ...values]));
+          }}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["setPackSelectedTypes", "setPackSelectedTypeNames", "setPackSavedTypeTemplates"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          perTypeCount={Math.max(1, Math.round((resolvedCreationModeSelection?.count ?? setPackTypeCount) / setPackTypeCount))}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads[mainUploadKey] ?? []}
+        />
+      );
+    }
+
+    if (section === "set-pack-style-analysis" && tool.key === "set-main") {
+      return (
+        <SetPackStyleAnalysisSection
+          onSelectionChange={(values) => {
+            setAdvancedSettingValues((current) => dedupeStrings([...current, ...values]));
+          }}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["setPackStyleCards", "setPackSelectedStyleIds", "setPackSelectedStyleNames"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "model-change-action") {
+      return toolModuleConfig.modelAdjustActions?.length ? (
+        <ModelAdjustSection
+          actions={toolModuleConfig.modelAdjustActions}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const modelAdjustActions = toolModuleConfig.modelAdjustActions ?? [];
+            const sectionKeys = [
+              "modelAdjustActionKey",
+              "modelAdjustAction",
+              ...modelAdjustActions.flatMap((action) => [`${action.key}:label`, `${action.key}:value`])
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onSupplementAiPolish={(value) =>
+            onSupplementAiPolish(tool.key, value, {
+              advancedValues: advancedSettingValues,
+              creationModeValues: dedupeStrings([
+                resolvedCreationModeSelection?.modeLabel ?? "",
+                resolvedCreationModeSelection?.ratio ?? "",
+                resolvedCreationModeSelection?.resolution ?? ""
+              ])
+            })
+          }
+          onSupplementChange={(value) => onSupplementChange(tool.key, value)}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+          supplementValue={supplementValue}
+          toolKey={tool.key}
+        />
+      ) : null;
+    }
+
+    if (section === "model-generate-setup") {
+      return toolModuleConfig.modelGenerateTypes?.length ? (
+        <ModelGenerateSetupSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["modelGenerateTypeKey", "modelGenerateType", "gender", "appearance", "age", "persona", "bodyType"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+          types={toolModuleConfig.modelGenerateTypes}
+        />
+      ) : null;
+    }
+
+    if (section === "baseline-model-setup" && tool.key === "set-fashion") {
+      return (
+        <BaselineModelSection
+          modelAssets={modelAssets}
+          onGenerateBaselineModel={onGenerateBaselineModel}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "baselineModelSource",
+              "selectedModelId",
+              "selectedModelName",
+              "modelGenerateTypeKey",
+              "modelGenerateType",
+              "gender",
+              "appearance",
+              "age",
+              "persona",
+              "bodyType",
+              "baselineModelSupplement"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onUploadModels={onUploadModels}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "model-try-setup") {
+      const isFashionTryTool = tool.key === "set-fashion";
+      return (
+        <ModelTrySetupSection
+          modelAssets={modelAssets}
+          toolKey={tool.key}
+          onAddUpload={onAddUpload}
+          onAtLimit={onAtLimit}
+          onNavigateTool={onNavigateTool}
+          onOpenLibrary={onOpenLibrary}
+          onRejectedUpload={onRejectedUpload}
+          onRemoveUpload={onRemoveUpload}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["trialMode", "selectedModelId", "selectedModelName"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          onUploadModels={onUploadModels}
+          remainingStorageMb={remainingStorageMb}
+          selectedValues={advancedSettingSelections}
+          showTrialMode={!isFashionTryTool}
+          uploadFieldHint={isFashionTryTool ? "最多5张，请上传同一件衣服不同视角图" : undefined}
+          uploadFieldLabel={isFashionTryTool ? "上传服装图片" : "上传商品图"}
+          uploadFieldMeta={isFashionTryTool ? "（单次最多上传5张）" : undefined}
+          uploadLimitOverride={isFashionTryTool ? 5 : undefined}
+          uploads={uploads}
+        />
+      );
+    }
+
+    if (section === "target-language") {
+      return (
+        <InputSelectInlineField
+          dropdownWidth={208}
+          label="目标语言"
+          labelNoWrap
+          onChange={(value) => {
+            setTargetLanguageValue(value);
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              if (value) {
+                nextSelections.targetLanguage = value;
+              } else {
+                delete nextSelections.targetLanguage;
+              }
+              setAdvancedSettingValues(Object.values(nextSelections).filter(Boolean));
+              return nextSelections;
+            });
+          }}
+          options={targetLanguageInputOptions}
+          placeholder="请选择，或直接输入"
+          required
+          value={targetLanguageValue}
+        />
+      );
+    }
+
+    if (section === "applicable-platform") {
+      return toolModuleConfig.applicablePlatform ? <ApplicablePlatformSection /> : null;
+    }
+
+    if (section === "generation-rule-notice" && tool.key === "set-replica") {
+      return <GenerationRuleNoticeSection batchCount={batchOutputCount} productCount={uploadImageCount} referenceCount={referenceUploadCount} />;
+    }
+
+    if (section === "pod-crop-mode" && tool.key === "pod-crop") {
+      return (
+        <PodCropModeSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            setAdvancedSettingSelections((current) => ({
+              ...current,
+              ...values
+            }));
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "pod-extract-setup" && tool.key === "pod-extract") {
+      return (
+        <PodExtractSetupSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            setAdvancedSettingSelections((current) => ({
+              ...current,
+              ...values
+            }));
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "video-replica-setup" && (tool.key === "video-main" || tool.key === "video-replica" || tool.key === "video-replace")) {
+      return (
+        <VideoReplicaSetupSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            setAdvancedSettingSelections((current) => ({
+              ...current,
+              ...values
+            }));
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "video-main-script-setup" && tool.key === "video-main") {
+      return (
+        <VideoMainScriptSetupSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "videoMainScriptMode",
+              "videoMainScriptModeLabel",
+              "videoMainSellingPoint",
+              "videoMainType",
+              "videoMainMarketingNeed",
+              "videoMainRhythm",
+              "videoMainMusicMood",
+              "videoMainVisualStyle",
+              "videoMainAudience",
+              "videoMainCharacterFit"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onSupplementAiPolish={(value) =>
+            onSupplementAiPolish(tool.key, value, {
+              advancedValues: advancedSettingValues,
+              creationModeValues: dedupeStrings([
+                resolvedCreationModeSelection?.modeLabel ?? "",
+                resolvedCreationModeSelection?.ratio ?? "",
+                resolvedCreationModeSelection?.resolution ?? ""
+              ])
+            })
+          }
+          onSupplementChange={(value) => onSupplementChange(tool.key, value)}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+          supplementValue={supplementValue}
+          toolKey={tool.key}
+        />
+      );
+    }
+
+    if (section === "creation-mode") {
+      return (
+        <CreationModeSection
+          config={creationModeConfig}
+          onSelectionChange={setCreationModeSelection}
+          typeCountMultiplier={isSetPackLikeTool(tool.key) ? setPackTypeCount : 1}
+          value={restoredTask?.toolKey === tool.key ? restoredTask.snapshot.creationModeSelection : null}
+        />
+      );
+    }
+
+    if (section === "supplement") {
+      return creationModeConfig.showSupplement ? (
+        <SupplementField
+          aiPolishConfig={supplementAiPolishConfig}
+          label={creationModeConfig.supplementLabel}
+          maxLength={creationModeConfig.supplementMaxLength}
+          onAiPolish={(value) =>
+            onSupplementAiPolish(tool.key, value, {
+              advancedValues: advancedSettingValues,
+              creationModeValues: dedupeStrings([
+                resolvedCreationModeSelection?.modeLabel ?? "",
+                resolvedCreationModeSelection?.ratio ?? "",
+                resolvedCreationModeSelection?.resolution ?? "",
+                resolvedCreationModeSelection?.count ? `${resolvedCreationModeSelection.count}张` : ""
+              ])
+            })
+          }
+          onChange={(value) => onSupplementChange(tool.key, value)}
+          onToast={onToast}
+          placeholder={supplementPlaceholderOverrides[tool.key] ?? creationModeConfig.supplementPlaceholder}
+          value={supplementValue}
+        />
+      ) : null;
+    }
+
+    if (section === "mode-choice" && panelKind === "retouch") {
+      return <RetouchModeSection />;
+    }
+
+    if (section === "camera-angle" && (panelKind === "three-view" || panelKind === "background")) {
+      if (tool.key === "goods-view") {
+        return (
+          <RichSelectField
+            fullWidth
+            label="拍摄视角"
+            onChange={(value) => {
+              setAdvancedSettingSelections((current) => {
+                const nextSelections = { ...current };
+                if (value) {
+                  nextSelections.cameraAngle = value;
+                } else {
+                  delete nextSelections.cameraAngle;
+                }
+                setAdvancedSettingValues(Object.values(nextSelections).filter(Boolean));
+                return nextSelections;
+              });
+            }}
+            options={cameraAngleOptions}
+            placeholder="请选择"
+            required
+            value={advancedSettingSelections.cameraAngle}
+          />
+        );
+      }
+
+      return <SelectField label="拍摄视角" placeholder="请选择" required />;
+    }
+
+    if (section === "upload-reference" && refUploadConfig) {
+      return (
+        <ReferenceUploadSection
+          config={refUploadConfig}
+          fieldKey={refUploadKey}
+          hint={refUploadHint}
+          maxCount={refUploadCountLimit}
+          onAdd={onAddUpload}
+          onAtLimit={onAtLimit}
+          onOpenLibrary={onOpenLibrary}
+          onRejectedUpload={onRejectedUpload}
+          onRemove={onRemoveUpload}
+          remainingStorageMb={remainingStorageMb}
+          values={uploads[refUploadKey] ?? []}
+        />
+      );
+    }
+
+    if (section === "upload-video" && videoUploadConfig) {
+      return (
+        <UploadVideoField
+          fieldKey={videoUploadKey}
+          hint={videoUploadHint}
+          label={videoUploadConfig.label}
+          maxCount={videoUploadCountLimit}
+          maxDurationSeconds={videoUploadConfig.maxDurationSeconds}
+          maxFileSizeMb={videoUploadConfig.maxFileSizeMb}
+          meta={videoUploadConfig.singleUploadMeta?.replace("{count}", String(videoUploadCountLimit)) ?? videoUploadConfig.meta}
+          minDurationSeconds={videoUploadConfig.minDurationSeconds}
+          onAdd={onAddUpload}
+          onAtLimit={onAtLimit}
+          onOpenLibrary={onOpenLibrary}
+          onRejectedUpload={onRejectedUpload}
+          onRemove={onRemoveUpload}
+          optional={videoUploadConfig.optional}
+          remainingStorageMb={remainingStorageMb}
+          required={videoUploadConfig.required}
+          values={uploads[videoUploadKey] ?? []}
+        />
+      );
+    }
+
+    return null;
+  };
+
+  const renderFields = () => {
+    return (
+      <>
+        {sectionOrder.map((section) => (
+          <div key={`${tool.key}:${section}`}>{renderSection(section)}</div>
+        ))}
+      </>
+    );
+  };
+
+  const handleGenerateClick = () => {
+    if (tool.key === "set-main" && isGeneratingLocked) {
+      onToast("当前套图仍在生成中，请等待全部结果完成后再继续提交", "warning");
+      return;
+    }
+
+    if (!uploadImageCount) {
+      onToast("请先上传商品图后再生成", "warning");
+      return;
+    }
+
+    if (tool.key === "set-replica" && !referenceUploadCount) {
+      onToast("请先上传参考图后再生成", "warning");
+      return;
+    }
+
+    if ((tool.key === "video-replica" || tool.key === "video-replace") && !videoUploadCount) {
+      onToast("请先上传视频后再生成", "warning");
+      return;
+    }
+
+    const outputCount = getSpecialToolOutputCount(tool.key, uploadImageCount, referenceUploadCount, batchOutputCount);
+    const payload = {
+      generateCost,
+      outputCount,
+      sourceUploads: uploads[mainUploadKey] ?? [],
+      referenceUploads: uploads[refUploadKey] ?? [],
+      videoUploads: uploads[videoUploadKey] ?? [],
+      advancedSelections: advancedSettingSelections,
+      supplementValue,
+      creationModeSelection: resolvedCreationModeSelection
+    } satisfies GeneratePayload;
+
+    if (isAplusTool) {
+      onGenerateAplusPlan(tool, payload);
+      return;
+    }
+
+    if (isFashionTool) {
+      onGenerateFashionScenes(tool, payload);
+      return;
+    }
+
+    onGenerate(tool, payload);
+  };
+
+  return (
+    <section className={`ck-panel${showAplusPlanStep || showFashionPlanStep ? " ck-panel-step-layout" : ""}`}>
+      {showAplusPlanStep ? (
+        <AplusPlanEditorSection
+          onBack={onBackAplusStep}
+          onDeleteModule={onDeleteAplusModule}
+          onGenerate={onGenerateAplusDetails}
+          generateCostLabel={generateCostLabel}
+          onMoveModule={onMoveAplusModule}
+          onUpdateModule={onUpdateAplusModule}
+          plan={aplusPlan}
+          stale={aplusPlanStale}
+        />
+      ) : showFashionPlanStep ? (
+        <FashionSceneEditorSection
+          generateCostLabel={effectiveGenerateCostLabel}
+          onBack={onBackFashionStep}
+          onDeleteModule={onDeleteFashionScene}
+          onGenerate={onGenerateFashionResults}
+          onMoveModule={onMoveFashionScene}
+          onUpdateModule={onUpdateFashionScene}
+          plan={fashionPlan}
+          stale={fashionPlanStale}
+        />
+      ) : (
+        <>
+          <div className="ck-panel-scroll">
+            <div className="ck-panel-title">{tool.panelTitle}</div>
+            {renderFields()}
+          </div>
+
+          <div className="ck-panel-footer">
+            <button className={`ck-generate-btn${isFashionTool ? " fashion-step-btn" : ""}`} disabled={tool.key === "set-main" && isGeneratingLocked} onClick={handleGenerateClick} type="button">
+              {isAplusTool || isFashionTool ? null : <img alt="" className="ck-generate-icon" src={figmaIcons.generateButton} />}
+              <span>
+                {tool.key === "set-main" && isGeneratingLocked
+                  ? "套图生成中..."
+                  : isAplusTool
+                    ? "生成详情页规划方案"
+                    : isFashionTool
+                      ? "生成推荐场景"
+                      : "立即生成"}
+              </span>
+              {isAplusTool || isFashionTool ? null : (
+                <em>
+                  {tool.key === "set-main" && isGeneratingLocked
+                    ? "请等待当前任务完成"
+                    : generateCostLabel}
+                </em>
+              )}
+            </button>
+            <div className="ck-agreement">
+              使用创客贴AI创作服务表示您已同意 <a href="/">《AI创作服务协议》</a>
+            </div>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function ResultPanel({
+  collapsed,
+  tool,
+  activeTab,
+  items,
+  onDownload,
+  onDownloadItem,
+  onOpenCase,
+  onApplyCase,
+  onRetry,
+  onDeleteFailed,
+  onCancelQueued,
+  onTabChange,
+  onToggleItem,
+  onToggleSelectAll,
+  selectedTask,
+  onGenerateSetPackTitles,
+  onApplySetPackTitle,
+  onPreviewItem,
+  onEditItemText
+}: {
+  collapsed: boolean;
+  tool: ToolConfig;
+  activeTab: ResultTabKey;
+  items: ResultItem[];
+  onDownload: (tool: ToolConfig) => void;
+  onDownloadItem: (item: ResultItem) => void;
+  onOpenCase: (template: CaseTemplate) => void;
+  onApplyCase: (template: CaseTemplate) => void;
+  onRetry: (toolKey: string, itemId: string) => void;
+  onDeleteFailed: (toolKey: string, itemId: string) => void;
+  onCancelQueued: (toolKey: string, itemId: string) => void;
+  onTabChange: (toolKey: string, tab: ResultTabKey) => void;
+  onToggleItem: (toolKey: string, itemId: string) => void;
+  onToggleSelectAll: (toolKey: string, checked: boolean) => void;
+  selectedTask?: TaskRecord | null;
+  onGenerateSetPackTitles: (taskId: string) => void;
+  onApplySetPackTitle: (taskId: string, title: string) => void;
+  onPreviewItem: (item: ResultItem) => void;
+  onEditItemText: (item: ResultItem) => void;
+}) {
+  const caseCollection = useMemo(() => createCaseCollection(tool), [tool]);
+  const readyItems = useMemo(() => items.filter((item) => item.status === "ready"), [items]);
+  const selectedReadyCount = useMemo(() => readyItems.filter((item) => item.selected).length, [readyItems]);
+  const allReadySelected = readyItems.length > 0 && readyItems.every((item) => item.selected);
+  const resultCountText = `(${items.length})`;
+  const downloadDisabled = activeTab !== "results" || selectedReadyCount === 0;
+  const showEmptyState = activeTab === "results" && items.length === 0;
+  const showNoMore = activeTab === "results" && items.length > 0;
+  const isNarrow = collapsed;
+  const [setPackTitlePopoverOpen, setSetPackTitlePopoverOpen] = useState(false);
+  const setPackTitleCandidates = safeParseJson<string[]>(selectedTask?.snapshot.advancedSelections.setPackTitleCandidates, []) ?? [];
+  const selectedSetPackTitle = selectedTask?.snapshot.advancedSelections.setPackSelectedTitle ?? "";
+  const canGenerateSetPackTitles = tool.key === "set-main" && Boolean(selectedTask?.taskId) && activeTab === "results";
+
+  return (
+    <section className="ck-results">
+      <div className="ck-results-toolbar">
+        <div className="ck-result-tabs">
+          <button className={activeTab === "results" ? "active" : ""} onClick={() => onTabChange(tool.key, "results")} type="button">
+            <span>生成结果</span>
+            <em>{resultCountText}</em>
+          </button>
+          <button className={activeTab === "cases" ? "active" : ""} onClick={() => onTabChange(tool.key, "cases")} type="button">
+            创作案例
+          </button>
+        </div>
+        {activeTab === "results" ? (
+          <div className="ck-results-actions">
+            <label className="ck-results-check">
+              <input
+                checked={allReadySelected}
+                disabled={activeTab !== "results" || readyItems.length === 0}
+                onChange={(event) => onToggleSelectAll(tool.key, event.target.checked)}
+                type="checkbox"
+              />
+              <span className="ck-results-check-box">{allReadySelected ? "✓" : ""}</span>
+              全选
+            </label>
+            <button disabled={downloadDisabled} onClick={() => onDownload(tool)} type="button">
+              <img alt="" src={figmaIcons.download} />
+              立即下载
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {canGenerateSetPackTitles ? (
+        <div className="ck-set-pack-title-bar">
+          <div className="ck-set-pack-title-copy">
+            <span>已选标题</span>
+            <strong>{selectedSetPackTitle || "还未选择上架标题"}</strong>
+          </div>
+          <div className="ck-set-pack-title-actions">
+            <button
+              onClick={() => {
+                if (!selectedTask) return;
+                onGenerateSetPackTitles(selectedTask.taskId);
+                setSetPackTitlePopoverOpen(true);
+              }}
+              type="button"
+            >
+              智能生成上架标题
+            </button>
+            {setPackTitlePopoverOpen && setPackTitleCandidates.length ? (
+              <div className="ck-set-pack-title-popover">
+                {setPackTitleCandidates.map((title) => (
+                  <button
+                    className={title === selectedSetPackTitle ? "active" : ""}
+                    key={title}
+                    onClick={() => {
+                      if (!selectedTask) return;
+                      onApplySetPackTitle(selectedTask.taskId, title);
+                      setSetPackTitlePopoverOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {title}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      <div className={`ck-results-scroll${isNarrow ? " collapsed" : ""}`}>
+        {activeTab === "cases" ? (
+          <div className="ck-case-panel">
+            <div className="ck-case-hero">
+              <h2>{caseCollection.headline}</h2>
+              <p>{caseCollection.subheadline}</p>
+            </div>
+            <div className="ck-case-section-title">热门案例示例</div>
+            <div className="ck-case-grid">
+              {caseCollection.templates.map((template, index) => (
+                <article className="ck-case-card" key={template.id}>
+                  <button className="ck-case-card-visual" onClick={() => onOpenCase(template)} type="button">
+                    <img alt={template.title} className="ck-case-card-cover" src={template.coverImage} />
+                    <div className="ck-case-card-source">
+                      <img alt="" src={template.sourceImage} />
+                      <span>原图</span>
+                    </div>
+                    <span className="ck-case-card-divider" aria-hidden="true" />
+                    <div className="ck-case-card-count">生成 {template.resultImages.length} 张套图</div>
+                    <div className="ck-case-card-stack">
+                      {template.resultImages.slice(0, 3).map((item) => (
+                        <img alt="" key={item.id} src={item.src} />
+                      ))}
+                      {template.resultImages.length > 3 ? <span>+{template.resultImages.length}</span> : null}
+                    </div>
+                  </button>
+                  <div className="ck-case-card-body">
+                    <span className="ck-case-card-category">{template.category}</span>
+                    <strong>{template.title}</strong>
+                    <p>{template.description}</p>
+                    <div className="ck-case-card-actions">
+                      <button className={`ck-case-card-action${index === 0 ? " primary" : ""}`} onClick={() => (index === 0 ? onApplyCase(template) : onOpenCase(template))} type="button">
+                        {index === 0 ? "立即生成同款" : "查看详情"}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : showEmptyState ? (
+          <div className="ck-results-empty">
+            <div className="ck-results-empty-icon" aria-hidden="true">
+              <span className="ck-results-empty-card back" />
+              <span className="ck-results-empty-card front" />
+              <span className="ck-results-empty-badge" />
+              <span className="ck-results-empty-close" />
+            </div>
+            <div className="ck-results-empty-title">暂无生成结果</div>
+            <div className="ck-results-empty-copy">请在左侧上传并生成</div>
+          </div>
+        ) : (
+          <>
+            <div className="ck-card-grid">
+              {items.map((item) => (
+                <article
+                  className={`ck-card status-${item.status}${item.selected ? " is-selected" : ""}${item.mediaKind === "video" ? " is-video" : ""}`}
+                  key={item.id}
+                >
+                  {item.status === "ready" && activeTab === "results" ? (
+                    <label className="ck-card-check">
+                      <input checked={item.selected} onChange={() => onToggleItem(tool.key, item.id)} type="checkbox" />
+                      <span className="ck-card-check-box">{item.selected ? "✓" : ""}</span>
+                    </label>
+                  ) : null}
+                  {item.src ? <img alt={item.label} src={item.src} /> : <div className="ck-card-artwork-placeholder" aria-hidden="true" />}
+                  {item.mediaKind === "video" && item.status === "ready" ? <span className="ck-card-video-play" aria-hidden="true" /> : null}
+                  <span className="ck-card-tag">{item.label}</span>
+                  {isSetPackLikeTool(tool.key) && item.roleLabel ? <span className="ck-set-pack-role-pill">{item.roleLabel}</span> : null}
+                  {tool.key === "set-main" && item.overlayText ? <div className="ck-set-pack-overlay-text">{item.overlayText}</div> : null}
+                  {activeTab === "results" && item.status === "ready" ? (
+                    <button
+                      className="ck-card-download"
+                      data-label={isSetPackLikeTool(tool.key) ? "下载图" : "下载"}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDownloadItem(item);
+                      }}
+                      title="下载图片"
+                      type="button"
+                    >
+                      <img alt="" src={figmaIcons.download} />
+                    </button>
+                  ) : null}
+                  {tool.key === "set-main" && activeTab === "results" && item.status === "ready" ? (
+                    <div className="ck-set-pack-card-actions">
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onPreviewItem(item);
+                        }}
+                        type="button"
+                      >
+                        预览
+                      </button>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onRetry(tool.key, item.id);
+                        }}
+                        type="button"
+                      >
+                        重生
+                      </button>
+                      {/(卖点|参数)/.test(item.roleLabel ?? "") ? (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onEditItemText(item);
+                          }}
+                          type="button"
+                        >
+                          改文案
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {activeTab === "results" && item.status === "queued" ? (
+                    <button className="ck-card-action danger" data-label="取消" onClick={() => onCancelQueued(tool.key, item.id)} title="取消生成" type="button">
+                      ×
+                    </button>
+                  ) : null}
+                  {activeTab === "results" && item.status === "failed" ? (
+                    <button className="ck-card-action danger" data-label="删除" onClick={() => onDeleteFailed(tool.key, item.id)} title="删除失败结果" type="button">
+                      ×
+                    </button>
+                  ) : null}
+
+                  {item.status === "queued" ? <span className="ck-card-state-pill">排队中</span> : null}
+                  {item.status === "generating" ? <span className="ck-card-state-pill generating">生成中</span> : null}
+                  {item.status === "generating" ? (
+                    <div className="ck-card-generating">
+                      <span className="ck-card-spinner" />
+                    </div>
+                  ) : null}
+                  {item.status === "skeleton" ? <div className="ck-card-skeleton-shimmer" /> : null}
+                  {item.status === "failed" ? (
+                    <div className="ck-card-failed">
+                      <span className="ck-card-failed-icon" aria-hidden="true">
+                        <img alt="" src={figmaIcons.failedResult} />
+                      </span>
+                      <strong>生成失败</strong>
+                      <button onClick={() => onRetry(tool.key, item.id)} type="button">
+                        重试生成
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+            {showNoMore ? <div className="ck-no-more">没有更多了~</div> : null}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CaseDetailModal({
+  template,
+  onApply,
+  onClose,
+  onShare
+}: {
+  template: CaseTemplate;
+  onApply: (template: CaseTemplate) => void;
+  onClose: () => void;
+  onShare: (template: CaseTemplate) => void;
+}) {
+  return (
+    <div className="ck-case-modal-mask" onClick={onClose}>
+      <div className="ck-case-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="ck-case-modal-head">
+          <strong>作品详情</strong>
+          <button onClick={onClose} type="button">
+            ×
+          </button>
+        </div>
+        <div className="ck-case-modal-content">
+          <div className="ck-case-modal-source">
+            <div className="ck-case-modal-source-card">
+              <img alt={template.title} src={template.sourceImage} />
+            </div>
+            <div className="ck-case-modal-source-label">产品图片</div>
+            <button className="ck-case-modal-primary" onClick={() => onApply(template)} type="button">
+              一键做同款
+            </button>
+            <button className="ck-case-modal-secondary" onClick={() => onShare(template)} type="button">
+              复制分享链接
+            </button>
+          </div>
+          <div className="ck-case-modal-results">
+            {template.resultImages.map((item) => (
+              <div className="ck-case-modal-result-item" key={item.id}>
+                <img alt={item.title} src={item.src} />
+                <span>{item.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskHistoryRail({
+  activeCount,
+  collapsed,
+  records,
+  selectedTaskId,
+  onToggleCollapsed,
+  onSelectTask
+}: {
+  activeCount: number;
+  collapsed: boolean;
+  records: TaskRecord[];
+  selectedTaskId?: string | null;
+  onToggleCollapsed: () => void;
+  onSelectTask: (record: TaskRecord) => void;
+}) {
+  const groupedRecords = useMemo(() => {
+    const groups: Array<{ date: string; items: TaskRecord[] }> = [];
+    records.forEach((record) => {
+      const date = formatTaskRecordDate(record.createdAt);
+      const existingGroup = groups[groups.length - 1];
+      if (existingGroup?.date === date) {
+        existingGroup.items.push(record);
+      } else {
+        groups.push({
+          date,
+          items: [record]
+        });
+      }
+    });
+    return groups;
+  }, [records]);
+
+  return (
+    <aside className={`ck-task-rail${collapsed ? " collapsed" : ""}`}>
+      {!collapsed ? (
+        <>
+          <button aria-label="收起创作记录" className="ck-collapse-handle expand ck-task-rail-handle" onClick={onToggleCollapsed} type="button">
+            <span className="ck-collapse-arrow expand">
+              <img alt="" src={figmaIcons.collapse} />
+            </span>
+          </button>
+          <div className="ck-task-rail-head">
+            <span className="ck-task-rail-icon" aria-hidden="true">
+              ↻
+            </span>
+            <div className="ck-task-rail-copy">
+              <strong>创作记录</strong>
+              <em>{activeCount > 0 ? `进行中 ${activeCount}` : ""}</em>
+            </div>
+          </div>
+          <div className="ck-task-rail-body">
+            {groupedRecords.length === 0 ? (
+              <div className="ck-task-rail-empty">当前功能暂无任务记录</div>
+            ) : (
+              groupedRecords.map((group) => (
+                <div className="ck-task-group" key={group.date}>
+                  <div className="ck-task-group-date">{group.date}</div>
+                  <div className="ck-task-group-list">
+                    {group.items.map((record) => (
+                      <button
+                        className={`ck-task-card${selectedTaskId === record.taskId ? " active" : ""}`}
+                        key={record.id}
+                        onClick={() => onSelectTask(record)}
+                        type="button"
+                      >
+                        <div className={`ck-task-card-preview${record.coverSrcs.length > 1 ? " collage" : ""}`}>
+                          {record.coverSrcs.length > 0 ? (
+                            record.coverSrcs.slice(0, 4).map((src, index) => <img alt="" key={`${record.id}-${index}`} src={src} />)
+                          ) : (
+                            <span className="ck-task-card-placeholder" />
+                          )}
+                          <span className={`ck-task-card-badge${record.status !== "completed" ? " is-generating" : ""}`}>
+                            {record.status !== "completed" ? <i className="ck-task-card-loading-spinner" aria-hidden="true" /> : null}
+                            {record.status !== "completed" ? `${record.successCount + record.failCount}/${record.totalCount}` : `+${record.totalCount}`}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      ) : (
+        <button aria-label="展开创作记录" className="ck-collapse-handle collapse ck-task-rail-handle" onClick={onToggleCollapsed} type="button">
+          <span className="ck-collapse-arrow collapse">
+            <img alt="" src={figmaIcons.collapse} />
+          </span>
+          {activeCount > 0 ? <span className="ck-task-rail-handle-badge">{activeCount}</span> : null}
+        </button>
+      )}
+    </aside>
+  );
+}
+
+function MyCreationPage({
+  mode,
+  resultItems,
+  selectedTaskIdsByTool,
+  selectedToolKey,
+  taskRecords,
+  toolOptions,
+  onChangeMode,
+  onChangeToolKey,
+  onDownloadItem,
+  onSelectResult,
+  onSelectTask
+}: {
+  mode: CreationHistoryMode;
+  resultItems: ResultItem[];
+  selectedTaskIdsByTool: Record<string, string | null>;
+  selectedToolKey: string;
+  taskRecords: TaskRecord[];
+  toolOptions: Array<{ key: string; label: string }>;
+  onChangeMode: (mode: CreationHistoryMode) => void;
+  onChangeToolKey: (toolKey: string) => void;
+  onDownloadItem: (item: ResultItem) => void;
+  onSelectResult: (item: ResultItem) => void;
+  onSelectTask: (record: TaskRecord) => void;
+}) {
+  return (
+    <section className="ck-mine-page">
+      <div className="ck-mine-head">
+        <div>
+          <strong>我的创作</strong>
+          <span>查看全部功能下的创作任务与生成结果</span>
+        </div>
+      </div>
+      <div className="ck-mine-toolbar">
+        <div className="ck-task-rail-mode-switch">
+          <button className={mode === "tasks" ? "active" : ""} onClick={() => onChangeMode("tasks")} type="button">
+            任务
+          </button>
+          <button className={mode === "results" ? "active" : ""} onClick={() => onChangeMode("results")} type="button">
+            结果图
+          </button>
+        </div>
+        <div className="ck-mine-tool-select">
+          <select className="ck-task-rail-filter" onChange={(event) => onChangeToolKey(event.target.value)} value={selectedToolKey}>
+            <option value="all">全部功能</option>
+            {toolOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="ck-mine-content">
+        {mode === "tasks" ? (
+          taskRecords.length === 0 ? (
+            <div className="ck-mine-empty">当前筛选下暂无任务记录</div>
+          ) : (
+            <div className="ck-mine-task-grid">
+              {taskRecords.map((record) => (
+                <button
+                  className={`ck-card ${record.status === "completed" ? "status-ready" : "status-generating"} ck-mine-task-result-card`}
+                  key={record.id}
+                  onClick={() => onSelectTask(record)}
+                  type="button"
+                >
+                  <div className="ck-mine-task-result-preview">
+                    {record.status === "completed" && record.coverSrcs[0] ? (
+                      <img alt="" src={record.coverSrcs[0]} />
+                    ) : (
+                      <span className="ck-card-artwork-placeholder" />
+                    )}
+                    <span className="ck-task-card-tool">{toolOptions.find((option) => option.key === record.toolKey)?.label ?? record.toolKey}</span>
+                    {record.status === "completed" ? (
+                      <span className="ck-mine-task-result-count">+{record.totalCount}</span>
+                    ) : (
+                      <span className="ck-mine-task-result-count is-generating">
+                        <i className="ck-mine-task-result-spinner" aria-hidden="true" />
+                        生成中
+                      </span>
+                    )}
+                  </div>
+                  <div className="ck-mine-task-result-meta">
+                    <strong>{record.taskId}</strong>
+                    <span>{formatTaskRecordDateTime(record.createdAt)}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
+        ) : resultItems.length === 0 ? (
+          <div className="ck-mine-empty">当前筛选下暂无结果图</div>
+        ) : (
+          <div className="ck-mine-result-grid">
+            {resultItems.map((item) => (
+              <article
+                className={`ck-card status-${item.status}${selectedTaskIdsByTool[item.toolKey] === item.taskId ? " is-selected" : ""}`}
+                key={item.id}
+                onClick={() => onSelectResult(item)}
+              >
+                {item.src ? <img alt={item.label} src={item.src} /> : <span className="ck-card-artwork-placeholder" />}
+                <span className="ck-task-card-tool">{toolOptions.find((option) => option.key === item.toolKey)?.label ?? item.toolKey}</span>
+                <span className="ck-card-tag">{item.fileName}</span>
+                {item.status === "ready" ? (
+                  <button
+                    className="ck-card-download"
+                    data-label="下载"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDownloadItem(item);
+                    }}
+                    title="下载图片"
+                    type="button"
+                  >
+                    <img alt="" src={figmaIcons.download} />
+                  </button>
+                ) : null}
+                {item.status === "queued" ? <span className="ck-card-state-pill">排队中</span> : null}
+                {item.status === "generating" ? <span className="ck-card-state-pill generating">生成中</span> : null}
+                {item.status === "generating" ? (
+                  <div className="ck-card-generating">
+                    <span className="ck-card-spinner" />
+                  </div>
+                ) : null}
+                {item.status === "failed" ? (
+                  <div className="ck-card-failed">
+                    <span className="ck-card-failed-icon" aria-hidden="true">
+                      <img alt="" src={figmaIcons.failedResult} />
+                    </span>
+                    <strong>生成失败</strong>
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function MyModelsPage({
+  filter,
+  items,
+  onChangeFilter,
+  onOpenDetail,
+  onOpenGenerate,
+  onUpload
+}: {
+  filter: ModelFilterTab;
+  items: ModelAsset[];
+  onChangeFilter: (tab: ModelFilterTab) => void;
+  onOpenDetail: (item: ModelAsset) => void;
+  onOpenGenerate: () => void;
+  onUpload: (files: File[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  return (
+    <section className="ck-mine-page">
+      <div className="ck-mine-head">
+        <div>
+          <strong>我的模特</strong>
+          <span>统一管理本地上传和 AI 生成的模特素材</span>
+        </div>
+      </div>
+      <div className="ck-mine-toolbar">
+        <div className="ck-task-rail-mode-switch ck-mine-model-filter">
+          <button className={filter === "all" ? "active" : ""} onClick={() => onChangeFilter("all")} type="button">
+            全部
+          </button>
+          <button className={filter === "upload" ? "active" : ""} onClick={() => onChangeFilter("upload")} type="button">
+            本地上传
+          </button>
+          <button className={filter === "ai" ? "active" : ""} onClick={() => onChangeFilter("ai")} type="button">
+            AI生成
+          </button>
+        </div>
+        <div className="ck-mine-model-actions">
+          <input
+            accept="image/*"
+            className="ck-upload-input"
+            multiple
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              if (!files.length) return;
+              onUpload(files);
+              event.target.value = "";
+            }}
+            ref={inputRef}
+            type="file"
+          />
+          <button className="secondary" onClick={() => inputRef.current?.click()} type="button">
+            上传模特
+          </button>
+          <button className="primary" onClick={onOpenGenerate} type="button">
+            AI生成模特
+          </button>
+        </div>
+      </div>
+      <div className="ck-mine-model-layout">
+        <div className="ck-mine-model-grid">
+          {items.length === 0 ? (
+            <div className="ck-mine-empty">当前筛选下暂无模特</div>
+          ) : (
+            items.map((item) => (
+              <button
+                className="ck-mine-model-card"
+                key={item.id}
+                onClick={() => onOpenDetail(item)}
+                type="button"
+              >
+                <div className="ck-mine-model-card-visual">
+                  <img alt={item.name} src={item.src} />
+                  <span className="ck-mine-model-card-tag">{getModelSourceLabel(item.sourceType)}</span>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ModelDetailModal({
+  item,
+  onClose,
+  onDelete,
+  onDownload
+}: {
+  item: ModelAsset;
+  onClose: () => void;
+  onDelete: (item: ModelAsset) => void;
+  onDownload: (item: ModelAsset) => void;
+}) {
+  return (
+    <div className="ck-model-modal-mask" onClick={onClose}>
+      <div className="ck-model-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="ck-model-modal-head">
+          <strong>模特详情</strong>
+          <button onClick={onClose} type="button">
+            ×
+          </button>
+        </div>
+        <div className="ck-model-modal-body">
+          <div className="ck-model-modal-hero">
+            <img alt={item.name} src={item.src} />
+            <div className="ck-model-modal-copy">
+              <strong>{item.detailTitle ?? item.name}</strong>
+              <span>{item.detailSubtitle || `${getModelSourceLabel(item.sourceType)}，${item.format ?? "PNG"}`}</span>
+            </div>
+          </div>
+          <div className="ck-model-modal-sections">
+            {(item.detailGroups?.length ? item.detailGroups : [{ label: "基础信息", values: [getModelSourceLabel(item.sourceType), item.format ?? "PNG"] }]).map((group) => (
+              <section className="ck-model-modal-section" key={group.label}>
+                <h4>{group.label}</h4>
+                <div className="ck-model-modal-tags">
+                  {group.values.map((value) => (
+                    <span key={value}>{value}</span>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+          <div className="ck-model-modal-footer">
+            <button className="secondary" onClick={() => onDownload(item)} type="button">
+              下载
+            </button>
+            <button className="danger" onClick={() => onDelete(item)} type="button">
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const App = () => {
+  const [activePage, setActivePage] = useState<AppPage>("workspace");
+  const [activePrimary, setActivePrimary] = useState<PrimaryKey>(navGroups[0]?.key ?? "set");
+  const [activeTool, setActiveTool] = useState(navGroups[0]?.tools[0]?.key ?? "set-main");
+  const [collapsed, setCollapsed] = useState(false);
+  const [taskRailCollapsed, setTaskRailCollapsed] = useState(false);
+  const [mineTab, setMineTab] = useState<MineTab>("creation");
+  const [creationHistoryMode, setCreationHistoryMode] = useState<CreationHistoryMode>("tasks");
+  const [creationHistoryToolKey, setCreationHistoryToolKey] = useState<string>("all");
+  const [modelFilterTab, setModelFilterTab] = useState<ModelFilterTab>("all");
+  const [activeCaseTemplate, setActiveCaseTemplate] = useState<CaseTemplate | null>(null);
+  const [uploads, setUploads] = useState<Record<string, UploadItem[]>>({});
+  const [uploadedModels, setUploadedModels] = useState<ModelAsset[]>(defaultUploadedModels);
+  const [resultItemsByTool, setResultItemsByTool] = useState<Record<string, ResultItem[]>>(presetCreationResultItems);
+  const [resultTabsByTool, setResultTabsByTool] = useState<Record<string, ResultTabKey>>({});
+  const [taskRecordsByTool, setTaskRecordsByTool] = useState<Record<string, TaskRecord[]>>(presetCreationTaskRecords);
+  const [selectedTaskIdByTool, setSelectedTaskIdByTool] = useState<Record<string, string | null>>({});
+  const [libraryFieldKey, setLibraryFieldKey] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [limitModal, setLimitModal] = useState<LimitModalState | null>(null);
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [pointsModalOpen, setPointsModalOpen] = useState(false);
+  const [pointsBalanceOpen, setPointsBalanceOpen] = useState(false);
+  const [pointsRecordOpen, setPointsRecordOpen] = useState(false);
+  const [pointsRecordTab, setPointsRecordTab] = useState<PointsRecordTab>("consume");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [exportPendingAction, setExportPendingAction] = useState<ExportPendingAction | null>(null);
+  const [resultActionConfirm, setResultActionConfirm] = useState<ResultActionConfirmState | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<UserTierId>("free");
+  const [userMetrics, setUserMetrics] = useState<Record<UserTierId, UserTierMetrics>>(defaultUserMetrics);
+  const [purchaseRecords, setPurchaseRecords] = useState<PointsRecordItem[]>(defaultPurchaseRecords);
+  const [supplementValues, setSupplementValues] = useState<Record<string, string>>({});
+  const [selectedMineModelId, setSelectedMineModelId] = useState("");
+  const [previewResultItem, setPreviewResultItem] = useState<ResultItem | null>(null);
+  const [editingResultItem, setEditingResultItem] = useState<ResultItem | null>(null);
+  const [editingResultText, setEditingResultText] = useState("");
+  const [aplusPlanByTool, setAplusPlanByTool] = useState<Record<string, AplusPlanState>>({});
+  const [aplusDraftByTool, setAplusDraftByTool] = useState<Record<string, GeneratePayload>>({});
+  const [aplusStepByTool, setAplusStepByTool] = useState<Record<string, 1 | 2>>({});
+  const [fashionPlanByTool, setFashionPlanByTool] = useState<Record<string, AplusPlanState>>({});
+  const [fashionDraftByTool, setFashionDraftByTool] = useState<Record<string, GeneratePayload>>({});
+  const [fashionStepByTool, setFashionStepByTool] = useState<Record<string, 1 | 2>>({});
+
+  const currentUser = userTierProfiles.find((item) => item.id === currentUserId) ?? userTierProfiles[0];
+  const currentUserMetrics = userMetrics[currentUserId];
+  const credits = currentUserMetrics.credits;
+  const teamCredits = currentUserMetrics.teamCredits;
+  const remainingStorageMb = currentUserMetrics.remainingStorageMb;
+  const maxConcurrentTasks = currentUserMetrics.maxConcurrentTasks;
+  const uploadCountLimit = currentUser.uploadCountLimit;
+  const generationTimeoutsRef = useRef<ScheduledResultUpdate[]>([]);
+  const aplusPlanRunRef = useRef<Record<string, number>>({});
+  const fashionPlanRunRef = useRef<Record<string, number>>({});
+  const lastVisitedWorkspaceToolRef = useRef<string | null>(null);
+  const toolOptions = useMemo(() => navGroups.flatMap((group) => group.tools.map((tool) => ({ key: tool.key, label: tool.label, primaryKey: group.key }))), []);
+  const toolMap = useMemo(
+    () =>
+      toolOptions.reduce<Record<string, { key: string; label: string; primaryKey: PrimaryKey }>>((accumulator, option) => {
+        accumulator[option.key] = option;
+        return accumulator;
+      }, {}),
+    [toolOptions]
+  );
+
+  const currentGroup = navGroups.find((item) => item.key === activePrimary) ?? navGroups[1];
+  const currentTool = currentGroup.tools.find((item) => item.key === activeTool) ?? currentGroup.tools[0];
+  const currentAllResultItems = resultItemsByTool[currentTool.key] ?? [];
+  const currentResultTab = resultTabsByTool[currentTool.key] ?? "results";
+  const currentTaskRecords = taskRecordsByTool[currentTool.key] ?? [];
+  const currentSelectedTaskId = selectedTaskIdByTool[currentTool.key] ?? null;
+  const currentSelectedTask = currentTaskRecords.find((record) => record.taskId === currentSelectedTaskId) ?? null;
+  const currentResultItems = currentSelectedTaskId
+    ? currentAllResultItems.filter((item) => item.taskId === currentSelectedTaskId)
+    : currentAllResultItems;
+  const currentAplusPlan = aplusPlanByTool[currentTool.key];
+  const currentAplusDraft = aplusDraftByTool[currentTool.key];
+  const currentAplusStep = aplusStepByTool[currentTool.key] ?? 1;
+  const currentAplusPlanStale =
+    currentTool.key === "set-aplus" &&
+    Boolean(currentAplusPlan?.signature && currentAplusDraft && currentAplusPlan.signature !== buildAplusPlanSignature(currentAplusDraft));
+  const currentFashionPlan = fashionPlanByTool[currentTool.key];
+  const currentFashionDraft = fashionDraftByTool[currentTool.key];
+  const currentFashionStep = fashionStepByTool[currentTool.key] ?? 1;
+  const currentFashionPlanStale =
+    currentTool.key === "set-fashion" &&
+    Boolean(currentFashionPlan?.signature && currentFashionDraft && currentFashionPlan.signature !== buildFashionSceneSignature(currentFashionDraft));
+  const activeGeneratingTaskCount = useMemo(
+    () =>
+      Object.values(taskRecordsByTool).reduce(
+        (sum, records) => sum + records.filter((record) => record.status === "queued" || record.status === "generating").length,
+        0
+      ),
+    [taskRecordsByTool]
+  );
+  const currentToolActiveTaskCount = currentTaskRecords.filter(
+    (record) => record.status === "queued" || record.status === "generating"
+  ).length;
+  const allTaskRecords = useMemo(
+    () => Object.values(taskRecordsByTool).flat().sort((left, right) => right.createdAt - left.createdAt),
+    [taskRecordsByTool]
+  );
+  const allGeneratedResultItems = useMemo(
+    () =>
+      Object.values(resultItemsByTool)
+        .flat()
+        .filter((item) => item.taskId !== "case")
+        .sort((left, right) => right.createdAt - left.createdAt),
+    [resultItemsByTool]
+  );
+  const filteredCreationTaskRecords = creationHistoryToolKey === "all" ? allTaskRecords : allTaskRecords.filter((record) => record.toolKey === creationHistoryToolKey);
+  const filteredCreationResultItems =
+    creationHistoryToolKey === "all"
+      ? allGeneratedResultItems.filter((item) => item.status === "ready")
+      : allGeneratedResultItems.filter((item) => item.toolKey === creationHistoryToolKey && item.status === "ready");
+  const aiGeneratedModels = useMemo(
+    () =>
+      (resultItemsByTool["model-generate"] ?? [])
+        .filter((item) => item.status === "ready" && item.src)
+        .map((item) => {
+          const taskRecord = (taskRecordsByTool["model-generate"] ?? []).find((record) => record.taskId === item.taskId);
+          const advancedSelections = taskRecord?.snapshot.advancedSelections ?? {};
+          const detailGroups = buildModelDetailGroups(advancedSelections);
+          return {
+            id: item.id,
+            name: `${item.fileName}.${inferExtensionFromResult(item)}`,
+            src: item.src ?? "",
+            sizeMb: 12,
+            createdAt: item.createdAt,
+            sourceType: "ai",
+            format: inferExtensionFromResult(item).toUpperCase(),
+            detailTitle: advancedSelections.persona || advancedSelections.modelGenerateType || "AI模特",
+            detailSubtitle: [advancedSelections.gender, advancedSelections.age, advancedSelections.appearance].filter(Boolean).join(","),
+            detailGroups
+          } satisfies ModelAsset;
+        }),
+    [resultItemsByTool, taskRecordsByTool]
+  );
+  const allMineModels = useMemo(
+    () => [...aiGeneratedModels, ...uploadedModels].sort((left, right) => right.createdAt - left.createdAt),
+    [aiGeneratedModels, uploadedModels]
+  );
+  const filteredMineModels = useMemo(() => {
+    if (modelFilterTab === "all") return allMineModels;
+    return allMineModels.filter((item) => item.sourceType === modelFilterTab);
+  }, [allMineModels, modelFilterTab]);
+  const activeModelDetail = allMineModels.find((item) => item.id === selectedMineModelId) ?? null;
+  const handlePrimaryChange = (key: PrimaryKey) => {
+    const nextGroup = navGroups.find((item) => item.key === key) ?? navGroups[0];
+    setActivePage("workspace");
+    setActivePrimary(key);
+    setActiveTool(nextGroup.tools[0].key);
+    setCollapsed(false);
+  };
+
+  useEffect(() => {
+    const nextGroup = navGroups.find((item) => item.key === activePrimary) ?? navGroups[0];
+    const toolStillExists = nextGroup.tools.some((item) => item.key === activeTool);
+    if (!toolStillExists && nextGroup.tools[0]) {
+      setActiveTool(nextGroup.tools[0].key);
+    }
+  }, [activePrimary, activeTool]);
+
+  useEffect(() => {
+    if (activePage !== "workspace") return;
+
+    const enteringNewTool = lastVisitedWorkspaceToolRef.current !== activeTool;
+    lastVisitedWorkspaceToolRef.current = activeTool;
+    if (!enteringNewTool) return;
+
+    const currentItems = resultItemsByTool[activeTool] ?? [];
+    if (currentItems.length > 0) return;
+
+    setResultTabsByTool((current) => ({
+      ...current,
+      [activeTool]: "cases"
+    }));
+  }, [activePage, activeTool, resultItemsByTool]);
+
+  useEffect(() => {
+    if (selectedMineModelId && !allMineModels.some((item) => item.id === selectedMineModelId)) {
+      setSelectedMineModelId("");
+    }
+  }, [allMineModels, selectedMineModelId]);
+
+  useEffect(
+    () => () => {
+      generationTimeoutsRef.current.forEach(({ timerId }) => window.clearTimeout(timerId));
+    },
+    []
+  );
+
+  const scheduleResultUpdate = (callback: () => void, delay: number, itemId?: string, phase?: ScheduledResultUpdate["phase"]) => {
+    const timerId = window.setTimeout(callback, delay);
+    generationTimeoutsRef.current.push({ timerId, itemId, phase });
+  };
+
+  const clearScheduledResultUpdates = (itemId: string) => {
+    generationTimeoutsRef.current = generationTimeoutsRef.current.filter((entry) => {
+      if (entry.itemId !== itemId) return true;
+      window.clearTimeout(entry.timerId);
+      return false;
+    });
+  };
+
+  const updateResultItems = (toolKey: string, updater: (items: ResultItem[]) => ResultItem[]) => {
+    setResultItemsByTool((current) => ({
+      ...current,
+      [toolKey]: updater(current[toolKey] ?? [])
+    }));
+  };
+
+  const updateTaskRecords = (toolKey: string, updater: (records: TaskRecord[]) => TaskRecord[]) => {
+    setTaskRecordsByTool((current) => ({
+      ...current,
+      [toolKey]: updater(current[toolKey] ?? [])
+    }));
+  };
+
+  const removeResultFromTask = (toolKey: string, item: ResultItem) => {
+    let removedTask = false;
+    updateTaskRecords(toolKey, (records) =>
+      records.flatMap((record) => {
+        if (record.taskId !== item.taskId) return [record];
+
+        const nextTotalCount = Math.max(0, record.totalCount - 1);
+        const nextSuccessCount = record.successCount - (item.status === "ready" ? 1 : 0);
+        const nextFailCount = Math.max(0, record.failCount - (item.status === "failed" ? 1 : 0));
+        const nextItemIds = record.itemIds.filter((value) => value !== item.id);
+        const nextCoverSrcs = item.src ? record.coverSrcs.filter((src) => src !== item.src) : record.coverSrcs;
+        const nextFinishedCount = nextSuccessCount + nextFailCount;
+
+        if (nextTotalCount <= 0 || nextItemIds.length === 0) {
+          removedTask = true;
+          return [];
+        }
+
+        return [
+          {
+            ...record,
+            totalCount: nextTotalCount,
+            successCount: nextSuccessCount,
+            failCount: nextFailCount,
+            itemIds: nextItemIds,
+            coverSrcs: nextCoverSrcs.slice(0, 4),
+            status: nextFinishedCount >= nextTotalCount ? "completed" : nextFinishedCount === 0 ? "queued" : "generating"
+          }
+        ];
+      })
+    );
+
+    if (removedTask) {
+      setSelectedTaskIdByTool((current) => ({
+        ...current,
+        [toolKey]: current[toolKey] === item.taskId ? null : current[toolKey]
+      }));
+    }
+  };
+
+  const syncTaskRecordProgress = (
+    toolKey: string,
+    taskId: string,
+    item: ResultItem,
+    phase: "start" | "finish" | "retry-start"
+  ) => {
+    updateTaskRecords(toolKey, (records) =>
+      records.map((record) => {
+        if (record.taskId !== taskId) return record;
+
+        if (phase === "start") {
+          return {
+            ...record,
+            status: "generating"
+          };
+        }
+
+        if (phase === "retry-start") {
+          return {
+            ...record,
+            status: "generating",
+            failCount: Math.max(0, record.failCount - 1),
+            coverSrcs: record.coverSrcs.filter((src) => src !== item.src)
+          };
+        }
+
+        const nextSuccessCount = record.successCount + (item.status === "ready" ? 1 : 0);
+        const nextFailCount = record.failCount + (item.status === "failed" ? 1 : 0);
+        const nextCoverSrcs = item.status === "ready" && item.src ? [item.src, ...record.coverSrcs].slice(0, 4) : record.coverSrcs;
+        const finishedCount = nextSuccessCount + nextFailCount;
+
+        return {
+          ...record,
+          successCount: nextSuccessCount,
+          failCount: nextFailCount,
+          coverSrcs: nextCoverSrcs,
+          status: finishedCount >= record.totalCount ? "completed" : "generating"
+        };
+      })
+    );
+  };
+
+  const handleAddUpload = (fieldKey: string, nextValues: UploadItem[]) => {
+    setUploads((current) => ({ ...current, [fieldKey]: nextValues }));
+  };
+
+  const handleRemoveUpload = (fieldKey: string, index: number) => {
+    const removedSizeMb = (uploads[fieldKey] ?? [])[index]?.sizeMb ?? 0;
+    setUploads((current) => ({
+      ...current,
+      [fieldKey]: (current[fieldKey] ?? []).filter((_, currentIndex) => currentIndex !== index)
+    }));
+    setUserMetrics((current) => ({
+      ...current,
+      [currentUserId]: {
+        ...current[currentUserId],
+        remainingStorageMb: Number((current[currentUserId].remainingStorageMb + removedSizeMb).toFixed(1))
+      }
+    }));
+  };
+
+  const handleUploadModels = async (files: File[]) => {
+    const candidateFiles = files.filter((file) => file.type.startsWith("image/"));
+    const filteredFiles = candidateFiles.filter((file) => !isSensitiveUpload(file));
+    const nextModels: ModelAsset[] = [];
+    const warnings: string[] = [];
+    let availableStorageMb = remainingStorageMb;
+
+    for (const file of filteredFiles) {
+      const validation = await validateModelImageFile(file);
+      if (!validation.ok) {
+        warnings.push(validation.reason);
+        continue;
+      }
+
+      const uploadItem = validation.item;
+      const sizeMb = uploadItem.sizeMb;
+      if (sizeMb > availableStorageMb) {
+        warnings.push(`“${file.name}”上传失败，剩余存储空间不足。`);
+        continue;
+      }
+
+      availableStorageMb = Number(Math.max(0, availableStorageMb - sizeMb).toFixed(1));
+      nextModels.push({
+        id: uploadItem.id,
+        name: uploadItem.name ?? file.name,
+        src: uploadItem.src ?? "",
+        sizeMb,
+        createdAt: Date.now() + nextModels.length,
+        sourceType: "upload",
+        format: uploadItem.format ?? getImageFormat(file.name),
+        width: uploadItem.width,
+        height: uploadItem.height,
+        detailTitle: "本地上传模特",
+        detailSubtitle: `${uploadItem.width ?? "-"} × ${uploadItem.height ?? "-"}`,
+        detailGroups: [
+          {
+            label: "基础信息",
+            values: ["本地上传", uploadItem.format ?? getImageFormat(file.name), `${uploadItem.width ?? "-"} × ${uploadItem.height ?? "-"}`]
+          }
+        ]
+      });
+    }
+
+    if (candidateFiles.length !== filteredFiles.length) {
+      warnings.push("存在图片未通过安全审核，已跳过。");
+    }
+
+    if (nextModels.length) {
+      setUploadedModels((current) => [...nextModels, ...current]);
+      setSelectedMineModelId(nextModels[0].id);
+      setUserMetrics((current) => ({
+        ...current,
+        [currentUserId]: {
+          ...current[currentUserId],
+          remainingStorageMb: availableStorageMb
+        }
+      }));
+      setToast({
+        id: Date.now(),
+        message: `已添加${nextModels.length}个模特`
+      });
+    } else if (!warnings.length) {
+      warnings.push("未识别到可用模特图，请重新上传。");
+    }
+
+    if (warnings.length && !nextModels.length) {
+      setToast({
+        id: Date.now() + 1,
+        message: warnings[0],
+        tone: "warning"
+      });
+    }
+
+    return nextModels;
+  };
+
+  const handleGenerateBaselineModel = async (values: AdvancedSelectionMap) => {
+    const requiredKeys = ["gender", "appearance", "age", "persona", "bodyType"] as const;
+    const missingRequired = requiredKeys.some((key) => !values[key]);
+    if (missingRequired) {
+      setToast({
+        id: Date.now(),
+        message: "请先完善 AI 模特参数",
+        tone: "warning"
+      });
+      return null;
+    }
+
+    const taskId = generateRandomTenDigitId();
+    const createdAt = Date.now();
+    const assetPool = ["/assets/task-gallery-7.png", "/assets/task-gallery-8.png", "/assets/result-1.png", "/assets/result-4.png"];
+    const src = assetPool[createdAt % assetPool.length];
+    const fileName = `AI模特_${taskId}`;
+    const resultId = `baseline-model-${taskId}`;
+    const nextResultItem: ResultItem = {
+      id: resultId,
+      toolKey: "model-generate",
+      label: fileName,
+      fileName,
+      taskId,
+      mediaKind: "image",
+      status: "ready",
+      src,
+      selected: false,
+      createdAt
+    };
+    const nextTaskRecord: TaskRecord = {
+      id: `task-${taskId}`,
+      toolKey: "model-generate",
+      taskId,
+      createdAt,
+      totalCount: 1,
+      successCount: 1,
+      failCount: 0,
+      status: "completed",
+      itemIds: [resultId],
+      coverSrcs: [src],
+      snapshot: {
+        mainUploads: [],
+        referenceUploads: [],
+        videoUploads: [],
+        advancedSelections: {
+          ...values,
+          modelGenerateTypeKey: "real-model",
+          modelGenerateType: "通用模特"
+        },
+        supplementValue: values.baselineModelSupplement ?? "",
+        creationModeSelection: null
+      }
+    };
+
+    updateResultItems("model-generate", (items) => [nextResultItem, ...items]);
+    updateTaskRecords("model-generate", (records) => [nextTaskRecord, ...records]);
+    setSelectedTaskIdByTool((current) => ({
+      ...current,
+      "model-generate": taskId
+    }));
+    setResultTabsByTool((current) => ({
+      ...current,
+      "model-generate": "results"
+    }));
+    setToast({
+      id: Date.now(),
+      message: "已生成模特"
+    });
+    return resultId;
+  };
+
+  const handleOpenLibrary = (fieldKey: string) => {
+    if (remainingStorageMb <= 0) {
+      setLimitModal({
+        title: "当前存储容量不足",
+        description: getStorageLimitDescription(remainingStorageMb)
+      });
+      return;
+    }
+    setLibraryFieldKey(fieldKey);
+  };
+
+  const handleLibraryConfirm = (items: UploadItem[]) => {
+    if (!libraryFieldKey || !items.length) return;
+    const fittedItems: UploadItem[] = [];
+    let availableStorageMb = remainingStorageMb;
+    items.forEach((item) => {
+      if (item.sizeMb <= availableStorageMb) {
+        fittedItems.push(item);
+        availableStorageMb = Number(Math.max(0, availableStorageMb - item.sizeMb).toFixed(1));
+      }
+    });
+    if (!fittedItems.length) {
+      handleAtLimit();
+      return;
+    }
+    setUploads((current) => {
+      const currentItems = current[libraryFieldKey] ?? [];
+      return {
+        ...current,
+        [libraryFieldKey]: [...fittedItems, ...currentItems]
+      };
+    });
+    setUserMetrics((current) => ({
+      ...current,
+      [currentUserId]: {
+        ...current[currentUserId],
+        remainingStorageMb: Number(
+          Math.max(0, current[currentUserId].remainingStorageMb - fittedItems.reduce((sum, item) => sum + item.sizeMb, 0)).toFixed(1)
+        )
+      }
+    }));
+    if (fittedItems.length < items.length) {
+      handleAtLimit();
+    }
+  };
+
+  const getLibraryMaxSelectable = () => {
+    if (!libraryFieldKey) return 0;
+    const [toolKey, fieldKind] = libraryFieldKey.split(":");
+    const config = toolModuleConfigs[toolKey];
+    const fieldConfig =
+      fieldKind === "reference" ? config?.uploads.reference : fieldKind === "video" ? config?.uploads.video : config?.uploads.main;
+    const maxCount = fieldConfig?.maxCount ?? uploadCountLimit;
+    return Math.max(0, maxCount - (uploads[libraryFieldKey] ?? []).length);
+  };
+
+  const handleRejectedUpload = (message: string) => {
+    setToast({
+      id: Date.now(),
+      message,
+      tone: "warning"
+    });
+  };
+
+  const handleAtLimit = () => {
+    setLimitModal({
+      title: "当前存储容量不足",
+      description: getStorageLimitDescription(remainingStorageMb)
+    });
+  };
+
+  const handleOpenMembership = () => {
+    setUserMenuOpen(false);
+    setPointsBalanceOpen(false);
+    setPayModalOpen(true);
+  };
+
+  const handleMembershipSuccess = () => {
+    setCurrentUserId("flagship");
+    setUserMetrics((current) => ({
+      ...current,
+      flagship: {
+        ...current.flagship,
+        credits: Math.max(current.flagship.credits, 120),
+        teamCredits: Math.max(current.flagship.teamCredits, 188),
+        remainingStorageMb: Math.max(current.flagship.remainingStorageMb, 4096),
+        maxConcurrentTasks: Math.max(current.flagship.maxConcurrentTasks, 20)
+      }
+    }));
+    setPayModalOpen(false);
+    setLimitModal(null);
+    setToast({
+      id: Date.now(),
+      message: "会员支付成功，已升级为旗舰会员"
+    });
+  };
+
+  const handleOpenPointsModal = () => {
+    setPointsBalanceOpen(false);
+    setUserMenuOpen(false);
+    setPointsModalOpen(true);
+  };
+
+  const handlePointsSuccess = (points: number) => {
+    setUserMetrics((current) => ({
+      ...current,
+      [currentUserId]: {
+        ...current[currentUserId],
+        credits: current[currentUserId].credits + points
+      }
+    }));
+    setPurchaseRecords((current) => [
+      {
+        id: `purchase-${Date.now()}`,
+        userName: "赵文文-微...",
+        avatar: "/assets/member-avatar.png",
+        title: `购买${points}积分`,
+        date: "2026-04-25",
+        time: "12:00:00",
+        amount: `+${points}`
+      },
+      ...current
+    ]);
+    setPointsModalOpen(false);
+    setToast({
+      id: Date.now(),
+      message: `支付成功，已到账${points}积分`
+    });
+  };
+
+  const handleOpenPointsBalance = () => {
+    setUserMenuOpen(false);
+    setPointsBalanceOpen(true);
+  };
+
+  const handleOpenRecords = (tab: PointsRecordTab = "consume") => {
+    setPointsBalanceOpen(false);
+    setPointsRecordTab(tab);
+    setPointsRecordOpen(true);
+  };
+
+  const handleGenerate = (tool: ToolConfig, payload: GeneratePayload) => {
+    setPointsBalanceOpen(false);
+    setUserMenuOpen(false);
+    setResultTabsByTool((current) => ({
+      ...current,
+      [tool.key]: "results"
+    }));
+
+    if (activeGeneratingTaskCount >= maxConcurrentTasks) {
+      const canUpsellForMoreTasks = currentUserId !== "supreme-team" && currentUserId !== "flagship";
+      setToast({
+        id: Date.now(),
+        message: canUpsellForMoreTasks
+          ? `当前功能有${currentToolActiveTaskCount}个正在处理中的任务，升级会员添加更多任务`
+          : `当前功能有${currentToolActiveTaskCount}个正在处理中的任务，已达上限，请等待完成后再继续添加`,
+        tone: "warning"
+      });
+      if (canUpsellForMoreTasks) {
+        setPayModalOpen(true);
+      }
+      return;
+    }
+
+    if (remainingStorageMb < GENERATE_STORAGE_COST_MB) {
+      setToast({
+        id: Date.now(),
+        message: "剩余容量不足，请先扩展容量",
+        tone: "warning"
+      });
+      setLimitModal({
+        title: "当前存储容量不足",
+        description: getStorageLimitDescription(remainingStorageMb)
+      });
+      return;
+    }
+
+    if (credits >= payload.generateCost) {
+      const runSeed = Date.now();
+      const taskId = generateRandomTenDigitId();
+      const pendingItems = createPendingResultItems(tool, payload.sourceUploads, payload.outputCount, runSeed, taskId, payload.advancedSelections);
+      const failIndex = tool.key === "set-main" ? -1 : pendingItems.length >= 4 ? pendingItems.length - 1 : -1;
+      const nextTaskRecord: TaskRecord = {
+        id: `${tool.key}-${taskId}`,
+        toolKey: tool.key,
+        taskId,
+        createdAt: runSeed,
+        totalCount: pendingItems.length,
+        successCount: 0,
+        failCount: 0,
+        status: "queued",
+        itemIds: pendingItems.map((item) => item.id),
+        coverSrcs: [],
+        snapshot: {
+          mainUploads: payload.sourceUploads,
+          referenceUploads: payload.referenceUploads ?? [],
+          videoUploads: payload.videoUploads ?? [],
+          advancedSelections: payload.advancedSelections,
+          supplementValue: payload.supplementValue,
+          creationModeSelection: payload.creationModeSelection
+        }
+      };
+
+      setUserMetrics((current) => ({
+        ...current,
+        [currentUserId]: {
+          ...current[currentUserId],
+          credits: Math.max(0, current[currentUserId].credits - payload.generateCost),
+          remainingStorageMb: Number(Math.max(0, current[currentUserId].remainingStorageMb - GENERATE_STORAGE_COST_MB).toFixed(1))
+        }
+      }));
+      setResultItemsByTool((current) => ({
+        ...current,
+        [tool.key]: [...pendingItems, ...(current[tool.key] ?? [])]
+      }));
+      updateTaskRecords(tool.key, (records) => [nextTaskRecord, ...records]);
+      setSelectedTaskIdByTool((current) => ({
+        ...current,
+        [tool.key]: taskId
+      }));
+      setToast({
+        id: Date.now(),
+        message: `已提交生成，消耗${payload.generateCost}积分和${formatStorageSize(GENERATE_STORAGE_COST_MB)}容量`
+      });
+
+      pendingItems.forEach((item, index) => {
+        const startDelay = 500 + index * 900;
+        const finishDelay = startDelay + 1500;
+
+        scheduleResultUpdate(() => {
+          updateResultItems(tool.key, (items) =>
+            items.map((currentItem) =>
+              currentItem.id === item.id
+                ? {
+                    ...currentItem,
+                    status: "generating",
+                    src: resultAssetPool[(runSeed + index) % resultAssetPool.length]
+                  }
+                : currentItem
+            )
+          );
+          syncTaskRecordProgress(tool.key, taskId, item, "start");
+        }, startDelay, item.id, "start");
+
+        scheduleResultUpdate(() => {
+          const finishedItem: ResultItem = {
+            ...item,
+            status: index === failIndex ? "failed" : "ready",
+            src: resultAssetPool[(runSeed + index) % resultAssetPool.length]
+          };
+          updateResultItems(tool.key, (items) =>
+            items.map((currentItem) =>
+              currentItem.id === item.id
+                ? finishedItem
+                : currentItem
+            )
+          );
+          syncTaskRecordProgress(tool.key, taskId, finishedItem, "finish");
+        }, finishDelay, item.id, "finish");
+      });
+
+      return;
+    }
+
+    if (currentUser.canBuyPointsWhenInsufficient) {
+      setToast({
+        id: Date.now(),
+        message: "积分不足，请先购买积分",
+        tone: "warning"
+      });
+      setPointsModalOpen(true);
+      return;
+    }
+
+    setToast({
+      id: Date.now(),
+      message: "升级会员获取更多积分",
+      tone: "warning"
+    });
+    setPayModalOpen(true);
+  };
+
+  const handleAplusDraftChange = (toolKey: string, payload: GeneratePayload) => {
+    setAplusDraftByTool((current) => ({
+      ...current,
+      [toolKey]: payload
+    }));
+  };
+
+  const handleGenerateAplusPlan = (tool: ToolConfig, payload: GeneratePayload) => {
+    if (!payload.sourceUploads.length) {
+      setToast({
+        id: Date.now(),
+        message: "请先上传商品图后再生成规划方案",
+        tone: "warning"
+      });
+      return;
+    }
+
+    const selectedModules = getSetPackSelectedTypes(payload.advancedSelections);
+    if (!selectedModules.length) {
+      setToast({
+        id: Date.now(),
+        message: "请先选择至少一个模块",
+        tone: "warning"
+      });
+      return;
+    }
+
+    const signature = buildAplusPlanSignature(payload);
+    const runToken = Date.now();
+    aplusPlanRunRef.current[tool.key] = runToken;
+    setResultTabsByTool((current) => ({
+      ...current,
+      [tool.key]: "results"
+    }));
+    setAplusStepByTool((current) => ({
+      ...current,
+      [tool.key]: 2
+    }));
+    setAplusDraftByTool((current) => ({
+      ...current,
+      [tool.key]: payload
+    }));
+    setAplusPlanByTool((current) => ({
+      ...current,
+      [tool.key]: {
+        status: "generating",
+        signature,
+        modules: [],
+        summary: []
+      }
+    }));
+
+    window.setTimeout(() => {
+      if (aplusPlanRunRef.current[tool.key] !== runToken) return;
+      setAplusPlanByTool((current) => ({
+        ...current,
+        [tool.key]: {
+          status: "ready",
+          signature,
+          summary: buildAplusPlanSummary(payload.advancedSelections),
+          modules: buildAplusPlanModules(payload.advancedSelections),
+          updatedAt: Date.now()
+        }
+      }));
+    }, 880);
+  };
+
+  const updateAplusPlan = (toolKey: string, updater: (plan: AplusPlanState) => AplusPlanState) => {
+    setAplusPlanByTool((current) => ({
+      ...current,
+      [toolKey]: updater(current[toolKey] ?? { status: "idle", modules: [] })
+    }));
+  };
+
+  const handleResetAplusPlan = () => {
+    aplusPlanRunRef.current[currentTool.key] = Date.now();
+    setAplusStepByTool((current) => ({
+      ...current,
+      [currentTool.key]: 1
+    }));
+    setAplusPlanByTool((current) => ({
+      ...current,
+      [currentTool.key]: { status: "idle", modules: [] }
+    }));
+  };
+
+  const handleDeleteAplusModule = (moduleId: string) => {
+    updateAplusPlan(currentTool.key, (plan) => ({
+      ...plan,
+      modules: plan.modules.filter((item) => item.id !== moduleId)
+    }));
+  };
+
+  const handleMoveAplusModule = (dragId: string, targetId: string) => {
+    updateAplusPlan(currentTool.key, (plan) => {
+      const nextModules = [...plan.modules];
+      const dragIndex = nextModules.findIndex((item) => item.id === dragId);
+      const targetIndex = nextModules.findIndex((item) => item.id === targetId);
+      if (dragIndex < 0 || targetIndex < 0) return plan;
+      const [dragItem] = nextModules.splice(dragIndex, 1);
+      nextModules.splice(targetIndex, 0, dragItem);
+      return {
+        ...plan,
+        modules: nextModules
+      };
+    });
+  };
+
+  const handleUpdateAplusModule = (moduleId: string, content: Partial<AplusPlanModule>) => {
+    updateAplusPlan(currentTool.key, (plan) => ({
+      ...plan,
+      modules: plan.modules.map((item) => (item.id === moduleId ? { ...item, ...content } : item))
+    }));
+  };
+
+  const handleGenerateAplusDetails = () => {
+    const plan = aplusPlanByTool["set-aplus"];
+    const draft = aplusDraftByTool["set-aplus"];
+    if (!plan || plan.status !== "ready" || !draft) {
+      setToast({
+        id: Date.now(),
+        message: "请先生成规划方案",
+        tone: "warning"
+      });
+      return;
+    }
+    if (plan.signature !== buildAplusPlanSignature(draft)) {
+      setToast({
+        id: Date.now(),
+        message: "左侧配置已变更，请重新生成规划方案",
+        tone: "warning"
+      });
+      return;
+    }
+    const nextAdvancedSelections = {
+      ...draft.advancedSelections,
+      setPackSelectedTypes: JSON.stringify(
+        plan.modules.map((module, index) => ({
+          id: module.id,
+          category: module.category,
+          name: module.category,
+          description: module.headline,
+          tag: "A+模块",
+          prompt: module.lines.join(" "),
+          ratio: "3:4",
+          resolution: "1K",
+          count: 1,
+          sortOrder: index + 1
+        }))
+      ),
+      aplusPlanSummary: JSON.stringify(plan.summary ?? []),
+      aplusPlanModules: JSON.stringify(plan.modules)
+    };
+    const unitCreditCost = draft.creationModeSelection?.unitCreditCost ?? 0;
+    const outputCount = Math.max(1, plan.modules.length);
+    handleGenerate(currentTool, {
+      ...draft,
+      advancedSelections: nextAdvancedSelections,
+      outputCount,
+      generateCost: outputCount * unitCreditCost,
+      creationModeSelection: draft.creationModeSelection
+        ? {
+            ...draft.creationModeSelection,
+            count: outputCount
+          }
+        : null
+    });
+  };
+
+  const handleGenerateFashionScenes = (tool: ToolConfig, payload: GeneratePayload) => {
+    if (!payload.sourceUploads.length) {
+      setToast({
+        id: Date.now(),
+        message: "请先上传服装图片",
+        tone: "warning"
+      });
+      return;
+    }
+
+    if (payload.advancedSelections.baselineModelSource === "mine") {
+      if (!payload.advancedSelections.selectedModelId) {
+        setToast({
+          id: Date.now(),
+          message: "请先选择我的模特，或先上传本地模特",
+          tone: "warning"
+        });
+        return;
+      }
+    } else {
+      const requiredKeys = ["gender", "appearance", "age", "persona", "bodyType"] as const;
+      const missingRequired = requiredKeys.some((key) => !payload.advancedSelections[key]);
+      if (missingRequired) {
+        setToast({
+          id: Date.now(),
+          message: "请先完善 AI 生成模特参数",
+          tone: "warning"
+        });
+        return;
+      }
+    }
+
+    const signature = buildFashionSceneSignature(payload);
+    const runToken = Date.now();
+    fashionPlanRunRef.current[tool.key] = runToken;
+    setResultTabsByTool((current) => ({
+      ...current,
+      [tool.key]: "results"
+    }));
+    setFashionStepByTool((current) => ({
+      ...current,
+      [tool.key]: 2
+    }));
+    setFashionDraftByTool((current) => ({
+      ...current,
+      [tool.key]: payload
+    }));
+    setFashionPlanByTool((current) => ({
+      ...current,
+      [tool.key]: {
+        status: "generating",
+        signature,
+        modules: [],
+        summary: []
+      }
+    }));
+
+    window.setTimeout(() => {
+      if (fashionPlanRunRef.current[tool.key] !== runToken) return;
+      setFashionPlanByTool((current) => ({
+        ...current,
+        [tool.key]: {
+          status: "ready",
+          signature,
+          summary: buildFashionSceneSummary(payload.advancedSelections, payload.sourceUploads.length),
+          modules: buildFashionSceneModules(payload.advancedSelections),
+          updatedAt: Date.now()
+        }
+      }));
+    }, 880);
+  };
+
+  const updateFashionPlan = (toolKey: string, updater: (plan: AplusPlanState) => AplusPlanState) => {
+    setFashionPlanByTool((current) => ({
+      ...current,
+      [toolKey]: updater(current[toolKey] ?? { status: "idle", modules: [] })
+    }));
+  };
+
+  const handleResetFashionPlan = () => {
+    fashionPlanRunRef.current[currentTool.key] = Date.now();
+    setFashionStepByTool((current) => ({
+      ...current,
+      [currentTool.key]: 1
+    }));
+    setFashionPlanByTool((current) => ({
+      ...current,
+      [currentTool.key]: { status: "idle", modules: [] }
+    }));
+  };
+
+  const handleDeleteFashionScene = (moduleId: string) => {
+    updateFashionPlan(currentTool.key, (plan) => ({
+      ...plan,
+      modules: plan.modules.filter((item) => item.id !== moduleId)
+    }));
+  };
+
+  const handleMoveFashionScene = (dragId: string, targetId: string) => {
+    updateFashionPlan(currentTool.key, (plan) => {
+      const nextModules = [...plan.modules];
+      const dragIndex = nextModules.findIndex((item) => item.id === dragId);
+      const targetIndex = nextModules.findIndex((item) => item.id === targetId);
+      if (dragIndex < 0 || targetIndex < 0) return plan;
+      const [dragItem] = nextModules.splice(dragIndex, 1);
+      nextModules.splice(targetIndex, 0, dragItem);
+      return {
+        ...plan,
+        modules: nextModules
+      };
+    });
+  };
+
+  const handleUpdateFashionScene = (moduleId: string, content: Partial<AplusPlanModule>) => {
+    updateFashionPlan(currentTool.key, (plan) => ({
+      ...plan,
+      modules: plan.modules.map((item) => (item.id === moduleId ? { ...item, ...content } : item))
+    }));
+  };
+
+  const handleGenerateFashionResults = () => {
+    const plan = fashionPlanByTool["set-fashion"];
+    const draft = fashionDraftByTool["set-fashion"];
+    if (!plan || plan.status !== "ready" || !draft) {
+      setToast({
+        id: Date.now(),
+        message: "请先生成推荐场景",
+        tone: "warning"
+      });
+      return;
+    }
+    if (plan.signature !== buildFashionSceneSignature(draft)) {
+      setToast({
+        id: Date.now(),
+        message: "第1步信息已变更，请重新生成推荐场景",
+        tone: "warning"
+      });
+      return;
+    }
+
+    const sceneTypes = buildFashionSceneTypes(plan.modules);
+    const outputCount = Math.max(1, sceneTypes.length);
+    const fallbackModeSelection = getDefaultCreationModeSelection("set-pack", outputCount);
+    const resolvedCreationModeSelection = draft.creationModeSelection
+      ? { ...draft.creationModeSelection, count: outputCount }
+      : fallbackModeSelection;
+    const unitCreditCost = resolvedCreationModeSelection?.unitCreditCost ?? 0;
+
+    handleGenerate(currentTool, {
+      ...draft,
+      advancedSelections: {
+        ...draft.advancedSelections,
+        setPackSelectedTypes: JSON.stringify(sceneTypes),
+        fashionSceneSummary: JSON.stringify(plan.summary ?? []),
+        fashionSceneModules: JSON.stringify(plan.modules)
+      },
+      outputCount,
+      generateCost: outputCount * unitCreditCost,
+      creationModeSelection: resolvedCreationModeSelection
+    });
+  };
+
+  const handleResultTabChange = (toolKey: string, tab: ResultTabKey) => {
+    setResultTabsByTool((current) => ({
+      ...current,
+      [toolKey]: tab
+    }));
+  };
+
+  const handleToggleResultItem = (toolKey: string, itemId: string) => {
+    updateResultItems(toolKey, (items) =>
+      items.map((item) => (item.id === itemId && item.status === "ready" ? { ...item, selected: !item.selected } : item))
+    );
+  };
+
+  const handleToggleResultSelectAll = (toolKey: string, checked: boolean) => {
+    updateResultItems(toolKey, (items) =>
+      items.map((item) => (item.status === "ready" ? { ...item, selected: checked } : item))
+    );
+  };
+
+  const performSingleDownload = async (item: ResultItem, preserveVisibleMark: boolean) => {
+    try {
+      const extension = inferExtensionFromResult(item);
+      const originalBlob = await getResultBlob(item);
+      const blob = preserveVisibleMark ? await addAiVisibleWatermark(originalBlob, item) : originalBlob;
+      triggerDownload(blob, `${item.fileName}.${extension}`);
+      setToast({
+        id: Date.now(),
+        message: `已下载 ${item.fileName}.${extension}`
+      });
+    } catch (error) {
+      setToast({
+        id: Date.now(),
+        message: error instanceof Error ? error.message : "下载失败，请稍后重试",
+        tone: "warning"
+      });
+    }
+  };
+
+  const performBatchDownload = async (tool: ToolConfig, preserveVisibleMark: boolean) => {
+    const selectedItems = (resultItemsByTool[tool.key] ?? []).filter((item) => item.status === "ready" && item.selected);
+    if (!selectedItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "请先选择需要下载的结果",
+        tone: "warning"
+      });
+      return;
+    }
+
+    try {
+      const zipEntries = await Promise.all(
+        selectedItems.map(async (item) => {
+          const originalBlob = await getResultBlob(item);
+          const blob = preserveVisibleMark ? await addAiVisibleWatermark(originalBlob, item) : originalBlob;
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          const extension = inferExtensionFromResult(item);
+          return {
+            fileName: `${item.fileName}.${extension}`,
+            bytes
+          } satisfies ZipEntry;
+        })
+      );
+      const zipBlob = createZipBlob(zipEntries);
+      const taskId = selectedItems[0]?.taskId ?? generateRandomTenDigitId();
+      const zipName = `${tool.panelTitle}_${taskId}_${formatTaskTimestamp(Date.now())}.zip`;
+      triggerDownload(zipBlob, zipName);
+      setToast({
+        id: Date.now(),
+        message: `已打包下载${selectedItems.length}${tool.key.startsWith("video-") ? "个视频" : "张图片"}`
+      });
+    } catch (error) {
+      setToast({
+        id: Date.now(),
+        message: error instanceof Error ? error.message : "打包下载失败，请稍后重试",
+        tone: "warning"
+      });
+    }
+  };
+
+  const handleExportConfirm = async (preserveVisibleMark: boolean, skipForSevenDays: boolean) => {
+    const pendingAction = exportPendingAction;
+    setExportPendingAction(null);
+
+    if (!pendingAction) return;
+
+    if (skipForSevenDays) {
+      saveExportPreference({
+        preserveVisibleMark,
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+      });
+    } else {
+      clearExportPreference();
+    }
+
+    if (pendingAction.type === "single") {
+      await performSingleDownload(pendingAction.item, preserveVisibleMark);
+      return;
+    }
+
+    await performBatchDownload(pendingAction.tool, preserveVisibleMark);
+  };
+
+  const handleDownloadItem = async (item: ResultItem) => {
+    const isMemberUser = currentUserId !== "free";
+    if (!isMemberUser) {
+      await performSingleDownload(item, false);
+      return;
+    }
+
+    const preference = loadExportPreference();
+    if (preference) {
+      await performSingleDownload(item, preference.preserveVisibleMark);
+      return;
+    }
+
+    setExportPendingAction({
+      type: "single",
+      item
+    });
+  };
+
+  const handleDownloadResults = async (tool: ToolConfig) => {
+    const selectedItems = (resultItemsByTool[tool.key] ?? []).filter((item) => item.status === "ready" && item.selected);
+    if (!selectedItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "请先选择需要下载的结果",
+        tone: "warning"
+      });
+      return;
+    }
+
+    const isMemberUser = currentUserId !== "free";
+    if (!isMemberUser) {
+      await performBatchDownload(tool, false);
+      return;
+    }
+
+    const preference = loadExportPreference();
+    if (preference) {
+      await performBatchDownload(tool, preference.preserveVisibleMark);
+      return;
+    }
+
+    setExportPendingAction({
+      type: "batch",
+      tool
+    });
+  };
+
+  const handleDownloadModel = async (item: ModelAsset) => {
+    try {
+      const response = await fetch(item.src);
+      const blob = await response.blob();
+      triggerDownload(blob, item.name);
+      setToast({
+        id: Date.now(),
+        message: `已下载 ${item.name}`
+      });
+    } catch {
+      setToast({
+        id: Date.now(),
+        message: "模特下载失败，请稍后重试",
+        tone: "warning"
+      });
+    }
+  };
+
+  const handleDeleteModel = (item: ModelAsset) => {
+    if (item.sourceType === "upload") {
+      setUploadedModels((current) => current.filter((model) => model.id !== item.id));
+      setUserMetrics((current) => ({
+        ...current,
+        [currentUserId]: {
+          ...current[currentUserId],
+          remainingStorageMb: Number((current[currentUserId].remainingStorageMb + item.sizeMb).toFixed(1))
+        }
+      }));
+    } else {
+      updateResultItems("model-generate", (items) => items.filter((result) => result.id !== item.id));
+      const resultItem = (resultItemsByTool["model-generate"] ?? []).find((result) => result.id === item.id);
+      if (resultItem) {
+        removeResultFromTask("model-generate", resultItem);
+      }
+    }
+
+    setSelectedMineModelId((current) => (current === item.id ? "" : current));
+    setToast({
+      id: Date.now(),
+      message: "已删除模特"
+    });
+  };
+
+  const handleOpenModelGenerate = () => {
+    setActivePage("workspace");
+    setActivePrimary("model");
+    setActiveTool("model-generate");
+    setCollapsed(false);
+    setToast({
+      id: Date.now(),
+      message: "已跳转到模特生成"
+    });
+  };
+
+  const handleRetryResult = (toolKey: string, itemId: string) => {
+    const retrySeed = Date.now();
+    let retryItemSnapshot: ResultItem | undefined;
+    updateResultItems(toolKey, (items) =>
+      items.map((item) =>
+        item.id === itemId
+          ? (() => {
+              const nextItem: ResultItem = {
+                ...item,
+                status: "generating",
+                selected: false,
+                src: resultAssetPool[retrySeed % resultAssetPool.length]
+              };
+              retryItemSnapshot = nextItem;
+              return nextItem;
+            })()
+          : item
+      )
+    );
+    if (retryItemSnapshot) {
+      syncTaskRecordProgress(toolKey, retryItemSnapshot.taskId, retryItemSnapshot, "retry-start");
+    }
+    scheduleResultUpdate(() => {
+      let completedItemSnapshot: ResultItem | undefined;
+      updateResultItems(toolKey, (items) =>
+        items.map((item) =>
+          item.id === itemId
+            ? (() => {
+                const nextItem: ResultItem = {
+                  ...item,
+                  status: "ready",
+                  src: resultAssetPool[(retrySeed + 1) % resultAssetPool.length]
+                };
+                completedItemSnapshot = nextItem;
+                return nextItem;
+              })()
+            : item
+        )
+      );
+      if (completedItemSnapshot) {
+        syncTaskRecordProgress(toolKey, completedItemSnapshot.taskId, completedItemSnapshot, "finish");
+      }
+    }, 1400, itemId, "retry");
+  };
+
+  const handlePreviewResult = (item: ResultItem) => {
+    setPreviewResultItem(item);
+  };
+
+  const handleOpenEditResultText = (item: ResultItem) => {
+    setEditingResultItem(item);
+    setEditingResultText(item.overlayText ?? "");
+  };
+
+  const handleConfirmEditResultText = () => {
+    if (!editingResultItem) return;
+    updateResultItems(editingResultItem.toolKey, (items) =>
+      items.map((item) =>
+        item.id === editingResultItem.id
+          ? {
+              ...item,
+              overlayText: editingResultText.trim()
+            }
+          : item
+      )
+    );
+    setEditingResultItem(null);
+    setEditingResultText("");
+    setToast({
+      id: Date.now(),
+      message: "已更新图片文案"
+    });
+  };
+
+  const handleDeleteFailedResult = (toolKey: string, itemId: string) => {
+    let removedItem: ResultItem | undefined;
+    updateResultItems(toolKey, (items) =>
+      items.filter((item) => {
+        if (item.id === itemId) {
+          removedItem = item;
+          return false;
+        }
+        return true;
+      })
+    );
+    if (removedItem) {
+      removeResultFromTask(toolKey, removedItem);
+      setToast({
+        id: Date.now(),
+        message: "已删除失败结果"
+      });
+    }
+  };
+
+  const handleCancelQueuedResult = (toolKey: string, itemId: string) => {
+    let removedItem: ResultItem | undefined;
+    let refundCredits = 0;
+    let taskRecordSnapshot: TaskRecord | undefined;
+
+    clearScheduledResultUpdates(itemId);
+    const currentToolRecords = taskRecordsByTool[toolKey] ?? [];
+    updateResultItems(toolKey, (items) =>
+      items.filter((item) => {
+        if (item.id === itemId) {
+          removedItem = item;
+          taskRecordSnapshot = currentToolRecords.find((record) => record.taskId === item.taskId);
+          if (taskRecordSnapshot) {
+            const uploadCount = taskRecordSnapshot.snapshot.mainUploads.length || 1;
+            const unitCreditCost = taskRecordSnapshot.snapshot.creationModeSelection?.unitCreditCost ?? 0;
+            refundCredits = getQueuedResultRefundCredits(taskRecordSnapshot.toolKey, uploadCount, unitCreditCost);
+          }
+          return false;
+        }
+        return true;
+      })
+    );
+
+    if (removedItem) {
+      removeResultFromTask(toolKey, removedItem);
+      if (refundCredits > 0) {
+        setUserMetrics((current) => ({
+          ...current,
+          [currentUserId]: {
+            ...current[currentUserId],
+            credits: current[currentUserId].credits + refundCredits
+          }
+        }));
+      }
+      setToast({
+        id: Date.now(),
+        message: refundCredits > 0 ? `已取消排队任务，退回${refundCredits}积分` : "已取消排队任务"
+      });
+    }
+  };
+
+  const handleConfirmResultAction = () => {
+    if (!resultActionConfirm) return;
+    if (resultActionConfirm.type === "delete-failed") {
+      handleDeleteFailedResult(resultActionConfirm.toolKey, resultActionConfirm.itemId);
+    } else {
+      handleCancelQueuedResult(resultActionConfirm.toolKey, resultActionConfirm.itemId);
+    }
+    setResultActionConfirm(null);
+  };
+
+  const handleSelectTaskRecord = (record: TaskRecord) => {
+    setActivePage("workspace");
+    const targetTool = toolMap[record.toolKey];
+    if (targetTool) {
+      setActivePrimary(targetTool.primaryKey);
+      setActiveTool(targetTool.key);
+    }
+    setSelectedTaskIdByTool((current) => ({
+      ...current,
+      [record.toolKey]: record.taskId
+    }));
+    setResultTabsByTool((current) => ({
+      ...current,
+      [record.toolKey]: "results"
+    }));
+    setUploads((current) => ({
+      ...current,
+      [`${record.toolKey}:main`]: record.snapshot.mainUploads,
+      [`${record.toolKey}:reference`]: record.snapshot.referenceUploads,
+      [`${record.toolKey}:video`]: record.snapshot.videoUploads ?? []
+    }));
+    setSupplementValues((current) => ({
+      ...current,
+      [record.toolKey]: record.snapshot.supplementValue
+    }));
+  };
+
+  const handleSelectResultRecord = (item: ResultItem) => {
+    setActivePage("workspace");
+    const targetTool = toolMap[item.toolKey];
+    if (targetTool) {
+      setActivePrimary(targetTool.primaryKey);
+      setActiveTool(targetTool.key);
+    }
+    const relatedTask = (taskRecordsByTool[item.toolKey] ?? []).find((record) => record.taskId === item.taskId);
+    if (relatedTask) {
+      handleSelectTaskRecord(relatedTask);
+      return;
+    }
+    setResultTabsByTool((current) => ({
+      ...current,
+      [item.toolKey]: "results"
+    }));
+    setSelectedTaskIdByTool((current) => ({
+      ...current,
+      [item.toolKey]: item.taskId
+    }));
+  };
+
+  const handleOpenCaseTemplate = (template: CaseTemplate) => {
+    setActiveCaseTemplate(template);
+  };
+
+  const handleApplyCaseTemplate = (template: CaseTemplate) => {
+    const targetTool = toolMap[template.toolKey];
+    if (targetTool) {
+      setActivePage("workspace");
+      setActivePrimary(targetTool.primaryKey);
+      setActiveTool(targetTool.key);
+    }
+    setUploads((current) => ({
+      ...current,
+      [`${template.toolKey}:main`]: [
+        {
+          id: generateRandomTenDigitId(),
+          name: `${template.title}.png`,
+          src: template.sourceImage,
+          sizeMb: 6,
+          status: "ready"
+        }
+      ]
+    }));
+    setSupplementValues((current) => ({
+      ...current,
+      [template.toolKey]: template.description
+    }));
+    setResultTabsByTool((current) => ({
+      ...current,
+      [template.toolKey]: "results"
+    }));
+    setActiveCaseTemplate(null);
+    setToast({
+      id: Date.now(),
+      message: "已载入案例原图，可直接生成同款"
+    });
+  };
+
+  const handleShareCaseTemplate = async (template: CaseTemplate) => {
+    const shareUrl = `https://demo.chuangkit.com/case/${template.toolKey}/${template.id}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      }
+      setToast({
+        id: Date.now(),
+        message: "案例分享链接已复制"
+      });
+    } catch {
+      setToast({
+        id: Date.now(),
+        message: shareUrl
+      });
+    }
+  };
+
+  const handleSwitchUser = (userId: UserTierId) => {
+    const nextUser = userTierProfiles.find((item) => item.id === userId) ?? userTierProfiles[0];
+    setCurrentUserId(nextUser.id);
+    setUserMenuOpen(false);
+    setPointsBalanceOpen(false);
+    setPointsModalOpen(false);
+    setPayModalOpen(false);
+    setPointsRecordOpen(false);
+    setToast({
+      id: Date.now(),
+      message: `已切换为${nextUser.label}`
+    });
+  };
+
+  const handleUpdateCurrentUserMetric = (key: keyof UserTierMetrics, value: number) => {
+    setUserMetrics((current) => ({
+      ...current,
+      [currentUserId]: {
+        ...current[currentUserId],
+        [key]: Math.max(0, Number.isFinite(value) ? value : 0)
+      }
+    }));
+  };
+
+  const handleSupplementChange = (toolKey: string, value: string) => {
+    setSupplementValues((current) => ({
+      ...current,
+      [toolKey]: value
+    }));
+  };
+
+  const handleSupplementAiPolish = async (toolKey: string, value: string, context?: SupplementAiPolishContext) =>
+    runSupplementAiPolish(toolKey, value, context);
+
+  const handleSupplementAiAssist = async (
+    toolKey: string,
+    uploadsForTool: UploadItem[],
+    advancedConfig?: AdvancedSettingsConfig,
+    context?: SupplementAiPolishContext
+  ) => {
+    if (!uploadsForTool.length) return null;
+    const _prompt = advancedAiAssistPromptConfigs[toolKey] ?? advancedAiAssistPromptConfigs["goods-marketing"] ?? "";
+    const assistResult = buildAdvancedAiAssistResult(toolKey, uploadsForTool, advancedConfig);
+    const seedInput = dedupeStrings([
+      ...Object.values(assistResult.fieldValues),
+      assistResult.supplementValue ?? "",
+      ...(context?.creationModeValues ?? [])
+    ]).join("，");
+    const polishResult = seedInput ? await runSupplementAiPolish(toolKey, seedInput, context) : null;
+
+    return {
+      fieldValues: assistResult.fieldValues,
+      supplementValue: polishResult?.canUse ? polishResult.applyContent ?? assistResult.supplementValue : assistResult.supplementValue
+    } satisfies AdvancedAiAssistResult;
+  };
+
+  const handleGenerateSetPackTitles = (taskId: string) => {
+    const targetTask = (taskRecordsByTool["set-main"] ?? []).find((record) => record.taskId === taskId);
+    if (!targetTask) return;
+    const titleCandidates = buildSetPackTitleRecommendations(targetTask.snapshot.advancedSelections);
+    updateTaskRecords("set-main", (records) =>
+      records.map((record) =>
+        record.taskId === taskId
+          ? {
+              ...record,
+              snapshot: {
+                ...record.snapshot,
+                advancedSelections: {
+                  ...record.snapshot.advancedSelections,
+                  setPackTitleCandidates: JSON.stringify(titleCandidates)
+                }
+              }
+            }
+          : record
+      )
+    );
+    setToast({
+      id: Date.now(),
+      message: "已生成 3 组上架标题"
+    });
+  };
+
+  const handleApplySetPackTitle = (taskId: string, title: string) => {
+    updateTaskRecords("set-main", (records) =>
+      records.map((record) =>
+        record.taskId === taskId
+          ? {
+              ...record,
+              snapshot: {
+                ...record.snapshot,
+                advancedSelections: {
+                  ...record.snapshot.advancedSelections,
+                  setPackSelectedTitle: title
+                }
+              }
+            }
+          : record
+      )
+    );
+    setToast({
+      id: Date.now(),
+      message: "已应用标题方案"
+    });
+  };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    if (currentTool.key !== "set-aplus" || !currentSelectedTask) return;
+    const summary = safeParseJson<string[]>(currentSelectedTask.snapshot.advancedSelections.aplusPlanSummary, []);
+    const modules = safeParseJson<AplusPlanModule[]>(currentSelectedTask.snapshot.advancedSelections.aplusPlanModules, []);
+    if (!summary?.length && !modules?.length) return;
+    const signature = buildAplusPlanSignature({
+      generateCost: 0,
+      outputCount: modules?.length ?? 0,
+      sourceUploads: currentSelectedTask.snapshot.mainUploads,
+      referenceUploads: currentSelectedTask.snapshot.referenceUploads,
+      videoUploads: currentSelectedTask.snapshot.videoUploads ?? [],
+      advancedSelections: currentSelectedTask.snapshot.advancedSelections,
+      supplementValue: currentSelectedTask.snapshot.supplementValue,
+      creationModeSelection: currentSelectedTask.snapshot.creationModeSelection
+    });
+    setAplusPlanByTool((current) => ({
+      ...current,
+      "set-aplus": {
+        status: "ready",
+        signature,
+        summary: summary ?? [],
+        modules: modules ?? [],
+        updatedAt: currentSelectedTask.createdAt
+      }
+    }));
+  }, [currentSelectedTask, currentTool.key]);
+
+  useEffect(() => {
+    if (currentTool.key !== "set-fashion" || !currentSelectedTask) return;
+    const summary = safeParseJson<string[]>(currentSelectedTask.snapshot.advancedSelections.fashionSceneSummary, []);
+    const modules = safeParseJson<AplusPlanModule[]>(currentSelectedTask.snapshot.advancedSelections.fashionSceneModules, []);
+    if (!summary?.length && !modules?.length) return;
+    const signature = buildFashionSceneSignature({
+      generateCost: 0,
+      outputCount: modules?.length ?? 0,
+      sourceUploads: currentSelectedTask.snapshot.mainUploads,
+      referenceUploads: currentSelectedTask.snapshot.referenceUploads,
+      videoUploads: currentSelectedTask.snapshot.videoUploads ?? [],
+      advancedSelections: currentSelectedTask.snapshot.advancedSelections,
+      supplementValue: currentSelectedTask.snapshot.supplementValue,
+      creationModeSelection: currentSelectedTask.snapshot.creationModeSelection
+    });
+    setFashionPlanByTool((current) => ({
+      ...current,
+      "set-fashion": {
+        status: "ready",
+        signature,
+        summary: summary ?? [],
+        modules: modules ?? [],
+        updatedAt: currentSelectedTask.createdAt
+      }
+    }));
+    setFashionStepByTool((current) => ({
+      ...current,
+      "set-fashion": 2
+    }));
+  }, [currentSelectedTask, currentTool.key]);
+
+  usePageMeta({
+    title:
+      activePage === "mine"
+        ? mineTab === "models"
+          ? "我的模特 - 创客贴 AI 电商"
+          : "我的创作 - 创客贴 AI 电商"
+        : `${currentTool.panelTitle} - 创客贴 AI 电商`,
+    description:
+      activePage === "mine"
+        ? mineTab === "models"
+          ? "创客贴 AI 电商我的模特页面，集中管理用户上传和 AI 生成的模特素材。"
+          : "创客贴 AI 电商我的创作页面，集中查看全部功能下的创作任务与结果。"
+        : `创客贴 AI 电商 ${currentTool.panelTitle} 页面，按照 Figma 稿还原的工具框架页面。`,
+    keywords:
+      activePage === "mine"
+        ? mineTab === "models"
+          ? "创客贴,AI电商,我的模特,模特管理"
+          : "创客贴,AI电商,我的创作,创作记录"
+        : `创客贴,AI电商,${currentTool.panelTitle},AI商品图`
+  });
+
+  return (
+    <div className={`ck-page${collapsed ? " sidebar-collapsed" : ""}`}>
+      <TopBar
+        credits={credits}
+        currentUser={currentUser}
+        onOpenMembership={handleOpenMembership}
+        onOpenPointsBalance={handleOpenPointsBalance}
+        onOpenUserMenu={() => setUserMenuOpen((value) => !value)}
+      />
+      {userMenuOpen ? (
+        <div className="ck-user-menu-mask" onClick={() => setUserMenuOpen(false)}>
+          <div className="ck-user-menu" onClick={(event) => event.stopPropagation()}>
+            <div className="ck-user-menu-title">切换用户身份</div>
+            {userTierProfiles.map((user) => (
+              <button
+                className={`ck-user-menu-item${user.id === currentUser.id ? " active" : ""}`}
+                key={user.id}
+                onClick={() => handleSwitchUser(user.id)}
+                type="button"
+              >
+                <div className="ck-user-menu-item-main">
+                  <img alt={user.name} src={user.avatar} />
+                  <span>
+                    <strong>{user.label}</strong>
+                    <em>{user.teamLabel}</em>
+                  </span>
+                </div>
+                <i>{user.id === currentUser.id ? "当前" : ""}</i>
+              </button>
+            ))}
+            <div className="ck-user-menu-settings">
+              <label className="ck-user-menu-field">
+                <span>剩余积分</span>
+                <input
+                  min="0"
+                  onChange={(event) => handleUpdateCurrentUserMetric("credits", Number(event.target.value))}
+                  type="number"
+                  value={credits}
+                />
+              </label>
+              <label className="ck-user-menu-field">
+                <span>团队积分</span>
+                <input
+                  min="0"
+                  onChange={(event) => handleUpdateCurrentUserMetric("teamCredits", Number(event.target.value))}
+                  type="number"
+                  value={teamCredits}
+                />
+              </label>
+              <label className="ck-user-menu-field">
+                <span>剩余容量(MB)</span>
+                <input
+                  min="0"
+                  onChange={(event) => handleUpdateCurrentUserMetric("remainingStorageMb", Number(event.target.value))}
+                  type="number"
+                  value={remainingStorageMb}
+                />
+              </label>
+              <label className="ck-user-menu-field">
+                <span>并发任务</span>
+                <input
+                  min="1"
+                  onChange={(event) => handleUpdateCurrentUserMetric("maxConcurrentTasks", Number(event.target.value))}
+                  type="number"
+                  value={maxConcurrentTasks}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      <div className="ck-body">
+        <div className={`ck-nav-shell${activePage === "workspace" && collapsed ? " collapsed" : ""}${activePage === "mine" ? " mine" : ""}`}>
+          <SideRail
+            activePrimary={activePrimary}
+            isMineActive={activePage === "mine"}
+            onOpenMine={() => setActivePage("mine")}
+            onSelectPrimary={handlePrimaryChange}
+          />
+          {activePage === "workspace" ? (
+            <SecondaryMenu
+              activeTool={activeTool}
+              collapsed={collapsed}
+              onToggle={() => setCollapsed((value) => !value)}
+              onSelectTool={setActiveTool}
+              title={currentGroup.label}
+              tools={currentGroup.tools}
+            />
+          ) : (
+            <MineSecondaryMenu activeTab={mineTab} onSelectTab={setMineTab} />
+          )}
+        </div>
+        {activePage === "mine" ? (
+          mineTab === "creation" ? (
+            <MyCreationPage
+              mode={creationHistoryMode}
+              onChangeMode={setCreationHistoryMode}
+              onChangeToolKey={setCreationHistoryToolKey}
+              onDownloadItem={handleDownloadItem}
+              onSelectResult={handleSelectResultRecord}
+              onSelectTask={handleSelectTaskRecord}
+              resultItems={filteredCreationResultItems}
+              selectedTaskIdsByTool={selectedTaskIdByTool}
+              selectedToolKey={creationHistoryToolKey}
+              taskRecords={filteredCreationTaskRecords}
+              toolOptions={toolOptions.map(({ key, label }) => ({ key, label }))}
+            />
+          ) : (
+            <MyModelsPage
+              filter={modelFilterTab}
+              items={filteredMineModels}
+              onChangeFilter={setModelFilterTab}
+              onOpenDetail={(item) => setSelectedMineModelId(item.id)}
+              onOpenGenerate={handleOpenModelGenerate}
+              onUpload={(files) => {
+                void handleUploadModels(files);
+              }}
+            />
+          )
+        ) : (
+          <>
+            <ConfigPanel
+              aplusPlan={currentAplusPlan}
+              aplusPlanStep={currentAplusStep}
+              aplusPlanStale={Boolean(currentAplusPlanStale)}
+              fashionPlan={currentFashionPlan}
+              fashionPlanStep={currentFashionStep}
+              fashionPlanStale={Boolean(currentFashionPlanStale)}
+              modelAssets={allMineModels}
+              onAddUpload={handleAddUpload}
+              onBackAplusStep={handleResetAplusPlan}
+              onBackFashionStep={handleResetFashionPlan}
+              onDeleteAplusModule={handleDeleteAplusModule}
+              onDeleteFashionScene={handleDeleteFashionScene}
+              onAtLimit={handleAtLimit}
+              onGenerate={handleGenerate}
+              onGenerateAplusDetails={handleGenerateAplusDetails}
+              onGenerateAplusPlan={handleGenerateAplusPlan}
+              onGenerateFashionResults={handleGenerateFashionResults}
+              onGenerateFashionScenes={handleGenerateFashionScenes}
+              onAplusDraftChange={handleAplusDraftChange}
+              onMoveAplusModule={handleMoveAplusModule}
+              onMoveFashionScene={handleMoveFashionScene}
+              onGenerateBaselineModel={handleGenerateBaselineModel}
+              onNavigateTool={(toolKey) => {
+                setActivePage("workspace");
+                setActivePrimary("model");
+                setActiveTool(toolKey);
+                setCollapsed(false);
+              }}
+              onOpenLibrary={handleOpenLibrary}
+              onRejectedUpload={handleRejectedUpload}
+              onRemoveUpload={handleRemoveUpload}
+              onSupplementAiAssist={handleSupplementAiAssist}
+              onSupplementAiPolish={handleSupplementAiPolish}
+              onSupplementChange={handleSupplementChange}
+              onUpdateAplusModule={handleUpdateAplusModule}
+              onUpdateFashionScene={handleUpdateFashionScene}
+              onUploadModels={handleUploadModels}
+              onToast={(message, tone) =>
+                setToast({
+                  id: Date.now(),
+                  message,
+                  tone
+                })
+              }
+              remainingStorageMb={remainingStorageMb}
+              restoredTask={currentSelectedTask}
+              isGeneratingLocked={currentTool.key === "set-main" && currentToolActiveTaskCount > 0}
+              supplementValue={supplementValues[currentTool.key] ?? ""}
+              tool={currentTool}
+              uploadCountLimit={uploadCountLimit}
+              uploads={uploads}
+            />
+            <ResultPanel
+              activeTab={currentResultTab}
+              collapsed={collapsed}
+              onDownloadItem={handleDownloadItem}
+              onApplyCase={handleApplyCaseTemplate}
+              items={currentResultItems}
+              onCancelQueued={(toolKey, itemId) => setResultActionConfirm({ type: "cancel-queued", toolKey, itemId })}
+              onDeleteFailed={(toolKey, itemId) => setResultActionConfirm({ type: "delete-failed", toolKey, itemId })}
+              onDownload={handleDownloadResults}
+              onOpenCase={handleOpenCaseTemplate}
+              onPreviewItem={handlePreviewResult}
+              onEditItemText={handleOpenEditResultText}
+              onGenerateSetPackTitles={handleGenerateSetPackTitles}
+              onApplySetPackTitle={handleApplySetPackTitle}
+              onRetry={handleRetryResult}
+              selectedTask={currentSelectedTask}
+              onTabChange={handleResultTabChange}
+              onToggleItem={handleToggleResultItem}
+              onToggleSelectAll={handleToggleResultSelectAll}
+              tool={currentTool}
+            />
+            <TaskHistoryRail
+              activeCount={currentToolActiveTaskCount}
+              collapsed={taskRailCollapsed}
+              onSelectTask={handleSelectTaskRecord}
+              onToggleCollapsed={() => setTaskRailCollapsed((value) => !value)}
+              records={currentTaskRecords}
+              selectedTaskId={currentSelectedTaskId}
+            />
+          </>
+        )}
+      </div>
+      {toast ? (
+        <div className={`ck-toast${toast.tone === "warning" ? " warning" : ""}`} key={toast.id}>
+          <span className="ck-toast-icon">!</span>
+          <span>{toast.message}</span>
+        </div>
+      ) : null}
+      {activeCaseTemplate ? (
+        <CaseDetailModal
+          onApply={handleApplyCaseTemplate}
+          onClose={() => setActiveCaseTemplate(null)}
+          onShare={handleShareCaseTemplate}
+          template={activeCaseTemplate}
+        />
+      ) : null}
+      {activeModelDetail ? (
+        <ModelDetailModal
+          item={activeModelDetail}
+          onClose={() => setSelectedMineModelId("")}
+          onDelete={handleDeleteModel}
+          onDownload={handleDownloadModel}
+        />
+      ) : null}
+      {previewResultItem ? (
+        <div className="ck-set-pack-modal-mask" onClick={() => setPreviewResultItem(null)}>
+          <div className="ck-set-pack-preview-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="ck-set-pack-modal-head">
+              <strong>{previewResultItem.roleLabel ?? previewResultItem.label}</strong>
+              <button onClick={() => setPreviewResultItem(null)} type="button">
+                ×
+              </button>
+            </div>
+            <div className="ck-set-pack-preview-body">
+              {previewResultItem.src ? <img alt={previewResultItem.label} src={previewResultItem.src} /> : null}
+              {previewResultItem.overlayText ? <p>{previewResultItem.overlayText}</p> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {editingResultItem ? (
+        <div className="ck-set-pack-modal-mask" onClick={() => setEditingResultItem(null)}>
+          <div className="ck-set-pack-modal edit" onClick={(event) => event.stopPropagation()}>
+            <div className="ck-set-pack-modal-head">
+              <strong>编辑图片文案</strong>
+              <button onClick={() => setEditingResultItem(null)} type="button">
+                ×
+              </button>
+            </div>
+            <div className="ck-set-pack-modal-body">
+              <div className="ck-set-pack-copy-block">
+                <FieldTitle label={editingResultItem.roleLabel ?? "文案"} optional />
+                <textarea
+                  maxLength={300}
+                  onChange={(event) => setEditingResultText(event.target.value)}
+                  placeholder="请输入新的卖点或参数文案"
+                  value={editingResultText}
+                />
+              </div>
+            </div>
+            <div className="ck-set-pack-modal-footer">
+              <button className="secondary" onClick={() => setEditingResultItem(null)} type="button">
+                取消
+              </button>
+              <button onClick={handleConfirmEditResultText} type="button">
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      <ExportArtworkModal
+        onClose={() => setExportPendingAction(null)}
+        onConfirm={handleExportConfirm}
+        open={Boolean(exportPendingAction)}
+      />
+      {resultActionConfirm ? (
+        <div className="ck-result-confirm-mask" onClick={() => setResultActionConfirm(null)}>
+          <div className="ck-result-confirm-modal" onClick={(event) => event.stopPropagation()}>
+            <strong>{resultActionConfirm.type === "delete-failed" ? "确认删除失败结果？" : "确认取消排队任务？"}</strong>
+            <p>
+              {resultActionConfirm.type === "delete-failed"
+                ? "删除后该失败结果将从当前任务中移除。"
+                : "取消后该结果将不再继续生成，并退回对应积分。"}
+            </p>
+            <div className="ck-result-confirm-actions">
+              <button className="secondary" onClick={() => setResultActionConfirm(null)} type="button">
+                取消
+              </button>
+              <button className="primary" onClick={handleConfirmResultAction} type="button">
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      <UploadCapacityModal
+        description={limitModal?.description ?? ""}
+        onClose={() => setLimitModal(null)}
+        onUpgrade={handleOpenMembership}
+        open={Boolean(limitModal)}
+        promoText={UPGRADE_PROMO_COPY}
+        title={limitModal?.title ?? ""}
+      />
+      <ResourceLibraryModal
+        mediaKind={libraryFieldKey ? getLibraryMediaKindByFieldKey(libraryFieldKey) : "image"}
+        maxSelectable={getLibraryMaxSelectable()}
+        onClose={() => setLibraryFieldKey(null)}
+        onConfirm={handleLibraryConfirm}
+        open={Boolean(libraryFieldKey)}
+      />
+      <MembershipPaymentModal
+        onClose={() => setPayModalOpen(false)}
+        onSuccess={handleMembershipSuccess}
+        open={payModalOpen}
+      />
+      <PointsPurchaseModal
+        credits={credits}
+        onClose={() => setPointsModalOpen(false)}
+        onSuccess={handlePointsSuccess}
+        open={pointsModalOpen}
+      />
+      <PointsBalancePopover
+        credits={credits}
+        onClose={() => setPointsBalanceOpen(false)}
+        onOpenMembership={handleOpenMembership}
+        onOpenPointsPurchase={handleOpenPointsModal}
+        onOpenRecords={() => handleOpenRecords("consume")}
+        open={pointsBalanceOpen}
+        teamCredits={teamCredits}
+      />
+      <PointsRecordModal
+        consumeRecords={defaultConsumeRecords}
+        initialTab={pointsRecordTab}
+        onClose={() => setPointsRecordOpen(false)}
+        open={pointsRecordOpen}
+        purchaseRecords={purchaseRecords}
+      />
+    </div>
+  );
+};
