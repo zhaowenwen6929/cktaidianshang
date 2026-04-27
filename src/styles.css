@@ -1261,6 +1261,25 @@ a {
   width: 256px;
 }
 
+.ck-lineart-style-row {
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ck-lineart-style-card {
+  min-height: 68px;
+  padding: 14px 12px;
+}
+
+.ck-lineart-style-card .ck-mode-card-head {
+  margin-bottom: 0;
+}
+
+.ck-lineart-style-card .ck-mode-card-head strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+
 .ck-adaptive-choice-grid {
   display: grid;
   gap: 8px;

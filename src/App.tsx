@@ -463,6 +463,8 @@ type CreationModeConfig = {
   title?: string;
   modes: CreationModeOption[];
   showSupplement: boolean;
+  hideRatioField?: boolean;
+  hideResolutionField?: boolean;
   hideCountField?: boolean;
   supplementLabel?: string;
   supplementPlaceholder: string;
@@ -4882,6 +4884,42 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
       }
     ]
   },
+  expand: {
+    key: "expand",
+    title: "创作模式",
+    showSupplement: true,
+    hideRatioField: true,
+    hideCountField: true,
+    supplementLabel: "需求描述",
+    supplementPlaceholder: "描述您希望扩展的内容，如：延伸自然风景、添加装饰元素、扩展建筑场景等",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://expand-normal",
+        logicNote: "使用普通模型进行图片扩图。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["1"],
+        baseUnitCreditCost: 1,
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://expand-advanced",
+        logicNote: "使用高级模型进行图片扩图。",
+        ratioOptions: defaultRatioOptions,
+        countOptions: ["1"],
+        resolutionOptions: defaultResolutionOptions,
+        resolutionUnitCreditCosts: { "1K": 2, "2K": 3, "4K": 5 },
+        defaultRatio: "自适应尺寸",
+        defaultCount: "1",
+        defaultResolution: "1K"
+      }
+    ]
+  },
   "set-pack": {
     key: "set-pack",
     title: "创作模式",
@@ -5204,7 +5242,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
     }
   },
   "image-expand": {
-    creationModeConfigKey: "default",
+    creationModeConfigKey: "expand",
     sectionOrder: ["upload-main", "creation-mode", "supplement", "upload-reference"],
     uploads: {
       main: {
@@ -9105,19 +9143,28 @@ function WatermarkModeSection({
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
 }) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
   const [watermarkMode, setWatermarkMode] = useState<"smart" | "manual">(
     selectedValues?.watermarkModeKey === "manual" ? "manual" : "smart"
   );
 
   useEffect(() => {
-    const nextMode = selectedValues?.watermarkModeKey === "manual" ? "manual" : "smart";
-    if (nextMode !== watermarkMode) {
-      setWatermarkMode(nextMode);
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
     }
+    const nextMode = selectedValues?.watermarkModeKey === "manual" ? "manual" : "smart";
+    const nextSignature = JSON.stringify({ watermarkModeKey: nextMode });
+    if (nextSignature === lastSelectedValuesSignatureRef.current) return;
+    lastSelectedValuesSignatureRef.current = nextSignature;
+    setWatermarkMode((current) => (current === nextMode ? current : nextMode));
   }, [selectedValues, watermarkMode]);
 
   useEffect(() => {
     const modeLabel = watermarkMode === "manual" ? "手动涂抹去水印" : "智能去水印";
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({ watermarkModeKey: watermarkMode });
     onSelectionMapChange?.({
       watermarkModeKey: watermarkMode,
       watermarkMode: modeLabel
@@ -9131,7 +9178,7 @@ function WatermarkModeSection({
       <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary">
         <button
           className={`ck-mode-card ck-mode-card-primary${watermarkMode === "smart" ? " active" : ""}`}
-          onClick={() => setWatermarkMode("smart")}
+          onClick={() => setWatermarkMode((current) => (current === "smart" ? current : "smart"))}
           type="button"
         >
           <div className="ck-mode-card-head">
@@ -9142,7 +9189,7 @@ function WatermarkModeSection({
         </button>
         <button
           className={`ck-mode-card ck-mode-card-primary${watermarkMode === "manual" ? " active" : ""}`}
-          onClick={() => setWatermarkMode("manual")}
+          onClick={() => setWatermarkMode((current) => (current === "manual" ? current : "manual"))}
           type="button"
         >
           <div className="ck-mode-card-head">
@@ -9165,17 +9212,26 @@ function UpscaleResolutionSection({
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
 }) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
   const options = ["2K", "4K", "8K"];
   const [resolution, setResolution] = useState(selectedValues?.upscaleResolution ?? options[0]);
 
   useEffect(() => {
-    const nextResolution = typeof selectedValues?.upscaleResolution === "string" ? selectedValues.upscaleResolution : options[0];
-    if (nextResolution !== resolution) {
-      setResolution(nextResolution);
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
     }
+    const nextResolution = typeof selectedValues?.upscaleResolution === "string" ? selectedValues.upscaleResolution : options[0];
+    const nextSignature = JSON.stringify({ upscaleResolution: nextResolution });
+    if (nextSignature === lastSelectedValuesSignatureRef.current) return;
+    lastSelectedValuesSignatureRef.current = nextSignature;
+    setResolution((current) => (current === nextResolution ? current : nextResolution));
   }, [resolution, selectedValues]);
 
   useEffect(() => {
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({ upscaleResolution: resolution });
     onSelectionMapChange?.({ upscaleResolution: resolution });
     onSelectionChange?.([resolution]);
   }, [onSelectionChange, onSelectionMapChange, resolution]);
@@ -9186,7 +9242,12 @@ function UpscaleResolutionSection({
         <FieldTitle label="分辨率" required />
         <div className="ck-mini-switch" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
           {options.map((option) => (
-            <button className={option === resolution ? "active" : ""} key={option} onClick={() => setResolution(option)} type="button">
+            <button
+              className={option === resolution ? "active" : ""}
+              key={option}
+              onClick={() => setResolution((current) => (current === option ? current : option))}
+              type="button"
+            >
               {option}
             </button>
           ))}
@@ -9223,10 +9284,10 @@ function LineartStyleSection({
   return (
     <div className="ck-form-block">
       <FieldTitle label="线条类型" required />
-      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary">
+      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary ck-lineart-style-row">
         {options.map((option) => (
           <button
-            className={`ck-mode-card ck-mode-card-primary${lineartStyle === option ? " active" : ""}`}
+            className={`ck-mode-card ck-mode-card-primary ck-lineart-style-card${lineartStyle === option ? " active" : ""}`}
             key={option}
             onClick={() => setLineartStyle(option)}
             type="button"
@@ -9413,34 +9474,36 @@ function CreationModeSection({
         selected={config.modes.findIndex((mode) => mode.id === activeMode.id)}
       />
 
-      <div className="ck-inline-field">
-        <FieldTitle label="出图比例" required />
-        <div className="ck-select-dropdown" ref={ratioDropdownRef}>
-          <button className="ck-select" onClick={() => setRatioOpen((value) => !value)} type="button">
-            {selectedRatio}
-            <span>⌄</span>
-          </button>
-          {ratioOpen ? (
-            <div className="ck-select-dropdown-menu">
-              {activeMode.ratioOptions.map((option) => (
-                <button
-                  className={option === selectedRatio ? "active" : ""}
-                  key={option}
-                  onClick={() => {
-                    setSelectedRatio(option);
-                    setRatioOpen(false);
-                  }}
-                  type="button"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          ) : null}
+      {!config.hideRatioField ? (
+        <div className="ck-inline-field">
+          <FieldTitle label="出图比例" required />
+          <div className="ck-select-dropdown" ref={ratioDropdownRef}>
+            <button className="ck-select" onClick={() => setRatioOpen((value) => !value)} type="button">
+              {selectedRatio}
+              <span>⌄</span>
+            </button>
+            {ratioOpen ? (
+              <div className="ck-select-dropdown-menu">
+                {activeMode.ratioOptions.map((option) => (
+                  <button
+                    className={option === selectedRatio ? "active" : ""}
+                    key={option}
+                    onClick={() => {
+                      setSelectedRatio(option);
+                      setRatioOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {activeMode.resolutionOptions?.length ? (
+      {config.hideResolutionField || !activeMode.resolutionOptions?.length ? null : (
         <div className="ck-inline-field">
           <FieldTitle label="分辨率" required />
           <div className="ck-mini-switch" style={{ gridTemplateColumns: `repeat(${activeMode.resolutionOptions.length}, 1fr)` }}>
@@ -9456,7 +9519,7 @@ function CreationModeSection({
             ))}
           </div>
         </div>
-      ) : null}
+      )}
 
       {isSetPackCreationMode ? (
         <NumberStepperField label="每个类型出图数" onChange={setSetPackPerTypeCount} required value={setPackPerTypeCount} />
