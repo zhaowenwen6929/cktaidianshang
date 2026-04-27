@@ -10265,8 +10265,7 @@ function VideoPrintExtendSetupSection({
     onSelectionChange?.([
       ratioCount ? `比例 ${selectedRatios.join(" / ")}` : "未选择比例",
       `出图数量 ${outputCount}`,
-      `结果数量 ${totalResultCount}`,
-      `积分消耗 ${totalCredits}`
+      `结果数量 ${totalResultCount}`
     ]);
     onCreationModeChange?.({
       modeId: "video-print-extend",
@@ -10344,15 +10343,6 @@ function VideoPrintExtendSetupSection({
       </div>
 
       <CountField label="出图数量" onChange={(value) => setOutputCount(Math.min(4, Math.max(1, Number(value) || 1)))} options={[...videoPrintExtendOutputCountOptions]} required value={String(outputCount)} />
-
-      <div className="ck-inline-field">
-        <FieldTitle label="积分消耗" required />
-        <div className="ck-inline-static-value ck-video-print-extend-credit">
-          {uploadCount > 0 && ratioCount > 0
-            ? `${uploadCount}张原图 × ${ratioCount}个比例 × ${outputCount}张出图 × ${VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST}积分 = ${totalCredits}积分`
-            : `总消耗 = 原图数 × 比例数 × 出图张数 × ${VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST}积分`}
-        </div>
-      </div>
     </div>
   );
 }
