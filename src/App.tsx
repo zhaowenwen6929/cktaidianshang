@@ -602,6 +602,8 @@ type ToolModuleSectionKey =
   | "set-pack-selling-points"
   | "set-pack-type-selector"
   | "set-pack-style-analysis"
+  | "image-upscale-resolution"
+  | "image-lineart-style"
   | "baseline-model-setup"
   | "video-main-script-setup"
   | "upload-main"
@@ -730,12 +732,12 @@ const navGroups: Array<{
     tools: [
       { key: "video-main", label: "产品视频", panelTitle: "产品视频", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-replica", label: "爆款复刻", panelTitle: "爆款复刻", resultCount: 4, ratioLabel: "16:9" },
-      { key: "video-remix", label: "智能混剪", panelTitle: "智能混剪", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-remix", label: "智能混剪（待完善）", panelTitle: "智能混剪（待完善）", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-replace", label: "商品替换", panelTitle: "商品替换", resultCount: 4, ratioLabel: "16:9" },
-      { key: "video-match", label: "智能匹配视频", panelTitle: "智能匹配视频", resultCount: 4, ratioLabel: "16:9" },
-      { key: "video-ad", label: "广告大片视频", panelTitle: "广告大片视频", resultCount: 4, ratioLabel: "16:9" },
-      { key: "video-influencer", label: "达人带货视频", panelTitle: "达人带货视频", resultCount: 4, ratioLabel: "16:9" },
-      { key: "video-customer", label: "素人分享视频", panelTitle: "素人分享视频", resultCount: 4, ratioLabel: "16:9" }
+      { key: "video-match", label: "智能匹配视频（待完善）", panelTitle: "智能匹配视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-ad", label: "广告大片视频（待完善）", panelTitle: "广告大片视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-influencer", label: "达人带货视频（待完善）", panelTitle: "达人带货视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-customer", label: "素人分享视频（待完善）", panelTitle: "素人分享视频（待完善）", resultCount: 4, ratioLabel: "16:9" }
     ]
   },
   {
@@ -5135,6 +5137,92 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       }
     }
   },
+  "image-cutout": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "advanced-settings"],
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "image-watermark": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "mode-choice"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "image-upscale": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "image-upscale-resolution"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "image-lineart": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "image-lineart-style"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "image-expand": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "creation-mode", "supplement", "upload-reference"],
+    uploads: {
+      main: {
+        label: "上传商品图",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传参考图",
+        optional: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
   "goods-retouch": {
     creationModeConfigKey: "retouch",
     sectionOrder: ["upload-main", "mode-choice", "creation-mode", "supplement"],
@@ -5296,6 +5384,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
         {
           key: "copyLanguage",
           label: "文案语种",
+          mode: "select",
           options: copyLanguageInputOptions
         }
       ]
@@ -9007,6 +9096,152 @@ function RetouchModeSection() {
   );
 }
 
+function WatermarkModeSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+}) {
+  const [watermarkMode, setWatermarkMode] = useState<"smart" | "manual">(
+    selectedValues?.watermarkModeKey === "manual" ? "manual" : "smart"
+  );
+
+  useEffect(() => {
+    const nextMode = selectedValues?.watermarkModeKey === "manual" ? "manual" : "smart";
+    if (nextMode !== watermarkMode) {
+      setWatermarkMode(nextMode);
+    }
+  }, [selectedValues, watermarkMode]);
+
+  useEffect(() => {
+    const modeLabel = watermarkMode === "manual" ? "手动涂抹去水印" : "智能去水印";
+    onSelectionMapChange?.({
+      watermarkModeKey: watermarkMode,
+      watermarkMode: modeLabel
+    });
+    onSelectionChange?.([modeLabel]);
+  }, [onSelectionChange, onSelectionMapChange, watermarkMode]);
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="选择模式" required />
+      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary">
+        <button
+          className={`ck-mode-card ck-mode-card-primary${watermarkMode === "smart" ? " active" : ""}`}
+          onClick={() => setWatermarkMode("smart")}
+          type="button"
+        >
+          <div className="ck-mode-card-head">
+            <strong>智能去水印</strong>
+            <span className={`ck-check${watermarkMode === "smart" ? " active" : ""}`} />
+          </div>
+          <p>自动识别图片中的常见水印区域并完成去除。</p>
+        </button>
+        <button
+          className={`ck-mode-card ck-mode-card-primary${watermarkMode === "manual" ? " active" : ""}`}
+          onClick={() => setWatermarkMode("manual")}
+          type="button"
+        >
+          <div className="ck-mode-card-head">
+            <strong>手动涂抹去水印</strong>
+            <span className={`ck-check${watermarkMode === "manual" ? " active" : ""}`} />
+          </div>
+          <p>通过手动圈定或涂抹区域，更精准地处理复杂水印。</p>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function UpscaleResolutionSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+}) {
+  const options = ["2K", "4K", "8K"];
+  const [resolution, setResolution] = useState(selectedValues?.upscaleResolution ?? options[0]);
+
+  useEffect(() => {
+    const nextResolution = typeof selectedValues?.upscaleResolution === "string" ? selectedValues.upscaleResolution : options[0];
+    if (nextResolution !== resolution) {
+      setResolution(nextResolution);
+    }
+  }, [resolution, selectedValues]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({ upscaleResolution: resolution });
+    onSelectionChange?.([resolution]);
+  }, [onSelectionChange, onSelectionMapChange, resolution]);
+
+  return (
+    <div className="ck-form-block">
+      <div className="ck-inline-field">
+        <FieldTitle label="分辨率" required />
+        <div className="ck-mini-switch" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
+          {options.map((option) => (
+            <button className={option === resolution ? "active" : ""} key={option} onClick={() => setResolution(option)} type="button">
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LineartStyleSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+}) {
+  const options = ["清稿", "草图/速写", "精细素描"];
+  const [lineartStyle, setLineartStyle] = useState(selectedValues?.lineartStyle ?? options[0]);
+
+  useEffect(() => {
+    const nextStyle = typeof selectedValues?.lineartStyle === "string" ? selectedValues.lineartStyle : options[0];
+    if (nextStyle !== lineartStyle) {
+      setLineartStyle(nextStyle);
+    }
+  }, [lineartStyle, selectedValues]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({ lineartStyle });
+    onSelectionChange?.([lineartStyle]);
+  }, [lineartStyle, onSelectionChange, onSelectionMapChange]);
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="线条类型" required />
+      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary">
+        {options.map((option) => (
+          <button
+            className={`ck-mode-card ck-mode-card-primary${lineartStyle === option ? " active" : ""}`}
+            key={option}
+            onClick={() => setLineartStyle(option)}
+            type="button"
+          >
+            <div className="ck-mode-card-head">
+              <strong>{option}</strong>
+              <span className={`ck-check${lineartStyle === option ? " active" : ""}`} />
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ApplicablePlatformSection() {
   const [selectedPlatformId, setSelectedPlatformId] = useState("none");
   const [selectedMarket, setSelectedMarket] = useState("无区域");
@@ -11979,6 +12214,63 @@ function ConfigPanel({
 
     if (section === "mode-choice" && panelKind === "retouch") {
       return <RetouchModeSection />;
+    }
+
+    if (section === "mode-choice" && tool.key === "image-watermark") {
+      return (
+        <WatermarkModeSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["watermarkModeKey", "watermarkMode"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "image-upscale-resolution" && tool.key === "image-upscale") {
+      return (
+        <UpscaleResolutionSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["upscaleResolution"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
+    if (section === "image-lineart-style" && tool.key === "image-lineart") {
+      return (
+        <LineartStyleSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["lineartStyle"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
     }
 
     if (section === "camera-angle" && (panelKind === "three-view" || panelKind === "background")) {
