@@ -1291,124 +1291,138 @@ a {
 }
 
 .ck-mask-draw-card {
-  min-height: 270px;
+  width: 256px;
+  min-height: 188px;
+  border: 1px solid #e3e9f4;
   border-radius: 14px;
-  background: #eef1f7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  background: linear-gradient(180deg, #f7f9fd 0%, #eef2f8 100%);
+  padding: 14px;
 }
 
 .ck-mask-draw-trigger {
-  min-width: 164px;
-  height: 62px;
-  border: 2px solid #b9dd7f;
-  border-radius: 12px;
-  background: #3e3e3e;
+  min-width: 112px;
+  height: 38px;
+  border: 1px solid #d4df79;
+  border-radius: 10px;
+  background: #2d313a;
   color: #ffffff;
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 13px;
+  line-height: 20px;
   font-weight: 500;
+  padding: 0 16px;
 }
 
-.ck-mask-draw-preview {
-  width: 100%;
+.ck-mask-draw-content {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: space-between;
   gap: 14px;
 }
 
+.ck-mask-draw-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ck-mask-draw-copy strong {
+  color: #1f2940;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.ck-mask-draw-copy p {
+  margin: 0;
+  color: #6a7488;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-mask-draw-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .ck-mask-draw-preview img {
-  max-width: 100%;
-  max-height: 210px;
+  width: 72px;
+  height: 72px;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
   border-radius: 10px;
   background: #fff;
+  border: 1px solid #e3e9f4;
 }
 
 .ck-mask-editor-mask {
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: rgba(15, 23, 42, 0.44);
+  background: rgba(15, 23, 42, 0.36);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 18px;
 }
 
 .ck-mask-editor-modal {
-  width: min(96vw, 1760px);
-  height: min(92vh, 1320px);
-  border-radius: 22px;
+  width: min(88vw, 980px);
+  height: min(84vh, 760px);
+  border-radius: 18px;
   background: #ffffff;
-  padding: 18px 22px 28px;
+  padding: 16px;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 18px;
+  gap: 14px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
 
 .ck-mask-editor-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
 }
 
 .ck-mask-editor-tools {
-  flex: 0 0 auto;
-}
-
-.ck-mask-editor-color {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  color: #4b5568;
-  font-size: 15px;
-  line-height: 22px;
-  font-weight: 500;
-}
-
-.ck-mask-editor-swatch {
-  width: 54px;
-  height: 54px;
-  border-radius: 10px;
-  border: 1px solid #f4d958;
-  background:
-    linear-gradient(45deg, #ffe761 25%, transparent 25%, transparent 75%, #ffe761 75%, #ffe761),
-    linear-gradient(45deg, #ffe761 25%, transparent 25%, transparent 75%, #ffe761 75%, #ffe761);
-  background-size: 18px 18px;
-  background-position: 0 0, 9px 9px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ck-mask-editor-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
 }
 
 .ck-mask-editor-actions button {
-  width: 72px;
-  height: 56px;
-  border: 0;
-  border-radius: 12px;
+  min-width: 68px;
+  height: 34px;
+  border: 1px solid #dde4ef;
+  border-radius: 10px;
   background: #f1f4f9;
   color: #5b6478;
-  font-size: 28px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
 }
 
 .ck-mask-editor-stage {
   position: relative;
-  border-radius: 18px;
-  background: #f8f9fc;
-  overflow: hidden;
+  border: 1px solid #e3e9f4;
+  border-radius: 16px;
+  background:
+    linear-gradient(45deg, #f8f9fc 25%, #f3f5fa 25%, #f3f5fa 50%, #f8f9fc 50%, #f8f9fc 75%, #f3f5fa 75%, #f3f5fa 100%);
+  background-size: 24px 24px;
+  overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 18px;
 }
 
 .ck-mask-editor-canvas-wrap {
@@ -1430,46 +1444,19 @@ a {
   cursor: crosshair;
 }
 
-.ck-mask-editor-zoom {
-  position: absolute;
-  right: 28px;
-  bottom: 28px;
-  height: 58px;
-  padding: 0 18px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.94);
-  display: inline-flex;
-  align-items: center;
-  gap: 18px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-}
-
-.ck-mask-editor-zoom button {
-  border: 0;
-  background: transparent;
-  color: #4d5568;
-  font-size: 28px;
-}
-
-.ck-mask-editor-zoom span {
-  color: #3b4355;
-  font-size: 18px;
-  line-height: 24px;
-}
-
 .ck-mask-editor-footer {
   display: flex;
-  justify-content: center;
-  gap: 42px;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .ck-mask-editor-secondary,
 .ck-mask-editor-primary {
-  min-width: 156px;
-  height: 72px;
-  border-radius: 12px;
-  font-size: 20px;
-  line-height: 28px;
+  min-width: 112px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 20px;
   font-weight: 500;
 }
 
@@ -1499,6 +1486,10 @@ a {
 
 .ck-mode-card-primary.active {
   background: #f0effe;
+}
+
+.ck-mode-card-primary.disabled {
+  opacity: 0.58;
 }
 
 .ck-mode-card-extract {

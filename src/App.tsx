@@ -2082,6 +2082,62 @@ function getVideoGenerationBaseCreditCost(
   return baseCost || creationModeSelection?.unitCreditCost || 0;
 }
 
+function getImageGenerationUnitCreditCost(
+  toolKey: string,
+  creationModeSelection: CreationModeSelection | null,
+  advancedSelections: AdvancedSelectionMap
+) {
+  if (toolKey === "image-cutout") {
+    return 10;
+  }
+
+  if (toolKey === "image-watermark") {
+    return advancedSelections.watermarkModeKey === "manual" ? 5 : 10;
+  }
+
+  if (toolKey === "image-upscale") {
+    const resolution = advancedSelections.upscaleResolution ?? "2K";
+    return (
+      {
+        "2K": 5,
+        "4K": 10,
+        "8K": 20
+      }[resolution] ?? 5
+    );
+  }
+
+  if (toolKey === "image-remove") {
+    return 5;
+  }
+
+  if (toolKey === "image-lineart") {
+    const style = advancedSelections.lineartStyle ?? "清稿";
+    return (
+      {
+        "清稿": 5,
+        "草图/速写": 10,
+        "精细素描": 15
+      }[style] ?? 5
+    );
+  }
+
+  if (toolKey === "image-expand") {
+    if (creationModeSelection?.modeId === "advanced") {
+      const resolution = creationModeSelection.resolution ?? "1K";
+      return (
+        {
+          "1K": 10,
+          "2K": 15,
+          "4K": 20
+        }[resolution] ?? 10
+      );
+    }
+    return 5;
+  }
+
+  return null;
+}
+
 function getResolvedToolUnitCreditCost(
   toolKey: string,
   creationModeSelection: CreationModeSelection | null,
@@ -2089,6 +2145,11 @@ function getResolvedToolUnitCreditCost(
 ) {
   if (isVideoGenerationTool(toolKey)) {
     return getVideoGenerationBaseCreditCost(toolKey, creationModeSelection, advancedSelections);
+  }
+
+  const imageToolUnitCreditCost = getImageGenerationUnitCreditCost(toolKey, creationModeSelection, advancedSelections);
+  if (imageToolUnitCreditCost !== null) {
+    return imageToolUnitCreditCost;
   }
 
   return creationModeSelection?.unitCreditCost ?? 0;
@@ -4902,7 +4963,7 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
         logicNote: "使用普通模型进行图片扩图。",
         ratioOptions: defaultRatioOptions,
         countOptions: ["1"],
-        baseUnitCreditCost: 1,
+        baseUnitCreditCost: 5,
         defaultRatio: "自适应尺寸",
         defaultCount: "1"
       },
@@ -4914,7 +4975,7 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
         ratioOptions: defaultRatioOptions,
         countOptions: ["1"],
         resolutionOptions: defaultResolutionOptions,
-        resolutionUnitCreditCosts: { "1K": 2, "2K": 3, "4K": 5 },
+        resolutionUnitCreditCosts: { "1K": 10, "2K": 15, "4K": 20 },
         defaultRatio: "自适应尺寸",
         defaultCount: "1",
         defaultResolution: "1K"
@@ -9136,15 +9197,20 @@ function RetouchModeSection() {
 
 function WatermarkModeSection({
   selectedValues,
+  uploads,
   onSelectionChange,
-  onSelectionMapChange
+  onSelectionMapChange,
+  onToast
 }: {
   selectedValues?: AdvancedSelectionMap;
+  uploads: UploadItem[];
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onToast: (message: string, tone?: "warning") => void;
 }) {
   const skipSelectedValuesSyncRef = useRef(false);
   const lastSelectedValuesSignatureRef = useRef("");
+  const isManualSupported = uploads.length === 1;
   const [watermarkMode, setWatermarkMode] = useState<"smart" | "manual">(
     selectedValues?.watermarkModeKey === "manual" ? "manual" : "smart"
   );
@@ -9172,6 +9238,12 @@ function WatermarkModeSection({
     onSelectionChange?.([modeLabel]);
   }, [onSelectionChange, onSelectionMapChange, watermarkMode]);
 
+  useEffect(() => {
+    if (watermarkMode === "manual" && !isManualSupported) {
+      setWatermarkMode("smart");
+    }
+  }, [isManualSupported, watermarkMode]);
+
   return (
     <div className="ck-form-block">
       <FieldTitle label="选择模式" required />
@@ -9188,15 +9260,21 @@ function WatermarkModeSection({
           <p>自动识别图片中的常见水印区域并完成去除。</p>
         </button>
         <button
-          className={`ck-mode-card ck-mode-card-primary${watermarkMode === "manual" ? " active" : ""}`}
-          onClick={() => setWatermarkMode((current) => (current === "manual" ? current : "manual"))}
+          className={`ck-mode-card ck-mode-card-primary${watermarkMode === "manual" ? " active" : ""}${isManualSupported ? "" : " disabled"}`}
+          onClick={() => {
+            if (!isManualSupported) {
+              onToast("手动涂抹去水印仅支持单张图片，请只保留1张后再使用", "warning");
+              return;
+            }
+            setWatermarkMode((current) => (current === "manual" ? current : "manual"));
+          }}
           type="button"
         >
           <div className="ck-mode-card-head">
             <strong>手动涂抹去水印</strong>
             <span className={`ck-check${watermarkMode === "manual" ? " active" : ""}`} />
           </div>
-          <p>通过手动圈定或涂抹区域，更精准地处理复杂水印。</p>
+          <p>通过手动圈定或涂抹区域，更精准地处理复杂水印。仅支持单张图片。</p>
         </button>
       </div>
     </div>
@@ -9314,8 +9392,7 @@ function MaskEditorModal({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [tool, setTool] = useState<"brush" | "rect" | "circle" | "text" | "eraser">("circle");
+  const [tool, setTool] = useState<"brush" | "circle" | "eraser">("brush");
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
@@ -9457,30 +9534,25 @@ function MaskEditorModal({
     const context = getContext();
     if (!context) return;
 
-    if (isDrawing && lastPoint && point && (tool === "rect" || tool === "circle")) {
+    if (isDrawing && lastPoint && point && tool === "circle") {
       const width = point.x - lastPoint.x;
       const height = point.y - lastPoint.y;
       context.globalCompositeOperation = "source-over";
       context.strokeStyle = "#ffe34d";
       context.fillStyle = "rgba(255, 227, 77, 0.18)";
       context.lineWidth = 4;
-      if (tool === "rect") {
-        context.strokeRect(lastPoint.x, lastPoint.y, width, height);
-        context.fillRect(lastPoint.x, lastPoint.y, width, height);
-      } else {
-        context.beginPath();
-        context.ellipse(
-          lastPoint.x + width / 2,
-          lastPoint.y + height / 2,
-          Math.abs(width / 2),
-          Math.abs(height / 2),
-          0,
-          0,
-          Math.PI * 2
-        );
-        context.fill();
-        context.stroke();
-      }
+      context.beginPath();
+      context.ellipse(
+        lastPoint.x + width / 2,
+        lastPoint.y + height / 2,
+        Math.abs(width / 2),
+        Math.abs(height / 2),
+        0,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
+      context.stroke();
     }
 
     if (isDrawing) {
@@ -9497,9 +9569,7 @@ function MaskEditorModal({
           <div className="ck-task-rail-mode-switch ck-mask-editor-tools">
             {[
               ["brush", "画笔"],
-              ["rect", "框选"],
               ["circle", "画框"],
-              ["text", "文字"],
               ["eraser", "橡皮擦"]
             ].map(([key, label]) => (
               <button
@@ -9512,17 +9582,12 @@ function MaskEditorModal({
               </button>
             ))}
           </div>
-          <div className="ck-mask-editor-color">
-            <span>选择颜色</span>
-            <div className="ck-mask-editor-swatch" />
-          </div>
           <div className="ck-mask-editor-actions">
-            <button onClick={handleUndo} type="button">↶</button>
-            <button onClick={handleRedo} type="button">↷</button>
-            <button onClick={handleClear} type="button">↻</button>
+            <button onClick={handleUndo} type="button">撤销</button>
+            <button onClick={handleClear} type="button">清空</button>
           </div>
         </div>
-        <div className="ck-mask-editor-stage" ref={containerRef}>
+        <div className="ck-mask-editor-stage">
           <div className="ck-mask-editor-canvas-wrap">
             <img alt="待编辑图片" ref={imageRef} src={imageSrc} />
             <canvas
@@ -9532,11 +9597,6 @@ function MaskEditorModal({
               onPointerLeave={handlePointerUp}
               ref={canvasRef}
             />
-          </div>
-          <div className="ck-mask-editor-zoom">
-            <button type="button">+</button>
-            <span>23%</span>
-            <button type="button">−</button>
           </div>
         </div>
         <div className="ck-mask-editor-footer">
@@ -9566,6 +9626,8 @@ function MaskDrawSection({
   uploads,
   selectedValues,
   maskKey,
+  helperText,
+  singleUploadOnly = false,
   onSelectionChange,
   onSelectionMapChange,
   onToast
@@ -9575,6 +9637,8 @@ function MaskDrawSection({
   uploads: UploadItem[];
   selectedValues?: AdvancedSelectionMap;
   maskKey: string;
+  helperText?: string;
+  singleUploadOnly?: boolean;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onToast: (message: string, tone?: "warning") => void;
@@ -9582,23 +9646,33 @@ function MaskDrawSection({
   const [isOpen, setIsOpen] = useState(false);
   const maskDataUrl = typeof selectedValues?.[maskKey] === "string" ? selectedValues[maskKey] : "";
   const primaryImage = uploads[0]?.previewSrc || uploads[0]?.src || "/assets/upload-preview.png";
+  const openMaskEditor = () => {
+    if (!uploads.length) {
+      onToast("请先上传图片后再绘制蒙版", "warning");
+      return;
+    }
+    if (singleUploadOnly && uploads.length !== 1) {
+      onToast("手动涂抹仅支持单张图片，请只保留1张后再使用", "warning");
+      return;
+    }
+    setIsOpen(true);
+  };
 
   return (
     <div className="ck-form-block">
       <FieldTitle label={title} required />
       <div className="ck-mask-draw-card">
+        <div className="ck-mask-draw-content">
+          <div className="ck-mask-draw-copy">
+            <strong>绘制需要处理的区域</strong>
+            <p>{helperText ?? "使用画笔或画框快速标注，提交后将仅处理蒙版范围。"}</p>
+          </div>
         {maskDataUrl ? (
           <div className="ck-mask-draw-preview">
             <img alt="蒙版预览" src={maskDataUrl} />
             <button
               className="ck-mask-draw-trigger"
-              onClick={() => {
-                if (!uploads.length) {
-                  onToast("请先上传图片后再绘制蒙版", "warning");
-                  return;
-                }
-                setIsOpen(true);
-              }}
+              onClick={openMaskEditor}
               type="button"
             >
               重新绘制
@@ -9607,18 +9681,13 @@ function MaskDrawSection({
         ) : (
           <button
             className="ck-mask-draw-trigger"
-            onClick={() => {
-              if (!uploads.length) {
-                onToast("请先上传图片后再绘制蒙版", "warning");
-                return;
-              }
-              setIsOpen(true);
-            }}
+            onClick={openMaskEditor}
             type="button"
           >
             {buttonText}
           </button>
         )}
+        </div>
       </div>
 
       {isOpen ? (
@@ -12068,14 +12137,23 @@ function ConfigPanel({
   const videoUploadCount = uploads[videoUploadKey]?.length ?? 0;
   const setPackSelectedTypes = useMemo(() => getSetPackSelectedTypes(advancedSettingSelections), [advancedSettingSelections]);
   const setPackTypeCount = Math.max(1, setPackSelectedTypes.length);
-  const resolvedCreationModeSelection = useMemo(() => {
+  const resolvedCreationModeSelection = useMemo<CreationModeSelection | null>(() => {
+    const unitCreditCost = getResolvedToolUnitCreditCost(tool.key, creationModeSelection, advancedSettingSelections);
     if (!creationModeSelection) {
-      return null;
+      return unitCreditCost > 0
+        ? {
+            modeId: tool.key,
+            modeLabel: tool.panelTitle,
+            ratio: tool.ratioLabel ?? "自适应尺寸",
+            count: 1,
+            unitCreditCost
+          }
+        : null;
     }
 
     return {
       ...creationModeSelection,
-      unitCreditCost: getResolvedToolUnitCreditCost(tool.key, creationModeSelection, advancedSettingSelections)
+      unitCreditCost
     };
   }, [advancedSettingSelections, creationModeSelection, tool.key]);
   const batchOutputCount = resolvedCreationModeSelection?.count ?? 1;
@@ -12616,6 +12694,7 @@ function ConfigPanel({
     if (section === "mode-choice" && tool.key === "image-watermark") {
       return (
         <WatermarkModeSection
+          uploads={uploads[mainUploadKey] ?? []}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
             const sectionKeys = ["watermarkModeKey", "watermarkMode"];
@@ -12627,6 +12706,7 @@ function ConfigPanel({
               return { ...nextSelections, ...values };
             });
           }}
+          onToast={onToast}
           selectedValues={advancedSettingSelections}
         />
       );
@@ -12677,6 +12757,7 @@ function ConfigPanel({
       return (
         <MaskDrawSection
           buttonText="开始涂抹"
+          helperText="仅支持单张图片。建议沿水印边缘涂抹，便于更精准去除。"
           maskKey="watermarkMaskDataUrl"
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
@@ -12691,6 +12772,7 @@ function ConfigPanel({
           }}
           onToast={onToast}
           selectedValues={advancedSettingSelections}
+          singleUploadOnly
           uploads={uploads[mainUploadKey] ?? []}
         />
       );
@@ -12700,6 +12782,7 @@ function ConfigPanel({
       return (
         <MaskDrawSection
           buttonText="开始涂抹"
+          helperText="标注需要消除的物体区域，处理结果会更自然。"
           maskKey="removeMaskDataUrl"
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
