@@ -9565,26 +9565,29 @@ function MaskEditorModal({
   return (
     <div className="ck-mask-editor-mask">
       <div className="ck-mask-editor-modal">
-        <div className="ck-mask-editor-toolbar">
-          <div className="ck-task-rail-mode-switch ck-mask-editor-tools">
-            {[
-              ["brush", "画笔"],
-              ["circle", "画框"],
-              ["eraser", "橡皮擦"]
-            ].map(([key, label]) => (
-              <button
-                className={tool === key ? "active" : ""}
-                key={key}
-                onClick={() => setTool(key as typeof tool)}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="ck-mask-editor-actions">
-            <button onClick={handleUndo} type="button">撤销</button>
-            <button onClick={handleClear} type="button">清空</button>
+        <div className="ck-mask-editor-header">
+          <span className="ck-mask-editor-title">图片处理</span>
+          <div className="ck-mask-editor-toolbar">
+            <div className="ck-task-rail-mode-switch ck-mask-editor-tools">
+              {[
+                ["brush", "画笔"],
+                ["circle", "画框"],
+                ["eraser", "橡皮擦"]
+              ].map(([key, label]) => (
+                <button
+                  className={tool === key ? "active" : ""}
+                  key={key}
+                  onClick={() => setTool(key as typeof tool)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="ck-mask-editor-actions">
+              <button onClick={handleUndo} type="button">撤销</button>
+              <button onClick={handleClear} type="button">清空</button>
+            </div>
           </div>
         </div>
         <div className="ck-mask-editor-stage">

@@ -1360,36 +1360,83 @@ a {
 .ck-mask-editor-mask {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 99999;
   background: rgba(15, 23, 42, 0.36);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 18px;
+  isolation: isolate;
 }
 
 .ck-mask-editor-modal {
-  width: min(88vw, 980px);
-  height: min(84vh, 760px);
-  border-radius: 18px;
+  position: relative;
+  z-index: 100000;
+  width: min(91vw, 984px);
+  height: min(87vh, 742px);
+  border-radius: 24px;
   background: #ffffff;
-  padding: 16px;
+  padding: 14px 18px 14px;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 14px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.22);
+}
+
+.ck-mask-editor-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 2px 2px 12px;
+  border-bottom: 1px solid #edf1f7;
+}
+
+.ck-mask-editor-title {
+  color: #1f2940;
+  font-size: 13px;
+  line-height: 22px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .ck-mask-editor-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 36px;
 }
 
 .ck-mask-editor-tools {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
+}
+
+.ck-mask-editor-tools.ck-task-rail-mode-switch {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.ck-mask-editor-tools.ck-task-rail-mode-switch button {
+  min-width: 92px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 9px;
+  background: #f7f8fd;
+  color: #66738f;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+.ck-mask-editor-tools.ck-task-rail-mode-switch button.active {
+  border-color: #cfd6fb;
+  background: #edf0ff;
+  color: #5b57eb;
 }
 
 .ck-mask-editor-actions {
@@ -1400,11 +1447,11 @@ a {
 }
 
 .ck-mask-editor-actions button {
-  min-width: 68px;
-  height: 34px;
+  min-width: 60px;
+  height: 32px;
   border: 1px solid #dde4ef;
-  border-radius: 10px;
-  background: #f1f4f9;
+  border-radius: 9px;
+  background: #ffffff;
   color: #5b6478;
   font-size: 12px;
   line-height: 18px;
@@ -1413,22 +1460,28 @@ a {
 
 .ck-mask-editor-stage {
   position: relative;
-  border: 1px solid #e3e9f4;
-  border-radius: 16px;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid #e8edf6;
+  border-radius: 20px;
   background:
-    linear-gradient(45deg, #f8f9fc 25%, #f3f5fa 25%, #f3f5fa 50%, #f8f9fc 50%, #f8f9fc 75%, #f3f5fa 75%, #f3f5fa 100%);
-  background-size: 24px 24px;
+    linear-gradient(45deg, #f8f9fc 25%, #f2f4f9 25%, #f2f4f9 50%, #f8f9fc 50%, #f8f9fc 75%, #f2f4f9 75%, #f2f4f9 100%);
+  background-size: 20px 20px;
   overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .ck-mask-editor-canvas-wrap {
   position: relative;
   max-width: 100%;
   max-height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .ck-mask-editor-canvas-wrap img,
@@ -1448,13 +1501,16 @@ a {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  padding-top: 12px;
+  padding-right: 2px;
+  border-top: 1px solid #edf1f7;
 }
 
 .ck-mask-editor-secondary,
 .ck-mask-editor-primary {
   min-width: 112px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 13px;
   line-height: 20px;
   font-weight: 500;
