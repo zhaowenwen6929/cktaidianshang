@@ -2240,6 +2240,21 @@ a {
   width: 100%;
 }
 
+.ck-adaptive-choice-grid-row {
+  width: 100%;
+  grid-template-columns: none !important;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(84px, max-content);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ck-pod-extract-ratio-row .ck-adaptive-choice-item {
+  min-height: 34px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
 .ck-generation-rule-card {
   border: 1px solid #dbe1ec;
   border-radius: 10px;

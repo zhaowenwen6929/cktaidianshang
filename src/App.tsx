@@ -759,7 +759,7 @@ const navGroups: Array<{
     key: "pod",
     label: "POD印花",
     tools: [
-      { key: "pod-crop", label: "图片裁剪", panelTitle: "图片裁剪", resultCount: 5, ratioLabel: "1:1" },
+      { key: "pod-crop", label: "图案裁剪", panelTitle: "图案裁剪", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-extract", label: "印花图提取", panelTitle: "印花图提取", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-variation", label: "印花图裂变", panelTitle: "印花图裂变", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-partial-edit", label: "局部改图", panelTitle: "局部改图", resultCount: 5, ratioLabel: "1:1" },
@@ -2133,6 +2133,17 @@ function getImageGenerationUnitCreditCost(
       );
     }
     return 5;
+  }
+
+  if (toolKey === "pod-crop") {
+    const mode = advancedSelections.podCropMode ?? creationModeSelection?.modeLabel ?? "通用";
+    return (
+      {
+        "通用": 5,
+        "铁皮画": 10,
+        "装饰画": 15
+      }[mode] ?? 5
+    );
   }
 
   return null;
@@ -7934,6 +7945,12 @@ function PodCropModeSection({
   }, [selectedValues]);
 
   useEffect(() => {
+    const unitCreditCost =
+      {
+        "通用": 5,
+        "铁皮画": 10,
+        "装饰画": 15
+      }[mode] ?? 5;
     onSelectionChange?.([mode]);
     onSelectionMapChange?.({ podCropMode: mode });
     onCreationModeChange?.({
@@ -7941,7 +7958,7 @@ function PodCropModeSection({
       modeLabel: mode,
       ratio: "1:1",
       count: 1,
-      unitCreditCost: 5
+      unitCreditCost
     });
   }, [mode, onCreationModeChange, onSelectionChange, onSelectionMapChange]);
 
@@ -8035,9 +8052,28 @@ function PodExtractSetupSection({
         ))}
       </div>
 
-      <div className="ck-pod-extract-inline-group">
-        <SelectField fullWidth label="产品场景" onChange={setScene} options={podExtractSceneOptions[mode]} required value={scene} />
-        <SelectField fullWidth label="出图比例" onChange={setRatio} options={podExtractRatioOptions[mode]} required value={ratio} />
+      <AdaptiveChoiceField
+        label="产品场景"
+        onChange={setScene}
+        options={podExtractSceneOptions[mode].map((option) => ({ key: option, label: option }))}
+        required
+        value={scene}
+      />
+
+      <div className="ck-form-block">
+        <FieldTitle label="出图比例" required />
+        <div className="ck-adaptive-choice-grid ck-adaptive-choice-grid-row ck-pod-extract-ratio-row">
+          {podExtractRatioOptions[mode].map((option) => (
+            <button
+              className={`ck-adaptive-choice-item${option === ratio ? " active" : ""}`}
+              key={option}
+              onClick={() => setRatio(option)}
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -13739,7 +13775,7 @@ export const App = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [exportPendingAction, setExportPendingAction] = useState<ExportPendingAction | null>(null);
   const [resultActionConfirm, setResultActionConfirm] = useState<ResultActionConfirmState | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<UserTierId>("free");
+  const [currentUserId, setCurrentUserId] = useState<UserTierId>("advanced-team");
   const [userMetrics, setUserMetrics] = useState<Record<UserTierId, UserTierMetrics>>(defaultUserMetrics);
   const [purchaseRecords, setPurchaseRecords] = useState<PointsRecordItem[]>(defaultPurchaseRecords);
   const [supplementValues, setSupplementValues] = useState<Record<string, string>>({});
