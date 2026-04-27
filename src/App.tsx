@@ -5178,21 +5178,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "image-cutout": {
     creationModeConfigKey: "default",
-    sectionOrder: ["upload-main", "advanced-settings"],
-    advancedSettings: {
-      title: "高级设置",
-      showAiAssist: false,
-      fields: [],
-      platformIds: [],
-      extraSelects: [
-        {
-          key: "platformInfo",
-          label: "平台信息",
-          mode: "input-select",
-          options: platformInfoInputOptions
-        }
-      ]
-    },
+    sectionOrder: ["upload-main"],
     uploads: {
       main: {
         label: "上传商品图",
@@ -12966,37 +12952,41 @@ function ResultPanel({
   onEditItemText: (item: ResultItem) => void;
 }) {
   const caseCollection = useMemo(() => createCaseCollection(tool), [tool]);
+  const showCaseTab = !tool.key.startsWith("image-");
+  const effectiveActiveTab: ResultTabKey = showCaseTab ? activeTab : "results";
   const readyItems = useMemo(() => items.filter((item) => item.status === "ready"), [items]);
   const selectedReadyCount = useMemo(() => readyItems.filter((item) => item.selected).length, [readyItems]);
   const allReadySelected = readyItems.length > 0 && readyItems.every((item) => item.selected);
   const resultCountText = `(${items.length})`;
-  const downloadDisabled = activeTab !== "results" || selectedReadyCount === 0;
-  const showEmptyState = activeTab === "results" && items.length === 0;
-  const showNoMore = activeTab === "results" && items.length > 0;
+  const downloadDisabled = effectiveActiveTab !== "results" || selectedReadyCount === 0;
+  const showEmptyState = effectiveActiveTab === "results" && items.length === 0;
+  const showNoMore = effectiveActiveTab === "results" && items.length > 0;
   const isNarrow = collapsed;
   const [setPackTitlePopoverOpen, setSetPackTitlePopoverOpen] = useState(false);
   const setPackTitleCandidates = safeParseJson<string[]>(selectedTask?.snapshot.advancedSelections.setPackTitleCandidates, []) ?? [];
   const selectedSetPackTitle = selectedTask?.snapshot.advancedSelections.setPackSelectedTitle ?? "";
-  const canGenerateSetPackTitles = tool.key === "set-main" && Boolean(selectedTask?.taskId) && activeTab === "results";
+  const canGenerateSetPackTitles = tool.key === "set-main" && Boolean(selectedTask?.taskId) && effectiveActiveTab === "results";
 
   return (
     <section className="ck-results">
       <div className="ck-results-toolbar">
         <div className="ck-result-tabs">
-          <button className={activeTab === "results" ? "active" : ""} onClick={() => onTabChange(tool.key, "results")} type="button">
+          <button className={effectiveActiveTab === "results" ? "active" : ""} onClick={() => onTabChange(tool.key, "results")} type="button">
             <span>生成结果</span>
             <em>{resultCountText}</em>
           </button>
-          <button className={activeTab === "cases" ? "active" : ""} onClick={() => onTabChange(tool.key, "cases")} type="button">
-            创作案例
-          </button>
+          {showCaseTab ? (
+            <button className={effectiveActiveTab === "cases" ? "active" : ""} onClick={() => onTabChange(tool.key, "cases")} type="button">
+              创作案例
+            </button>
+          ) : null}
         </div>
-        {activeTab === "results" ? (
+        {effectiveActiveTab === "results" ? (
           <div className="ck-results-actions">
             <label className="ck-results-check">
               <input
                 checked={allReadySelected}
-                disabled={activeTab !== "results" || readyItems.length === 0}
+                disabled={effectiveActiveTab !== "results" || readyItems.length === 0}
                 onChange={(event) => onToggleSelectAll(tool.key, event.target.checked)}
                 type="checkbox"
               />
@@ -13051,7 +13041,7 @@ function ResultPanel({
       ) : null}
 
       <div className={`ck-results-scroll${isNarrow ? " collapsed" : ""}`}>
-        {activeTab === "cases" ? (
+        {effectiveActiveTab === "cases" ? (
           <div className="ck-case-panel">
             <div className="ck-case-hero">
               <h2>{caseCollection.headline}</h2>
