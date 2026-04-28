@@ -10711,7 +10711,7 @@ function ModelGenerateSetupSection({
 }) {
   const defaultTypeKey = types[0]?.key ?? "";
   const [selectedTypeKey, setSelectedTypeKey] = useState(selectedValues?.modelGenerateTypeKey ?? defaultTypeKey);
-  const [gender, setGender] = useState(selectedValues?.gender ?? "女");
+  const [gender, setGender] = useState(selectedValues?.gender ?? "");
   const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
   const [age, setAge] = useState(selectedValues?.age ?? "");
   const [persona, setPersona] = useState(selectedValues?.persona ?? "");
@@ -10721,7 +10721,7 @@ function ModelGenerateSetupSection({
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
       modelGenerateTypeKey: selectedValues?.modelGenerateTypeKey ?? defaultTypeKey,
-      gender: selectedValues?.gender ?? "女",
+      gender: selectedValues?.gender ?? "",
       appearance: selectedValues?.appearance ?? "",
       age: selectedValues?.age ?? "",
       persona: selectedValues?.persona ?? "",
@@ -10734,7 +10734,7 @@ function ModelGenerateSetupSection({
 
     lastSyncedValuesRef.current = nextSyncKey;
     setSelectedTypeKey(selectedValues?.modelGenerateTypeKey ?? defaultTypeKey);
-    setGender(selectedValues?.gender ?? "女");
+    setGender(selectedValues?.gender ?? "");
     setAppearance(selectedValues?.appearance ?? "");
     setAge(selectedValues?.age ?? "");
     setPersona(selectedValues?.persona ?? "");
@@ -10891,7 +10891,7 @@ function BaselineModelSection({
 }) {
   const [activeTab, setActiveTab] = useState<"ai" | "mine">((selectedValues?.baselineModelSource as "ai" | "mine") ?? "ai");
   const [selectedModelId, setSelectedModelId] = useState(selectedValues?.selectedModelId ?? "");
-  const [gender, setGender] = useState(selectedValues?.gender ?? "女");
+  const [gender, setGender] = useState(selectedValues?.gender ?? "");
   const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
   const [age, setAge] = useState(selectedValues?.age ?? "");
   const [persona, setPersona] = useState(selectedValues?.persona ?? "");
@@ -10915,7 +10915,7 @@ function BaselineModelSection({
     const nextSyncKey = JSON.stringify({
       baselineModelSource: (selectedValues?.baselineModelSource as "ai" | "mine") ?? "ai",
       selectedModelId: selectedValues?.selectedModelId ?? "",
-      gender: selectedValues?.gender ?? "女",
+      gender: selectedValues?.gender ?? "",
       appearance: selectedValues?.appearance ?? "",
       age: selectedValues?.age ?? "",
       persona: selectedValues?.persona ?? "",
@@ -10930,7 +10930,7 @@ function BaselineModelSection({
     lastSyncedValuesRef.current = nextSyncKey;
     setActiveTab((selectedValues?.baselineModelSource as "ai" | "mine") ?? "ai");
     setSelectedModelId(selectedValues?.selectedModelId ?? "");
-    setGender(selectedValues?.gender ?? "女");
+    setGender(selectedValues?.gender ?? "");
     setAppearance(selectedValues?.appearance ?? "");
     setAge(selectedValues?.age ?? "");
     setPersona(selectedValues?.persona ?? "");
