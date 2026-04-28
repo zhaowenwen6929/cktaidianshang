@@ -12420,6 +12420,7 @@ function AdvancedSettingsSection({
   const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
   const [isAiAssistLoading, setIsAiAssistLoading] = useState(false);
   const skipSelectedValuesSyncRef = useRef(false);
+  const pendingSelectedValuesSignatureRef = useRef("");
   const lastSelectedValuesSignatureRef = useRef("");
   const lastSelectionValuesEmitSignatureRef = useRef("");
   const lastSelectionMapEmitSignatureRef = useRef("");
@@ -12445,6 +12446,18 @@ function AdvancedSettingsSection({
       }),
     [config.conditionalDetailField?.triggerFieldKey, config.extraSelects, config.fields]
   );
+
+  const buildSelectedValuesSignature = (values: AdvancedSelectionMap | undefined) =>
+    JSON.stringify({
+      platform: values?.platform ?? "",
+      region: values?.region ?? "",
+      language: values?.language ?? "",
+      platformRuleDetail: values?.platformRuleDetail ?? "",
+      extras: (config.extraSelects ?? []).reduce<Record<string, string>>((accumulator, item) => {
+        accumulator[item.key] = typeof values?.[item.key] === "string" ? values[item.key] : "";
+        return accumulator;
+      }, {})
+    });
 
   useEffect(() => {
     if (selectedPlatformId && !platformOptions.some((item) => item.id === selectedPlatformId)) {
@@ -12491,6 +12504,7 @@ function AdvancedSettingsSection({
     if (nextSelectionMapSignature === lastSelectionMapEmitSignatureRef.current) {
       return;
     }
+    pendingSelectedValuesSignatureRef.current = buildSelectedValuesSignature(nextSelectionMap);
     lastSelectionMapEmitSignatureRef.current = nextSelectionMapSignature;
     onSelectionMapChange?.(nextSelectionMap);
   }, [conditionalDetailValue, config.extraSelects, config.fields, onSelectionMapChange, selectedExtraValues, selectedLanguage, selectedPlatform, selectedRegion]);
@@ -12502,16 +12516,14 @@ function AdvancedSettingsSection({
       return;
     }
 
-    const nextSelectedValuesSignature = JSON.stringify({
-      platform: selectedValues.platform ?? "",
-      region: selectedValues.region ?? "",
-      language: selectedValues.language ?? "",
-      platformRuleDetail: selectedValues.platformRuleDetail ?? "",
-      extras: (config.extraSelects ?? []).reduce<Record<string, string>>((accumulator, item) => {
-        accumulator[item.key] = typeof selectedValues[item.key] === "string" ? selectedValues[item.key] : "";
-        return accumulator;
-      }, {})
-    });
+    const nextSelectedValuesSignature = buildSelectedValuesSignature(selectedValues);
+
+    if (pendingSelectedValuesSignatureRef.current) {
+      if (nextSelectedValuesSignature !== pendingSelectedValuesSignatureRef.current) {
+        return;
+      }
+      pendingSelectedValuesSignatureRef.current = "";
+    }
 
     if (nextSelectedValuesSignature === lastSelectedValuesSignatureRef.current) {
       return;
@@ -12597,16 +12609,9 @@ function AdvancedSettingsSection({
       )
     );
 
-    lastSelectedValuesSignatureRef.current = JSON.stringify({
-      platform: values.platform ?? "",
-      region: values.region ?? "",
-      language: values.language ?? "",
-      platformRuleDetail: values.platformRuleDetail ?? "",
-      extras: (config.extraSelects ?? []).reduce<Record<string, string>>((accumulator, item) => {
-        accumulator[item.key] = typeof values[item.key] === "string" ? values[item.key] : "";
-        return accumulator;
-      }, {})
-    });
+    const nextSelectedValuesSignature = buildSelectedValuesSignature(values);
+    pendingSelectedValuesSignatureRef.current = nextSelectedValuesSignature;
+    lastSelectedValuesSignatureRef.current = nextSelectedValuesSignature;
     lastSelectionMapEmitSignatureRef.current = JSON.stringify(
       (() => {
         const nextSelectionMap: AdvancedSelectionMap = {};
@@ -12723,12 +12728,7 @@ function AdvancedSettingsSection({
     });
   });
 
-  const toggleFieldDropdown = (fieldKey: string) => {
-    if (openFieldKey === fieldKey) {
-      setOpenFieldKey(null);
-      return;
-    }
-
+  const openFieldDropdown = (fieldKey: string) => {
     const buttonRect = fieldButtonRefs.current[fieldKey]?.getBoundingClientRect();
     if (buttonRect) {
       const estimatedMenuHeight = 220;
@@ -12744,6 +12744,14 @@ function AdvancedSettingsSection({
     }
 
     setOpenFieldKey(fieldKey);
+  };
+
+  const toggleFieldDropdown = (fieldKey: string) => {
+    if (openFieldKey === fieldKey) {
+      setOpenFieldKey(null);
+      return;
+    }
+    openFieldDropdown(fieldKey);
   };
 
   return (
@@ -12793,7 +12801,7 @@ function AdvancedSettingsSection({
                     <div
                       className={`ck-input-select${field.value ? " has-value" : ""}${openFieldKey === field.key ? " active" : ""}`}
                       onClick={() => {
-                        if (openFieldKey !== field.key) toggleFieldDropdown(field.key);
+                        if (openFieldKey !== field.key) openFieldDropdown(field.key);
                       }}
                       ref={(node) => {
                         fieldButtonRefs.current[field.key] = node;
@@ -12801,8 +12809,9 @@ function AdvancedSettingsSection({
                     >
                       <input
                         onChange={(event) => field.onSelect(event.target.value)}
+                        onClick={(event) => event.stopPropagation()}
                         onFocus={() => {
-                          if (openFieldKey !== field.key) toggleFieldDropdown(field.key);
+                          if (openFieldKey !== field.key) openFieldDropdown(field.key);
                         }}
                         placeholder="请选择或直接输入"
                         value={field.value}

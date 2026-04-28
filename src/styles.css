@@ -1959,6 +1959,11 @@ a {
 
 .ck-baseline-model-tabs {
   margin-bottom: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ck-baseline-model-tabs button {
+  white-space: nowrap;
 }
 
 .ck-baseline-model-panel {
