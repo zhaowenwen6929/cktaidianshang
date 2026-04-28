@@ -6393,30 +6393,6 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
           options: productTypeInputOptions
         },
         {
-          key: "ethnicity",
-          label: "人种肤色",
-          mode: "input-select",
-          options: modelTryEthnicityOptions
-        },
-        {
-          key: "genderSpecies",
-          label: "性别物种",
-          mode: "input-select",
-          options: modelTryGenderSpeciesOptions
-        },
-        {
-          key: "ageRange",
-          label: "年龄维度",
-          mode: "input-select",
-          options: modelTryAgeRangeOptions
-        },
-        {
-          key: "bodyType",
-          label: "身型身材",
-          mode: "input-select",
-          options: modelTryBodyTypeOptions
-        },
-        {
           key: "displayLayout",
           label: "展示排版",
           mode: "input-select",
@@ -11157,9 +11133,8 @@ function ModelTrySetupSection({
   onOpenLibrary,
   onRejectedUpload,
   onAtLimit,
-  onNavigateTool,
+  onGenerateBaselineModel,
   onUploadModels,
-  onToast,
   onSelectionChange,
   onSelectionMapChange,
   selectedValues,
@@ -11178,9 +11153,8 @@ function ModelTrySetupSection({
   onOpenLibrary: (fieldKey: string) => void;
   onRejectedUpload: (message: string) => void;
   onAtLimit: () => void;
-  onNavigateTool: (toolKey: string) => void;
+  onGenerateBaselineModel: (values: AdvancedSelectionMap) => Promise<string | null>;
   onUploadModels: (files: File[]) => Promise<ModelAsset[]>;
-  onToast: (message: string, tone?: "warning") => void;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   selectedValues?: AdvancedSelectionMap;
@@ -11193,17 +11167,49 @@ function ModelTrySetupSection({
   const mainUploadKey = `${toolKey}:main`;
   const defaultTrialMode = showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿";
   const [trialMode, setTrialMode] = useState(defaultTrialMode);
+  const [activeTab, setActiveTab] = useState<"ai" | "mine" | "preference">(
+    (selectedValues?.modelTryModelSource as "ai" | "mine" | "preference") ?? "mine"
+  );
   const [selectedModelId, setSelectedModelId] = useState(selectedValues?.selectedModelId ?? "");
+  const [gender, setGender] = useState(selectedValues?.gender ?? "女");
+  const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
+  const [age, setAge] = useState(selectedValues?.age ?? "");
+  const [persona, setPersona] = useState(selectedValues?.persona ?? "");
+  const [bodyType, setBodyType] = useState(selectedValues?.bodyType ?? "");
+  const [detailSupplement, setDetailSupplement] = useState(selectedValues?.baselineModelSupplement ?? "");
+  const [ethnicity, setEthnicity] = useState(selectedValues?.ethnicity ?? "");
+  const [genderSpecies, setGenderSpecies] = useState(selectedValues?.genderSpecies ?? "");
+  const [ageRange, setAgeRange] = useState(selectedValues?.ageRange ?? "");
+  const [isGeneratingModel, setIsGeneratingModel] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const trialMainUploads = uploads[mainUploadKey] ?? [];
-  const modelCandidates = modelAssets;
+  const modelCandidates = useMemo(
+    () =>
+      [...modelAssets].sort((left, right) => {
+        if (left.sourceType !== right.sourceType) {
+          return left.sourceType === "upload" ? -1 : 1;
+        }
+        return right.createdAt - left.createdAt;
+      }),
+    [modelAssets]
+  );
   const uploadLimit = uploadLimitOverride ?? (trialMode === "单产品试穿" ? 24 : 6);
   const lastSyncedValuesRef = useRef("");
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
       trialMode: showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿",
-      selectedModelId: selectedValues?.selectedModelId ?? ""
+      modelTryModelSource: (selectedValues?.modelTryModelSource as "ai" | "mine" | "preference") ?? "mine",
+      selectedModelId: selectedValues?.selectedModelId ?? "",
+      gender: selectedValues?.gender ?? "女",
+      appearance: selectedValues?.appearance ?? "",
+      age: selectedValues?.age ?? "",
+      persona: selectedValues?.persona ?? "",
+      bodyType: selectedValues?.bodyType ?? "",
+      baselineModelSupplement: selectedValues?.baselineModelSupplement ?? "",
+      ethnicity: selectedValues?.ethnicity ?? "",
+      genderSpecies: selectedValues?.genderSpecies ?? "",
+      ageRange: selectedValues?.ageRange ?? ""
     });
 
     if (nextSyncKey === lastSyncedValuesRef.current) {
@@ -11212,24 +11218,112 @@ function ModelTrySetupSection({
 
     lastSyncedValuesRef.current = nextSyncKey;
     setTrialMode(showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿");
+    setActiveTab((selectedValues?.modelTryModelSource as "ai" | "mine" | "preference") ?? "mine");
     setSelectedModelId(selectedValues?.selectedModelId ?? "");
+    setGender(selectedValues?.gender ?? "女");
+    setAppearance(selectedValues?.appearance ?? "");
+    setAge(selectedValues?.age ?? "");
+    setPersona(selectedValues?.persona ?? "");
+    setBodyType(selectedValues?.bodyType ?? "");
+    setDetailSupplement(selectedValues?.baselineModelSupplement ?? "");
+    setEthnicity(selectedValues?.ethnicity ?? "");
+    setGenderSpecies(selectedValues?.genderSpecies ?? "");
+    setAgeRange(selectedValues?.ageRange ?? "");
   }, [selectedValues, showTrialMode]);
 
   useEffect(() => {
     const selectedModel = modelCandidates.find((item) => item.id === selectedModelId);
     const nextSelectionMap: AdvancedSelectionMap = {
-      trialMode
+      trialMode,
+      modelTryModelSource: activeTab
     };
-    if (selectedModelId) nextSelectionMap.selectedModelId = selectedModelId;
-    if (selectedModel?.name) nextSelectionMap.selectedModelName = selectedModel.name;
+
+    if (activeTab === "ai") {
+      nextSelectionMap.modelGenerateTypeKey = "real-model";
+      nextSelectionMap.modelGenerateType = "真人模特图";
+      if (gender) nextSelectionMap.gender = gender;
+      if (appearance) nextSelectionMap.appearance = appearance;
+      if (age) nextSelectionMap.age = age;
+      if (persona) nextSelectionMap.persona = persona;
+      if (bodyType) nextSelectionMap.bodyType = bodyType;
+      if (detailSupplement) nextSelectionMap.baselineModelSupplement = detailSupplement;
+      onSelectionChange?.(["AI生成", "真人模特图", gender, appearance, age, persona, bodyType, detailSupplement].filter(Boolean));
+    } else if (activeTab === "mine") {
+      if (selectedModelId) nextSelectionMap.selectedModelId = selectedModelId;
+      if (selectedModel?.name) nextSelectionMap.selectedModelName = selectedModel.name;
+      onSelectionChange?.(["我的模特", selectedModel?.name ?? ""].filter(Boolean));
+    } else {
+      if (ethnicity) nextSelectionMap.ethnicity = ethnicity;
+      if (genderSpecies) nextSelectionMap.genderSpecies = genderSpecies;
+      if (ageRange) nextSelectionMap.ageRange = ageRange;
+      if (bodyType) nextSelectionMap.bodyType = bodyType;
+      onSelectionChange?.(["模特偏好", ethnicity, genderSpecies, ageRange, bodyType].filter(Boolean));
+    }
+
     onSelectionMapChange?.(nextSelectionMap);
-    onSelectionChange?.([trialMode, selectedModel?.name ?? ""].filter(Boolean));
-  }, [modelCandidates, onSelectionChange, onSelectionMapChange, selectedModelId, trialMode]);
+  }, [
+    activeTab,
+    age,
+    ageRange,
+    appearance,
+    bodyType,
+    detailSupplement,
+    ethnicity,
+    gender,
+    genderSpecies,
+    modelCandidates,
+    onSelectionChange,
+    onSelectionMapChange,
+    persona,
+    selectedModelId,
+    trialMode
+  ]);
 
   const appendModelFiles = async (files: File[]) => {
     const nextModels = await onUploadModels(files);
     if (!selectedModelId && nextModels[0]?.id) {
+      setActiveTab("mine");
       setSelectedModelId(nextModels[0].id);
+    }
+  };
+
+  const handleOpenAiTab = () => {
+    setActiveTab("ai");
+    setSelectedModelId("");
+  };
+
+  const handleOpenMineTab = () => {
+    setActiveTab("mine");
+  };
+
+  const handleOpenPreferenceTab = () => {
+    setActiveTab("preference");
+    setSelectedModelId("");
+  };
+
+  const handleGenerateModel = async () => {
+    if (!gender || !appearance || !age || !persona || !bodyType) {
+      return;
+    }
+    setIsGeneratingModel(true);
+    try {
+      const nextModelId = await onGenerateBaselineModel({
+        baselineModelSource: "ai",
+        modelGenerateTypeKey: "real-model",
+        modelGenerateType: "真人模特图",
+        gender,
+        appearance,
+        age,
+        persona,
+        bodyType,
+        baselineModelSupplement: detailSupplement
+      });
+      if (nextModelId) {
+        setActiveTab("mine");
+        setSelectedModelId(nextModelId);
+      }
+    } finally {
+      setIsGeneratingModel(false);
     }
   };
 
@@ -11264,51 +11358,106 @@ function ModelTrySetupSection({
 
       <div className="ck-form-block">
         <FieldTitle label="选择模特" required />
-        <input
-          accept="image/*"
-          className="ck-upload-input"
-          multiple
-          onChange={(event) => {
-            const files = Array.from(event.target.files ?? []);
-            if (!files.length) return;
-            void appendModelFiles(files);
-            event.target.value = "";
-          }}
-          ref={inputRef}
-          type="file"
-        />
-        <div className="ck-model-try-model-actions">
-          <button onClick={() => inputRef.current?.click()} type="button">本地上传</button>
-          <button
-            onClick={() => {
-              onNavigateTool("model-generate");
-              onToast("已跳转到模特生成，可先生成模特后返回试穿", "warning");
-            }}
-            type="button"
-          >
-            AI生成模特
+        <div className="ck-task-rail-mode-switch ck-baseline-model-tabs">
+          <button className={activeTab === "ai" ? "active" : ""} onClick={handleOpenAiTab} type="button">
+            AI生成
+          </button>
+          <button className={activeTab === "mine" ? "active" : ""} onClick={handleOpenMineTab} type="button">
+            我的模特
+          </button>
+          <button className={activeTab === "preference" ? "active" : ""} onClick={handleOpenPreferenceTab} type="button">
+            模特偏好
           </button>
         </div>
-        {modelCandidates.length ? (
-          <div className="ck-model-try-model-grid">
-            {modelCandidates.map((item) => (
-              <button
-                className={`ck-model-try-model-card${selectedModelId === item.id ? " active" : ""}`}
-                key={item.id}
-                onClick={() => setSelectedModelId(item.id)}
-                type="button"
-              >
-                <img alt={item.name ?? "模特图"} src={item.src} />
-                <span>{getModelSourceLabel(item.sourceType)}</span>
+
+        {activeTab === "ai" ? (
+          <div className="ck-baseline-model-panel">
+            <div className="ck-baseline-model-ai-row three">
+              <SelectField fullWidth hideLabel label="性别" onChange={setGender} options={["男", "女"]} placeholder="性别" value={gender} />
+              <SelectField fullWidth hideLabel label="年龄段" onChange={setAge} options={modelGenerateAgeOptions} placeholder="年龄段" value={age} />
+              <SelectField fullWidth hideLabel label="体型" onChange={setBodyType} options={modelGenerateBodyOptions} placeholder="体型" value={bodyType} />
+            </div>
+            <div className="ck-baseline-model-ai-row two">
+              <SelectField fullWidth hideLabel label="人设" onChange={setPersona} options={modelGeneratePersonaOptions} placeholder="人设" value={persona} />
+              <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
+            </div>
+            <div className="ck-baseline-model-supplement">
+              <FieldTitle label="细节补充" optional />
+              <textarea
+                maxLength={600}
+                onChange={(event) => setDetailSupplement(event.target.value)}
+                placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
+                value={detailSupplement}
+              />
+              <span>{detailSupplement.length}/600</span>
+            </div>
+            <div className="ck-baseline-model-ai-actions">
+              <button className="ck-baseline-model-generate-mini" onClick={() => void handleGenerateModel()} type="button">
+                <img alt="" src={figmaIcons.creditGem} />
+                <span>5积分</span>
+                <em>{isGeneratingModel ? "生成中..." : "生成模特"}</em>
               </button>
-            ))}
+            </div>
           </div>
-        ) : (
-          <div className="ck-model-try-empty">
-            <strong>暂无可用模特图</strong>
-            <span>可先本地上传，或跳转到模特生成页生成后返回使用。</span>
+        ) : null}
+
+        {activeTab === "mine" ? (
+          <div className="ck-baseline-model-panel">
+            <input
+              accept="image/*"
+              className="ck-upload-input"
+              multiple
+              onChange={(event) => {
+                const files = Array.from(event.target.files ?? []);
+                if (!files.length) return;
+                void appendModelFiles(files);
+                event.target.value = "";
+              }}
+              ref={inputRef}
+              type="file"
+            />
+            <div className="ck-baseline-model-grid">
+              <button className="ck-baseline-model-upload-card" onClick={() => inputRef.current?.click()} type="button">
+                <span className="ck-baseline-model-upload-icon">+</span>
+              </button>
+              {modelCandidates.map((item) => (
+                <button
+                  className={`ck-baseline-model-card${selectedModelId === item.id ? " active" : ""}`}
+                  key={item.id}
+                  onClick={() => setSelectedModelId(item.id)}
+                  type="button"
+                >
+                  <div className="ck-baseline-model-card-visual">
+                    <img alt={item.name ?? "模特图"} src={item.src} />
+                    <span className="ck-baseline-model-card-tag">{getModelSourceLabel(item.sourceType)}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {modelCandidates.length === 0 ? <div className="ck-baseline-model-empty">当前还没有模特素材，先上传一张即可使用。</div> : null}
           </div>
-        )}
+        ) : null}
+
+        {activeTab === "preference" ? (
+          <div className="ck-baseline-model-panel ck-model-try-preference-panel">
+            <div className="ck-baseline-model-ai-row two">
+              <SelectField fullWidth hideLabel label="人种肤色" onChange={setEthnicity} options={modelTryEthnicityOptions} placeholder="人种肤色" value={ethnicity} />
+              <SelectField
+                fullWidth
+                hideLabel
+                label="性别物种"
+                onChange={setGenderSpecies}
+                options={modelTryGenderSpeciesOptions}
+                placeholder="性别物种"
+                value={genderSpecies}
+              />
+            </div>
+            <div className="ck-baseline-model-ai-row two">
+              <SelectField fullWidth hideLabel label="年龄维度" onChange={setAgeRange} options={modelTryAgeRangeOptions} placeholder="年龄维度" value={ageRange} />
+              <SelectField fullWidth hideLabel label="身型身材" onChange={setBodyType} options={modelTryBodyTypeOptions} placeholder="身型身材" value={bodyType} />
+            </div>
+          </div>
+        ) : null}
       </div>
     </>
   );
@@ -14899,13 +15048,29 @@ function ConfigPanel({
           toolKey={tool.key}
           onAddUpload={onAddUpload}
           onAtLimit={onAtLimit}
-          onNavigateTool={onNavigateTool}
+          onGenerateBaselineModel={onGenerateBaselineModel}
           onOpenLibrary={onOpenLibrary}
           onRejectedUpload={onRejectedUpload}
           onRemoveUpload={onRemoveUpload}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            const sectionKeys = ["trialMode", "selectedModelId", "selectedModelName"];
+            const sectionKeys = [
+              "trialMode",
+              "modelTryModelSource",
+              "selectedModelId",
+              "selectedModelName",
+              "modelGenerateTypeKey",
+              "modelGenerateType",
+              "gender",
+              "appearance",
+              "age",
+              "persona",
+              "bodyType",
+              "baselineModelSupplement",
+              "ethnicity",
+              "genderSpecies",
+              "ageRange"
+            ];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
@@ -14914,7 +15079,6 @@ function ConfigPanel({
               return { ...nextSelections, ...values };
             });
           }}
-          onToast={onToast}
           onUploadModels={onUploadModels}
           remainingStorageMb={remainingStorageMb}
           selectedValues={advancedSettingSelections}
