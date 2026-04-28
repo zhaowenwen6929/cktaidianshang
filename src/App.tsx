@@ -13428,6 +13428,11 @@ function SetPackTypeSection({
     const merged = [...savedTemplates, ...presetTemplates];
     return merged.filter((item, index, array) => array.findIndex((candidate) => candidate.name === item.name) === index);
   }, [perTypeCount, savedTemplates, selectedValues]);
+  const productName = selectedValues?.setPackProductName?.trim() || "当前商品";
+  const productSellingPoints = splitMultilineValues(selectedValues?.setPackSellingPoints).slice(0, 3);
+  const targetMarket = selectedValues?.targetMarket || selectedValues?.region || "";
+  const copyLanguage = selectedValues?.copyLanguage || selectedValues?.language || "";
+  const shouldShowThinkingPanel = isAnalyzing || Boolean(analysisPreview);
 
   useEffect(() => {
     const nextSelectedTypes = getSetPackSelectedTypes(selectedValues ?? {}).map((item) => ({ ...item, count: item.count ?? perTypeCount }));
@@ -13885,113 +13890,138 @@ function SetPackTypeSection({
               </button>
             </div>
             <div className="ck-set-pack-modal-body">
-              <div className="ck-set-pack-ai-box">
-                <div className="ck-set-pack-ai-box-head">
-                  <div className="ck-set-pack-ai-section-title">AI思考区</div>
-                  <button className="ck-set-pack-ai-collapse" onClick={() => setAiThoughtCollapsed((current) => !current)} type="button">
-                    {aiThoughtCollapsed ? "展开" : "折叠"}
-                  </button>
-                </div>
-                {!aiThoughtCollapsed ? (
-                  <>
-                    <div className="ck-set-pack-ai-input-row">
-                      <div className="ck-set-pack-ai-upload-thumb">
+              <div className="ck-set-pack-ai-layout">
+                <aside className="ck-set-pack-ai-sidebar">
+                  <div className="ck-set-pack-ai-box">
+                    <div className="ck-set-pack-ai-box-head">
+                      <div className="ck-set-pack-ai-section-title">商品信息</div>
+                    </div>
+                    <div className="ck-set-pack-ai-product-card">
+                      <div className="ck-set-pack-ai-upload-thumb large">
                         {uploads[0]?.previewSrc || uploads[0]?.src ? <img alt="商品图" src={uploads[0]?.previewSrc ?? uploads[0]?.src} /> : null}
                       </div>
-                      <div className="ck-set-pack-ai-input-main">
-                        <textarea
-                          maxLength={600}
-                          onChange={(event) => setThoughtNotes(event.target.value)}
-                          placeholder="可选：补充需求（如核心卖点、视觉风格、场景补充）"
-                          value={thoughtNotes}
-                        />
-                        <span>{thoughtNotes.length}/600</span>
+                      <div className="ck-set-pack-ai-product-meta">
+                        <strong>{productName}</strong>
+                        <div className="ck-set-pack-ai-product-tags">
+                          <span>{uploads.length}张商品图</span>
+                          {targetMarket ? <span>{targetMarket}</span> : null}
+                          {copyLanguage ? <span>{copyLanguage}</span> : null}
+                        </div>
+                        {productSellingPoints.length ? (
+                          <ul className="ck-set-pack-ai-product-points">
+                            {productSellingPoints.map((point) => (
+                              <li key={point}>{point}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="ck-set-pack-ai-product-empty">当前还没有补充商品卖点，将结合商品图信息进行分析。</p>
+                        )}
                       </div>
-                      <button disabled={isAnalyzing} onClick={handleAnalyze} type="button">
-                        {isAnalyzing ? "生成中" : analysisPreview ? "重新分析" : "开始分析"}
-                      </button>
                     </div>
-                    {isAnalyzing || analysisPreview ? (
+                    <div className="ck-set-pack-ai-input-main">
+                      <FieldTitle label="细节补充" optional />
+                      <textarea
+                        maxLength={600}
+                        onChange={(event) => setThoughtNotes(event.target.value)}
+                        placeholder="可选：补充需求（如核心卖点、视觉风格、场景补充）"
+                        value={thoughtNotes}
+                      />
+                      <span>{thoughtNotes.length}/600</span>
+                    </div>
+                    <button className="ck-set-pack-ai-start" disabled={isAnalyzing} onClick={handleAnalyze} type="button">
+                      {isAnalyzing ? "分析中..." : analysisPreview ? "重新分析" : "开始分析"}
+                    </button>
+                  </div>
+                </aside>
+
+                <section className="ck-set-pack-ai-main">
+                  {shouldShowThinkingPanel ? (
+                    <div className="ck-set-pack-ai-box">
+                      <div className="ck-set-pack-ai-box-head">
+                        <div className="ck-set-pack-ai-section-title">思考过程</div>
+                        <button className="ck-set-pack-ai-collapse" onClick={() => setAiThoughtCollapsed((current) => !current)} type="button">
+                          {aiThoughtCollapsed ? "展开" : "收起"}
+                        </button>
+                      </div>
                       <div className="ck-set-pack-ai-thinking-wrap">
                         <div className="ck-set-pack-ai-thinking-status">{isAnalyzing ? "正在分析中..." : "分析完成"}</div>
-                        <div className="ck-set-pack-ai-thinking">{displayThinkingText}</div>
-                        {!isAnalyzing && analysisPreview ? <pre className="ck-set-pack-ai-preview">{analysisPreview}</pre> : null}
+                        <div className={`ck-set-pack-ai-thinking${aiThoughtCollapsed ? " collapsed" : ""}`}>{displayThinkingText}</div>
                       </div>
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
+                    </div>
+                  ) : null}
 
-              <div className="ck-set-pack-selected-panel">
-                <div className="ck-set-pack-selected-panel-head">
-                  <strong>出图类型（{draftTypes.length}）</strong>
-                  <button
-                    disabled={!draftTypes.length}
-                    onClick={() => {
-                      setDraftTypes([]);
-                      setAnalysisPreview("");
-                      setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
-                    }}
-                    type="button"
-                  >
-                    清空已选
-                  </button>
-                </div>
-                {isAnalyzing ? (
-                  <div className="ck-set-pack-selected-drafts loading">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <article className="ck-set-pack-draft-card skeleton" key={`skeleton-${index}`}>
-                        <div className="ck-set-pack-skeleton short" />
-                        <div className="ck-set-pack-skeleton" />
-                        <div className="ck-set-pack-skeleton" />
-                        <div className="ck-set-pack-skeleton medium" />
-                      </article>
-                    ))}
+                  <div className="ck-set-pack-selected-panel">
+                    <div className="ck-set-pack-selected-panel-head">
+                      <strong>出图类型（{draftTypes.length}）</strong>
+                      <button
+                        disabled={!draftTypes.length}
+                        onClick={() => {
+                          setDraftTypes([]);
+                          setAnalysisPreview("");
+                          setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
+                        }}
+                        type="button"
+                      >
+                        清空已选
+                      </button>
+                    </div>
+                    {isAnalyzing ? (
+                      <div className="ck-set-pack-selected-drafts loading">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                          <article className="ck-set-pack-draft-card skeleton" key={`skeleton-${index}`}>
+                            <div className="ck-set-pack-skeleton short" />
+                            <div className="ck-set-pack-skeleton" />
+                            <div className="ck-set-pack-skeleton" />
+                            <div className="ck-set-pack-skeleton medium" />
+                          </article>
+                        ))}
+                      </div>
+                    ) : draftTypes.length ? (
+                      <div className="ck-set-pack-selected-drafts">
+                        {draftTypes.map((item, index) => (
+                          <article className="ck-set-pack-draft-card" key={item.id}>
+                            <div className="ck-set-pack-draft-head">
+                              <div className="ck-set-pack-draft-title">
+                                <strong>
+                                  {index + 1}. {item.category}
+                                </strong>
+                                <span>{item.name}</span>
+                              </div>
+                              <button onClick={() => setDraftTypes((current) => current.filter((type) => type.id !== item.id))} type="button">
+                                删除
+                              </button>
+                            </div>
+                            <div className="ck-set-pack-copy-block">
+                              <FieldTitle label="描述词" />
+                              <textarea
+                                maxLength={2000}
+                                onChange={(event) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, prompt: event.target.value } : type)))}
+                                value={item.prompt}
+                              />
+                              <div className="ck-textarea-actions">
+                                <span>{item.prompt.length}/2000</span>
+                              </div>
+                            </div>
+                            <div className="ck-set-pack-draft-inline">
+                              <SelectField
+                                fullWidth
+                                label="图片比例"
+                                onChange={(value) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, ratio: value } : type)))}
+                                options={setPackRatioOptions}
+                                value={item.ratio}
+                              />
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="ck-set-pack-ai-empty-state">
+                        <strong>分析完成后会自动生成并选用出图类型</strong>
+                        <span>支持结合商品图、商品卖点与补充需求，生成可直接应用到套图的类型方案。</span>
+                      </div>
+                    )}
                   </div>
-                ) : draftTypes.length ? (
-                  <div className="ck-set-pack-selected-drafts">
-                    {draftTypes.map((item, index) => (
-                      <article className="ck-set-pack-draft-card" key={item.id}>
-                        <div className="ck-set-pack-draft-head">
-                          <div className="ck-set-pack-draft-title">
-                            <strong>
-                              {index + 1}. {item.category}
-                            </strong>
-                            <span>{item.name}</span>
-                          </div>
-                          <button onClick={() => setDraftTypes((current) => current.filter((type) => type.id !== item.id))} type="button">
-                            删除
-                          </button>
-                        </div>
-                        <div className="ck-set-pack-copy-block">
-                          <FieldTitle label="描述词" />
-                          <textarea
-                            maxLength={2000}
-                            onChange={(event) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, prompt: event.target.value } : type)))}
-                            value={item.prompt}
-                          />
-                          <div className="ck-textarea-actions">
-                            <span>{item.prompt.length}/2000</span>
-                          </div>
-                        </div>
-                        <div className="ck-set-pack-draft-inline">
-                          <SelectField
-                            fullWidth
-                            label="图片比例"
-                            onChange={(value) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, ratio: value } : type)))}
-                            options={setPackRatioOptions}
-                            value={item.ratio}
-                          />
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="ck-set-pack-ai-empty-state">
-                    <strong>分析完成后会自动生成并选用出图类型</strong>
-                    <span>支持结合商品图、商品卖点与补充需求，生成可直接应用到套图的类型方案。</span>
-                  </div>
-                )}
+                </section>
               </div>
             </div>
             <div className="ck-set-pack-modal-footer">

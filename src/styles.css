@@ -9694,15 +9694,19 @@ textarea {
   border-radius: 12px;
   background: #eef3fb;
   color: #475569;
-  font-size: 12px;
-  line-height: 20px;
+  font-size: 14px;
+  line-height: 24px;
   white-space: pre-wrap;
 }
 
 .ck-set-pack-ai-thinking {
-  min-height: 96px;
-  max-height: 132px;
+  min-height: 100px;
+  max-height: 100px;
   overflow: auto;
+}
+
+.ck-set-pack-ai-thinking.collapsed {
+  overflow: hidden;
 }
 
 .ck-set-pack-ai-preview {
@@ -9716,8 +9720,6 @@ textarea {
 .ck-set-pack-ai-thinking-wrap {
   display: grid;
   gap: 8px;
-  max-height: 210px;
-  overflow: hidden;
 }
 
 .ck-set-pack-ai-thinking-status {
@@ -9750,15 +9752,24 @@ textarea {
   display: block;
 }
 
+.ck-set-pack-ai-upload-thumb.large {
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+}
+
 .ck-set-pack-ai-input-main {
   position: relative;
 }
 
-.ck-set-pack-ai-type-modal .ck-set-pack-ai-input-row textarea {
-  min-height: 50px;
-  height: 50px;
+.ck-set-pack-ai-input-main .ck-field-title {
+  margin-bottom: 8px;
+}
+
+.ck-set-pack-ai-type-modal .ck-set-pack-ai-input-main textarea {
+  min-height: 128px;
   padding: 14px 58px 14px 14px;
-  resize: none;
+  resize: vertical;
 }
 
 .ck-set-pack-ai-input-main span {
@@ -9770,14 +9781,80 @@ textarea {
   line-height: 16px;
 }
 
-.ck-set-pack-ai-input-row button {
-  height: 50px;
+.ck-set-pack-ai-start {
+  height: 44px;
   border: 0;
   border-radius: 10px;
   background: #65a30d;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+}
+
+.ck-set-pack-ai-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+}
+
+.ck-set-pack-ai-sidebar,
+.ck-set-pack-ai-main {
+  min-height: 0;
+}
+
+.ck-set-pack-ai-main {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+}
+
+.ck-set-pack-ai-product-card {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.ck-set-pack-ai-product-meta {
+  display: grid;
+  gap: 10px;
+}
+
+.ck-set-pack-ai-product-meta strong {
+  color: #0f172a;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.ck-set-pack-ai-product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ck-set-pack-ai-product-tags span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-set-pack-ai-product-points {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.ck-set-pack-ai-product-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .ck-set-pack-ai-loading {
@@ -9914,9 +9991,7 @@ textarea {
 }
 
 .ck-set-pack-ai-type-modal .ck-set-pack-modal-body {
-  display: grid;
-  grid-template-rows: minmax(0, 0.75fr) minmax(0, 1.75fr);
-  gap: 14px;
+  padding: 18px;
 }
 
 .ck-set-pack-ai-type-modal .ck-set-pack-modal-footer {
@@ -9930,6 +10005,17 @@ textarea {
   background: #d9e2ec;
   color: #7b8794;
   cursor: not-allowed;
+}
+
+.ck-set-pack-ai-modal-mask {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ck-set-pack-ai-type-modal {
+  width: min(1240px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
 }
 
 .ck-set-pack-modal-footer button,
@@ -10085,6 +10171,20 @@ textarea {
   .ck-set-pack-custom-actions,
   .ck-set-pack-ai-input-row {
     grid-template-columns: 1fr;
+  }
+
+  .ck-set-pack-ai-layout,
+  .ck-set-pack-ai-product-card {
+    grid-template-columns: 1fr;
+  }
+
+  .ck-set-pack-ai-main {
+    grid-template-rows: auto auto;
+  }
+
+  .ck-set-pack-ai-upload-thumb.large {
+    width: 100%;
+    height: 180px;
   }
 
   .ck-aplus-module-head {
