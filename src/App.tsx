@@ -11171,7 +11171,7 @@ function ModelTrySetupSection({
     (selectedValues?.modelTryModelSource as "ai" | "mine" | "preference") ?? "mine"
   );
   const [selectedModelId, setSelectedModelId] = useState(selectedValues?.selectedModelId ?? "");
-  const [gender, setGender] = useState(selectedValues?.gender ?? "女");
+  const [gender, setGender] = useState(selectedValues?.gender ?? "");
   const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
   const [age, setAge] = useState(selectedValues?.age ?? "");
   const [persona, setPersona] = useState(selectedValues?.persona ?? "");
@@ -11201,7 +11201,7 @@ function ModelTrySetupSection({
       trialMode: showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿",
       modelTryModelSource: (selectedValues?.modelTryModelSource as "ai" | "mine" | "preference") ?? "mine",
       selectedModelId: selectedValues?.selectedModelId ?? "",
-      gender: selectedValues?.gender ?? "女",
+      gender: selectedValues?.gender ?? "",
       appearance: selectedValues?.appearance ?? "",
       age: selectedValues?.age ?? "",
       persona: selectedValues?.persona ?? "",
@@ -11220,7 +11220,7 @@ function ModelTrySetupSection({
     setTrialMode(showTrialMode ? selectedValues?.trialMode ?? "单产品试穿" : "单产品试穿");
     setActiveTab((selectedValues?.modelTryModelSource as "ai" | "mine" | "preference") ?? "mine");
     setSelectedModelId(selectedValues?.selectedModelId ?? "");
-    setGender(selectedValues?.gender ?? "女");
+    setGender(selectedValues?.gender ?? "");
     setAppearance(selectedValues?.appearance ?? "");
     setAge(selectedValues?.age ?? "");
     setPersona(selectedValues?.persona ?? "");
