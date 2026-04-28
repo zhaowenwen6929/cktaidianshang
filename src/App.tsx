@@ -1149,7 +1149,7 @@ const presetCreationTaskRecords: Record<string, TaskRecord[]> = {
         referenceUploads: [],
         advancedSelections: {
           modelGenerateType: "通用模特",
-          gender: "女",
+          gender: "",
           age: "25-30岁",
           bodyType: "高挑",
           scene: "黑白影棚"
