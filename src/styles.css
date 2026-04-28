@@ -9629,7 +9629,6 @@ textarea {
 }
 
 .ck-set-pack-selected-panel {
-  margin-top: 14px;
   padding: 14px;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
@@ -9639,10 +9638,29 @@ textarea {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.ck-set-pack-selected-panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  background: #ffffff;
+}
+
+.ck-set-pack-selected-panel-head strong {
+  color: #0f172a;
+  font-size: 15px;
+  line-height: 22px;
+}
+
 .ck-set-pack-draft-card {
-  padding: 12px;
+  padding: 10px;
   border: 1px solid #e6ebf4;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #ffffff;
 }
 
@@ -9857,6 +9875,15 @@ textarea {
   line-height: 20px;
 }
 
+.ck-set-pack-ai-sidebar .ck-set-pack-ai-box {
+  height: 100%;
+  align-content: start;
+}
+
+.ck-set-pack-ai-start {
+  margin-top: auto;
+}
+
 .ck-set-pack-ai-loading {
   display: grid;
   gap: 14px;
@@ -9890,18 +9917,61 @@ textarea {
 .ck-set-pack-selected-drafts {
   min-height: 0;
   overflow: auto;
+  padding-right: 4px;
 }
 
 .ck-set-pack-draft-title {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .ck-set-pack-draft-title span {
   margin: 0;
   color: #94a3b8;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.ck-set-pack-draft-title strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ck-set-pack-draft-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ck-set-pack-draft-head > button,
+.ck-set-pack-selected-panel-head > button {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #dbe3f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
   font-size: 11px;
   line-height: 16px;
+  font-weight: 600;
+}
+
+.ck-set-pack-draft-head > button:disabled,
+.ck-set-pack-selected-panel-head > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ck-set-pack-copy-block .ck-field-title {
+  margin-bottom: 6px;
+}
+
+.ck-set-pack-copy-block textarea {
+  min-height: 88px;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .ck-set-pack-skeleton {
@@ -9921,7 +9991,7 @@ textarea {
 .ck-set-pack-modal-mask {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 100100;
   display: flex;
   align-items: stretch;
   justify-content: flex-end;
@@ -9965,6 +10035,43 @@ textarea {
   background: transparent;
   color: #64748b;
   font-size: 22px;
+  line-height: 1;
+}
+
+.ck-set-pack-ai-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ck-set-pack-ai-head-actions > button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ck-set-pack-ai-head-actions > button:nth-child(2) {
+  border-color: #635ff2;
+  background: #635ff2;
+  color: #ffffff;
+}
+
+.ck-set-pack-ai-head-actions > button:nth-child(2):disabled {
+  border-color: #d9e2ec;
+  background: #d9e2ec;
+  color: #7b8794;
+  cursor: not-allowed;
+}
+
+.ck-set-pack-ai-head-actions .ck-set-pack-ai-close {
+  padding: 0;
+  width: 34px;
+  font-size: 20px;
   line-height: 1;
 }
 
@@ -10185,6 +10292,11 @@ textarea {
   .ck-set-pack-ai-upload-thumb.large {
     width: 100%;
     height: 180px;
+  }
+
+  .ck-set-pack-ai-head-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .ck-aplus-module-head {

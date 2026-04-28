@@ -13885,9 +13885,17 @@ function SetPackTypeSection({
               <div className="ck-set-pack-ai-modal-title">
                 <strong>AI智能电商组图</strong>
               </div>
-              <button onClick={() => setModalMode(null)} type="button">
-                ×
-              </button>
+              <div className="ck-set-pack-ai-head-actions">
+                <button onClick={() => setModalMode(null)} type="button">
+                  取消
+                </button>
+                <button disabled={!draftTypes.length} onClick={handleApplyDraftTypes} type="button">
+                  应用到套图
+                </button>
+                <button className="ck-set-pack-ai-close" onClick={() => setModalMode(null)} type="button">
+                  ×
+                </button>
+              </div>
             </div>
             <div className="ck-set-pack-modal-body">
               <div className="ck-set-pack-ai-layout">
@@ -14023,14 +14031,6 @@ function SetPackTypeSection({
                   </div>
                 </section>
               </div>
-            </div>
-            <div className="ck-set-pack-modal-footer">
-              <button onClick={() => setModalMode(null)} type="button">
-                取消
-              </button>
-              <button disabled={!draftTypes.length} onClick={handleApplyDraftTypes} type="button">
-                应用到套图
-              </button>
             </div>
           </div>
         </div>
