@@ -1959,7 +1959,6 @@ a {
 
 .ck-baseline-model-tabs {
   margin-bottom: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .ck-baseline-model-tabs button {
@@ -5164,6 +5163,10 @@ a {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+}
+
+.ck-task-rail-mode-switch.ck-baseline-model-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .ck-task-rail-mode-switch button {
