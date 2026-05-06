@@ -394,10 +394,8 @@ type AplusPlanStatus = "idle" | "generating" | "ready";
 type AplusPlanModule = {
   id: string;
   category: string;
-  description: string;
   headline: string;
-  focusLine: string;
-  visualLine: string;
+  lines: string[];
 };
 
 type AplusPlanState = {
@@ -922,63 +920,7 @@ const setPackRatioOptions = ["1:1", "3:4", "4:5", "9:16"];
 const setPackVisualStyleOptions = ["简约清新风", "高级质感风", "活泼吸睛风", "复古怀旧风", "场景写实风", "科技未来风", "国风古韵风"];
 const setPackResultRoleLabels = ["平台主图", "卖点图", "细节图", "场景图", "功能图", "参数图", "收尾图"];
 const SET_PACK_TYPE_LIMIT = 15;
-const setPackPlatformIds = [
-  "taobao",
-  "tmall",
-  "jd",
-  "pdd",
-  "1688",
-  "douyin",
-  "kuaishou",
-  "xiaohongshu",
-  "amazon",
-  "temu",
-  "tiktok-shop",
-  "aliexpress",
-  "shopee",
-  "ozon",
-  "alibaba-international",
-  "shein"
-];
-const aplusPlatformPromptMap: Record<string, string> = {
-  "淘宝": "适配淘宝详情页语境，强调卖点直给、信息读取高效和模块节奏紧凑，兼顾转化表达与商品主体清晰度。",
-  "天猫": "适配天猫详情内容，强调品牌感、品质感和更精致的版式层级，避免廉价促销海报感。",
-  "京东": "适配京东详情页阅读习惯，强调参数清晰、卖点理性、结构规整和功能说明可信。",
-  "拼多多": "适配拼多多详情语境，强调价值点直观、利益点明确和信息快速读取，避免过度留白。",
-  "1688": "适配 1688 采购型详情页，强调规格、结构、材质、配件和应用信息，服务于理性采购决策。",
-  "抖音电商": "适配抖音电商详情内容，强调首屏吸引力、场景代入感和快速理解，但仍要保持商品识别清楚。",
-  "快手电商": "适配快手电商详情语境，强调真实感、卖点直给和信任建立，减少过度包装和空泛品牌表达。",
-  "小红书电商": "适配小红书电商详情内容，强调生活方式、审美氛围和真实种草感，避免强货架式促销表达。",
-  "亚马逊": "适配 Amazon A+ 内容语境，强调信息结构清晰、品牌表达克制、卖点与参数真实可信，不做强促销海报感。",
-  "Temu": "适配 Temu 商品详情阅读习惯，强调价值点直给、对比清楚、信息读取效率高，同时保持商品主体清晰可信。",
-  "TikTok Shop": "适配 TikTok Shop 详情内容，强调首屏吸引力、生活方式表达与快速理解，画面要更抓眼但不失商品识别度。",
-  "速卖通": "适配跨境详情页表达，突出商品优势、规格信息和全球消费者易理解的版式，不堆砌复杂本地化符号。",
-  "Shopee": "适配 Shopee 电商详情页，强调转化导向、信息密度适中、卖点模块清楚，场景与商品关系直接明了。",
-  "OZON": "适配 OZON 平台详情语境，整体偏理性、规范、清晰，参数说明和使用价值要明确，避免夸张营销话术。",
-  "阿里国际站": "适配 B2B/B2C 混合型国际站详情表达，强调结构化信息、材质工艺、规格参数和专业可信度。",
-  "SHEIN": "适配 SHEIN 详情内容风格，强调年轻化视觉、穿搭或生活方式氛围、颜色与版式吸引力，但商品仍需清楚可辨。"
-};
-const aplusMarketPromptMap: Record<string, string> = {
-  "大陆": "符合大陆电商审美，信息传达直接高效，卖点标题醒目，画面节奏紧凑但不杂乱。",
-  "北美": "符合北美市场偏好，强调简洁层级、留白、真实质感和理性价值表达，避免信息过载。",
-  "韩国": "符合韩国市场审美，画面干净精致、配色克制柔和，强调细节质感、精修感和生活方式氛围。",
-  "日本": "符合日本市场审美，构图规整、说明清楚、信息精炼，突出细节可信度与温和克制的品质感。",
-  "俄罗斯": "符合俄罗斯市场偏好，强调商品功能清晰、价值表达直接、色彩对比明确，提升阅读和转化效率。",
-  "中东阿拉伯": "符合中东市场偏好，视觉可更饱满精致，强调品质感、礼赠感与尊贵气质，同时保证信息清楚。",
-  "港澳": "符合港澳市场阅读习惯，整体表达利落现代，注重品牌感、都会感与信息阅读效率。",
-  "中国台湾": "符合中国台湾市场审美，风格清爽细腻，版面有秩序，卖点表达自然不过度叫卖。",
-  "土耳其": "符合土耳其市场偏好，画面兼顾时尚感与实用价值，色彩和氛围可适度增强但不失清晰度。",
-  "南美": "符合南美市场偏好，整体更有活力和感染力，色彩可适当更明亮，突出场景带入感和情绪表达。",
-  "澳洲": "符合澳洲市场偏好，强调自然光感、真实生活方式与轻松高级感，避免过重促销氛围。",
-  "东南亚": "符合东南亚市场偏好，强调高效转化、亮眼配色、重点直给和真实场景，避免版面过空。",
-  "印度": "符合印度市场偏好，强调价值感、功能收益和信息完整度，色彩可更鲜明但结构必须清楚。",
-  "非洲": "符合非洲市场偏好，强调实用价值、耐用感和可理解的信息结构，画面明快直接、主体突出。",
-  "英国": "符合英国市场偏好，强调克制、整洁和专业感，突出真实品质与条理化信息表达。",
-  "德国": "符合德国市场偏好，强调理性说明、参数清楚、功能逻辑明确，避免花哨装饰和模糊表达。",
-  "法国": "符合法国市场偏好，强调审美质感、版式呼吸感和品牌气质，卖点表达精炼而有设计感。",
-  "欧洲": "符合欧洲市场通用审美，整体简洁规范、强调品质与结构逻辑，兼顾品牌感和真实可信度。",
-  "东欧": "符合东欧市场偏好，强调功能直观、画面清晰和信息强可读性，避免过度抽象的品牌表达。"
-};
+const setPackPlatformIds = ["amazon", "temu", "tiktok-shop", "aliexpress", "shopee", "ozon", "alibaba-international", "shein"];
 const setPackPlatformDefaultRatios: Record<string, string> = {
   "亚马逊": "1:1",
   "Temu": "3:4",
@@ -1068,11 +1010,6 @@ const aplusModuleLibrary: SetPackTypeTemplate[] = [
   { id: "aplus-multi-angle", category: "多角度图", description: "多角度呈现外观", tag: "展示模块", promptHint: "以多视角构图清晰展示商品正面、侧面、背面及关键结构。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["角度", "外观", "结构"] },
   { id: "aplus-atmosphere", category: "场景氛围图", description: "展示使用场景", tag: "场景模块", promptHint: "营造更有氛围感的环境画面，强化商品气质与生活方式表达。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["氛围", "场景", "生活方式"] },
   { id: "aplus-detail", category: "商品细节图", description: "放大材质与工艺", tag: "细节模块", promptHint: "用局部特写放大商品材质、纹理、做工和结构细节，增强信任感。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["细节", "材质", "工艺"] },
-  { id: "aplus-fit", category: "版型说明图", description: "说明版型与穿着效果", tag: "版型模块", promptHint: "围绕版型、廓形、剪裁或上身效果做图文说明，帮助用户理解商品适配关系与穿着感受。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["版型", "廓形", "穿着"] },
-  { id: "aplus-function", category: "功能拆解图", description: "拆解结构与功能逻辑", tag: "功能模块", promptHint: "将商品核心功能、结构组件或使用逻辑做拆解展示，让用户快速理解功能价值与工作原理。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["功能", "拆解", "结构"] },
-  { id: "aplus-space-fit", category: "空间适配图", description: "展示空间尺寸与适配效果", tag: "空间模块", promptHint: "结合真实空间或尺寸参照，展示商品在不同空间中的摆放、占比与适配关系。", defaultRatio: "4:5", defaultResolution: "1K", keywords: ["空间", "适配", "尺寸"] },
-  { id: "aplus-audience", category: "适用人群图", description: "说明适合的人群与使用对象", tag: "人群模块", promptHint: "围绕商品适合的人群、使用对象或细分需求做说明，帮助用户快速判断是否适合自己。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["人群", "适用", "对象"] },
-  { id: "aplus-comparison", category: "对比说明图", description: "对比方案差异与选择理由", tag: "对比模块", promptHint: "通过方案、型号、前后状态或不同使用方式的对比说明，帮助用户理解差异点与选择理由。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["对比", "差异", "选择"] },
   { id: "aplus-brand-story", category: "品牌故事图", description: "传达品牌理念", tag: "品牌模块", promptHint: "结合品牌调性、产品理念和视觉叙事，输出更具品牌表达的详情模块。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["品牌", "故事", "理念"] },
   { id: "aplus-size", category: "尺寸/容量/尺码图", description: "展示规格信息", tag: "参数模块", promptHint: "清晰呈现尺寸、容量、尺码或规格信息，版式规整易读。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["尺寸", "容量", "尺码"] },
   { id: "aplus-compare", category: "效果对比图", description: "使用前后效果对比", tag: "对比模块", promptHint: "通过使用前后或方案对比，直观呈现商品带来的效果提升。", defaultRatio: "3:4", defaultResolution: "1K", keywords: ["对比", "前后", "效果"] },
@@ -3133,34 +3070,6 @@ const copyLanguageInputOptions = [
   "荷兰语",
   "土耳其语"
 ];
-const aplusCopyLanguagePromptMap: Record<string, string> = {
-  "无文案": "以纯视觉和版式留白为主，只保留必要信息区，不主动生成大段标题和说明文案。",
-  "简体中文": "使用简体中文标题和说明，表达直接、自然易懂，适合电商详情页快速阅读。",
-  "繁体中文": "使用繁体中文排版，语气自然专业，兼顾阅读顺畅与品牌质感。",
-  "英文": "使用简洁自然的英文标题与说明，避免中式英文，控制句长，强调清晰和专业。",
-  "中英文混排": "中英文混排需有明确主次层级，避免两种语言重复堆叠，适合跨境展示和品牌表达。",
-  "俄语": "使用规范俄语排版，标题精炼清楚，避免过长句式，确保信息易识别。",
-  "日语": "使用自然简洁的日语表达，强调礼貌克制、信息清楚和结构有序。",
-  "韩语": "使用自然韩语表达，版式精致清爽，标题短句化，符合韩系详情页阅读习惯。",
-  "印地语": "使用规范印地语排版，确保信息清楚、重点前置，避免复杂混排。",
-  "德语": "使用准确简洁的德语表达，强调理性说明、参数逻辑和信息完整度。",
-  "法语": "使用自然精炼的法语表达，兼顾审美感与专业度，避免生硬直译。",
-  "西班牙语": "使用清晰自然的西班牙语表达，突出卖点与收益，保持阅读流畅。",
-  "葡萄牙语": "使用自然规范的葡萄牙语表达，重点明确、句长适中，适合电商详情阅读。",
-  "阿拉伯语": "使用规范阿拉伯语排版，注意文字阅读方向和版面平衡，重点信息需清楚聚焦。",
-  "泰语": "使用自然泰语表达，标题精炼，说明易读，避免过密排版。",
-  "荷兰语": "使用准确简洁的荷兰语表达，强调信息结构清楚和专业可信。",
-  "土耳其语": "使用自然土耳其语表达，卖点前置、语句清楚，兼顾转化与阅读体验。"
-};
-const aplusVisualStylePromptMap: Record<string, string> = {
-  "简约清新风": "整体画面干净通透、留白充足、色彩轻盈柔和，减少厚重装饰和强对比元素，突出自然、舒适、清爽、有呼吸感的详情页视觉。",
-  "高级质感风": "整体画面强调材质细节、光影层次和品牌感，色彩克制，版式精致，突出高客单感、品质感和专业审美。",
-  "活泼吸睛风": "整体画面更明亮有活力，色彩对比适度增强，构图更有节奏感，突出年轻感、识别度和停留吸引力。",
-  "复古怀旧风": "整体画面加入复古配色、年代纹理或怀旧氛围，但保持商品主体清晰，强调故事感、温度感和风格记忆点。",
-  "场景写实风": "整体画面强调真实环境、自然光感和可信使用状态，避免过度 CG 化，突出商品在实际场景中的价值表达。",
-  "科技未来风": "整体画面强调理性秩序、科技感光效、结构线条和未来气质，适合功能型、数码型或创新型商品的专业表达。",
-  "国风古韵风": "整体画面融入东方审美元素、雅致留白和文化气质，避免符号堆砌，强调高级、含蓄、有韵味的国风表达。"
-};
 
 const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig>> = {
   "goods-white": {
@@ -3628,19 +3537,11 @@ function buildAplusPlanSummary(selectionMap: AdvancedSelectionMap = {}) {
   const sellingPoints = splitMultilineValues(selectionMap.setPackSellingPoints).join(" / ") || "待补充商品卖点";
   const concerns = selectionMap.setPackParameters || "用户最关心材质、功能、规格与使用体验";
   const visualFocus = selectionMap.setPackScenario || "围绕核心卖点搭建有节奏的详情模块";
-  const platform = selectionMap.platform || "目标平台";
-  const market = selectionMap.targetMarket || selectionMap.region || "目标市场";
-  const language = selectionMap.copyLanguage || selectionMap.language || "文案语种";
-  const visualStyle = selectionMap.setPackVisualStyle || "高级质感风";
   return [
     `产品：${productName}`,
     `卖点：${sellingPoints}`,
     `顾虑：${concerns}`,
-    `视觉重心：${visualFocus}`,
-    `平台要求：${platform}。${aplusPlatformPromptMap[platform] ?? "保持详情页表达真实、清晰、结构化。"}`,
-    `市场偏好：${market}。${aplusMarketPromptMap[market] ?? "画面与文案需贴合目标市场审美与阅读习惯。"}`,
-    `语种要求：${language}。${aplusCopyLanguagePromptMap[language] ?? "文案语种需统一，标题与说明风格保持一致。"}`,
-    `风格提示：${visualStyle}。${aplusVisualStylePromptMap[visualStyle] ?? "整体视觉应统一、克制且具备品牌感。"}`
+    `视觉重心：${visualFocus}`
   ];
 }
 
@@ -3654,11 +3555,6 @@ function buildAplusPlanModules(selectionMap: AdvancedSelectionMap = {}) {
   const language = selectionMap.copyLanguage || selectionMap.language || "英文";
   const visualStyle = selectionMap.setPackVisualStyle || "高级质感风";
   const scenario = selectionMap.setPackScenario || "真实使用场景";
-  const platform = selectionMap.platform || "目标平台";
-  const platformPrompt = aplusPlatformPromptMap[platform] ?? "整体需符合平台详情内容语境，真实、清晰、可读。";
-  const marketPrompt = aplusMarketPromptMap[market] ?? "整体表达需贴合目标市场用户的审美与阅读习惯。";
-  const languagePrompt = aplusCopyLanguagePromptMap[language] ?? "文案语种需统一，标题与说明保持一致的语言风格。";
-  const visualStylePrompt = aplusVisualStylePromptMap[visualStyle] ?? "整体视觉统一，保持节奏清楚和品牌质感。";
 
   return selectedTypes.map((item, index) => {
     const template = aplusModuleLibrary.find((module) => module.category === item.category);
@@ -3671,10 +3567,12 @@ function buildAplusPlanModules(selectionMap: AdvancedSelectionMap = {}) {
     return {
       id: item.id,
       category: item.category,
-      description: template?.description ?? emphasis,
-      headline: index === 0 ? `围绕${primarySellingPoint}建立第一认知` : index === 1 ? `把${primarySellingPoint}讲清楚讲透` : `${item.category}重点说明`,
-      focusLine: `${emphasis}，并兼顾${platform}平台内容表达与${market}用户阅读习惯。${platformPrompt} ${marketPrompt}`,
-      visualLine: `沿用${visualStyle}，保持留白、分区清晰和图文节奏统一。${visualStylePrompt} ${languagePrompt}`
+      headline: `${item.category}：${template?.description ?? emphasis}`,
+      lines: [
+        `主标题：围绕“${primarySellingPoint}”设置简洁标题，语种使用${language}，顶部或左上排版。`,
+        `模块重点：${emphasis}，并兼顾${market}用户对${productName}的阅读习惯。`,
+        `视觉建议：沿用${visualStyle}，保持留白、分区清晰和图文节奏统一。`
+      ]
     } satisfies AplusPlanModule;
   });
 }
@@ -3707,50 +3605,62 @@ function buildFashionSceneModules(selectionMap: AdvancedSelectionMap = {}) {
     {
       id: "fashion-scene-hero",
       category: "首图上身展示",
-      description: "突出服装廓形与整体气质",
-      headline: "突出服装版型与整体气质",
-      focusLine: `以${modelSource}${selectionMap.baselineModelSource === "mine" ? `“${modelName}”` : ""}进行正面全身展示，突出服装廓形与上身比例。模特设定为${appearance} / ${age} / ${persona} / ${bodyType}，保持${gender === "男" ? "利落挺拔" : "自然舒展"}体态。`,
-      visualLine: "背景干净、光线明亮，适合作为服饰套图首图或平台封面。"
+      headline: "首图上身展示：突出服装版型与整体气质",
+      lines: [
+        `画面主体：以${modelSource}${selectionMap.baselineModelSource === "mine" ? `“${modelName}”` : ""}进行正面全身展示，突出服装廓形与上身比例。`,
+        `模特设定：${appearance} / ${age} / ${persona} / ${bodyType}，保持${gender === "男" ? "利落挺拔" : "自然舒展"}体态。`,
+        "场景建议：背景干净、光线明亮，适合作为服饰套图首图或平台封面。"
+      ]
     },
     {
       id: "fashion-scene-commute",
       category: "通勤街拍场景",
-      description: "强化真实穿搭代入感",
-      headline: "强化真实穿搭代入感",
-      focusLine: `模特自然行走或驻足，展示服装在真实${persona}场景中的穿搭状态。构图以中景到全身为主，保留环境层次但不过度抢主体。`,
-      visualLine: "以都市街区、写字楼外立面或商业街为背景，形成高转化穿搭氛围。"
+      headline: "通勤街拍场景：强化真实穿搭代入感",
+      lines: [
+        `画面主体：模特自然行走或驻足，展示服装在真实${persona}场景中的穿搭状态。`,
+        "构图建议：中景到全身构图，保留环境层次但不过度抢主体。",
+        "视觉建议：以都市街区、写字楼外立面或商业街为背景，形成高转化穿搭氛围。"
+      ]
     },
     {
       id: "fashion-scene-detail",
       category: "面料细节特写",
-      description: "放大材质与做工亮点",
-      headline: "放大材质与做工亮点",
-      focusLine: "聚焦领口、袖口、面料纹理、走线或特殊设计点。采用半身或局部近景，模特姿态辅助展示垂坠感与材质表现。",
-      visualLine: "通过柔和侧光增强面料层次，适合作为细节说明场景。"
+      headline: "面料细节特写：放大材质与做工亮点",
+      lines: [
+        "画面主体：聚焦领口、袖口、面料纹理、走线或特殊设计点。",
+        "构图建议：半身或局部近景，模特姿态辅助展示垂坠感与材质表现。",
+        "视觉建议：通过柔和侧光增强面料层次，适合作为细节说明场景。"
+      ]
     },
     {
       id: "fashion-scene-motion",
       category: "动态动作场景",
-      description: "突出服装动态与廓形变化",
-      headline: "突出服装动态与廓形变化",
-      focusLine: "通过转身、抬手、迈步等动作展示服装动态效果，保留身体动作延展，重点观察裙摆、裤型、外套下摆等运动状态。",
-      visualLine: "背景简洁，快门感清晰，体现服饰灵动性与真实穿着效果。"
+      headline: "动态动作场景：突出服装动态与廓形变化",
+      lines: [
+        "画面主体：通过转身、抬手、迈步等动作展示服装动态效果。",
+        "构图建议：保留身体动作延展，重点观察裙摆、裤型、外套下摆等运动状态。",
+        "视觉建议：背景简洁，快门感清晰，体现服饰灵动性与真实穿着效果。"
+      ]
     },
     {
       id: "fashion-scene-half",
       category: "半身近景场景",
-      description: "兼顾表情与上半身搭配",
-      headline: "兼顾表情与上半身搭配",
-      focusLine: "突出肩颈线条、上装轮廓、配饰搭配与人物神态。采用半身或胸像视角，适合展示上衣、外套、针织等重点品类。",
-      visualLine: "通过人物表情和局部动作增强种草感，适合详情页或社媒封面。"
+      headline: "半身近景场景：兼顾表情与上半身搭配",
+      lines: [
+        "画面主体：突出肩颈线条、上装轮廓、配饰搭配与人物神态。",
+        "构图建议：半身或胸像视角，适合展示上衣、外套、针织等重点品类。",
+        "视觉建议：通过人物表情和局部动作增强种草感，适合详情页或社媒封面。"
+      ]
     },
     {
       id: "fashion-scene-lifestyle",
       category: "生活方式氛围图",
-      description: "构建完整穿搭故事感",
-      headline: "构建完整穿搭故事感",
-      focusLine: `围绕${persona}日常活动设计有故事性的生活方式场景，把服装与空间道具、姿态互动结合，形成情绪化氛围表达。`,
-      visualLine: "适合咖啡馆、居家、展厅或户外休闲等场景，用于补强品牌调性。"
+      headline: "生活方式氛围图：构建完整穿搭故事感",
+      lines: [
+        `画面主体：围绕${persona}日常活动设计有故事性的生活方式场景。`,
+        "构图建议：把服装与空间道具、姿态互动结合，形成情绪化氛围表达。",
+        "视觉建议：适合咖啡馆、居家、展厅或户外休闲等场景，用于补强品牌调性。"
+      ]
     }
   ];
 
@@ -3762,9 +3672,9 @@ function buildFashionSceneTypes(modules: AplusPlanModule[]) {
     id: module.id,
     category: module.category,
     name: module.category,
-    description: module.description,
+    description: module.headline,
     tag: "服饰场景",
-    prompt: [module.headline, module.focusLine, module.visualLine].join(" "),
+    prompt: module.lines.join(" "),
     ratio: "3:4",
     resolution: "1K",
     count: 1,
@@ -14364,11 +14274,11 @@ function SetPackTypeSection({
 
       {modalMode === "manual" ? (
         <div
-          className="ck-set-pack-side-drawer-mask ck-set-pack-picker-mask"
+          className="ck-set-pack-side-drawer-mask"
           onClick={() => setModalMode(null)}
           role="presentation"
         >
-          <div className="ck-set-pack-side-drawer ck-set-pack-type-picker-modal" onClick={(event) => event.stopPropagation()}>
+          <div className="ck-set-pack-side-drawer" onClick={(event) => event.stopPropagation()} style={drawerPanelStyle}>
             <div className="ck-set-pack-side-drawer-head">
               <strong>出图类型</strong>
               <button onClick={() => setModalMode(null)} type="button">
@@ -14618,7 +14528,7 @@ function AplusPlanEditorSection({
 }) {
   const resolvedPlan = plan ?? { status: "idle", modules: [], summary: [] };
   const [editingModuleId, setEditingModuleId] = useState("");
-  const [moduleDraft, setModuleDraft] = useState({ headline: "", focusLine: "", visualLine: "" });
+  const [moduleDraft, setModuleDraft] = useState("");
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const [draggingModuleId, setDraggingModuleId] = useState("");
   const summaryLines = resolvedPlan.summary ?? [];
@@ -14663,11 +14573,7 @@ function AplusPlanEditorSection({
                       key={module.id}
                       onClick={() => {
                         setEditingModuleId(module.id);
-                        setModuleDraft({
-                          headline: module.headline,
-                          focusLine: module.focusLine,
-                          visualLine: module.visualLine
-                        });
+                        setModuleDraft(module.lines.join("\n"));
                   }}
                   onDragEnd={() => setDraggingModuleId("")}
                   onDragOver={(event) => event.preventDefault()}
@@ -14694,52 +14600,41 @@ function AplusPlanEditorSection({
                       ⋮⋮
                     </button>
                       </div>
-                      <strong>{module.category}</strong>
-                      <p>{module.description}</p>
+                      <strong>{module.headline}</strong>
                       {editingModuleId === module.id ? (
-                        <div className="ck-aplus-plan-module-inline-editor">
-                          <UnifiedTextareaField
-                            formBlockClassName="ck-aplus-plan-module-inline-editor"
-                            hideCount
-                            maxLength={240}
-                            onChange={(value) => {
-                              setModuleDraft((current) => ({ ...current, headline: value }));
-                              onUpdateModule(module.id, { headline: value.trim() });
-                            }}
-                            placeholder="主标题"
-                            textareaProps={{ autoFocus: true, onClick: (event) => event.stopPropagation() }}
-                            value={moduleDraft.headline}
-                          />
-                          <UnifiedTextareaField
-                            formBlockClassName="ck-aplus-plan-module-inline-editor"
-                            hideCount
-                            maxLength={480}
-                            onChange={(value) => {
-                              setModuleDraft((current) => ({ ...current, focusLine: value }));
-                              onUpdateModule(module.id, { focusLine: value.trim() });
-                            }}
-                            placeholder="模块重点"
-                            textareaProps={{ onClick: (event) => event.stopPropagation() }}
-                            value={moduleDraft.focusLine}
-                          />
-                          <UnifiedTextareaField
-                            formBlockClassName="ck-aplus-plan-module-inline-editor"
-                            hideCount
-                            maxLength={480}
-                            onChange={(value) => {
-                              setModuleDraft((current) => ({ ...current, visualLine: value }));
-                              onUpdateModule(module.id, { visualLine: value.trim() });
-                            }}
-                            placeholder="视觉建议"
-                            textareaProps={{ onBlur: () => setEditingModuleId(""), onClick: (event) => event.stopPropagation() }}
-                            value={moduleDraft.visualLine}
-                          />
-                        </div>
+                        <UnifiedTextareaField
+                          formBlockClassName="ck-aplus-plan-module-inline-editor"
+                          hideCount
+                          maxLength={1200}
+                          onChange={(value) => {
+                            setModuleDraft(value);
+                            onUpdateModule(module.id, {
+                              lines: value
+                                .split("\n")
+                                .map((line) => line.trim())
+                                .filter(Boolean)
+                            });
+                          }}
+                          placeholder=""
+                          textareaProps={{
+                            autoFocus: true,
+                            onBlur: () => {
+                              onUpdateModule(module.id, {
+                                lines: moduleDraft
+                                  .split("\n")
+                                  .map((line) => line.trim())
+                                  .filter(Boolean)
+                              });
+                            },
+                            onClick: (event) => event.stopPropagation()
+                          }}
+                          value={moduleDraft}
+                        />
                       ) : (
                         <div className="ck-aplus-plan-module-lines">
-                          <p>{`主标题：${module.headline}`}</p>
-                          <p>{`模块重点：${module.focusLine}`}</p>
-                          <p>{`视觉建议：${module.visualLine}`}</p>
+                          {module.lines.map((line) => (
+                            <p key={line}>{line}</p>
+                          ))}
                         </div>
                       )}
                     </article>
@@ -14791,7 +14686,7 @@ function FashionSceneEditorSection({
 }) {
   const resolvedPlan = plan ?? { status: "idle", modules: [], summary: [] };
   const [editingModuleId, setEditingModuleId] = useState("");
-  const [moduleDraft, setModuleDraft] = useState({ headline: "", focusLine: "", visualLine: "" });
+  const [moduleDraft, setModuleDraft] = useState("");
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const [draggingModuleId, setDraggingModuleId] = useState("");
   const summaryLines = resolvedPlan.summary ?? [];
@@ -14836,11 +14731,7 @@ function FashionSceneEditorSection({
                   key={module.id}
                   onClick={() => {
                     setEditingModuleId(module.id);
-                    setModuleDraft({
-                      headline: module.headline,
-                      focusLine: module.focusLine,
-                      visualLine: module.visualLine
-                    });
+                    setModuleDraft(module.lines.join("\n"));
                   }}
                   onDragEnd={() => setDraggingModuleId("")}
                   onDragOver={(event) => event.preventDefault()}
@@ -14867,52 +14758,41 @@ function FashionSceneEditorSection({
                       ⋮⋮
                     </button>
                   </div>
-                  <strong>{module.category}</strong>
-                  <p>{module.description}</p>
+                  <strong>{module.headline}</strong>
                   {editingModuleId === module.id ? (
-                    <div className="ck-aplus-plan-module-inline-editor">
-                      <UnifiedTextareaField
-                        formBlockClassName="ck-aplus-plan-module-inline-editor"
-                        hideCount
-                        maxLength={240}
-                        onChange={(value) => {
-                          setModuleDraft((current) => ({ ...current, headline: value }));
-                          onUpdateModule(module.id, { headline: value.trim() });
-                        }}
-                        placeholder="主标题"
-                        textareaProps={{ autoFocus: true, onClick: (event) => event.stopPropagation() }}
-                        value={moduleDraft.headline}
-                      />
-                      <UnifiedTextareaField
-                        formBlockClassName="ck-aplus-plan-module-inline-editor"
-                        hideCount
-                        maxLength={480}
-                        onChange={(value) => {
-                          setModuleDraft((current) => ({ ...current, focusLine: value }));
-                          onUpdateModule(module.id, { focusLine: value.trim() });
-                        }}
-                        placeholder="模块重点"
-                        textareaProps={{ onClick: (event) => event.stopPropagation() }}
-                        value={moduleDraft.focusLine}
-                      />
-                      <UnifiedTextareaField
-                        formBlockClassName="ck-aplus-plan-module-inline-editor"
-                        hideCount
-                        maxLength={480}
-                        onChange={(value) => {
-                          setModuleDraft((current) => ({ ...current, visualLine: value }));
-                          onUpdateModule(module.id, { visualLine: value.trim() });
-                        }}
-                        placeholder="视觉建议"
-                        textareaProps={{ onBlur: () => setEditingModuleId(""), onClick: (event) => event.stopPropagation() }}
-                        value={moduleDraft.visualLine}
-                      />
-                    </div>
+                    <UnifiedTextareaField
+                      formBlockClassName="ck-aplus-plan-module-inline-editor"
+                      hideCount
+                      maxLength={1200}
+                      onChange={(value) => {
+                        setModuleDraft(value);
+                        onUpdateModule(module.id, {
+                          lines: value
+                            .split("\n")
+                            .map((line) => line.trim())
+                            .filter(Boolean)
+                        });
+                      }}
+                      placeholder=""
+                      textareaProps={{
+                        autoFocus: true,
+                        onBlur: () => {
+                          onUpdateModule(module.id, {
+                            lines: moduleDraft
+                              .split("\n")
+                              .map((line) => line.trim())
+                              .filter(Boolean)
+                          });
+                        },
+                        onClick: (event) => event.stopPropagation()
+                      }}
+                      value={moduleDraft}
+                    />
                   ) : (
                     <div className="ck-aplus-plan-module-lines">
-                      <p>{`主标题：${module.headline}`}</p>
-                      <p>{`模块重点：${module.focusLine}`}</p>
-                      <p>{`视觉建议：${module.visualLine}`}</p>
+                      {module.lines.map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
                     </div>
                   )}
                 </article>
@@ -18066,9 +17946,9 @@ export const App = () => {
           id: module.id,
           category: module.category,
           name: module.category,
-          description: module.description,
+          description: module.headline,
           tag: "A+模块",
-          prompt: [module.headline, module.focusLine, module.visualLine].join(" "),
+          prompt: module.lines.join(" "),
           ratio: "3:4",
           resolution: "1K",
           count: 1,
@@ -18935,18 +18815,11 @@ export const App = () => {
   useEffect(() => {
     if (currentTool.key !== "set-aplus" || !currentSelectedTask) return;
     const summary = safeParseJson<string[]>(currentSelectedTask.snapshot.advancedSelections.aplusPlanSummary, []);
-    const modules = safeParseJson<AplusPlanModule[]>(currentSelectedTask.snapshot.advancedSelections.aplusPlanModules, []) ?? [];
-    const normalizedModules = modules.map((module) => ({
-      ...module,
-      description: module.description ?? "",
-      headline: (module as AplusPlanModule & { lines?: string[] }).focusLine ? module.headline ?? "" : (module as AplusPlanModule & { lines?: string[] }).lines?.[0]?.replace(/^主标题：/, "").trim() ?? module.headline ?? "",
-      focusLine: (module as AplusPlanModule & { lines?: string[] }).focusLine ?? (module as AplusPlanModule & { lines?: string[] }).lines?.[1]?.replace(/^模块重点：/, "").trim() ?? "",
-      visualLine: (module as AplusPlanModule & { lines?: string[] }).visualLine ?? (module as AplusPlanModule & { lines?: string[] }).lines?.[2]?.replace(/^视觉建议：/, "").trim() ?? ""
-    }));
-    if (!summary?.length && !normalizedModules?.length) return;
+    const modules = safeParseJson<AplusPlanModule[]>(currentSelectedTask.snapshot.advancedSelections.aplusPlanModules, []);
+    if (!summary?.length && !modules?.length) return;
     const signature = buildAplusPlanSignature({
       generateCost: 0,
-      outputCount: normalizedModules?.length ?? 0,
+      outputCount: modules?.length ?? 0,
       sourceUploads: currentSelectedTask.snapshot.mainUploads,
       referenceUploads: currentSelectedTask.snapshot.referenceUploads,
       videoUploads: currentSelectedTask.snapshot.videoUploads ?? [],
@@ -18960,7 +18833,7 @@ export const App = () => {
         status: "ready",
         signature,
         summary: summary ?? [],
-        modules: normalizedModules ?? [],
+        modules: modules ?? [],
         updatedAt: currentSelectedTask.createdAt
       }
     }));
