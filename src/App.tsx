@@ -1,10 +1,27 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+  type DragEvent,
+  type ReactNode,
+  type TextareaHTMLAttributes
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ExportArtworkModal } from "./components/ExportArtworkModal";
 import { MembershipPaymentModal } from "./components/MembershipPaymentModal";
 import { PointsBalancePopover } from "./components/PointsBalancePopover";
 import { PointsPurchaseModal } from "./components/PointsPurchaseModal";
 import { PointsRecordModal, type PointsRecordItem, type PointsRecordTab } from "./components/PointsRecordModal";
 import { UploadCapacityModal } from "./components/UploadCapacityModal";
+import {
+  goodsWhitePlatformOptions,
+  goodsWhiteUniversalPlatformLabel,
+  goodsWhiteUniversalPresetConfig
+} from "./config/goodsWhitePromptConfig";
 import { usePageMeta } from "./hooks/usePageMeta";
 
 const figmaIcons = {
@@ -427,6 +444,7 @@ type TaskRecord = {
 };
 
 type CreationHistoryMode = "tasks" | "results";
+type DetailRouteSource = "workspace" | "mine";
 
 type ModelAsset = {
   id: string;
@@ -441,6 +459,13 @@ type ModelAsset = {
   detailTitle?: string;
   detailSubtitle?: string;
   detailGroups?: Array<{ label: string; values: string[] }>;
+};
+
+type ResultDetailRoute = {
+  toolKey: string;
+  taskId: string;
+  resultId: string;
+  source: DetailRouteSource;
 };
 
 type CreationModeOption = {
@@ -605,6 +630,8 @@ type AdvancedSettingsConfig = {
     triggerFieldKey: string;
     label: string;
     placeholder: string;
+    detailVisibleValues?: string[];
+    detailPresetByValue?: Record<string, string>;
   };
 };
 
@@ -838,6 +865,27 @@ const resultAssetPool = [
   "/assets/result-1.png",
   "/assets/result-2.png"
 ];
+
+const RESULT_DETAIL_ROUTE_PREFIX = "/results/";
+
+const parseResultDetailRoute = (pathname: string, search: string): ResultDetailRoute | null => {
+  const matched = pathname.match(/^\/results\/([^/]+)\/([^/]+)\/([^/]+)\/?$/);
+  if (!matched) return null;
+  const [, toolKey, taskId, resultId] = matched;
+  const params = new URLSearchParams(search);
+  const source = params.get("from") === "mine" ? "mine" : "workspace";
+  return { toolKey, taskId, resultId, source };
+};
+
+const buildBasePath = (activePage: AppPage, mineTab: MineTab, activeTool: string) => {
+  if (activePage === "mine") {
+    return mineTab === "models" ? "/mine/models" : "/mine/creation";
+  }
+  return `/tools/${activeTool}`;
+};
+
+const buildResultDetailPath = (item: ResultItem, source: DetailRouteSource) =>
+  `/results/${item.toolKey}/${item.taskId}/${item.id}?from=${source}`;
 
 const defaultToolKeys = [
   "set-main",
@@ -2492,25 +2540,8 @@ const productTypeInputOptions = [
 ];
 const sceneTypeInputOptions = ["智能生成", "无背景", "简单背景", "产品场景", "纯色背景", "纯色渐变", "图片边框"];
 const backgroundTypeInputOptions = ["电商白底", "实景室内", "室外场景", "商业广告风"];
-const platformInfoInputOptions = [
-  "无平台信息",
-  "淘宝",
-  "天猫",
-  "京东",
-  "拼多多",
-  "1688",
-  "抖音电商",
-  "快手电商",
-  "小红书电商",
-  "亚马逊",
-  "Temu",
-  "TikTok Shop",
-  "阿里国际站",
-  "速卖通",
-  "Shopee",
-  "OZON",
-  "SHEIN"
-];
+const goodsWhiteUniversalRulePreset = goodsWhiteUniversalPresetConfig.prompt;
+const platformInfoInputOptions = ["无平台信息", ...goodsWhitePlatformOptions];
 const productInfoInputOptions = ["无信息", "智能生成", "名称+卖点", "价格与促销", "名称+卖点+价格+促销"];
 const visualStyleInputOptions = ["自动匹配", "极简简约", "轻奢高端", "时尚潮流", "年轻元气", "专业信任", "强营销", "吸睛爆点"];
 const marketingElementInputOptions = ["无", "折扣标识", "买一送一", "满减活动", "顺丰速达", "京东自营", "本地仓", "双十一促销"];
@@ -3041,6 +3072,10 @@ const copyLanguageInputOptions = [
 ];
 
 const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig>> = {
+  "goods-white": {
+    modelLabel: "创客贴AI白底图润色",
+    prompt: "优化商品白底图补充描述，强调纯白背景、主体完整、边缘干净、轻阴影、材质真实与多平台统一上架规范。"
+  },
   "goods-marketing": {
     modelLabel: "创客贴AI营销主图润色",
     prompt: "优化营销主图细节补充，强调产品卖点、营销氛围、构图和商业质感。"
@@ -3109,7 +3144,7 @@ const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig
 };
 
 const advancedAiAssistPromptConfigs: Partial<Record<string, string>> = {
-  "goods-white": `你是一位电商白底图处理顾问。请根据商品图片判断平台信息是否存在特殊白底、阴影、边缘、主图规范；仅回填“平台信息”字段，若无法判断则回填“无平台信息”，不要编造其他字段。`,
+  "goods-white": `你是一位电商商品白底图顾问。目标是为全品类商品提供统一适配的白底主图能力，优先覆盖 ${goodsWhiteUniversalPresetConfig.platforms.join("、")}。请先判断商品是否已经出现明确的平台线索：若能明确识别，则仅回填对应“平台信息”字段；若无法从商品图判断具体平台，请优先回填“${goodsWhiteUniversalPlatformLabel}”，表示采用跨平台统一白底图规范。回填时不要编造其他字段，不要输出额外解释。`,
   "goods-marketing": `你是一位电商营销主图策划师。请根据商品图片与商品线索，分别判断并回填：产品类型、场景背景、平台信息、商品信息、视觉风格、营销元素、文案语种。必须只从当前字段可选项中选择最匹配的值；无法确认时优先回填“智能识别 / 智能生成 / 自动匹配 / 无 / 无文案”等空语义选项。`,
   "goods-retouch": `你是一位商品精修顾问。请根据商品图片判断更适合的电商平台与地区站点，仅回填当前高级设置中的平台、地区字段；不要补充无关内容。若判断不出则留空。`,
   "goods-scene": `你是一位电商场景图策划师。请根据商品图片线索，回填：产品类型、场景类型、产品展示、排版呈现、氛围营造、价值导向、目标市场、文案语种。所有字段必须贴合当前商品，不确定时选择最通用或最弱承诺的选项，不要生成字段外内容。`,
@@ -3456,6 +3491,19 @@ function buildPresetSetPackTemplateLibrary(selectionMap: AdvancedSelectionMap = 
       types: buildTypes(["white-bg", "detail-closeup", "design", "packaging"])
     }
   ];
+}
+
+function syncSetPackTypeItemWithGlobalSettings(item: SetPackTypeItem, ratio: string, count: number): SetPackTypeItem {
+  const nextRatio = ratio || item.ratio;
+  const nextCount = Math.max(1, count || item.count || 1);
+  if (item.ratio === nextRatio && (item.count ?? nextCount) === nextCount) {
+    return item;
+  }
+  return {
+    ...item,
+    ratio: nextRatio,
+    count: nextCount
+  };
 }
 
 function buildAplusPlanSignature(payload: GeneratePayload) {
@@ -4322,7 +4370,15 @@ function buildAdvancedAiAssistResult(
 
   switch (toolKey) {
     case "goods-white":
-      fieldValues.platformInfo = inferPlatformInfo(sourceText);
+      {
+        const inferredPlatformInfo = inferPlatformInfo(sourceText);
+        if (inferredPlatformInfo === "无平台信息") {
+          fieldValues.platformInfo = goodsWhiteUniversalPlatformLabel;
+          fieldValues.platformRuleDetail = goodsWhiteUniversalRulePreset;
+        } else {
+          fieldValues.platformInfo = inferredPlatformInfo;
+        }
+      }
       return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
     case "goods-marketing":
       fieldValues.productType = inferProductType(sourceText);
@@ -5515,7 +5571,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
     sectionOrder: ["upload-main", "creation-mode", "advanced-settings"],
     advancedSettings: {
       title: "高级设置",
-      showAiAssist: false,
+      showAiAssist: true,
       fields: [],
       platformIds: [],
       extraSelects: [
@@ -5529,7 +5585,11 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       conditionalDetailField: {
         triggerFieldKey: "platformInfo",
         label: "细节补充",
-        placeholder: "请输入平台相关规则说明，例如：白底规范、边缘处理要求、阴影限制或主图尺寸要求。"
+        placeholder: "请输入平台相关规则说明，例如：白底规范、边缘处理要求、阴影限制或主图尺寸要求。",
+        detailVisibleValues: [goodsWhiteUniversalPlatformLabel],
+        detailPresetByValue: {
+          [goodsWhiteUniversalPlatformLabel]: goodsWhiteUniversalRulePreset
+        }
       }
     },
     uploads: {
@@ -5788,7 +5848,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
         {
           key: "copyLanguage",
           label: "文案语种",
-          mode: "select",
+          mode: "input-select",
           options: copyLanguageInputOptions
         }
       ]
@@ -8136,6 +8196,64 @@ function BasicGenerateSettingsSection({
   );
 }
 
+function UnifiedTextareaField({
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+  label,
+  required,
+  optional,
+  header,
+  formBlockClassName = "ck-form-block",
+  textareaWrapClassName = "",
+  textareaClassName = "",
+  footerClassName = "",
+  actions,
+  hideCount,
+  counterText,
+  style,
+  textareaProps
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  maxLength: number;
+  label?: string;
+  required?: boolean;
+  optional?: boolean;
+  header?: ReactNode;
+  formBlockClassName?: string;
+  textareaWrapClassName?: string;
+  textareaClassName?: string;
+  footerClassName?: string;
+  actions?: ReactNode;
+  hideCount?: boolean;
+  counterText?: string;
+  style?: CSSProperties;
+  textareaProps?: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className" | "maxLength" | "onChange" | "placeholder" | "value">;
+}) {
+  return (
+    <div className={formBlockClassName} style={style}>
+      {header ? header : label ? <FieldTitle label={label} optional={optional} required={required} /> : null}
+      <div className={`ck-textarea-wrap${textareaWrapClassName ? ` ${textareaWrapClassName}` : ""}`}>
+        <textarea
+          {...textareaProps}
+          className={textareaClassName || undefined}
+          maxLength={maxLength}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          value={value}
+        />
+        <div className={`ck-textarea-actions${footerClassName ? ` ${footerClassName}` : ""}`}>
+          {actions}
+          {hideCount ? null : <span>{counterText ?? `${value.length}/${maxLength}`}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SupplementField({
   label,
   placeholder,
@@ -8247,98 +8365,97 @@ function SupplementField({
   };
 
   return (
-    <div className="ck-form-block">
-      <FieldTitle label={label ?? "补充说明"} optional />
-      <div className="ck-textarea-wrap">
-        <textarea maxLength={maxLength} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} value={value} />
-        <div className="ck-textarea-actions">
-          {aiPolishConfig ? (
-            <div className="ck-ai-polish" ref={containerRef}>
-              <button onClick={handleGeneratePolish} ref={buttonRef} type="button">
-                AI润色
-              </button>
-              {popoverOpen ? (
-                <div className={`ck-ai-polish-popover${isGenerating ? " is-generating" : ""}`} style={popoverStyle}>
-                  <div className="ck-ai-polish-popover-head">
-                    <div>
-                      <strong>AI润色</strong>
-                    </div>
-                    <button className="ck-ai-polish-close" onClick={() => setPopoverOpen(false)} type="button">
-                      ×
-                    </button>
+    <UnifiedTextareaField
+      actions={
+        aiPolishConfig ? (
+          <div className="ck-ai-polish" ref={containerRef}>
+            <button onClick={handleGeneratePolish} ref={buttonRef} type="button">
+              AI润色
+            </button>
+            {popoverOpen ? (
+              <div className={`ck-ai-polish-popover${isGenerating ? " is-generating" : ""}`} style={popoverStyle}>
+                <div className="ck-ai-polish-popover-head">
+                  <div>
+                    <strong>AI润色</strong>
                   </div>
-                  <div className="ck-ai-polish-popover-body">
-                    {isGenerating ? (
-                      <div className="ck-ai-polish-loading">
-                        <div className="ck-ai-polish-loading-dots" aria-hidden="true">
-                          <span />
-                          <span />
-                          <span />
-                        </div>
-                        <strong>AI 深度思考中...</strong>
-                      </div>
-                    ) : (
-                      <div className="ck-ai-polish-result">
-                        {detectedLanguage === "en" && (polishResult?.applyEnglishContent || polishResult?.englishText) ? (
-                          <div className="ck-ai-polish-result-block">
-                            <p>{polishResult.applyEnglishContent ?? polishResult.englishText}</p>
-                          </div>
-                        ) : null}
-                        {detectedLanguage !== "en" && (polishResult?.applyContent || polishResult?.chineseText) ? (
-                          <div className="ck-ai-polish-result-block">
-                            <p>{polishResult.applyContent ?? polishResult.chineseText}</p>
-                          </div>
-                        ) : null}
-                        {((detectedLanguage === "en" && !polishResult?.englishText) ||
-                          (detectedLanguage !== "en" && !polishResult?.chineseText)) ? (
-                          <pre>{polishResult?.content ?? "点击重新润色后可再次优化当前文案。"}</pre>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
+                  <button className="ck-ai-polish-close" onClick={() => setPopoverOpen(false)} type="button">
+                    ×
+                  </button>
+                </div>
+                <div className="ck-ai-polish-popover-body">
                   {isGenerating ? (
-                    <div className="ck-ai-polish-popover-actions loading">
-                      <button className="loading-indicator" disabled type="button">
-                        正在润色
-                      </button>
+                    <div className="ck-ai-polish-loading">
+                      <div className="ck-ai-polish-loading-dots" aria-hidden="true">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <strong>AI 深度思考中...</strong>
                     </div>
                   ) : (
-                    <div className="ck-ai-polish-popover-actions">
-                      <button
-                        className="secondary"
-                        disabled={isGenerating}
-                        onClick={handleGeneratePolish}
-                        type="button"
-                      >
-                        重新润色
-                      </button>
-                      <button
-                        disabled={isGenerating || !polishResult?.canUse}
-                        onClick={() => {
-                          if (!polishResult?.canUse) return;
-                          onChange(
-                            detectedLanguage === "en"
-                              ? polishResult.applyEnglishContent ?? polishResult.englishText ?? polishResult.applyContent ?? polishResult.content
-                              : polishResult.applyContent ?? polishResult.content
-                          );
-                          setPopoverOpen(false);
-                        }}
-                        type="button"
-                      >
-                        确认
-                      </button>
+                    <div className="ck-ai-polish-result">
+                      {detectedLanguage === "en" && (polishResult?.applyEnglishContent || polishResult?.englishText) ? (
+                        <div className="ck-ai-polish-result-block">
+                          <p>{polishResult.applyEnglishContent ?? polishResult.englishText}</p>
+                        </div>
+                      ) : null}
+                      {detectedLanguage !== "en" && (polishResult?.applyContent || polishResult?.chineseText) ? (
+                        <div className="ck-ai-polish-result-block">
+                          <p>{polishResult.applyContent ?? polishResult.chineseText}</p>
+                        </div>
+                      ) : null}
+                      {((detectedLanguage === "en" && !polishResult?.englishText) ||
+                        (detectedLanguage !== "en" && !polishResult?.chineseText)) ? (
+                        <pre>{polishResult?.content ?? "点击重新润色后可再次优化当前文案。"}</pre>
+                      ) : null}
                     </div>
                   )}
                 </div>
-              ) : null}
-            </div>
-          ) : null}
-          <span>
-            {value.length}/{maxLength}
-          </span>
-        </div>
-      </div>
-    </div>
+                {isGenerating ? (
+                  <div className="ck-ai-polish-popover-actions loading">
+                    <button className="loading-indicator" disabled type="button">
+                      正在润色
+                    </button>
+                  </div>
+                ) : (
+                  <div className="ck-ai-polish-popover-actions">
+                    <button
+                      className="secondary"
+                      disabled={isGenerating}
+                      onClick={handleGeneratePolish}
+                      type="button"
+                    >
+                      重新润色
+                    </button>
+                    <button
+                      disabled={isGenerating || !polishResult?.canUse}
+                      onClick={() => {
+                        if (!polishResult?.canUse) return;
+                        onChange(
+                          detectedLanguage === "en"
+                            ? polishResult.applyEnglishContent ?? polishResult.englishText ?? polishResult.applyContent ?? polishResult.content
+                            : polishResult.applyContent ?? polishResult.content
+                        );
+                        setPopoverOpen(false);
+                      }}
+                      type="button"
+                    >
+                      确认
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null
+      }
+      label={label ?? "补充说明"}
+      maxLength={maxLength}
+      onChange={onChange}
+      optional
+      placeholder={placeholder}
+      value={value}
+    />
   );
 }
 
@@ -8852,20 +8969,14 @@ function PodPartialEditSetupSection({
       ) : null}
 
       {requirement === "自定义提示词" ? (
-        <div className="ck-form-block">
-          <FieldTitle label="提示词输入" required />
-          <div className="ck-textarea-wrap">
-            <textarea
-              maxLength={3000}
-              onChange={(event) => handleInstructionTextChange(event.target.value)}
-              placeholder="请输入局部改图指令，例如：保留主体结构，只替换包装中心文案与角标元素。"
-              value={instructionText}
-            />
-            <div className="ck-textarea-actions">
-              <span>{instructionText.length}/3000</span>
-            </div>
-          </div>
-        </div>
+        <UnifiedTextareaField
+          label="提示词输入"
+          maxLength={3000}
+          onChange={handleInstructionTextChange}
+          placeholder="请输入局部改图指令，例如：保留主体结构，只替换包装中心文案与角标元素。"
+          required
+          value={instructionText}
+        />
       ) : null}
 
       <CountField label="出图数量" onChange={setOutputCount} options={[...podPartialEditOutputCountOptions]} required value={outputCount} />
@@ -9726,30 +9837,34 @@ function PatternRepeatPromptList({
       <div className="ck-pattern-repeat-prompt-list-body">
         {promptItems.map((item) => (
           <div className="ck-pattern-repeat-prompt-card" key={item.id}>
-            <textarea
+            <UnifiedTextareaField
+              actions={
+                <>
+                  <button
+                    className="ck-pattern-repeat-prompt-upload"
+                    onClick={() => inputRefs.current[item.id]?.click()}
+                    type="button"
+                  >
+                    导入图片反推
+                  </button>
+                  {item.reverseImage ? (
+                    <div className="ck-pattern-repeat-prompt-preview">
+                      <img alt={item.reverseImage.name ?? "参考图"} src={item.reverseImage.previewSrc ?? item.reverseImage.src} />
+                      <span>{item.reverseImage.name ?? "已导入参考图"}</span>
+                    </div>
+                  ) : null}
+                  <button className="ck-pattern-repeat-prompt-delete" onClick={() => removePromptItem(item.id)} type="button">
+                    删除
+                  </button>
+                </>
+              }
+              footerClassName="ck-pattern-repeat-prompt-card-footer"
+              formBlockClassName=""
               maxLength={2000}
-              onChange={(event) => updatePromptItem(item.id, (current) => ({ ...current, text: event.target.value }))}
+              onChange={(value) => updatePromptItem(item.id, (current) => ({ ...current, text: value }))}
               placeholder="描述想要生成的图片"
               value={item.text}
             />
-            <div className="ck-pattern-repeat-prompt-card-footer">
-              <button
-                className="ck-pattern-repeat-prompt-upload"
-                onClick={() => inputRefs.current[item.id]?.click()}
-                type="button"
-              >
-                导入图片反推
-              </button>
-              {item.reverseImage ? (
-                <div className="ck-pattern-repeat-prompt-preview">
-                  <img alt={item.reverseImage.name ?? "参考图"} src={item.reverseImage.previewSrc ?? item.reverseImage.src} />
-                  <span>{item.reverseImage.name ?? "已导入参考图"}</span>
-                </div>
-              ) : null}
-              <button className="ck-pattern-repeat-prompt-delete" onClick={() => removePromptItem(item.id)} type="button">
-                删除
-              </button>
-            </div>
             <input
               accept="image/*"
               className="ck-upload-input"
@@ -11036,16 +11151,15 @@ function BaselineModelSection({
             <SelectField fullWidth hideLabel label="人设" onChange={setPersona} options={modelGeneratePersonaOptions} placeholder="人设" value={persona} />
             <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
           </div>
-          <div className="ck-baseline-model-supplement">
-            <FieldTitle label="细节补充" optional />
-            <textarea
-              maxLength={600}
-              onChange={(event) => setDetailSupplement(event.target.value)}
-              placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
-              value={detailSupplement}
-            />
-            <span>{detailSupplement.length}/600</span>
-          </div>
+          <UnifiedTextareaField
+            formBlockClassName="ck-baseline-model-supplement"
+            label="细节补充"
+            maxLength={600}
+            onChange={setDetailSupplement}
+            optional
+            placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
+            value={detailSupplement}
+          />
           <div className="ck-baseline-model-ai-actions">
             <button className="ck-baseline-model-generate-mini" onClick={() => void handleGenerateModel()} type="button">
               <img alt="" src={figmaIcons.creditGem} />
@@ -11381,16 +11495,15 @@ function ModelTrySetupSection({
               <SelectField fullWidth hideLabel label="人设" onChange={setPersona} options={modelGeneratePersonaOptions} placeholder="人设" value={persona} />
               <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
             </div>
-            <div className="ck-baseline-model-supplement">
-              <FieldTitle label="细节补充" optional />
-              <textarea
-                maxLength={600}
-                onChange={(event) => setDetailSupplement(event.target.value)}
-                placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
-                value={detailSupplement}
-              />
-              <span>{detailSupplement.length}/600</span>
-            </div>
+            <UnifiedTextareaField
+              formBlockClassName="ck-baseline-model-supplement"
+              label="细节补充"
+              maxLength={600}
+              onChange={setDetailSupplement}
+              optional
+              placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
+              value={detailSupplement}
+            />
             <div className="ck-baseline-model-ai-actions">
               <button className="ck-baseline-model-generate-mini" onClick={() => void handleGenerateModel()} type="button">
                 <img alt="" src={figmaIcons.creditGem} />
@@ -11628,19 +11741,13 @@ function RetouchModeSection() {
           </div>
 
           {extractMode === "custom" ? (
-            <div className="ck-textarea-wrap ck-retouch-custom-textarea">
-              <textarea
-                maxLength={500}
-                onChange={(event) => setCustomSubject(event.target.value)}
-                placeholder="请输入需要提取和精修的主体说明，例如：仅保留前景中的玻璃香水瓶，正面展示。"
-                value={customSubject}
-              />
-              <div className="ck-textarea-actions">
-                <span>
-                  {customSubject.length}/500
-                </span>
-              </div>
-            </div>
+            <UnifiedTextareaField
+              formBlockClassName="ck-retouch-custom-textarea"
+              maxLength={500}
+              onChange={setCustomSubject}
+              placeholder="请输入需要提取和精修的主体说明，例如：仅保留前景中的玻璃香水瓶，正面展示。"
+              value={customSubject}
+            />
           ) : null}
         </div>
       ) : null}
@@ -12328,7 +12435,7 @@ function CreationModeSection({
   if (!activeMode) return null;
 
   return (
-    <div className="ck-creation-mode">
+    <div className={`ck-creation-mode${isSetPackCreationMode ? " ck-creation-mode-set-pack" : ""}`}>
       <SegmentedField
         label={config.title ?? "创作模式"}
         options={config.modes.map((mode) => mode.label)}
@@ -12588,6 +12695,7 @@ function AdvancedSettingsSection({
     if (!triggerField) return false;
     const triggerValue = selectedExtraValues[fieldConfig.triggerFieldKey]?.trim() ?? "";
     if (!triggerValue) return false;
+    if (fieldConfig.detailVisibleValues?.includes(triggerValue)) return true;
     return !(triggerField.options ?? []).includes(triggerValue);
   })();
 
@@ -12724,6 +12832,10 @@ function AdvancedSettingsSection({
           ...current,
           [field.key]: value
         }));
+        if (config.conditionalDetailField?.triggerFieldKey === field.key) {
+          const presetDetail = config.conditionalDetailField.detailPresetByValue?.[value] ?? "";
+          setConditionalDetailValue(presetDetail);
+        }
       }
     });
   });
@@ -12872,23 +12984,18 @@ function AdvancedSettingsSection({
         ))}
       </div>
       {shouldShowConditionalDetail && config.conditionalDetailField ? (
-        <div className="ck-form-block" style={{ marginTop: 12 }}>
-          <FieldTitle label={config.conditionalDetailField.label} optional />
-          <div className="ck-textarea-wrap">
-            <textarea
-              maxLength={500}
-              onChange={(event) => {
-                skipSelectedValuesSyncRef.current = true;
-                setConditionalDetailValue(event.target.value);
-              }}
-              placeholder={config.conditionalDetailField.placeholder}
-              value={conditionalDetailValue}
-            />
-            <div className="ck-textarea-actions">
-              <span>{conditionalDetailValue.length}/500</span>
-            </div>
-          </div>
-        </div>
+        <UnifiedTextareaField
+          label={config.conditionalDetailField.label}
+          maxLength={500}
+          onChange={(value) => {
+            skipSelectedValuesSyncRef.current = true;
+            setConditionalDetailValue(value);
+          }}
+          optional
+          placeholder={config.conditionalDetailField.placeholder}
+          style={{ marginTop: 12 }}
+          value={conditionalDetailValue}
+        />
       ) : null}
     </div>
   );
@@ -12978,9 +13085,9 @@ function SetPackStrategySection({
   }, [copyLanguage, onSelectionChange, onSelectionMapChange, selectedPlatform, targetMarket, visualStyle]);
 
   return (
-    <div className="ck-form-block">
-      <FieldTitle label="市场配置" />
-      <div className="ck-set-pack-strategy-grid">
+    <div className="ck-form-block ck-set-pack-market-block">
+      <FieldTitle label="市场配置" required />
+      <div className="ck-set-pack-strategy-grid ck-set-pack-strategy-grid-2x2">
         <SelectField
           fullWidth
           hideLabel
@@ -13071,6 +13178,7 @@ function SetPackSellingPointsSection({
   const [draftText, setDraftText] = useState("");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const lastLocalSyncSignatureRef = useRef("");
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
 
   useEffect(() => {
@@ -13081,8 +13189,22 @@ function SetPackSellingPointsSection({
       scenario: selectedValues?.setPackScenario ?? "",
       parameters: selectedValues?.setPackParameters ?? ""
     };
-    setDetailDraft(nextDraft);
-    setDetailText(selectedValues?.setPackSellingPoints ?? formatSetPackDetailText(nextDraft));
+    const nextText = selectedValues?.setPackSellingPoints ?? formatSetPackDetailText(nextDraft);
+    const nextSignature = JSON.stringify({
+      ...nextDraft,
+      detailText: nextText
+    });
+
+    if (nextSignature === lastLocalSyncSignatureRef.current) {
+      return;
+    }
+
+    setDetailDraft((current) => {
+      const currentSignature = JSON.stringify(current);
+      const draftSignature = JSON.stringify(nextDraft);
+      return currentSignature === draftSignature ? current : nextDraft;
+    });
+    setDetailText((current) => (current === nextText ? current : nextText));
   }, [
     selectedValues?.setPackAudience,
     selectedValues?.setPackParameters,
@@ -13092,6 +13214,15 @@ function SetPackSellingPointsSection({
   ]);
 
   useEffect(() => {
+    lastLocalSyncSignatureRef.current = JSON.stringify({
+      productName: detailDraft.productName,
+      sellingPoints: detailText,
+      audience: detailDraft.audience,
+      scenario: detailDraft.scenario,
+      parameters: detailDraft.parameters,
+      detailText
+    });
+
     onSelectionMapChange?.({
       setPackProductName: detailDraft.productName,
       setPackSellingPoints: detailText,
@@ -13186,82 +13317,82 @@ function SetPackSellingPointsSection({
 
   return (
     <>
-      <div className="ck-form-block">
-        <div className="ck-advanced-settings-head">
-          <FieldTitle label="商品卖点&要求" optional />
-          <div className="ck-ai-polish" ref={containerRef}>
-            <button className="ck-advanced-settings-ai" onClick={() => void handleGenerateAiDraft()} ref={buttonRef} type="button">
-              AI帮写
-            </button>
-            {popoverOpen ? (
-              <div className={`ck-ai-polish-popover${isGenerating ? " is-generating" : ""}`} style={popoverStyle}>
-                <div className="ck-ai-polish-popover-head">
-                  <div>
-                    <strong>AI帮写</strong>
+      <UnifiedTextareaField
+        formBlockClassName="ck-form-block ck-set-pack-selling-points"
+        header={
+          <div className="ck-advanced-settings-head">
+            <FieldTitle label="商品卖点&要求" optional />
+            <div className="ck-ai-polish" ref={containerRef}>
+              <button className="ck-advanced-settings-ai" onClick={() => void handleGenerateAiDraft()} ref={buttonRef} type="button">
+                AI帮写
+              </button>
+              {popoverOpen ? (
+                <div className={`ck-ai-polish-popover${isGenerating ? " is-generating" : ""}`} style={popoverStyle}>
+                  <div className="ck-ai-polish-popover-head">
+                    <div>
+                      <strong>AI帮写</strong>
+                    </div>
+                    <button className="ck-ai-polish-close" onClick={() => setPopoverOpen(false)} type="button">
+                      ×
+                    </button>
                   </div>
-                  <button className="ck-ai-polish-close" onClick={() => setPopoverOpen(false)} type="button">
-                    ×
-                  </button>
-                </div>
-                <div className="ck-ai-polish-popover-body">
-                  {isGenerating ? (
-                    <div className="ck-ai-polish-loading">
-                      <div className="ck-ai-polish-loading-dots" aria-hidden="true">
-                        <span />
-                        <span />
-                        <span />
+                  <div className="ck-ai-polish-popover-body">
+                    {isGenerating ? (
+                      <div className="ck-ai-polish-loading">
+                        <div className="ck-ai-polish-loading-card" aria-hidden="true">
+                          <div className="ck-ai-polish-loading-badge">AI</div>
+                          <div className="ck-ai-polish-loading-lines">
+                            <span className="short" />
+                            <span />
+                            <span className="medium" />
+                          </div>
+                        </div>
+                        <strong>AI 深度思考中...</strong>
+                        <p>正在根据商品图与平台信息生成更完整的卖点文案</p>
                       </div>
-                      <strong>AI 深度思考中...</strong>
+                    ) : (
+                      <div className="ck-ai-polish-result">
+                        <pre>{draftText || "点击重新帮写后可再次生成当前文案。"}</pre>
+                      </div>
+                    )}
+                  </div>
+                  {isGenerating ? (
+                    <div className="ck-ai-polish-popover-actions loading">
+                      <button className="loading-indicator" disabled type="button">
+                        正在帮写
+                      </button>
                     </div>
                   ) : (
-                    <div className="ck-ai-polish-result">
-                      <pre>{draftText || "点击重新帮写后可再次生成当前文案。"}</pre>
+                    <div className="ck-ai-polish-popover-actions">
+                      <button className="secondary" disabled={isGenerating} onClick={() => void handleGenerateAiDraft()} type="button">
+                        重新帮写
+                      </button>
+                      <button
+                        disabled={isGenerating || !draft}
+                        onClick={() => {
+                          if (!draft) return;
+                          setDetailDraft(draft);
+                          setDetailText(draftText);
+                          setPopoverOpen(false);
+                        }}
+                        type="button"
+                      >
+                        确认
+                      </button>
                     </div>
                   )}
                 </div>
-                {isGenerating ? (
-                  <div className="ck-ai-polish-popover-actions loading">
-                    <button className="loading-indicator" disabled type="button">
-                      正在帮写
-                    </button>
-                  </div>
-                ) : (
-                  <div className="ck-ai-polish-popover-actions">
-                    <button className="secondary" disabled={isGenerating} onClick={() => void handleGenerateAiDraft()} type="button">
-                      重新帮写
-                    </button>
-                    <button
-                      disabled={isGenerating || !draft}
-                      onClick={() => {
-                        if (!draft) return;
-                        setDetailDraft(draft);
-                        setDetailText(draftText);
-                        setPopoverOpen(false);
-                      }}
-                      type="button"
-                    >
-                      确认
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
-        </div>
-        <div className="ck-textarea-wrap">
-          <textarea
-            maxLength={2000}
-            onChange={(event) => setDetailText(event.target.value)}
-            placeholder={
-              "建议包含以下信息生成更精准：\n1.产品名称\n2.核心卖点\n3.适用人群\n4.期望场景\n5.具体参数"
-            }
-            value={detailText}
-          />
-          <div className="ck-textarea-actions">
-            <span>{detailText.length}/2000</span>
-          </div>
-        </div>
-      </div>
+        }
+        maxLength={2000}
+        onChange={setDetailText}
+        placeholder={
+          "建议包含以下信息生成更精准：\n1.产品名称\n2.核心卖点\n3.适用人群\n4.期望场景\n5.具体参数"
+        }
+        value={detailText}
+      />
     </>
   );
 }
@@ -13364,6 +13495,7 @@ function SetPackTypeSection({
   onSelectionMapChange,
   onToast,
   perTypeCount,
+  globalRatio,
   uploads
 }: {
   toolKey: string;
@@ -13372,18 +13504,21 @@ function SetPackTypeSection({
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onToast: (message: string, tone?: "warning") => void;
   perTypeCount: number;
+  globalRatio: string;
   uploads: UploadItem[];
 }) {
   const isAplusTool = toolKey === "set-aplus";
   const moduleLibrary = isAplusTool ? aplusModuleLibrary : setPackTypeLibrary;
   const selectionLimit = isAplusTool ? aplusModuleLibrary.length : SET_PACK_TYPE_LIMIT;
   const defaultAplusTypes = useMemo(
-    () => aplusModuleLibrary.slice(0, 5).map((item) => createSetPackTypeItem(item, selectedValues ?? {}, { count: perTypeCount })),
-    [perTypeCount, selectedValues]
+    () => aplusModuleLibrary.slice(0, 5).map((item) => createSetPackTypeItem(item, selectedValues ?? {}, { count: perTypeCount, ratio: globalRatio || item.defaultRatio })),
+    [globalRatio, perTypeCount, selectedValues]
   );
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<SetPackTypeItem[]>(() => {
-    const restoredTypes = getSetPackSelectedTypes(selectedValues ?? {}).map((item) => ({ ...item, count: item.count ?? perTypeCount }));
+    const restoredTypes = getSetPackSelectedTypes(selectedValues ?? {}).map((item) =>
+      syncSetPackTypeItemWithGlobalSettings({ ...item, count: item.count ?? perTypeCount }, globalRatio, perTypeCount)
+    );
     if (restoredTypes.length) return restoredTypes;
     return isAplusTool ? defaultAplusTypes : [];
   });
@@ -13406,6 +13541,7 @@ function SetPackTypeSection({
   const drawerStyleRef = useRef<CSSProperties>({});
   const lastSelectedTypesSyncRef = useRef("");
   const lastSavedTemplatesSyncRef = useRef("");
+  const lastGlobalSettingsSyncRef = useRef("");
   const [templateDraftName, setTemplateDraftName] = useState("未命名组图模板");
   const [customDraft, setCustomDraft] = useState<SetPackTypeItem>({
     id: "custom-draft",
@@ -13414,15 +13550,18 @@ function SetPackTypeSection({
     description: "",
     tag: "自定义",
     prompt: "",
-    ratio: "1:1",
+    ratio: globalRatio || "1:1",
     resolution: "1K",
-    count: 1
+    count: perTypeCount
   });
   const customTypeLibrary = useMemo(() => {
     const dynamicCustomTypes = selectedTypes.filter((item) => item.tag === "自定义");
-    const merged = [...dynamicCustomTypes, ...setPackCustomTypePresets.map((item) => ({ ...item, count: perTypeCount }))];
+    const merged = [
+      ...dynamicCustomTypes,
+      ...setPackCustomTypePresets.map((item) => ({ ...item, ratio: globalRatio || item.ratio, count: perTypeCount }))
+    ];
     return merged.filter((item, index, array) => array.findIndex((candidate) => candidate.category === item.category) === index);
-  }, [perTypeCount, selectedTypes]);
+  }, [globalRatio, perTypeCount, selectedTypes]);
   const templateLibrary = useMemo(() => {
     const presetTemplates = buildPresetSetPackTemplateLibrary(selectedValues ?? {}, perTypeCount);
     const merged = [...savedTemplates, ...presetTemplates];
@@ -13435,7 +13574,9 @@ function SetPackTypeSection({
   const shouldShowThinkingPanel = isAnalyzing || Boolean(analysisPreview);
 
   useEffect(() => {
-    const nextSelectedTypes = getSetPackSelectedTypes(selectedValues ?? {}).map((item) => ({ ...item, count: item.count ?? perTypeCount }));
+    const nextSelectedTypes = getSetPackSelectedTypes(selectedValues ?? {}).map((item) =>
+      syncSetPackTypeItemWithGlobalSettings({ ...item, count: item.count ?? perTypeCount }, globalRatio, perTypeCount)
+    );
     const nextSelectedTypesKey = JSON.stringify(nextSelectedTypes);
     if (!nextSelectedTypes.length && isAplusTool) {
       const defaultTypesKey = JSON.stringify(defaultAplusTypes);
@@ -13457,7 +13598,7 @@ function SetPackTypeSection({
       lastSavedTemplatesSyncRef.current = nextSavedTemplatesKey;
       setSavedTemplates(nextSavedTemplates);
     }
-  }, [defaultAplusTypes, isAplusTool, perTypeCount, selectedValues]);
+  }, [defaultAplusTypes, globalRatio, isAplusTool, perTypeCount, selectedValues]);
 
   useEffect(() => {
     setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
@@ -13496,12 +13637,32 @@ function SetPackTypeSection({
   }, [savedTemplates]);
 
   useEffect(() => {
+    const nextSignature = `${globalRatio}::${perTypeCount}`;
+    if (nextSignature === lastGlobalSettingsSyncRef.current) {
+      return;
+    }
+    lastGlobalSettingsSyncRef.current = nextSignature;
+
+    setSelectedTypes((current) => {
+      const nextTypes = current.map((item) => syncSetPackTypeItemWithGlobalSettings(item, globalRatio, perTypeCount));
+      return nextTypes.every((item, index) => item === current[index]) ? current : nextTypes;
+    });
+
+    setDraftTypes((current) => {
+      const nextTypes = current.map((item) => syncSetPackTypeItemWithGlobalSettings(item, globalRatio, perTypeCount));
+      return nextTypes.every((item, index) => item === current[index]) ? current : nextTypes;
+    });
+
+    setCustomDraft((current) => syncSetPackTypeItemWithGlobalSettings(current, globalRatio, perTypeCount));
+  }, [globalRatio, perTypeCount]);
+
+  useEffect(() => {
     if (modalMode !== "ai") return;
     setAnalysisPreview(draftTypes.length ? serializeSetPackTypePlan(draftTypes) : "");
   }, [draftTypes, modalMode]);
 
   useEffect(() => {
-    if (modalMode !== "manual" && modalMode !== "edit") return;
+    if (modalMode !== "manual" && modalMode !== "edit" && modalMode !== "ai") return;
 
     let frameId = 0;
     const updateDrawerPosition = () => {
@@ -13517,19 +13678,31 @@ function SetPackTypeSection({
       if (!currentPanelRect) return;
 
       const horizontalGap = 16;
-      const verticalGap = 62;
+      const verticalGap = modalMode === "ai" ? 16 : 62;
       const nextLeft = Math.max(16, currentPanelRect.right + horizontalGap);
-      const nextTop = Math.max(16, (resultToolbarRect?.bottom ?? currentPanelRect.top) + verticalGap);
       const availableWidth = Math.max(320, window.innerWidth - nextLeft - 16);
-      const preferredWidth = (resultPanelRect?.width ?? Math.max(640, availableWidth)) * 0.8;
-      const drawerWidth = Math.min(availableWidth, Math.max(420, preferredWidth));
-      const preferredHeight = (resultPanelRect?.height ?? window.innerHeight - nextTop - 16) * 0.8;
-      const nextHeight = Math.min(window.innerHeight - nextTop - 16, Math.max(420, preferredHeight));
+      const defaultTop = Math.max(16, (resultToolbarRect?.bottom ?? currentPanelRect.top) + verticalGap);
+      const manualAnchorTop =
+        sectionRect && modalMode === "manual"
+          ? Math.max(16, Math.min(sectionRect.top - 8, window.innerHeight - 478 - 16))
+          : defaultTop;
+      const nextTop = manualAnchorTop;
+      const availableHeight = Math.max(360, window.innerHeight - nextTop - 16);
+      const preferredWidth = (resultPanelRect?.width ?? Math.max(640, availableWidth)) * (modalMode === "ai" ? 1 : 0.8);
+      const drawerWidth =
+        modalMode === "manual"
+          ? Math.min(availableWidth, 588)
+          : Math.min(availableWidth, Math.max(modalMode === "ai" ? 920 : 420, preferredWidth));
+      const preferredHeight = (resultPanelRect?.height ?? availableHeight) * (modalMode === "ai" ? 1 : 0.8);
+      const nextHeight =
+        modalMode === "manual"
+          ? Math.min(availableHeight, 478)
+          : Math.min(availableHeight, Math.max(modalMode === "ai" ? 560 : 420, preferredHeight));
       const nextStyle = {
         top: `${nextTop}px`,
         left: `${nextLeft}px`,
         width: `${drawerWidth}px`,
-        height: `${Math.max(480, nextHeight)}px`
+        height: `${modalMode === "manual" ? Math.max(360, nextHeight) : Math.max(480, nextHeight)}px`
       };
 
       if (
@@ -13620,7 +13793,9 @@ function SetPackTypeSection({
     setDraftTypes([]);
     setAnalysisPreview("");
     setThinkingText(buildSetPackTypeThinking(selectedValues ?? {}, thoughtNotes, uploads.length));
-    const nextTypes = buildSetPackTypeRecommendations(selectedValues ?? {}, thoughtNotes, perTypeCount).slice(0, 5);
+    const nextTypes = buildSetPackTypeRecommendations(selectedValues ?? {}, thoughtNotes, perTypeCount)
+      .slice(0, 5)
+      .map((item) => syncSetPackTypeItemWithGlobalSettings(item, globalRatio, perTypeCount));
     window.setTimeout(() => {
       setDraftTypes(nextTypes);
       setThinkingText(buildSetPackTypeAnalysisNarrative(nextTypes, selectedValues ?? {}, thoughtNotes, uploads.length));
@@ -13639,7 +13814,10 @@ function SetPackTypeSection({
       onToast(`最多可添加 ${selectionLimit} 个${isAplusTool ? "模块" : "套图类型"}`, "warning");
       return;
     }
-    setSelectedTypes((current) => [...current, createSetPackTypeItem(template, selectedValues ?? {})]);
+    setSelectedTypes((current) => [
+      ...current,
+      createSetPackTypeItem(template, selectedValues ?? {}, { ratio: globalRatio || template.defaultRatio, count: perTypeCount })
+    ]);
   };
 
   const handleApplyDraftTypes = () => {
@@ -13682,7 +13860,7 @@ function SetPackTypeSection({
       description: "",
       tag: "自定义",
       prompt: "",
-      ratio: "1:1",
+      ratio: globalRatio || "1:1",
       resolution: "1K",
       count: perTypeCount
     });
@@ -13722,7 +13900,9 @@ function SetPackTypeSection({
         onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
         return current;
       }
-      const nextTypes = template.types.slice(0, availableSlots).map(cloneTypeItem);
+      const nextTypes = template.types
+        .slice(0, availableSlots)
+        .map((item) => cloneTypeItem(syncSetPackTypeItemWithGlobalSettings(item, globalRatio, perTypeCount)));
       if (nextTypes.length < template.types.length) {
         onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
       }
@@ -13736,7 +13916,7 @@ function SetPackTypeSection({
       onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
       return;
     }
-    setSelectedTypes((current) => [...current, cloneTypeItem({ ...item, count: item.count ?? perTypeCount })]);
+    setSelectedTypes((current) => [...current, cloneTypeItem(syncSetPackTypeItemWithGlobalSettings(item, globalRatio, perTypeCount))]);
   };
 
   const handleStartEdit = (item: SetPackTypeItem) => {
@@ -13758,14 +13938,11 @@ function SetPackTypeSection({
 
   const currentEditType = selectedTypes.find((item) => item.id === editingTypeId);
   const pendingDeleteType = selectedTypes.find((item) => item.id === pendingDeleteTypeId);
-  const drawerMaskStyle =
-    drawerStyle.left && typeof drawerStyle.left === "string" ? { left: `calc(${drawerStyle.left} - 12px)` } : undefined;
-  const drawerPanelStyle =
-    drawerStyle.left && typeof drawerStyle.left === "string" ? { ...drawerStyle, left: "12px" } : drawerStyle;
+  const drawerPanelStyle = drawerStyle;
 
   if (isAplusTool) {
     return (
-      <div className="ck-form-block" ref={sectionRef}>
+      <div className="ck-form-block ck-set-pack-type-section" ref={sectionRef}>
         <div className="ck-aplus-module-head">
           <div className="ck-aplus-module-title-wrap">
             <div className="ck-field-title">
@@ -13831,6 +14008,8 @@ function SetPackTypeSection({
                     </div>
                     <div className="ck-set-pack-type-card-actions">
                       <button
+                        aria-label="复制"
+                        className="ck-set-pack-type-card-icon"
                         onClick={() => {
                           if (selectedTypes.length >= SET_PACK_TYPE_LIMIT) {
                             onToast(`最多可添加 ${SET_PACK_TYPE_LIMIT} 个套图类型`, "warning");
@@ -13838,31 +14017,41 @@ function SetPackTypeSection({
                           }
                           setSelectedTypes((current) => [...current, cloneTypeItem(item)]);
                         }}
+                        title="复制"
                         type="button"
                       >
-                        复制
+                        <img alt="" aria-hidden="true" src="/assets/set-pack-type-copy.svg" />
                       </button>
-                      <button onClick={() => setPendingDeleteTypeId(item.id)} type="button">
-                        删除
+                      <button aria-label="删除" className="ck-set-pack-type-card-icon" onClick={() => setPendingDeleteTypeId(item.id)} title="删除" type="button">
+                        <img alt="" aria-hidden="true" src="/assets/set-pack-type-delete-full.svg" />
                       </button>
-                      <button onClick={() => handleStartEdit(item)} type="button">
-                        设置
+                      <button aria-label="设置" className="ck-set-pack-type-card-icon" onClick={() => handleStartEdit(item)} title="设置" type="button">
+                        <img alt="" aria-hidden="true" src="/assets/set-pack-type-settings-full.svg" />
                       </button>
                     </div>
                   </div>
+                  <div className="ck-set-pack-type-card-divider" />
                   <div className="ck-set-pack-type-meta">数量 {item.count ?? perTypeCount} 比例 {item.ratio} 分辨率 {item.resolution}</div>
                 </article>
               ))}
               <button className="ck-set-pack-type-add-entry" onClick={openManualModal} type="button">
-                + 继续添加类型
+                <img alt="" aria-hidden="true" src="/assets/set-pack-type-add-purple.svg" />
+                <span>继续添加类型</span>
               </button>
             </>
           ) : (
             <div className="ck-set-pack-type-empty">
-              <span>请先选择出图类型，最多支持 15 个类型组合生成。</span>
-              <button className="ck-set-pack-type-add-entry" onClick={openManualModal} type="button">
-                + 手动添加类型
-              </button>
+              <div className="ck-set-pack-type-empty-card">
+                <span>
+                  请先选择出图类型
+                  <br />
+                  最多支持 15 个类型组合生成
+                </span>
+                <button className="ck-set-pack-type-add-entry" onClick={openManualModal} type="button">
+                  <img alt="" aria-hidden="true" src="/assets/set-pack-type-add-dark.svg" />
+                  <span>手动添加类型</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -13879,19 +14068,21 @@ function SetPackTypeSection({
       </div>
 
       {modalMode === "ai" ? (
-        <div className="ck-set-pack-modal-mask ck-set-pack-ai-modal-mask" onClick={() => setModalMode(null)}>
-          <div className="ck-set-pack-type-modal ck-set-pack-ai-type-modal" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="ck-set-pack-side-drawer-mask ck-set-pack-ai-drawer-mask"
+          onClick={() => setModalMode(null)}
+          role="presentation"
+        >
+          <div
+            className="ck-set-pack-side-drawer ck-set-pack-type-modal ck-set-pack-ai-type-modal ck-set-pack-ai-side-drawer"
+            onClick={(event) => event.stopPropagation()}
+            style={drawerPanelStyle}
+          >
             <div className="ck-set-pack-modal-head">
               <div className="ck-set-pack-ai-modal-title">
                 <strong>AI智能电商组图</strong>
               </div>
               <div className="ck-set-pack-ai-head-actions">
-                <button onClick={() => setModalMode(null)} type="button">
-                  取消
-                </button>
-                <button disabled={!draftTypes.length} onClick={handleApplyDraftTypes} type="button">
-                  应用到套图
-                </button>
                 <button className="ck-set-pack-ai-close" onClick={() => setModalMode(null)} type="button">
                   ×
                 </button>
@@ -13926,16 +14117,15 @@ function SetPackTypeSection({
                         )}
                       </div>
                     </div>
-                    <div className="ck-set-pack-ai-input-main">
-                      <FieldTitle label="细节补充" optional />
-                      <textarea
-                        maxLength={600}
-                        onChange={(event) => setThoughtNotes(event.target.value)}
-                        placeholder="可选：补充需求（如核心卖点、视觉风格、场景补充）"
-                        value={thoughtNotes}
-                      />
-                      <span>{thoughtNotes.length}/600</span>
-                    </div>
+                    <UnifiedTextareaField
+                      formBlockClassName="ck-set-pack-ai-input-main"
+                      label="细节补充"
+                      maxLength={600}
+                      onChange={setThoughtNotes}
+                      optional
+                      placeholder="可选：补充需求（如核心卖点、视觉风格、场景补充）"
+                      value={thoughtNotes}
+                    />
                     <button className="ck-set-pack-ai-start" disabled={isAnalyzing} onClick={handleAnalyze} type="button">
                       {isAnalyzing ? "分析中..." : analysisPreview ? "重新分析" : "开始分析"}
                     </button>
@@ -13999,25 +14189,62 @@ function SetPackTypeSection({
                                 删除
                               </button>
                             </div>
-                            <div className="ck-set-pack-copy-block">
-                              <FieldTitle label="描述词" />
-                              <textarea
-                                maxLength={2000}
-                                onChange={(event) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, prompt: event.target.value } : type)))}
-                                value={item.prompt}
-                              />
-                              <div className="ck-textarea-actions">
-                                <span>{item.prompt.length}/2000</span>
+                            <UnifiedTextareaField
+                              counterText={`${item.prompt.length}/2000`}
+                              footerClassName="inside"
+                              formBlockClassName="ck-set-pack-copy-block ck-set-pack-copy-input-wrap"
+                              label="描述词"
+                              maxLength={2000}
+                              onChange={(value) =>
+                                setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, prompt: value } : type)))
+                              }
+                              value={item.prompt}
+                              placeholder=""
+                            />
+                            <div className="ck-set-pack-draft-settings">
+                              <div className="ck-set-pack-draft-inline">
+                                <span>出图数量</span>
+                                <div className="ck-number-stepper ck-set-pack-draft-stepper">
+                                  <button
+                                    disabled={(item.count ?? perTypeCount) <= 1}
+                                    onClick={() =>
+                                      setDraftTypes((current) =>
+                                        current.map((type) =>
+                                          type.id === item.id ? { ...type, count: Math.max(1, (type.count ?? perTypeCount) - 1) } : type
+                                        )
+                                      )
+                                    }
+                                    type="button"
+                                  >
+                                    −
+                                  </button>
+                                  <div className="ck-number-stepper-value">{item.count ?? perTypeCount}</div>
+                                  <button
+                                    disabled={(item.count ?? perTypeCount) >= 20}
+                                    onClick={() =>
+                                      setDraftTypes((current) =>
+                                        current.map((type) =>
+                                          type.id === item.id ? { ...type, count: Math.min(20, (type.count ?? perTypeCount) + 1) } : type
+                                        )
+                                      )
+                                    }
+                                    type="button"
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="ck-set-pack-draft-inline">
-                              <SelectField
-                                fullWidth
-                                label="图片比例"
-                                onChange={(value) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, ratio: value } : type)))}
-                                options={setPackRatioOptions}
-                                value={item.ratio}
-                              />
+                              <div className="ck-set-pack-draft-inline">
+                                <span>出图比例</span>
+                                <SelectField
+                                  fullWidth
+                                  hideLabel
+                                  label="图片比例"
+                                  onChange={(value) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, ratio: value } : type)))}
+                                  options={setPackRatioOptions}
+                                  value={item.ratio}
+                                />
+                              </div>
                             </div>
                           </article>
                         ))}
@@ -14028,6 +14255,15 @@ function SetPackTypeSection({
                         <span>支持结合商品图、商品卖点与补充需求，生成可直接应用到套图的类型方案。</span>
                       </div>
                     )}
+                  </div>
+
+                  <div className="ck-set-pack-ai-bottom-actions">
+                    <button onClick={() => setModalMode(null)} type="button">
+                      取消
+                    </button>
+                    <button disabled={!draftTypes.length} onClick={handleApplyDraftTypes} type="button">
+                      应用到套图
+                    </button>
                   </div>
                 </section>
               </div>
@@ -14041,7 +14277,6 @@ function SetPackTypeSection({
           className="ck-set-pack-side-drawer-mask"
           onClick={() => setModalMode(null)}
           role="presentation"
-          style={drawerMaskStyle}
         >
           <div className="ck-set-pack-side-drawer" onClick={(event) => event.stopPropagation()} style={drawerPanelStyle}>
             <div className="ck-set-pack-side-drawer-head">
@@ -14051,7 +14286,7 @@ function SetPackTypeSection({
               </button>
             </div>
             <div className="ck-set-pack-side-drawer-body">
-              <div className="ck-set-pack-type-tabs">
+              <div className="ck-set-pack-type-tabs ck-set-pack-type-tabs-pill">
                 {[
                   ["recommended", "推荐类型"],
                   ["custom", "自定义类型"],
@@ -14117,7 +14352,6 @@ function SetPackTypeSection({
           className="ck-set-pack-side-drawer-mask"
           onClick={() => setModalMode(null)}
           role="presentation"
-          style={drawerMaskStyle}
         >
           <div className="ck-set-pack-side-drawer ck-set-pack-side-drawer-wide" onClick={(event) => event.stopPropagation()} style={drawerPanelStyle}>
             <div className="ck-set-pack-side-drawer-head">
@@ -14160,17 +14394,13 @@ function SetPackTypeSection({
                     <div className="ck-set-pack-edit-section-head">
                       <strong>补充说明</strong>
                     </div>
-                    <div className="ck-set-pack-copy-block">
-                      <textarea
-                        maxLength={2000}
-                        onChange={(event) => setCustomDraft((current) => ({ ...current, prompt: event.target.value }))}
-                        placeholder="请输入该类型的画面目标、主体构图和场景要求"
-                        value={customDraft.prompt}
-                      />
-                      <div className="ck-textarea-actions">
-                        <span>{customDraft.prompt.length}/2000</span>
-                      </div>
-                    </div>
+                    <UnifiedTextareaField
+                      formBlockClassName="ck-set-pack-copy-block"
+                      maxLength={2000}
+                      onChange={(value) => setCustomDraft((current) => ({ ...current, prompt: value }))}
+                      placeholder="请输入该类型的画面目标、主体构图和场景要求"
+                      value={customDraft.prompt}
+                    />
                   </div>
                 </div>
 
@@ -14259,8 +14489,8 @@ function SetPackTypeSection({
 
       {pendingDeleteType ? (
         <div className="ck-result-confirm-mask" onClick={() => setPendingDeleteTypeId("")}>
-          <div className="ck-result-confirm-modal" onClick={(event) => event.stopPropagation()}>
-            <strong>确认删除该类型？</strong>
+          <div className="ck-result-confirm-modal ck-set-pack-delete-confirm-modal" onClick={(event) => event.stopPropagation()}>
+            <strong>删除该类型？</strong>
             <p>删除后，{pendingDeleteType.category} 将从已选择列表中移除。</p>
             <div className="ck-result-confirm-actions">
               <button className="secondary" onClick={() => setPendingDeleteTypeId("")} type="button">
@@ -14372,32 +14602,34 @@ function AplusPlanEditorSection({
                       </div>
                       <strong>{module.headline}</strong>
                       {editingModuleId === module.id ? (
-                        <div className="ck-aplus-plan-module-inline-editor">
-                          <textarea
-                            autoFocus
-                            maxLength={1200}
-                            onBlur={() => {
+                        <UnifiedTextareaField
+                          formBlockClassName="ck-aplus-plan-module-inline-editor"
+                          hideCount
+                          maxLength={1200}
+                          onChange={(value) => {
+                            setModuleDraft(value);
+                            onUpdateModule(module.id, {
+                              lines: value
+                                .split("\n")
+                                .map((line) => line.trim())
+                                .filter(Boolean)
+                            });
+                          }}
+                          placeholder=""
+                          textareaProps={{
+                            autoFocus: true,
+                            onBlur: () => {
                               onUpdateModule(module.id, {
                                 lines: moduleDraft
                                   .split("\n")
                                   .map((line) => line.trim())
                                   .filter(Boolean)
                               });
-                            }}
-                            onChange={(event) => {
-                              const nextValue = event.target.value;
-                              setModuleDraft(nextValue);
-                              onUpdateModule(module.id, {
-                                lines: nextValue
-                                  .split("\n")
-                                  .map((line) => line.trim())
-                                  .filter(Boolean)
-                              });
-                            }}
-                            onClick={(event) => event.stopPropagation()}
-                            value={moduleDraft}
-                          />
-                        </div>
+                            },
+                            onClick: (event) => event.stopPropagation()
+                          }}
+                          value={moduleDraft}
+                        />
                       ) : (
                         <div className="ck-aplus-plan-module-lines">
                           {module.lines.map((line) => (
@@ -14528,32 +14760,34 @@ function FashionSceneEditorSection({
                   </div>
                   <strong>{module.headline}</strong>
                   {editingModuleId === module.id ? (
-                    <div className="ck-aplus-plan-module-inline-editor">
-                      <textarea
-                        autoFocus
-                        maxLength={1200}
-                        onBlur={() => {
+                    <UnifiedTextareaField
+                      formBlockClassName="ck-aplus-plan-module-inline-editor"
+                      hideCount
+                      maxLength={1200}
+                      onChange={(value) => {
+                        setModuleDraft(value);
+                        onUpdateModule(module.id, {
+                          lines: value
+                            .split("\n")
+                            .map((line) => line.trim())
+                            .filter(Boolean)
+                        });
+                      }}
+                      placeholder=""
+                      textareaProps={{
+                        autoFocus: true,
+                        onBlur: () => {
                           onUpdateModule(module.id, {
                             lines: moduleDraft
                               .split("\n")
                               .map((line) => line.trim())
                               .filter(Boolean)
                           });
-                        }}
-                        onChange={(event) => {
-                          const nextValue = event.target.value;
-                          setModuleDraft(nextValue);
-                          onUpdateModule(module.id, {
-                            lines: nextValue
-                              .split("\n")
-                              .map((line) => line.trim())
-                              .filter(Boolean)
-                          });
-                        }}
-                        onClick={(event) => event.stopPropagation()}
-                        value={moduleDraft}
-                      />
-                    </div>
+                        },
+                        onClick: (event) => event.stopPropagation()
+                      }}
+                      value={moduleDraft}
+                    />
                   ) : (
                     <div className="ck-aplus-plan-module-lines">
                       {module.lines.map((line) => (
@@ -14942,6 +15176,7 @@ function ConfigPanel({
     if (section === "set-pack-type-selector" && isSetPackLikeTool(tool.key)) {
       return (
         <SetPackTypeSection
+          globalRatio={resolvedCreationModeSelection?.ratio ?? "1:1"}
           toolKey={tool.key}
           onSelectionChange={(values) => {
             setAdvancedSettingValues((current) => dedupeStrings([...current, ...values]));
@@ -15743,7 +15978,9 @@ function ConfigPanel({
   };
 
   return (
-    <section className={`ck-panel${showAplusPlanStep || showFashionPlanStep ? " ck-panel-step-layout" : ""}`}>
+    <section
+      className={`ck-panel ck-panel-tool-${tool.key}${isSetPackLikeTool(tool.key) ? " ck-panel-set-pack" : ""}${showAplusPlanStep || showFashionPlanStep ? " ck-panel-step-layout" : ""}`}
+    >
       {showAplusPlanStep ? (
         <AplusPlanEditorSection
           onBack={onBackAplusStep}
@@ -15822,7 +16059,8 @@ function ResultPanel({
   onGenerateSetPackTitles,
   onApplySetPackTitle,
   onPreviewItem,
-  onEditItemText
+  onEditItemText,
+  onOpenDetail
 }: {
   collapsed: boolean;
   tool: ToolConfig;
@@ -15843,6 +16081,7 @@ function ResultPanel({
   onApplySetPackTitle: (taskId: string, title: string) => void;
   onPreviewItem: (item: ResultItem) => void;
   onEditItemText: (item: ResultItem) => void;
+  onOpenDetail: (item: ResultItem) => void;
 }) {
   const caseCollection = useMemo(() => createCaseCollection(tool), [tool]);
   const showCaseTab = !tool.key.startsWith("image-");
@@ -15861,7 +16100,7 @@ function ResultPanel({
   const canGenerateSetPackTitles = tool.key === "set-main" && Boolean(selectedTask?.taskId) && effectiveActiveTab === "results";
 
   return (
-    <section className="ck-results">
+    <section className={`ck-results ck-results-tool-${tool.key}`}>
       <div className="ck-results-toolbar">
         <div className="ck-result-tabs">
           <button className={effectiveActiveTab === "results" ? "active" : ""} onClick={() => onTabChange(tool.key, "results")} type="button">
@@ -15991,9 +16230,19 @@ function ResultPanel({
                 <article
                   className={`ck-card status-${item.status}${item.selected ? " is-selected" : ""}${item.mediaKind === "video" ? " is-video" : ""}`}
                   key={item.id}
+                  onClick={() => {
+                    if (activeTab === "results" && item.status === "ready" && item.mediaKind === "image") {
+                      onOpenDetail(item);
+                    }
+                  }}
                 >
                   {item.status === "ready" && activeTab === "results" ? (
-                    <label className="ck-card-check">
+                    <label
+                      className="ck-card-check"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                    >
                       <input checked={item.selected} onChange={() => onToggleItem(tool.key, item.id)} type="checkbox" />
                       <span className="ck-card-check-box">{item.selected ? "✓" : ""}</span>
                     </label>
@@ -16051,12 +16300,30 @@ function ResultPanel({
                     </div>
                   ) : null}
                   {activeTab === "results" && item.status === "queued" ? (
-                    <button className="ck-card-action danger" data-label="取消" onClick={() => onCancelQueued(tool.key, item.id)} title="取消生成" type="button">
+                    <button
+                      className="ck-card-action danger"
+                      data-label="取消"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onCancelQueued(tool.key, item.id);
+                      }}
+                      title="取消生成"
+                      type="button"
+                    >
                       ×
                     </button>
                   ) : null}
                   {activeTab === "results" && item.status === "failed" ? (
-                    <button className="ck-card-action danger" data-label="删除" onClick={() => onDeleteFailed(tool.key, item.id)} title="删除失败结果" type="button">
+                    <button
+                      className="ck-card-action danger"
+                      data-label="删除"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteFailed(tool.key, item.id);
+                      }}
+                      title="删除失败结果"
+                      type="button"
+                    >
                       ×
                     </button>
                   ) : null}
@@ -16075,7 +16342,13 @@ function ResultPanel({
                         <img alt="" src={figmaIcons.failedResult} />
                       </span>
                       <strong>生成失败</strong>
-                      <button onClick={() => onRetry(tool.key, item.id)} type="button">
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onRetry(tool.key, item.id);
+                        }}
+                        type="button"
+                      >
                         重试生成
                       </button>
                     </div>
@@ -16244,7 +16517,7 @@ function MyCreationPage({
   onChangeMode,
   onChangeToolKey,
   onDownloadItem,
-  onSelectResult,
+  onOpenDetail,
   onSelectTask
 }: {
   mode: CreationHistoryMode;
@@ -16256,7 +16529,7 @@ function MyCreationPage({
   onChangeMode: (mode: CreationHistoryMode) => void;
   onChangeToolKey: (toolKey: string) => void;
   onDownloadItem: (item: ResultItem) => void;
-  onSelectResult: (item: ResultItem) => void;
+  onOpenDetail: (item: ResultItem) => void;
   onSelectTask: (record: TaskRecord) => void;
 }) {
   return (
@@ -16332,7 +16605,7 @@ function MyCreationPage({
               <article
                 className={`ck-card status-${item.status}${selectedTaskIdsByTool[item.toolKey] === item.taskId ? " is-selected" : ""}`}
                 key={item.id}
-                onClick={() => onSelectResult(item)}
+                onClick={() => onOpenDetail(item)}
               >
                 {item.src ? <img alt={item.label} src={item.src} /> : <span className="ck-card-artwork-placeholder" />}
                 <span className="ck-task-card-tool">{toolOptions.find((option) => option.key === item.toolKey)?.label ?? item.toolKey}</span>
@@ -16513,7 +16786,202 @@ function ModelDetailModal({
   );
 }
 
+function ResultDetailModal({
+  item,
+  task,
+  taskItems,
+  toolLabel,
+  onClose,
+  onNavigate,
+  onSelectItem,
+  onDownloadCurrent,
+  onDownloadAll,
+  onDeleteCurrent,
+  onUseTool
+}: {
+  item: ResultItem | null;
+  task: TaskRecord | null;
+  taskItems: ResultItem[];
+  toolLabel: string;
+  onClose: () => void;
+  onNavigate: (direction: -1 | 1) => void;
+  onSelectItem: (item: ResultItem) => void;
+  onDownloadCurrent: (item: ResultItem) => void;
+  onDownloadAll: (task: TaskRecord) => void;
+  onDeleteCurrent: (item: ResultItem, taskItems: ResultItem[]) => void;
+  onUseTool: (toolKey: string, label: string, item: ResultItem) => void;
+}) {
+  const currentIndex = item ? taskItems.findIndex((taskItem) => taskItem.id === item.id) : -1;
+  const hasOriginalImage = Boolean(task?.snapshot.mainUploads[0]?.previewSrc || task?.snapshot.mainUploads[0]?.src);
+  const originalImageSrc = task?.snapshot.mainUploads[0]?.previewSrc ?? task?.snapshot.mainUploads[0]?.src ?? "";
+  const createdAtLabel = task ? formatTaskRecordDateTime(task.createdAt) : "--";
+  const modeSelection = task?.snapshot.creationModeSelection;
+  const toolbarActions = [
+    { key: "video-main", label: "生成视频", icon: "◧" },
+    { key: "image-upscale", label: "4K放大", icon: "⤢" }
+  ];
+  const infoItems = [
+    { icon: "✣", label: "功能模块", value: toolLabel },
+    { icon: "T", label: "尺寸比例", value: modeSelection?.ratio ?? "自适应尺寸" },
+    { icon: "▤", label: "生成数量", value: String(task?.totalCount ?? "--") },
+    { icon: "◔", label: "创建时间", value: createdAtLabel },
+    { icon: "#", label: "任务ID", value: item?.id ?? task?.taskId ?? "--" }
+  ];
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        animate={{ opacity: 1 }}
+        className="ck-result-detail-mask"
+        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="ck-result-detail-modal"
+          exit={{ opacity: 0, scale: 0.985, y: 18 }}
+          initial={{ opacity: 0, scale: 0.972, y: 24 }}
+          onClick={(event) => event.stopPropagation()}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {item && task ? (
+            <>
+              <div className="ck-result-detail-shell">
+                <div className="ck-result-detail-main">
+                  <div className="ck-result-detail-content">
+                    <div className={`ck-result-detail-stage${hasOriginalImage ? "" : " single"}`}>
+                      {hasOriginalImage ? (
+                        <div className="ck-result-detail-main-card original">
+                          <span className="ck-result-detail-corner-tag original">原图</span>
+                          <div className="ck-result-detail-image-wrap narrow">
+                            <img alt="原图" referrerPolicy="no-referrer" src={originalImageSrc} />
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="ck-result-detail-main-card result">
+                        <span className="ck-result-detail-corner-tag result">结果图</span>
+                        {taskItems.length > 1 ? (
+                          <>
+                            <button
+                              className="ck-result-detail-nav prev"
+                              disabled={currentIndex <= 0}
+                              onClick={() => onNavigate(-1)}
+                              type="button"
+                            >
+                              ‹
+                            </button>
+                            <button
+                              className="ck-result-detail-nav next"
+                              disabled={currentIndex >= taskItems.length - 1}
+                              onClick={() => onNavigate(1)}
+                              type="button"
+                            >
+                              ›
+                            </button>
+                          </>
+                        ) : null}
+                        <div className="ck-result-detail-image-wrap wide">
+                          <img alt={item.label} referrerPolicy="no-referrer" src={item.src} />
+                        </div>
+                        <div className="ck-result-detail-watermark">
+                          <span>由SeeAny生成</span>
+                          <strong>ID:{currentIndex >= 0 ? currentIndex : 0}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ck-result-detail-toolbar">
+                    <div className="ck-result-detail-tool-actions">
+                      {toolbarActions.map((action) => (
+                        <button key={`${action.key}-${action.label}`} onClick={() => onUseTool(action.key, action.label, item)} type="button">
+                          <span className="ck-result-detail-tool-icon" aria-hidden="true">
+                            {action.icon}
+                          </span>
+                          <span>{action.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="ck-result-detail-core-actions">
+                      <button className="secondary" onClick={() => onDownloadCurrent(item)} type="button">
+                        <span className="ck-result-detail-core-icon" aria-hidden="true">
+                          ↓
+                        </span>
+                        下载当前图
+                      </button>
+                      <button className="primary" onClick={() => onDownloadAll(task)} type="button">
+                        <span className="ck-result-detail-core-icon" aria-hidden="true">
+                          ↓
+                        </span>
+                        下载全部图
+                      </button>
+                      <button className="ghost" onClick={() => onDeleteCurrent(item, taskItems)} type="button">
+                        <span className="ck-result-detail-core-icon" aria-hidden="true">
+                          🗑
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ck-result-detail-thumbs">
+                  <div className="ck-result-detail-thumb-list">
+                    {taskItems.map((taskItem) => (
+                      <button
+                        className={`ck-result-detail-thumb${taskItem.id === item.id ? " active" : ""}`}
+                        key={taskItem.id}
+                        onClick={() => onSelectItem(taskItem)}
+                        type="button"
+                      >
+                        {taskItem.src ? <img alt={taskItem.fileName} loading="lazy" referrerPolicy="no-referrer" src={taskItem.src} /> : null}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="ck-result-detail-info">
+                  <button className="ck-result-detail-close plain" onClick={onClose} type="button">
+                    ×
+                  </button>
+                  <div className="ck-result-detail-info-title">
+                    <span className="ck-result-detail-info-accent" aria-hidden="true" />
+                    <strong>生成信息</strong>
+                  </div>
+                  <div className="ck-result-detail-info-list">
+                    {infoItems.map((info) => (
+                      <div className="ck-result-detail-info-item" key={info.label}>
+                        <span className="ck-result-detail-info-icon" aria-hidden="true">
+                          {info.icon}
+                        </span>
+                        <div className="ck-result-detail-info-copy">
+                          <span>{info.label}</span>
+                          <strong>{info.value}</strong>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="ck-result-detail-empty">
+              <strong>该结果暂时不可用</strong>
+              <span>可能已被删除，或当前地址中的任务信息无效。</span>
+              <button onClick={onClose} type="button">
+                返回
+              </button>
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export const App = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activePage, setActivePage] = useState<AppPage>("workspace");
   const [activePrimary, setActivePrimary] = useState<PrimaryKey>(navGroups[0]?.key ?? "set");
   const [activeTool, setActiveTool] = useState(navGroups[0]?.tools[0]?.key ?? "set-main");
@@ -16576,6 +17044,7 @@ export const App = () => {
       }, {}),
     [toolOptions]
   );
+  const detailRoute = useMemo(() => parseResultDetailRoute(location.pathname, location.search), [location.pathname, location.search]);
 
   const currentGroup = navGroups.find((item) => item.key === activePrimary) ?? navGroups[1];
   const currentTool = currentGroup.tools.find((item) => item.key === activeTool) ?? currentGroup.tools[0];
@@ -16659,6 +17128,19 @@ export const App = () => {
     return allMineModels.filter((item) => item.sourceType === modelFilterTab);
   }, [allMineModels, modelFilterTab]);
   const activeModelDetail = allMineModels.find((item) => item.id === selectedMineModelId) ?? null;
+  const detailToolOption = detailRoute ? toolMap[detailRoute.toolKey] : null;
+  const detailTask = detailRoute ? (taskRecordsByTool[detailRoute.toolKey] ?? []).find((record) => record.taskId === detailRoute.taskId) ?? null : null;
+  const detailTaskItems = useMemo(
+    () =>
+      detailRoute
+        ? (resultItemsByTool[detailRoute.toolKey] ?? []).filter(
+            (resultItem) => resultItem.taskId === detailRoute.taskId && resultItem.status === "ready" && resultItem.mediaKind === "image"
+          )
+        : [],
+    [detailRoute, resultItemsByTool]
+  );
+  const activeDetailResultItem = detailRoute ? detailTaskItems.find((resultItem) => resultItem.id === detailRoute.resultId) ?? null : null;
+  const activeBasePath = buildBasePath(activePage, mineTab, activeTool);
   const handlePrimaryChange = (key: PrimaryKey) => {
     const nextGroup = navGroups.find((item) => item.key === key) ?? navGroups[0];
     setActivePage("workspace");
@@ -16666,6 +17148,67 @@ export const App = () => {
     setActiveTool(nextGroup.tools[0].key);
     setCollapsed(false);
   };
+
+  useEffect(() => {
+    if (detailRoute) {
+      if (detailRoute.source === "mine") {
+        setActivePage("mine");
+        setMineTab("creation");
+      } else {
+        setActivePage("workspace");
+        const targetTool = toolMap[detailRoute.toolKey];
+        if (targetTool) {
+          setActivePrimary(targetTool.primaryKey);
+          setActiveTool(targetTool.key);
+        }
+        setSelectedTaskIdByTool((current) => ({
+          ...current,
+          [detailRoute.toolKey]: detailRoute.taskId
+        }));
+        setResultTabsByTool((current) => ({
+          ...current,
+          [detailRoute.toolKey]: "results"
+        }));
+      }
+      return;
+    }
+
+    if (location.pathname === "/" || location.pathname === "") return;
+
+    if (location.pathname === "/mine" || location.pathname === "/mine/creation") {
+      setActivePage("mine");
+      setMineTab("creation");
+      return;
+    }
+
+    if (location.pathname === "/mine/models") {
+      setActivePage("mine");
+      setMineTab("models");
+      return;
+    }
+
+    const toolMatched = location.pathname.match(/^\/tools\/([^/]+)\/?$/);
+    if (toolMatched) {
+      const targetTool = toolMap[toolMatched[1]];
+      if (!targetTool) return;
+      setActivePage("workspace");
+      setActivePrimary(targetTool.primaryKey);
+      setActiveTool(targetTool.key);
+      return;
+    }
+  }, [detailRoute, location.pathname, toolMap]);
+
+  useEffect(() => {
+    if (detailRoute) return;
+    if (location.pathname === activeBasePath) return;
+    if (location.pathname === "/" || location.pathname === "") {
+      navigate(activeBasePath, { replace: true });
+      return;
+    }
+    if (location.pathname.startsWith("/mine") || location.pathname.startsWith("/tools/")) {
+      navigate(activeBasePath, { replace: true });
+    }
+  }, [activeBasePath, detailRoute, location.pathname, navigate]);
 
   useEffect(() => {
     const nextGroup = navGroups.find((item) => item.key === activePrimary) ?? navGroups[0];
@@ -17743,6 +18286,59 @@ export const App = () => {
     });
   };
 
+  const performTaskBatchDownload = async (task: TaskRecord, preserveVisibleMark: boolean) => {
+    const taskReadyItems = (resultItemsByTool[task.toolKey] ?? []).filter(
+      (resultItem) => resultItem.taskId === task.taskId && resultItem.status === "ready"
+    );
+    if (!taskReadyItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "当前任务暂无可下载结果",
+        tone: "warning"
+      });
+      return;
+    }
+
+    try {
+      const zipEntries = await Promise.all(
+        taskReadyItems.map(async (taskItem) => {
+          const originalBlob = await getResultBlob(taskItem);
+          const blob = preserveVisibleMark ? await addAiVisibleWatermark(originalBlob, taskItem) : originalBlob;
+          return {
+            fileName: `${taskItem.fileName}.${inferExtensionFromResult(taskItem)}`,
+            bytes: new Uint8Array(await blob.arrayBuffer())
+          } satisfies ZipEntry;
+        })
+      );
+      triggerDownload(createZipBlob(zipEntries), `${task.toolKey}_${task.taskId}_${formatTaskTimestamp(Date.now())}.zip`);
+      setToast({
+        id: Date.now(),
+        message: `已打包下载该任务下 ${taskReadyItems.length} 张图片`
+      });
+    } catch (error) {
+      setToast({
+        id: Date.now(),
+        message: error instanceof Error ? error.message : "打包下载失败，请稍后重试",
+        tone: "warning"
+      });
+    }
+  };
+
+  const handleDownloadTaskResults = async (task: TaskRecord) => {
+    const isMemberUser = currentUserId !== "free";
+    if (!isMemberUser) {
+      await performTaskBatchDownload(task, false);
+      return;
+    }
+
+    const preference = loadExportPreference();
+    if (preference) {
+      await performTaskBatchDownload(task, preference.preserveVisibleMark);
+      return;
+    }
+    await performTaskBatchDownload(task, false);
+  };
+
   const handleDownloadModel = async (item: ModelAsset) => {
     try {
       const response = await fetch(item.src);
@@ -17846,6 +18442,28 @@ export const App = () => {
     setPreviewResultItem(item);
   };
 
+  const handleOpenResultDetail = (item: ResultItem, source: DetailRouteSource = "workspace") => {
+    navigate(buildResultDetailPath(item, source));
+  };
+
+  const handleCloseResultDetail = () => {
+    if (detailRoute) {
+      const fallbackPath = detailRoute.source === "mine" ? "/mine/creation" : `/tools/${detailRoute.toolKey}`;
+      navigate(fallbackPath);
+      return;
+    }
+    navigate(activeBasePath);
+  };
+
+  const handleNavigateResultDetail = (direction: -1 | 1) => {
+    if (!detailRoute || !activeDetailResultItem) return;
+    const currentIndex = detailTaskItems.findIndex((resultItem) => resultItem.id === activeDetailResultItem.id);
+    if (currentIndex < 0) return;
+    const nextItem = detailTaskItems[currentIndex + direction];
+    if (!nextItem) return;
+    navigate(buildResultDetailPath(nextItem, detailRoute.source), { replace: true });
+  };
+
   const handleOpenEditResultText = (item: ResultItem) => {
     setEditingResultItem(item);
     setEditingResultText(item.overlayText ?? "");
@@ -17889,6 +18507,15 @@ export const App = () => {
         message: "已删除失败结果"
       });
     }
+  };
+
+  const handleDeleteReadyResult = (item: ResultItem) => {
+    updateResultItems(item.toolKey, (items) => items.filter((resultItem) => resultItem.id !== item.id));
+    removeResultFromTask(item.toolKey, item);
+    setToast({
+      id: Date.now(),
+      message: "已删除当前结果"
+    });
   };
 
   const handleCancelQueuedResult = (toolKey: string, itemId: string) => {
@@ -17989,6 +18616,33 @@ export const App = () => {
       ...current,
       [item.toolKey]: item.taskId
     }));
+  };
+
+  const handleUseResultTool = (toolKey: string, actionLabel: string, item: ResultItem) => {
+    const targetTool = toolMap[toolKey];
+    if (!targetTool || !item.src) return;
+    setActivePage("workspace");
+    setActivePrimary(targetTool.primaryKey);
+    setActiveTool(targetTool.key);
+    setCollapsed(false);
+    setUploads((current) => ({
+      ...current,
+      [`${toolKey}:main`]: [
+        {
+          id: generateRandomTenDigitId(),
+          name: `${item.fileName}.png`,
+          src: item.src,
+          previewSrc: item.src,
+          sizeMb: 6,
+          status: "ready"
+        }
+      ]
+    }));
+    navigate(`/tools/${toolKey}`);
+    setToast({
+      id: Date.now(),
+      message: `已将当前图片送入${actionLabel}`
+    });
   };
 
   const handleOpenCaseTemplate = (template: CaseTemplate) => {
@@ -18218,19 +18872,25 @@ export const App = () => {
 
   usePageMeta({
     title:
-      activePage === "mine"
+      detailRoute && activeDetailResultItem
+        ? `${detailToolOption?.label ?? activeDetailResultItem.toolKey} 结果详情 - 创客贴 AI 电商`
+        : activePage === "mine"
         ? mineTab === "models"
           ? "我的模特 - 创客贴 AI 电商"
           : "我的创作 - 创客贴 AI 电商"
         : `${currentTool.panelTitle} - 创客贴 AI 电商`,
     description:
-      activePage === "mine"
+      detailRoute && activeDetailResultItem
+        ? "创客贴 AI 电商结果详情页，可直接通过地址访问并在同任务内切换查看结果。"
+        : activePage === "mine"
         ? mineTab === "models"
           ? "创客贴 AI 电商我的模特页面，集中管理用户上传和 AI 生成的模特素材。"
           : "创客贴 AI 电商我的创作页面，集中查看全部功能下的创作任务与结果。"
         : `创客贴 AI 电商 ${currentTool.panelTitle} 页面，按照 Figma 稿还原的工具框架页面。`,
     keywords:
-      activePage === "mine"
+      detailRoute && activeDetailResultItem
+        ? "创客贴,AI电商,结果详情,创作记录,大图预览"
+        : activePage === "mine"
         ? mineTab === "models"
           ? "创客贴,AI电商,我的模特,模特管理"
           : "创客贴,AI电商,我的创作,创作记录"
@@ -18336,7 +18996,7 @@ export const App = () => {
               onChangeMode={setCreationHistoryMode}
               onChangeToolKey={setCreationHistoryToolKey}
               onDownloadItem={handleDownloadItem}
-              onSelectResult={handleSelectResultRecord}
+              onOpenDetail={(item) => handleOpenResultDetail(item, "mine")}
               onSelectTask={handleSelectTaskRecord}
               resultItems={filteredCreationResultItems}
               selectedTaskIdsByTool={selectedTaskIdByTool}
@@ -18430,6 +19090,7 @@ export const App = () => {
               onTabChange={handleResultTabChange}
               onToggleItem={handleToggleResultItem}
               onToggleSelectAll={handleToggleResultSelectAll}
+              onOpenDetail={(item) => handleOpenResultDetail(item, "workspace")}
               tool={currentTool}
             />
             <TaskHistoryRail
@@ -18465,6 +19126,30 @@ export const App = () => {
           onDownload={handleDownloadModel}
         />
       ) : null}
+      {detailRoute ? (
+        <ResultDetailModal
+          item={activeDetailResultItem}
+          onClose={handleCloseResultDetail}
+          onDeleteCurrent={(item, taskItems) => {
+            const currentIndex = taskItems.findIndex((taskItem) => taskItem.id === item.id);
+            const fallbackItem = taskItems[currentIndex + 1] ?? taskItems[currentIndex - 1] ?? null;
+            handleDeleteReadyResult(item);
+            if (fallbackItem) {
+              navigate(buildResultDetailPath(fallbackItem, detailRoute.source), { replace: true });
+              return;
+            }
+            handleCloseResultDetail();
+          }}
+          onDownloadAll={handleDownloadTaskResults}
+          onDownloadCurrent={handleDownloadItem}
+          onNavigate={handleNavigateResultDetail}
+          onSelectItem={(item) => navigate(buildResultDetailPath(item, detailRoute.source), { replace: true })}
+          onUseTool={handleUseResultTool}
+          task={detailTask}
+          taskItems={detailTaskItems}
+          toolLabel={detailToolOption?.label ?? detailRoute.toolKey}
+        />
+      ) : null}
       {previewResultItem ? (
         <div className="ck-set-pack-modal-mask" onClick={() => setPreviewResultItem(null)}>
           <div className="ck-set-pack-preview-modal" onClick={(event) => event.stopPropagation()}>
@@ -18491,15 +19176,15 @@ export const App = () => {
               </button>
             </div>
             <div className="ck-set-pack-modal-body">
-              <div className="ck-set-pack-copy-block">
-                <FieldTitle label={editingResultItem.roleLabel ?? "文案"} optional />
-                <textarea
-                  maxLength={300}
-                  onChange={(event) => setEditingResultText(event.target.value)}
-                  placeholder="请输入新的卖点或参数文案"
-                  value={editingResultText}
-                />
-              </div>
+              <UnifiedTextareaField
+                formBlockClassName="ck-set-pack-copy-block"
+                label={editingResultItem.roleLabel ?? "文案"}
+                maxLength={300}
+                onChange={setEditingResultText}
+                optional
+                placeholder="请输入新的卖点或参数文案"
+                value={editingResultText}
+              />
             </div>
             <div className="ck-set-pack-modal-footer">
               <button className="secondary" onClick={() => setEditingResultItem(null)} type="button">
