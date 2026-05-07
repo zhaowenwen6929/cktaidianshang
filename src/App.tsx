@@ -22,6 +22,11 @@ import {
   goodsWhiteUniversalPlatformLabel,
   goodsWhiteUniversalPresetConfig
 } from "./config/goodsWhitePromptConfig";
+import {
+  videoMainScriptFieldConfigs,
+  videoMainVoiceLanguageOptions,
+  videoMainVoiceToneOptions
+} from "./config/videoMainScriptConfig";
 import { usePageMeta } from "./hooks/usePageMeta";
 
 const figmaIcons = {
@@ -2550,93 +2555,6 @@ const targetLanguageInputOptions = ["简体中文", "英语", "繁体中文", "�
 const videoMainScriptModeOptions = [
   { key: "ai-script", label: "AI生成脚本" },
   { key: "custom-script", label: "自定义脚本" }
-];
-const videoMainSellingPointOptions = ["智能识别"];
-const videoMainVideoTypeOptions = [
-  "智能匹配",
-  "电商主图视频",
-  "口播/评测讲解",
-  "场景种草",
-  "品牌形象大片",
-  "主体/细节展示",
-  "穿搭/佩戴展示",
-  "使用教程",
-  "品牌匠心",
-  "活动促销",
-  "痛点解决",
-  "沉浸式开箱",
-  "达人Vlog种草"
-];
-const videoMainMarketingNeedOptions = [
-  "智能匹配",
-  "产品展示/核心卖点",
-  "制造焦虑/放大痛点",
-  "彰显品味/品牌溢价",
-  "极致性价比/促单",
-  "科普评测/建立信任",
-  "猎奇吸睛/强力促停",
-  "颜值暴击/纯享种草"
-];
-const videoMainRhythmOptions = [
-  "智能匹配",
-  "简单分镜",
-  "一镜到底",
-  "多分镜叙述",
-  "黄金三秒痛点法",
-  "娓娓道来",
-  "暴力测评",
-  "流行卡点"
-];
-const videoMainMusicMoodOptions = [
-  "智能匹配",
-  "治愈解压/松弛感",
-  "燃向/高燃动感",
-  "温馨日常/烟火气",
-  "幽默搞笑/趣味",
-  "催泪走心/共情",
-  "高冷克制/距离感",
-  "猎奇悬疑/强吸睛",
-  "自信独立/大女主风",
-  "清新纯净/元气感",
-  "潮酷叛逆/街头感",
-  "高燃动感/荷尔蒙",
-  "软萌可爱/童趣感"
-];
-const videoMainVisualOptions = [
-  "极简白底",
-  "高级棚拍",
-  "生活方式",
-  "轻奢大片",
-  "科技简约",
-  "温馨家居",
-  "时尚大片",
-  "活泼趣味",
-  "品牌极简",
-  "工业硬朗",
-  "黑白光影",
-  "赛博朋克",
-  "运动潮流",
-  "多巴胺/高饱和"
-];
-const videoMainAudienceOptions = [
-  "职场精英/白领",
-  "精致Z世代/潮人",
-  "宝妈/家庭主妇",
-  "学生党/年轻群体",
-  "银发族/中老年",
-  "户外/运动硬核玩家",
-  "泛大众/下沉市场"
-];
-const videoMainCharacterFitOptions = [
-  "无人物",
-  "局部出境",
-  "亚洲时尚女性",
-  "欧美成熟男性",
-  "宠物展示",
-  "动漫角色",
-  "虚拟偶像",
-  "国风端庄女性",
-  "专业人士"
 ];
 const spokespersonInteractionOptions = ["穿戴展示", "手持展示", "使用状态展示", "推荐代言", "产品静置人物出现", "身体局部展示"];
 const spokespersonCharacterOptions = [
@@ -7725,6 +7643,7 @@ function SelectField({
   fullWidth,
   hideLabel,
   width,
+  className,
   options,
   onChange
 }: {
@@ -7735,6 +7654,7 @@ function SelectField({
   fullWidth?: boolean;
   hideLabel?: boolean;
   width?: number;
+  className?: string;
   options?: string[];
   onChange?: (value: string) => void;
 }) {
@@ -7744,6 +7664,8 @@ function SelectField({
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const widthStyle = width ? { width: `${width}px` } : undefined;
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
 
   useEffect(() => {
     setOpen(false);
@@ -7752,18 +7674,65 @@ function SelectField({
   useEffect(() => {
     if (!open) return;
 
+    const updateMenuPlacement = () => {
+      const triggerRect = dropdownRef.current?.getBoundingClientRect();
+      if (!triggerRect) return;
+
+      const panelElement = dropdownRef.current?.closest(".ck-panel");
+      const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
+      const footerRect = footerElement?.getBoundingClientRect();
+      const lowerBoundary = footerRect ? footerRect.top - 8 : window.innerHeight - 16;
+      const upperBoundary = 16;
+      const spaceBelow = lowerBoundary - triggerRect.bottom - 6;
+      const spaceAbove = triggerRect.top - upperBoundary - 6;
+      const availableBelow = Math.max(120, Math.floor(spaceBelow));
+      const availableAbove = Math.max(120, Math.floor(spaceAbove));
+
+      const sharedStyle: CSSProperties = {
+        left: triggerRect.left,
+        width: triggerRect.width,
+        position: "fixed",
+        zIndex: 100130
+      };
+
+      if (spaceBelow < 220 && spaceAbove > spaceBelow) {
+        setOpenDirection("up");
+        setMenuStyle({
+          ...sharedStyle,
+          bottom: window.innerHeight - triggerRect.top + 6,
+          maxHeight: Math.min(220, availableAbove)
+        });
+        return;
+      }
+
+      setOpenDirection("down");
+      setMenuStyle({
+        ...sharedStyle,
+        top: triggerRect.bottom + 6,
+        maxHeight: Math.min(220, availableBelow)
+      });
+    };
+
+    updateMenuPlacement();
+
     const handlePointerDown = (event: PointerEvent) => {
       if (!dropdownRef.current?.contains(event.target as Node)) {
         setOpen(false);
       }
     };
 
+    window.addEventListener("resize", updateMenuPlacement);
+    window.addEventListener("scroll", updateMenuPlacement, true);
     document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("resize", updateMenuPlacement);
+      window.removeEventListener("scroll", updateMenuPlacement, true);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
   }, [open]);
 
   return (
-    <div className={`ck-form-block${fullWidth ? " ck-form-block-full" : ""}`}>
+    <div className={`ck-form-block${fullWidth ? " ck-form-block-full" : ""}${className ? ` ${className}` : ""}`}>
       <div className={fullWidth ? "" : "ck-inline-field"}>
         {hideLabel ? null : <FieldTitle label={label} required={required} />}
         <div className={`ck-select-dropdown${fullWidth ? " full" : ""}`} ref={dropdownRef} style={widthStyle}>
@@ -7777,7 +7746,7 @@ function SelectField({
             <span>⌄</span>
           </button>
           {open && options?.length ? (
-            <div className={`ck-select-dropdown-menu${fullWidth ? " full" : ""}`} style={widthStyle}>
+            <div className={`ck-select-dropdown-menu${fullWidth ? " full" : ""}${openDirection === "up" ? " up" : ""}`} style={menuStyle}>
               {options.map((option) => (
                 <button
                   className={option === value ? "active" : ""}
@@ -10456,6 +10425,7 @@ function VideoReplicaSetupSection({
   const [ratio, setRatio] = useState(selectedValues?.videoReplicaRatio ?? "竖9:16");
   const [resolution, setResolution] = useState(selectedValues?.videoReplicaResolution ?? "480p");
   const lastSyncedValuesRef = useRef("");
+  const lastEmitRef = useRef("");
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
@@ -10477,21 +10447,27 @@ function VideoReplicaSetupSection({
   }, [defaultMode, selectedValues]);
 
   useEffect(() => {
-    onSelectionMapChange?.({
+    const nextMap: AdvancedSelectionMap = {
       videoReplicaMode: mode,
       videoReplicaDuration: duration,
       videoReplicaRatio: ratio,
       videoReplicaResolution: resolution
-    });
-    onSelectionChange?.([mode, duration, ratio, resolution]);
-    onCreationModeChange?.({
+    };
+    const nextSelectionValues = [mode, duration, ratio, resolution];
+    const nextCreationModeSelection: CreationModeSelection = {
       modeId: mode === "高级模式" ? "video-replica-advanced" : "video-replica-normal",
       modeLabel: mode,
       ratio,
       resolution,
       count: 1,
       unitCreditCost: 1
-    });
+    };
+    const emitKey = JSON.stringify({ nextMap, nextSelectionValues, nextCreationModeSelection });
+    if (emitKey === lastEmitRef.current) return;
+    lastEmitRef.current = emitKey;
+    onSelectionMapChange?.(nextMap);
+    onSelectionChange?.(nextSelectionValues);
+    onCreationModeChange?.(nextCreationModeSelection);
   }, [duration, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution]);
 
   return (
@@ -10660,6 +10636,7 @@ function ModelAdjustSection({
 }
 
 function VideoMainScriptSetupSection({
+  uploads,
   supplementValue,
   onSupplementChange,
   onSupplementAiPolish,
@@ -10676,32 +10653,51 @@ function VideoMainScriptSetupSection({
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   selectedValues?: AdvancedSelectionMap;
+  uploads: UploadItem[];
   toolKey: string;
 }) {
+  const legacyAutoDefaultSet = useMemo(() => new Set(["智能识别", "智能匹配"]), []);
+  const scriptFieldMap = useMemo(() => Object.fromEntries(videoMainScriptFieldConfigs.map((item) => [item.key, item])) as Record<string, (typeof videoMainScriptFieldConfigs)[number]>, []);
+  const defaultScriptFieldValues = useMemo(
+    () =>
+      Object.fromEntries(
+        videoMainScriptFieldConfigs.map((item) => [item.key, ""])
+      ) as Record<string, string>,
+    []
+  );
+  const sectionRef = useRef<HTMLDivElement | null>(null);
   const [scriptMode, setScriptMode] = useState(selectedValues?.videoMainScriptMode ?? videoMainScriptModeOptions[0].key);
+  const [scriptDrawerOpen, setScriptDrawerOpen] = useState(false);
+  const [scriptDrawerStyle, setScriptDrawerStyle] = useState<CSSProperties>({});
+  const drawerStyleRef = useRef<CSSProperties>({});
+  const [generatedScript, setGeneratedScript] = useState("");
+  const [voiceEnabled, setVoiceEnabled] = useState(selectedValues?.videoMainVoiceEnabled === "true");
+  const [voiceLanguage, setVoiceLanguage] = useState(selectedValues?.videoMainVoiceLanguage ?? videoMainVoiceLanguageOptions[0]);
+  const [voiceTone, setVoiceTone] = useState(selectedValues?.videoMainVoiceTone ?? videoMainVoiceToneOptions[0]);
+  const [voiceCopy, setVoiceCopy] = useState(selectedValues?.videoMainVoiceCopy ?? "");
+  const [scriptDetailMode, setScriptDetailMode] = useState<"general" | "storyboard">("general");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({
-    videoMainSellingPoint: selectedValues?.videoMainSellingPoint ?? videoMainSellingPointOptions[0],
-    videoMainType: selectedValues?.videoMainType ?? "",
-    videoMainMarketingNeed: selectedValues?.videoMainMarketingNeed ?? "",
-    videoMainRhythm: selectedValues?.videoMainRhythm ?? "",
-    videoMainMusicMood: selectedValues?.videoMainMusicMood ?? "",
-    videoMainVisualStyle: selectedValues?.videoMainVisualStyle ?? "",
-    videoMainAudience: selectedValues?.videoMainAudience ?? "",
-    videoMainCharacterFit: selectedValues?.videoMainCharacterFit ?? ""
+    ...defaultScriptFieldValues,
+    ...Object.fromEntries(videoMainScriptFieldConfigs.map((item) => [item.key, selectedValues?.[item.key] ?? defaultScriptFieldValues[item.key]]))
   });
   const lastSyncedValuesRef = useRef<string>("");
+  const lastEmitRef = useRef<string>("");
 
   useEffect(() => {
+    const nextScriptFields = Object.fromEntries(
+      videoMainScriptFieldConfigs.map((item) => {
+        const rawValue = selectedValues?.[item.key] ?? defaultScriptFieldValues[item.key];
+        const normalizedValue = legacyAutoDefaultSet.has(rawValue) ? "" : rawValue;
+        return [item.key, normalizedValue];
+      })
+    ) as Record<(typeof videoMainScriptFieldConfigs)[number]["key"], string>;
     const nextState = {
       videoMainScriptMode: selectedValues?.videoMainScriptMode ?? videoMainScriptModeOptions[0].key,
-      videoMainSellingPoint: selectedValues?.videoMainSellingPoint ?? videoMainSellingPointOptions[0],
-      videoMainType: selectedValues?.videoMainType ?? "",
-      videoMainMarketingNeed: selectedValues?.videoMainMarketingNeed ?? "",
-      videoMainRhythm: selectedValues?.videoMainRhythm ?? "",
-      videoMainMusicMood: selectedValues?.videoMainMusicMood ?? "",
-      videoMainVisualStyle: selectedValues?.videoMainVisualStyle ?? "",
-      videoMainAudience: selectedValues?.videoMainAudience ?? "",
-      videoMainCharacterFit: selectedValues?.videoMainCharacterFit ?? ""
+      scriptFields: nextScriptFields,
+      videoMainVoiceEnabled: selectedValues?.videoMainVoiceEnabled === "true",
+      videoMainVoiceLanguage: selectedValues?.videoMainVoiceLanguage ?? videoMainVoiceLanguageOptions[0],
+      videoMainVoiceTone: selectedValues?.videoMainVoiceTone ?? videoMainVoiceToneOptions[0],
+      videoMainVoiceCopy: selectedValues?.videoMainVoiceCopy ?? ""
     };
     const nextSyncKey = JSON.stringify(nextState);
 
@@ -10711,22 +10707,21 @@ function VideoMainScriptSetupSection({
 
     lastSyncedValuesRef.current = nextSyncKey;
     setScriptMode(nextState.videoMainScriptMode);
-    setFieldValues({
-      videoMainSellingPoint: nextState.videoMainSellingPoint,
-      videoMainType: nextState.videoMainType,
-      videoMainMarketingNeed: nextState.videoMainMarketingNeed,
-      videoMainRhythm: nextState.videoMainRhythm,
-      videoMainMusicMood: nextState.videoMainMusicMood,
-      videoMainVisualStyle: nextState.videoMainVisualStyle,
-      videoMainAudience: nextState.videoMainAudience,
-      videoMainCharacterFit: nextState.videoMainCharacterFit
-    });
-  }, [selectedValues]);
+    setFieldValues(nextState.scriptFields);
+    setVoiceEnabled(nextState.videoMainVoiceEnabled);
+    setVoiceLanguage(nextState.videoMainVoiceLanguage);
+    setVoiceTone(nextState.videoMainVoiceTone);
+    setVoiceCopy(nextState.videoMainVoiceCopy);
+  }, [defaultScriptFieldValues, legacyAutoDefaultSet, selectedValues, videoMainScriptFieldConfigs]);
 
   useEffect(() => {
     lastSyncedValuesRef.current = JSON.stringify({
       videoMainScriptMode: scriptMode,
-      ...fieldValues
+      ...fieldValues,
+      videoMainVoiceEnabled: voiceEnabled,
+      videoMainVoiceLanguage: voiceLanguage,
+      videoMainVoiceTone: voiceTone,
+      videoMainVoiceCopy: voiceCopy
     });
 
     const nextMap: AdvancedSelectionMap = {
@@ -10738,78 +10733,289 @@ function VideoMainScriptSetupSection({
       Object.entries(fieldValues).forEach(([key, value]) => {
         if (value) nextMap[key] = value;
       });
+      nextMap.videoMainVoiceEnabled = String(voiceEnabled);
+      if (voiceEnabled) {
+        nextMap.videoMainVoiceLanguage = voiceLanguage;
+        nextMap.videoMainVoiceTone = voiceTone;
+        if (voiceCopy.trim()) nextMap.videoMainVoiceCopy = voiceCopy.trim();
+      }
     }
 
+    const nextSelectionValues = [
+      nextMap.videoMainScriptModeLabel,
+      ...(scriptMode === "ai-script" ? Object.values(fieldValues).filter(Boolean) : []),
+      voiceEnabled ? voiceLanguage : "",
+      voiceEnabled ? voiceTone : "",
+      voiceEnabled ? voiceCopy : "",
+      supplementValue
+    ].filter(Boolean);
+    const emitKey = JSON.stringify({ nextMap, nextSelectionValues });
+    if (emitKey === lastEmitRef.current) return;
+    lastEmitRef.current = emitKey;
     onSelectionMapChange?.(nextMap);
-    onSelectionChange?.(
-      [
-        nextMap.videoMainScriptModeLabel,
-        ...(scriptMode === "ai-script" ? Object.values(fieldValues).filter(Boolean) : []),
-        supplementValue
-      ].filter(Boolean)
-    );
-  }, [fieldValues, onSelectionChange, onSelectionMapChange, scriptMode, supplementValue]);
+    onSelectionChange?.(nextSelectionValues);
+  }, [fieldValues, onSelectionChange, onSelectionMapChange, scriptMode, supplementValue, voiceCopy, voiceEnabled, voiceLanguage, voiceTone]);
 
-  const inputFields = [
-    { key: "videoMainSellingPoint", label: "卖点名称", options: videoMainSellingPointOptions },
-    { key: "videoMainType", label: "视频类型", options: videoMainVideoTypeOptions },
-    { key: "videoMainMarketingNeed", label: "营销诉求", options: videoMainMarketingNeedOptions },
-    { key: "videoMainRhythm", label: "内容节奏", options: videoMainRhythmOptions },
-    { key: "videoMainMusicMood", label: "音乐氛围", options: videoMainMusicMoodOptions },
-    { key: "videoMainVisualStyle", label: "视觉风格", options: videoMainVisualOptions },
-    { key: "videoMainAudience", label: "受众群体", options: videoMainAudienceOptions },
-    { key: "videoMainCharacterFit", label: "人物适配", options: videoMainCharacterFitOptions }
-  ] as const;
+  const inputFields = videoMainScriptFieldConfigs;
+
+  const handleGenerateScript = () => {
+    const sections = inputFields
+      .map((field) => ({ label: field.label, value: fieldValues[field.key]?.trim() ?? "" }))
+      .filter((item) => item.value)
+      .map((item) => `${item.label}：${item.value}`);
+    const detail = supplementValue.trim();
+    const nextScript = [
+      "【视频脚本草案】",
+      ...sections,
+      detail ? `细节补充：${detail}` : "",
+      "根据以上信息生成分镜：开场展示商品主体，中段突出卖点，结尾输出行动引导。"
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    setGeneratedScript(nextScript);
+  };
+
+  const handleAiFillParameters = () => {
+    const uploadText = [
+      uploads[0]?.name ?? "",
+      uploads.map((item) => item.name).filter(Boolean).join(" ")
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const pickOption = (options: readonly string[], keywords: string[]) => {
+      const match = options.find((option) => keywords.some((keyword) => uploadText.includes(keyword) && option.includes(keyword))) ?? options[0] ?? "";
+      return match;
+    };
+
+    const nextValues = Object.fromEntries(
+      videoMainScriptFieldConfigs.map((field) => [field.key, pickOption(field.options, field.aiKeywords)])
+    ) as Record<string, string>;
+
+    setFieldValues(nextValues);
+  };
+
+  const handleAiGenerateVoiceCopy = () => {
+    const source = generatedScript || supplementValue;
+    const compact = source.replace(/\s+/g, " ").trim();
+    if (!compact) {
+      onToast("请先生成脚本或填写视频脚本", "warning");
+      return;
+    }
+    const nextCopy = `本视频围绕产品核心卖点展开，重点展示使用场景与细节优势，帮助用户快速理解价值并提升购买意愿。${compact.slice(0, 120)}`.slice(0, 200);
+    setVoiceCopy(nextCopy);
+  };
+
+  useEffect(() => {
+    if (!scriptDrawerOpen) return;
+
+    let frameId = 0;
+    const updateDrawerPosition = () => {
+      const panelElement = sectionRef.current?.closest(".ck-panel");
+      const panelRect = panelElement?.getBoundingClientRect();
+      if (!panelRect) return;
+
+      const gap = 16;
+      const viewportPadding = 16;
+      const topSafe = 72;
+      const targetHeight = Math.max(420, window.innerHeight - 324);
+      const maxHeight = window.innerHeight - topSafe - viewportPadding;
+      const drawerHeight = Math.min(targetHeight, maxHeight);
+      const nextTop = Math.max(topSafe, Math.round((window.innerHeight - drawerHeight) / 2));
+      const nextLeft = Math.max(viewportPadding, Math.round(panelRect.right + gap));
+      const nextWidth = Math.min(980, Math.max(720, window.innerWidth - nextLeft - viewportPadding));
+
+      const nextStyle: CSSProperties = {
+        top: `${nextTop}px`,
+        left: `${nextLeft}px`,
+        right: "auto",
+        width: `${nextWidth}px`,
+        height: `${drawerHeight}px`,
+        maxHeight: `${drawerHeight}px`
+      };
+
+      if (
+        drawerStyleRef.current.top === nextStyle.top &&
+        drawerStyleRef.current.left === nextStyle.left &&
+        drawerStyleRef.current.width === nextStyle.width &&
+        drawerStyleRef.current.height === nextStyle.height &&
+        drawerStyleRef.current.maxHeight === nextStyle.maxHeight
+      ) {
+        return;
+      }
+
+      drawerStyleRef.current = nextStyle;
+      setScriptDrawerStyle(nextStyle);
+    };
+
+    updateDrawerPosition();
+    const requestUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateDrawerPosition);
+    };
+
+    window.addEventListener("resize", requestUpdate);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", requestUpdate);
+    };
+  }, [scriptDrawerOpen]);
 
   return (
-    <>
-      <AdaptiveChoiceField
-        label="选择方式"
-        onChange={setScriptMode}
-        options={videoMainScriptModeOptions}
-        required
-        value={scriptMode}
+    <div ref={sectionRef}>
+      <UnifiedTextareaField
+        formBlockClassName="ck-form-block ck-set-pack-selling-points"
+        header={
+          <div className="ck-advanced-settings-head">
+            <FieldTitle label="视频脚本" required />
+            <button
+              className="ck-advanced-settings-ai"
+              onClick={() => {
+                setScriptMode("ai-script");
+                setScriptDrawerOpen(true);
+              }}
+              type="button"
+            >
+              AI生成
+            </button>
+          </div>
+        }
+        maxLength={2000}
+        onChange={onSupplementChange}
+        placeholder="请输入完整视频脚本或镜头描述，AI 将按你的自定义脚本生成产品视频。"
+        value={supplementValue}
       />
-
-      {scriptMode === "ai-script" ? (
-        <>
-          {inputFields.map((field) => (
-            <InputSelectInlineField
-              className="ck-video-script-inline-field"
-              dropdownWidth={320}
-              key={field.key}
-              label={field.label}
-              labelNoWrap
-              onChange={(value) => setFieldValues((current) => ({ ...current, [field.key]: value }))}
-              options={[...field.options]}
-              placeholder="请选择，或直接输入"
-              value={fieldValues[field.key] ?? ""}
+      <div className="ck-form-block ck-video-voice-block">
+        <div className="ck-inline-field">
+          <FieldTitle label="旁白设置" />
+          <div className="ck-switch" style={{ width: 96, gridTemplateColumns: "repeat(2, 1fr)" }}>
+            <button className={!voiceEnabled ? "active" : ""} onClick={() => setVoiceEnabled(false)} type="button">
+              关闭
+            </button>
+            <button className={voiceEnabled ? "active" : ""} onClick={() => setVoiceEnabled(true)} type="button">
+              开启
+            </button>
+          </div>
+        </div>
+        {voiceEnabled ? (
+          <div className="ck-video-voice-fields">
+            <SelectField className="ck-video-voice-select-field" label="旁白语言" onChange={setVoiceLanguage} options={videoMainVoiceLanguageOptions} value={voiceLanguage} width={120} />
+            <UnifiedTextareaField
+              formBlockClassName="ck-form-block ck-set-pack-selling-points ck-video-script-detail"
+              header={
+                <div className="ck-advanced-settings-head">
+                  <FieldTitle label="旁白文案" />
+                  <button className="ck-advanced-settings-ai" onClick={handleAiGenerateVoiceCopy} type="button">
+                    AI帮写
+                  </button>
+                </div>
+              }
+              maxLength={200}
+              onChange={setVoiceCopy}
+              placeholder="请输入旁白文案，或使用AI根据脚本自动生成（200字以内）"
+              value={voiceCopy}
             />
-          ))}
-          <SupplementField
-            aiPolishConfig={supplementAiPolishConfigs[toolKey]}
-            label="细节补充"
-            maxLength={2000}
-            onAiPolish={onSupplementAiPolish}
-            onChange={onSupplementChange}
-            onToast={onToast}
-            placeholder="请输入额外镜头、转场、字幕、情绪或人物动作要求，帮助生成更完整的视频脚本。"
-            value={supplementValue}
-          />
-        </>
-      ) : (
-        <SupplementField
-          aiPolishConfig={supplementAiPolishConfigs[toolKey]}
-          label="视频描述"
-          maxLength={2000}
-          onAiPolish={onSupplementAiPolish}
-          onChange={onSupplementChange}
-          onToast={onToast}
-          placeholder="请输入完整视频脚本或镜头描述，AI 将按你的自定义脚本生成产品视频。"
-          value={supplementValue}
-        />
-      )}
-    </>
+            <SelectField className="ck-video-voice-select-field" label="音色选择" onChange={setVoiceTone} options={videoMainVoiceToneOptions} value={voiceTone} width={120} />
+          </div>
+        ) : null}
+      </div>
+
+      {scriptDrawerOpen ? (
+        <div className="ck-set-pack-side-drawer-mask ck-video-script-drawer-mask" onClick={() => setScriptDrawerOpen(false)} role="presentation">
+          <div className="ck-set-pack-side-drawer ck-video-script-drawer" onClick={(event) => event.stopPropagation()} style={scriptDrawerStyle}>
+            <div className="ck-set-pack-side-drawer-head">
+              <strong>AI生成脚本</strong>
+              <button onClick={() => setScriptDrawerOpen(false)} type="button">
+                ×
+              </button>
+            </div>
+            <div className="ck-set-pack-side-drawer-body">
+              <div className="ck-video-script-layout">
+                <section className="ck-video-script-column">
+                  <div className="ck-video-script-box">
+                    <div className="ck-video-script-box-head">
+                      <div className="ck-video-script-title">脚本参数</div>
+                      <button className="ck-video-script-ai-fill" onClick={handleAiFillParameters} type="button">
+                        AI帮写
+                      </button>
+                    </div>
+                    <div className="ck-video-script-fields">
+                      {inputFields.map((field) => (
+                        <InputSelectInlineField
+                          className="ck-video-script-inline-field"
+                          dropdownWidth={320}
+                          key={field.key}
+                          label={field.label}
+                          labelNoWrap
+                          onChange={(value) => setFieldValues((current) => ({ ...current, [field.key]: value }))}
+                          options={[...field.options]}
+                          placeholder="请选择，或直接输入"
+                          value={fieldValues[field.key] ?? ""}
+                        />
+                      ))}
+                      <UnifiedTextareaField
+                        formBlockClassName="ck-form-block ck-set-pack-selling-points ck-video-script-detail"
+                        label="细节补充"
+                        maxLength={2000}
+                        onChange={onSupplementChange}
+                        optional
+                        placeholder="请输入额外镜头、转场、字幕、情绪或人物动作要求，帮助生成更完整的视频脚本。"
+                        value={supplementValue}
+                      />
+                    </div>
+                    <div className="ck-video-script-mode">
+                      <FieldTitle label="选择模式" />
+                      <div className="ck-switch ck-video-script-mode-switch">
+                        <button
+                          className={scriptDetailMode === "general" ? "active" : ""}
+                          onClick={() => setScriptDetailMode("general")}
+                          type="button"
+                        >
+                          通用模式（全局设定）
+                        </button>
+                        <button
+                          className={scriptDetailMode === "storyboard" ? "active" : ""}
+                          onClick={() => setScriptDetailMode("storyboard")}
+                          type="button"
+                        >
+                          分镜模式（逐帧精控）
+                        </button>
+                      </div>
+                    </div>
+                    <button className="ck-video-script-generate" onClick={handleGenerateScript} type="button">
+                      {generatedScript ? "重新生成" : "生成脚本"}
+                    </button>
+                  </div>
+                </section>
+                <section className="ck-video-script-column">
+                  <div className="ck-video-script-box ck-video-script-result-box">
+                    <div className="ck-video-script-title">脚本内容</div>
+                    {generatedScript ? (
+                      <>
+                        <pre className="ck-video-script-result-content">{generatedScript}</pre>
+                        <button
+                          className="ck-video-script-apply"
+                          onClick={() => {
+                            onSupplementChange(generatedScript);
+                            setScriptDrawerOpen(false);
+                          }}
+                          type="button"
+                        >
+                          立即使用
+                        </button>
+                      </>
+                    ) : (
+                      <div className="ck-video-script-result-empty">点击左侧“生成脚本”后在此显示结果。</div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -14069,19 +14275,16 @@ function SetPackTypeSection({
 
       {modalMode === "ai" ? (
         <div
-          className="ck-set-pack-side-drawer-mask ck-set-pack-ai-drawer-mask"
+          className="ck-set-pack-modal-mask ck-set-pack-ai-modal-mask"
           onClick={() => setModalMode(null)}
           role="presentation"
         >
           <div
-            className="ck-set-pack-side-drawer ck-set-pack-type-modal ck-set-pack-ai-type-modal ck-set-pack-ai-side-drawer"
+            className="ck-set-pack-type-modal ck-set-pack-ai-type-modal"
             onClick={(event) => event.stopPropagation()}
-            style={drawerPanelStyle}
           >
             <div className="ck-set-pack-modal-head">
-              <div className="ck-set-pack-ai-modal-title">
-                <strong>AI智能电商组图</strong>
-              </div>
+              <strong>AI智能电商组图</strong>
               <div className="ck-set-pack-ai-head-actions">
                 <button className="ck-set-pack-ai-close" onClick={() => setModalMode(null)} type="button">
                   ×
@@ -14092,9 +14295,7 @@ function SetPackTypeSection({
               <div className="ck-set-pack-ai-layout">
                 <aside className="ck-set-pack-ai-sidebar">
                   <div className="ck-set-pack-ai-box">
-                    <div className="ck-set-pack-ai-box-head">
-                      <div className="ck-set-pack-ai-section-title">商品信息</div>
-                    </div>
+                    <div className="ck-set-pack-ai-section-title">商品信息</div>
                     <div className="ck-set-pack-ai-product-card">
                       <div className="ck-set-pack-ai-upload-thumb large">
                         {uploads[0]?.previewSrc || uploads[0]?.src ? <img alt="商品图" src={uploads[0]?.previewSrc ?? uploads[0]?.src} /> : null}
@@ -14133,20 +14334,26 @@ function SetPackTypeSection({
                 </aside>
 
                 <section className="ck-set-pack-ai-main">
-                  {shouldShowThinkingPanel ? (
-                    <div className="ck-set-pack-ai-box">
-                      <div className="ck-set-pack-ai-box-head">
-                        <div className="ck-set-pack-ai-section-title">思考过程</div>
-                        <button className="ck-set-pack-ai-collapse" onClick={() => setAiThoughtCollapsed((current) => !current)} type="button">
-                          {aiThoughtCollapsed ? "展开" : "收起"}
-                        </button>
-                      </div>
-                      <div className="ck-set-pack-ai-thinking-wrap">
-                        <div className="ck-set-pack-ai-thinking-status">{isAnalyzing ? "正在分析中..." : "分析完成"}</div>
-                        <div className={`ck-set-pack-ai-thinking${aiThoughtCollapsed ? " collapsed" : ""}`}>{displayThinkingText}</div>
-                      </div>
+                  <div className={`ck-set-pack-ai-box ck-set-pack-ai-thinking-panel${shouldShowThinkingPanel ? " expanded" : ""}`}>
+                    <div className="ck-set-pack-ai-box-head">
+                      <div className="ck-set-pack-ai-section-title">AI思考过程</div>
+                      <button className="ck-set-pack-ai-collapse" onClick={() => setAiThoughtCollapsed((current) => !current)} type="button">
+                        {aiThoughtCollapsed ? "展开" : "收起"}
+                      </button>
                     </div>
-                  ) : null}
+                    {shouldShowThinkingPanel ? (
+                      isAnalyzing ? (
+                        <div className="ck-set-pack-ai-thinking-loading">
+                          <div className="ck-set-pack-skeleton" />
+                          <div className="ck-set-pack-skeleton" />
+                          <div className="ck-set-pack-skeleton" />
+                          <div className="ck-set-pack-skeleton medium" />
+                        </div>
+                      ) : (
+                        <div className={`ck-set-pack-ai-thinking${aiThoughtCollapsed ? " collapsed" : ""}`}>{displayThinkingText}</div>
+                      )
+                    ) : null}
+                  </div>
 
                   <div className="ck-set-pack-selected-panel">
                     <div className="ck-set-pack-selected-panel-head">
@@ -14163,107 +14370,77 @@ function SetPackTypeSection({
                         清空已选
                       </button>
                     </div>
-                    {isAnalyzing ? (
-                      <div className="ck-set-pack-selected-drafts loading">
-                        {Array.from({ length: 4 }).map((_, index) => (
-                          <article className="ck-set-pack-draft-card skeleton" key={`skeleton-${index}`}>
-                            <div className="ck-set-pack-skeleton short" />
-                            <div className="ck-set-pack-skeleton" />
-                            <div className="ck-set-pack-skeleton" />
-                            <div className="ck-set-pack-skeleton medium" />
-                          </article>
-                        ))}
-                      </div>
-                    ) : draftTypes.length ? (
-                      <div className="ck-set-pack-selected-drafts">
-                        {draftTypes.map((item, index) => (
-                          <article className="ck-set-pack-draft-card" key={item.id}>
-                            <div className="ck-set-pack-draft-head">
-                              <div className="ck-set-pack-draft-title">
-                                <strong>
-                                  {index + 1}. {item.category}
-                                </strong>
-                                <span>{item.name}</span>
+                    <div className="ck-set-pack-selected-panel-content">
+                      {isAnalyzing ? (
+                        <div className="ck-set-pack-selected-drafts loading">
+                          {Array.from({ length: 4 }).map((_, index) => (
+                            <article className="ck-set-pack-draft-card skeleton" key={`skeleton-${index}`}>
+                              <div className="ck-set-pack-skeleton short" />
+                              <div className="ck-set-pack-skeleton" />
+                              <div className="ck-set-pack-skeleton" />
+                              <div className="ck-set-pack-skeleton medium" />
+                            </article>
+                          ))}
+                        </div>
+                      ) : draftTypes.length ? (
+                        <div className="ck-set-pack-selected-drafts">
+                          {draftTypes.map((item, index) => (
+                            <article className="ck-set-pack-draft-card" key={item.id}>
+                              <div className="ck-set-pack-draft-head">
+                                <div className="ck-set-pack-draft-title">
+                                  <div className="ck-set-pack-draft-title-row">
+                                    <strong>
+                                      {index + 1}. {item.category}
+                                    </strong>
+                                    {item.tag ? <span>{item.tag}</span> : null}
+                                  </div>
+                                </div>
+                                <button
+                                  aria-label="删除"
+                                  className="ck-set-pack-draft-delete"
+                                  onClick={() => setDraftTypes((current) => current.filter((type) => type.id !== item.id))}
+                                  type="button"
+                                >
+                                  <img alt="" aria-hidden="true" src="/assets/set-pack-type-delete-full.svg" />
+                                </button>
                               </div>
-                              <button onClick={() => setDraftTypes((current) => current.filter((type) => type.id !== item.id))} type="button">
-                                删除
-                              </button>
-                            </div>
-                            <UnifiedTextareaField
-                              counterText={`${item.prompt.length}/2000`}
-                              footerClassName="inside"
-                              formBlockClassName="ck-set-pack-copy-block ck-set-pack-copy-input-wrap"
-                              label="描述词"
-                              maxLength={2000}
-                              onChange={(value) =>
-                                setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, prompt: value } : type)))
-                              }
-                              value={item.prompt}
-                              placeholder=""
-                            />
-                            <div className="ck-set-pack-draft-settings">
-                              <div className="ck-set-pack-draft-inline">
-                                <span>出图数量</span>
-                                <div className="ck-number-stepper ck-set-pack-draft-stepper">
-                                  <button
-                                    disabled={(item.count ?? perTypeCount) <= 1}
-                                    onClick={() =>
-                                      setDraftTypes((current) =>
-                                        current.map((type) =>
-                                          type.id === item.id ? { ...type, count: Math.max(1, (type.count ?? perTypeCount) - 1) } : type
-                                        )
-                                      )
-                                    }
-                                    type="button"
-                                  >
-                                    −
-                                  </button>
-                                  <div className="ck-number-stepper-value">{item.count ?? perTypeCount}</div>
-                                  <button
-                                    disabled={(item.count ?? perTypeCount) >= 20}
-                                    onClick={() =>
-                                      setDraftTypes((current) =>
-                                        current.map((type) =>
-                                          type.id === item.id ? { ...type, count: Math.min(20, (type.count ?? perTypeCount) + 1) } : type
-                                        )
-                                      )
-                                    }
-                                    type="button"
-                                  >
-                                    +
-                                  </button>
+                              <div className="ck-set-pack-draft-copy">
+                                <span>描述词</span>
+                                <p>{item.prompt}</p>
+                              </div>
+                              <div className="ck-set-pack-draft-settings">
+                                <div className="ck-set-pack-draft-inline">
+                                  <span>出图比例</span>
+                                  <SelectField
+                                    fullWidth
+                                    hideLabel
+                                    label="图片比例"
+                                    onChange={(value) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, ratio: value } : type)))}
+                                    options={setPackRatioOptions}
+                                    value={item.ratio}
+                                  />
                                 </div>
                               </div>
-                              <div className="ck-set-pack-draft-inline">
-                                <span>出图比例</span>
-                                <SelectField
-                                  fullWidth
-                                  hideLabel
-                                  label="图片比例"
-                                  onChange={(value) => setDraftTypes((current) => current.map((type) => (type.id === item.id ? { ...type, ratio: value } : type)))}
-                                  options={setPackRatioOptions}
-                                  value={item.ratio}
-                                />
-                              </div>
-                            </div>
-                          </article>
-                        ))}
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="ck-set-pack-ai-empty-state">
+                          <strong>分析完成后会自动生成并选用出图类型</strong>
+                          <span>支持结合商品图、商品卖点与补充需求，生成可直接应用到套图的类型方案。</span>
+                        </div>
+                      )}
+                    </div>
+                    {draftTypes.length ? (
+                      <div className="ck-set-pack-selected-actions">
+                        <button className="ck-set-pack-ai-secondary" onClick={() => setModalMode(null)} type="button">
+                          取消
+                        </button>
+                        <button className="ck-set-pack-ai-primary" onClick={handleApplyDraftTypes} type="button">
+                          应用到套图
+                        </button>
                       </div>
-                    ) : (
-                      <div className="ck-set-pack-ai-empty-state">
-                        <strong>分析完成后会自动生成并选用出图类型</strong>
-                        <span>支持结合商品图、商品卖点与补充需求，生成可直接应用到套图的类型方案。</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="ck-set-pack-ai-bottom-actions">
-                    <button onClick={() => setModalMode(null)} type="button">
-                      取消
-                    </button>
-                    <button disabled={!draftTypes.length} onClick={handleApplyDraftTypes} type="button">
-                      应用到套图
-                    </button>
+                    ) : null}
                   </div>
                 </section>
               </div>
@@ -15641,7 +15818,11 @@ function ConfigPanel({
               "videoMainMusicMood",
               "videoMainVisualStyle",
               "videoMainAudience",
-              "videoMainCharacterFit"
+              "videoMainCharacterFit",
+              "videoMainVoiceEnabled",
+              "videoMainVoiceLanguage",
+              "videoMainVoiceTone",
+              "videoMainVoiceCopy"
             ];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
@@ -15663,6 +15844,7 @@ function ConfigPanel({
           }
           onSupplementChange={(value) => onSupplementChange(tool.key, value)}
           onToast={onToast}
+          uploads={uploads[mainUploadKey] ?? []}
           selectedValues={advancedSettingSelections}
           supplementValue={supplementValue}
           toolKey={tool.key}
