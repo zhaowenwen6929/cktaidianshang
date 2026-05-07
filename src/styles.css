@@ -12077,6 +12077,28 @@ textarea {
   padding: 10px 12px;
 }
 
+.ck-panel-tool-video-replica .ck-video-replica-supplement .ck-textarea-wrap {
+  border-radius: 8px;
+  background: #f5f7fd;
+}
+
+.ck-panel-tool-video-replica .ck-video-replica-supplement .ck-textarea-wrap textarea {
+  min-height: 124px;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px 0;
+  color: #1b2337;
+  line-height: 22px;
+}
+
+.ck-panel-tool-video-replica .ck-video-replica-supplement .ck-textarea-wrap textarea::placeholder {
+  color: #8693ab;
+}
+
+.ck-panel-tool-video-replica .ck-video-replica-supplement .ck-textarea-actions {
+  padding: 10px 12px;
+}
+
 /* AI智能电商组图弹框（按设计稿三态覆盖） */
 .ck-set-pack-modal-mask.ck-set-pack-ai-modal-mask {
   align-items: center;

@@ -8229,6 +8229,7 @@ function SupplementField({
   maxLength,
   value,
   onChange,
+  formBlockClassName = "ck-form-block",
   aiPolishConfig,
   onAiPolish,
   onToast
@@ -8238,6 +8239,7 @@ function SupplementField({
   maxLength: number;
   value: string;
   onChange: (value: string) => void;
+  formBlockClassName?: string;
   aiPolishConfig?: SupplementAiPolishConfig;
   onAiPolish?: (value: string) => Promise<SupplementAiPolishResult>;
   onToast: (message: string, tone?: "warning") => void;
@@ -8335,6 +8337,7 @@ function SupplementField({
 
   return (
     <UnifiedTextareaField
+      formBlockClassName={formBlockClassName}
       actions={
         aiPolishConfig ? (
           <div className="ck-ai-polish" ref={containerRef}>
@@ -15867,6 +15870,7 @@ function ConfigPanel({
       return creationModeConfig.showSupplement ? (
         <SupplementField
           aiPolishConfig={supplementAiPolishConfig}
+          formBlockClassName={tool.key === "video-replica" ? "ck-form-block ck-set-pack-selling-points ck-video-replica-supplement" : undefined}
           label={creationModeConfig.supplementLabel}
           maxLength={creationModeConfig.supplementMaxLength}
           onAiPolish={(value) =>
