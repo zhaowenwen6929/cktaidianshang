@@ -810,8 +810,8 @@ const navGroups: Array<{
     tools: [
       { key: "video-main", label: "产品视频", panelTitle: "产品视频", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-replica", label: "爆款复刻", panelTitle: "爆款复刻", resultCount: 4, ratioLabel: "16:9" },
-      { key: "video-remix", label: "智能混剪（待完善）", panelTitle: "智能混剪（待完善）", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-replace", label: "商品替换", panelTitle: "商品替换", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-remix", label: "智能混剪（待完善）", panelTitle: "智能混剪（待完善）", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-match", label: "智能匹配视频（待完善）", panelTitle: "智能匹配视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-ad", label: "广告大片视频（待完善）", panelTitle: "广告大片视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-influencer", label: "达人带货视频（待完善）", panelTitle: "达人带货视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
