@@ -82,6 +82,8 @@ type UploadItem = {
   width?: number;
   height?: number;
   durationSeconds?: number;
+  maskDataUrl?: string;
+  maskLabel?: string;
   sizeMb: number;
   status: "loading" | "ready";
 };
@@ -6218,18 +6220,18 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
     sectionOrder: ["upload-video", "upload-main", "video-replica-setup", "supplement"],
     uploads: {
       main: {
-        label: "上传商品图",
+        label: "上传替换商品图",
         required: true,
         maxCount: 5,
         singleUploadMeta: "（单次最多上传{count}张）",
-        hintTemplate: "最多5张，请上传同一产品多视角图片"
+        hintTemplate: "最多5张，请上传同一商品的多视角图片，用于替换视频中的原商品"
       },
       video: {
-        label: "上传视频",
+        label: "上传原视频",
         required: true,
         maxCount: 1,
         singleUploadMeta: "（单次最多上传{count}个）",
-        hintTemplate: "请上传1个视频，时长2~15s，小于50M，支持MP4/MOV",
+        hintTemplate: "请上传1个待替换商品的视频，时长2~15s，小于50M，支持MP4/MOV",
         maxFileSizeMb: 50,
         minDurationSeconds: 2,
         maxDurationSeconds: 15
@@ -6448,22 +6450,8 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "model-generate": {
     creationModeConfigKey: "spoke",
-    sectionOrder: ["upload-main", "model-generate-setup", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
+    sectionOrder: ["model-generate-setup", "upload-main", "model-generate-parameters", "creation-mode", "upload-reference"],
     modelGenerateTypes,
-    advancedSettings: {
-      title: "高级设置",
-      showAiAssist: false,
-      fields: [],
-      platformIds: [],
-      extraSelects: [
-        {
-          key: "scene",
-          label: "场景",
-          mode: "rich-select",
-          richOptions: modelGenerateSceneOptions
-        }
-      ]
-    },
     uploads: {
       main: {
         label: "上传模特图",
@@ -6830,6 +6818,8 @@ function UploadField({
   values,
   onAdd,
   onRemove,
+  onEditItem,
+  onRefreshItem,
   onOpenLibrary,
   onRejectedUpload,
   onAtLimit,
@@ -7858,7 +7848,7 @@ function RichSelectField({
   }, [open]);
 
   return (
-    <div className={`ck-form-block${fullWidth ? " ck-form-block-full" : ""}`}>
+    <div className={`ck-form-block${fullWidth ? " ck-form-block-full" : ""}${className ? ` ${className}` : ""}`}>
       <div className={fullWidth ? "" : "ck-inline-field"}>
         <FieldTitle label={label} required={required} />
         <div className={`ck-select-dropdown${fullWidth ? " full" : ""}`} ref={dropdownRef}>
@@ -7881,9 +7871,16 @@ function RichSelectField({
                   }}
                   type="button"
                 >
-                  <strong>{option.title}</strong>
-                  <span className="ck-rich-select-recommendation">{option.recommendation}</span>
-                  <span className="ck-rich-select-description">{option.description}</span>
+                  <span className="ck-rich-select-copy">
+                    <strong>{option.title}</strong>
+                    <span className="ck-rich-select-recommendation">{option.recommendation}</span>
+                    <span className="ck-rich-select-description">{option.description}</span>
+                  </span>
+                  {option.thumbnailSrc ? (
+                    <span className="ck-rich-select-thumb">
+                      <img alt={option.title} src={option.thumbnailSrc} />
+                    </span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -8448,7 +8445,7 @@ function AdaptiveChoiceField({
 
   return (
     <div className="ck-form-block">
-      <FieldTitle label={label} required={required} />
+      {label ? <FieldTitle label={label} required={required} /> : null}
       <div className="ck-adaptive-choice-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
         {options.map((option) => (
           <button
@@ -9881,6 +9878,7 @@ function PatternRepeatSetupSection({
   remainingStorageMb: number;
   onAddUpload: (fieldKey: string, nextValues: UploadItem[]) => void;
   onRemoveUpload: (fieldKey: string, index: number) => void;
+  onUpdateUploadItems: (fieldKey: string, updater: (items: UploadItem[]) => UploadItem[]) => void;
   onOpenLibrary: (fieldKey: string) => void;
   onRejectedUpload: (message: string) => void;
   onAtLimit: () => void;
@@ -11022,7 +11020,7 @@ function VideoMainScriptSetupSection({
   );
 }
 
-function ModelGenerateSetupSection({
+function ModelGenerateTypeSection({
   types,
   onSelectionChange,
   onSelectionMapChange,
@@ -11035,22 +11033,26 @@ function ModelGenerateSetupSection({
 }) {
   const defaultTypeKey = types[0]?.key ?? "";
   const [selectedTypeKey, setSelectedTypeKey] = useState(selectedValues?.modelGenerateTypeKey ?? defaultTypeKey);
-  const [gender, setGender] = useState(selectedValues?.gender ?? "");
-  const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
-  const [age, setAge] = useState(selectedValues?.age ?? "");
-  const [persona, setPersona] = useState(selectedValues?.persona ?? "");
-  const [bodyType, setBodyType] = useState(selectedValues?.bodyType ?? "");
+  const skipSelectedValuesSyncRef = useRef(false);
+  const pendingSelectedValuesSignatureRef = useRef("");
   const lastSyncedValuesRef = useRef<string>("");
 
   useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+
     const nextSyncKey = JSON.stringify({
-      modelGenerateTypeKey: selectedValues?.modelGenerateTypeKey ?? defaultTypeKey,
-      gender: selectedValues?.gender ?? "",
-      appearance: selectedValues?.appearance ?? "",
-      age: selectedValues?.age ?? "",
-      persona: selectedValues?.persona ?? "",
-      bodyType: selectedValues?.bodyType ?? ""
+      modelGenerateTypeKey: selectedValues?.modelGenerateTypeKey ?? defaultTypeKey
     });
+
+    if (pendingSelectedValuesSignatureRef.current) {
+      if (nextSyncKey !== pendingSelectedValuesSignatureRef.current) {
+        return;
+      }
+      pendingSelectedValuesSignatureRef.current = "";
+    }
 
     if (nextSyncKey === lastSyncedValuesRef.current) {
       return;
@@ -11058,41 +11060,115 @@ function ModelGenerateSetupSection({
 
     lastSyncedValuesRef.current = nextSyncKey;
     setSelectedTypeKey(selectedValues?.modelGenerateTypeKey ?? defaultTypeKey);
-    setGender(selectedValues?.gender ?? "");
-    setAppearance(selectedValues?.appearance ?? "");
-    setAge(selectedValues?.age ?? "");
-    setPersona(selectedValues?.persona ?? "");
-    setBodyType(selectedValues?.bodyType ?? "");
   }, [defaultTypeKey, selectedValues]);
 
   useEffect(() => {
     const activeType = types.find((item) => item.key === selectedTypeKey) ?? types[0];
-    const nextSelectionMap: AdvancedSelectionMap = {};
-    if (activeType) {
-      nextSelectionMap.modelGenerateTypeKey = activeType.key;
-      nextSelectionMap.modelGenerateType = activeType.label;
+    if (!activeType) return;
+    skipSelectedValuesSyncRef.current = true;
+    const nextSyncKey = JSON.stringify({
+      modelGenerateTypeKey: activeType.key
+    });
+    pendingSelectedValuesSignatureRef.current = nextSyncKey;
+    lastSyncedValuesRef.current = nextSyncKey;
+    onSelectionMapChange?.({
+      modelGenerateTypeKey: activeType.key,
+      modelGenerateType: activeType.label
+    });
+    onSelectionChange?.([activeType.label]);
+  }, [onSelectionChange, onSelectionMapChange, selectedTypeKey, types]);
+
+  return (
+    <AdaptiveChoiceField
+      label=""
+      onChange={setSelectedTypeKey}
+      options={types.map((item) => ({ key: item.key, label: item.label }))}
+      required
+      value={selectedTypeKey}
+    />
+  );
+}
+
+function ModelGenerateFeatureSection({
+  onSelectionChange,
+  onSelectionMapChange,
+  selectedValues
+}: {
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  selectedValues?: AdvancedSelectionMap;
+}) {
+  const [gender, setGender] = useState(selectedValues?.gender ?? "男");
+  const [appearance, setAppearance] = useState(selectedValues?.appearance ?? "");
+  const [age, setAge] = useState(selectedValues?.age ?? "");
+  const [persona, setPersona] = useState(selectedValues?.persona ?? "");
+  const [bodyType, setBodyType] = useState(selectedValues?.bodyType ?? "");
+  const [scene, setScene] = useState(selectedValues?.scene ?? "");
+  const skipSelectedValuesSyncRef = useRef(false);
+  const pendingSelectedValuesSignatureRef = useRef("");
+  const lastSyncedValuesRef = useRef<string>("");
+
+  useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
     }
+
+    const nextSyncKey = JSON.stringify({
+      gender: selectedValues?.gender ?? "男",
+      appearance: selectedValues?.appearance ?? "",
+      age: selectedValues?.age ?? "",
+      persona: selectedValues?.persona ?? "",
+      bodyType: selectedValues?.bodyType ?? "",
+      scene: selectedValues?.scene ?? ""
+    });
+
+    if (pendingSelectedValuesSignatureRef.current) {
+      if (nextSyncKey !== pendingSelectedValuesSignatureRef.current) {
+        return;
+      }
+      pendingSelectedValuesSignatureRef.current = "";
+    }
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setGender(selectedValues?.gender ?? "男");
+    setAppearance(selectedValues?.appearance ?? "");
+    setAge(selectedValues?.age ?? "");
+    setPersona(selectedValues?.persona ?? "");
+    setBodyType(selectedValues?.bodyType ?? "");
+    setScene(selectedValues?.scene ?? "");
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const nextSelectionMap: AdvancedSelectionMap = {};
     if (gender) nextSelectionMap.gender = gender;
     if (appearance) nextSelectionMap.appearance = appearance;
     if (age) nextSelectionMap.age = age;
     if (persona) nextSelectionMap.persona = persona;
     if (bodyType) nextSelectionMap.bodyType = bodyType;
+    if (scene) nextSelectionMap.scene = scene;
+    skipSelectedValuesSyncRef.current = true;
+    const nextSyncKey = JSON.stringify({
+      gender,
+      appearance,
+      age,
+      persona,
+      bodyType,
+      scene
+    });
+    pendingSelectedValuesSignatureRef.current = nextSyncKey;
+    lastSyncedValuesRef.current = nextSyncKey;
     onSelectionMapChange?.(nextSelectionMap);
-    onSelectionChange?.(
-      [activeType?.label ?? "", gender, appearance, age, persona, bodyType].filter(Boolean)
-    );
-  }, [age, appearance, bodyType, gender, onSelectionChange, onSelectionMapChange, persona, selectedTypeKey, types]);
+    onSelectionChange?.([gender, appearance, age, persona, bodyType, scene].filter(Boolean));
+  }, [age, appearance, bodyType, gender, onSelectionChange, onSelectionMapChange, persona, scene]);
 
   return (
     <>
-      <AdaptiveChoiceField
-        label="选择类型"
-        onChange={setSelectedTypeKey}
-        options={types.map((item) => ({ key: item.key, label: item.label }))}
-        required
-        value={selectedTypeKey}
-      />
-
+      <div className="ck-model-generate-section-title">特征设置</div>
       <ModelGenerateParameterFields
         age={age}
         appearance={appearance}
@@ -11105,8 +11181,60 @@ function ModelGenerateSetupSection({
         onPersonaChange={setPersona}
         persona={persona}
       />
+      <RichSelectField
+        className="ck-model-generate-scene-field"
+        fullWidth
+        label="选择场景"
+        onChange={setScene}
+        options={modelGenerateSceneOptions}
+        placeholder="请选择场景"
+        value={scene}
+      />
     </>
   );
+}
+
+function createAutoProtectMaskDataUrl(imageSrc: string, target: ModelGenerateProtectTarget) {
+  if (typeof document === "undefined") return "";
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 640;
+  const context = canvas.getContext("2d");
+  if (!context) return "";
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "rgba(255, 227, 77, 0.28)";
+  context.strokeStyle = "#ffe34d";
+
+  if (target === "hair") {
+    context.beginPath();
+    context.ellipse(canvas.width / 2, 148, 118, 94, 0, 0, Math.PI * 2);
+    context.fill();
+    context.lineWidth = 6;
+    context.stroke();
+
+    context.beginPath();
+    context.ellipse(canvas.width / 2, 190, 136, 72, 0, 0, Math.PI);
+    context.fill();
+    context.stroke();
+  } else {
+    context.beginPath();
+    context.roundRect(156, 178, 328, 364, 84);
+    context.fill();
+    context.lineWidth = 6;
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(214, 212);
+    context.quadraticCurveTo(320, 132, 426, 212);
+    context.lineTo(468, 448);
+    context.quadraticCurveTo(320, 566, 172, 448);
+    context.closePath();
+    context.fill();
+    context.stroke();
+  }
+
+  return canvas.toDataURL("image/png");
 }
 
 function ModelGenerateParameterFields({
@@ -12151,17 +12279,20 @@ function LineartStyleSection({
 function MaskEditorModal({
   imageSrc,
   initialMaskDataUrl,
+  autoTargetLabel,
   onClose,
   onSave
 }: {
   imageSrc: string;
   initialMaskDataUrl?: string;
+  autoTargetLabel?: string;
   onClose: () => void;
   onSave: (maskDataUrl: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [tool, setTool] = useState<"brush" | "rect" | "circle">("rect");
+  const [tool, setTool] = useState<"auto" | "add" | "erase">("auto");
+  const [brushSize, setBrushSize] = useState(20);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
@@ -12268,21 +12399,31 @@ function MaskEditorModal({
     pushHistory();
   };
 
+  const drawBrushPoint = (context: CanvasRenderingContext2D, point: { x: number; y: number }) => {
+    context.beginPath();
+    context.arc(point.x, point.y, Math.max(6, brushSize / 2), 0, Math.PI * 2);
+    if (tool === "erase") {
+      context.fill();
+      return;
+    }
+    context.fill();
+  };
+
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const point = getPoint(event);
     const context = getContext();
     if (!point || !context) return;
     setIsDrawing(true);
     setLastPoint(point);
-    context.globalCompositeOperation = "source-over";
+    context.globalCompositeOperation = tool === "erase" ? "destination-out" : "source-over";
     context.strokeStyle = "#ffe34d";
-    context.fillStyle = "rgba(255, 227, 77, 0.18)";
-    context.lineWidth = 14;
-
-    if (tool === "brush") {
-      context.beginPath();
-      context.moveTo(point.x, point.y);
-    }
+    context.fillStyle = tool === "erase" ? "rgba(0,0,0,1)" : "rgba(255, 227, 77, 0.28)";
+    context.lineWidth = brushSize;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.beginPath();
+    context.moveTo(point.x, point.y);
+    drawBrushPoint(context, point);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -12290,45 +12431,19 @@ function MaskEditorModal({
     const point = getPoint(event);
     const context = getContext();
     if (!point || !context || !lastPoint) return;
-
-    if (tool === "brush") {
-      context.lineTo(point.x, point.y);
-      context.stroke();
-      setLastPoint(point);
-    }
+    context.globalCompositeOperation = tool === "erase" ? "destination-out" : "source-over";
+    context.strokeStyle = "#ffe34d";
+    context.fillStyle = tool === "erase" ? "rgba(0,0,0,1)" : "rgba(255, 227, 77, 0.28)";
+    context.lineWidth = brushSize;
+    context.beginPath();
+    context.moveTo(lastPoint.x, lastPoint.y);
+    context.lineTo(point.x, point.y);
+    context.stroke();
+    drawBrushPoint(context, point);
+    setLastPoint(point);
   };
 
-  const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const point = getPoint(event);
-    const context = getContext();
-    if (!context) return;
-
-    if (isDrawing && lastPoint && point && (tool === "rect" || tool === "circle")) {
-      const width = point.x - lastPoint.x;
-      const height = point.y - lastPoint.y;
-      context.globalCompositeOperation = "source-over";
-      context.strokeStyle = "#ffe34d";
-      context.fillStyle = "rgba(255, 227, 77, 0.18)";
-      context.lineWidth = 4;
-      if (tool === "rect") {
-        context.fillRect(lastPoint.x, lastPoint.y, width, height);
-        context.strokeRect(lastPoint.x, lastPoint.y, width, height);
-      } else {
-        context.beginPath();
-        context.ellipse(
-          lastPoint.x + width / 2,
-          lastPoint.y + height / 2,
-          Math.abs(width / 2),
-          Math.abs(height / 2),
-          0,
-          0,
-          Math.PI * 2
-        );
-        context.fill();
-        context.stroke();
-      }
-    }
-
+  const handlePointerUp = () => {
     if (isDrawing) {
       pushHistory();
     }
@@ -12343,9 +12458,9 @@ function MaskEditorModal({
           <div className="ck-mask-editor-toolbar">
             <div className="ck-task-rail-mode-switch ck-mask-editor-tools">
               {[
-                ["brush", "涂抹"],
-                ["rect", "框选"],
-                ["circle", "圈选"]
+                ["auto", "自动识别"],
+                ["add", "添加选区"],
+                ["erase", "去除选区"]
               ].map(([key, label]) => (
                 <button
                   className={tool === key ? "active" : ""}
@@ -12357,12 +12472,29 @@ function MaskEditorModal({
                 </button>
               ))}
             </div>
+            <div className="ck-mask-editor-brush">
+              <span>涂抹大小</span>
+              <input max={48} min={8} onChange={(event) => setBrushSize(Number(event.target.value))} type="range" value={brushSize} />
+            </div>
             <div className="ck-mask-editor-actions">
+              <button
+                onClick={() => {
+                  if (!autoTargetLabel) return;
+                  restoreDataUrl(initialMaskDataUrl);
+                  setHistory(initialMaskDataUrl ? [initialMaskDataUrl] : []);
+                  setRedoHistory([]);
+                }}
+                type="button"
+              >
+                重新识别
+              </button>
               <button onClick={handleUndo} type="button">撤销</button>
+              <button disabled={!redoHistory.length} onClick={handleRedo} type="button">重做</button>
               <button onClick={handleClear} type="button">清空</button>
             </div>
           </div>
         </div>
+        {autoTargetLabel ? <div className="ck-mask-editor-tip">已自动识别{autoTargetLabel}，可手动优化细节</div> : null}
         <div className="ck-mask-editor-stage">
           <div className="ck-mask-editor-canvas-wrap">
             <img alt="待编辑图片" ref={imageRef} src={imageSrc} />
@@ -12467,11 +12599,11 @@ function MaskDrawSection({
       </div>
 
       {isOpen ? (
-        <MaskEditorModal
-          imageSrc={primaryImage}
-          initialMaskDataUrl={maskDataUrl}
-          onClose={() => setIsOpen(false)}
-          onSave={(nextMaskDataUrl) => {
+      <MaskEditorModal
+        imageSrc={primaryImage}
+        initialMaskDataUrl={maskDataUrl}
+        onClose={() => setIsOpen(false)}
+        onSave={(nextMaskDataUrl) => {
             onSelectionMapChange?.({ [maskKey]: nextMaskDataUrl });
             onSelectionChange?.(["已绘制蒙版"]);
             setIsOpen(false);
@@ -15043,6 +15175,7 @@ function ConfigPanel({
   onNavigateTool,
   onGenerateBaselineModel,
   onUploadModels,
+  onUpdateUploadItems,
   isGeneratingLocked
 }: {
   tool: ToolConfig;
@@ -15050,6 +15183,7 @@ function ConfigPanel({
   modelAssets: ModelAsset[];
   onAddUpload: (fieldKey: string, nextValues: UploadItem[]) => void;
   onRemoveUpload: (fieldKey: string, index: number) => void;
+  onUpdateUploadItems: (fieldKey: string, updater: (items: UploadItem[]) => UploadItem[]) => void;
   onOpenLibrary: (fieldKey: string) => void;
   onRejectedUpload: (message: string) => void;
   onAtLimit: () => void;
@@ -15108,6 +15242,7 @@ function ConfigPanel({
   const [advancedSettingValues, setAdvancedSettingValues] = useState<string[]>([]);
   const [advancedSettingSelections, setAdvancedSettingSelections] = useState<AdvancedSelectionMap>({});
   const [targetLanguageValue, setTargetLanguageValue] = useState("");
+  const [editingUploadState, setEditingUploadState] = useState<{ fieldKey: string; index: number } | null>(null);
   const isWatermarkManualMode = tool.key === "image-watermark" && advancedSettingSelections.watermarkModeKey === "manual";
   const mainUploadCountLimit = isWatermarkManualMode ? 1 : mainUploadConfig.maxCount ?? uploadCountLimit;
   const refUploadCountLimit = refUploadConfig?.maxCount ?? uploadCountLimit;
@@ -15189,6 +15324,9 @@ function ConfigPanel({
   const isFashionTool = tool.key === "set-fashion";
   const showAplusPlanStep = isAplusTool && aplusPlanStep === 2;
   const showFashionPlanStep = isFashionTool && fashionPlanStep === 2;
+  const modelGenerateProtectTarget = modelGenerateProtectTargetByType[advancedSettingSelections.modelGenerateTypeKey ?? ""] ?? "apparel";
+  const modelGenerateProtectLabel = modelGenerateProtectTarget === "hair" ? "头发保护区" : "服饰保护区";
+  const editingUploadItem = editingUploadState ? uploads[editingUploadState.fieldKey]?.[editingUploadState.index] ?? null : null;
   const effectiveGenerateCostLabel =
     showFashionPlanStep && fashionPlan?.modules.length
       ? (() => {
@@ -15248,22 +15386,100 @@ function ConfigPanel({
   const renderSection = (section: ToolModuleSectionKey) => {
     if (section === "upload-main") {
       return (
-        <UploadField
-          fieldKey={mainUploadKey}
-          hint={mainUploadHint}
-          label={mainUploadConfig.label}
-          maxCount={mainUploadCountLimit}
-          meta={mainUploadMeta}
-          onAdd={onAddUpload}
-          onAtLimit={onAtLimit}
-          onOpenLibrary={onOpenLibrary}
-          onRejectedUpload={onRejectedUpload}
-          onRemove={onRemoveUpload}
-          remainingStorageMb={remainingStorageMb}
-          required={mainUploadConfig.required}
-          values={uploads[mainUploadKey] ?? []}
-        />
+        <>
+          <UploadField
+            fieldKey={mainUploadKey}
+            hint={mainUploadHint}
+            label={mainUploadConfig.label}
+            maxCount={mainUploadCountLimit}
+            meta={mainUploadMeta}
+            onAdd={onAddUpload}
+            onAtLimit={onAtLimit}
+            onEditItem={
+              tool.key === "model-generate"
+                ? (fieldKey, index) => {
+                    setEditingUploadState({ fieldKey, index });
+                  }
+                : undefined
+            }
+            onRefreshItem={
+              tool.key === "model-generate"
+                ? (fieldKey, index) => {
+                    onUpdateUploadItems(fieldKey, (currentItems) =>
+                      currentItems.map((item, currentIndex) =>
+                        currentIndex === index && item.src
+                          ? {
+                              ...item,
+                              maskDataUrl: createAutoProtectMaskDataUrl(item.src, modelGenerateProtectTarget),
+                              maskLabel: modelGenerateProtectLabel
+                            }
+                          : item
+                      )
+                    );
+                  }
+                : undefined
+            }
+            onOpenLibrary={onOpenLibrary}
+            onRejectedUpload={onRejectedUpload}
+            onRemove={onRemoveUpload}
+            remainingStorageMb={remainingStorageMb}
+            required={mainUploadConfig.required}
+            values={uploads[mainUploadKey] ?? []}
+          />
+        </>
       );
+    }
+
+    if (section === "model-generate-setup") {
+      return toolModuleConfig.modelGenerateTypes?.length ? (
+        <ModelGenerateTypeSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["modelGenerateTypeKey", "modelGenerateType"];
+            const nextTypeKey = values.modelGenerateTypeKey ?? advancedSettingSelections.modelGenerateTypeKey ?? toolModuleConfig.modelGenerateTypes?.[0]?.key ?? "";
+            const nextTarget = modelGenerateProtectTargetByType[nextTypeKey] ?? "apparel";
+            const nextMaskLabel = nextTarget === "hair" ? "头发保护区" : "服饰保护区";
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+            if (tool.key === "model-generate") {
+              onUpdateUploadItems(mainUploadKey, (currentMainUploads) => {
+                if (!currentMainUploads.length) return currentMainUploads;
+                return currentMainUploads.map((item) => ({
+                  ...item,
+                  maskLabel: nextMaskLabel,
+                  maskDataUrl: item.status === "ready" && item.src ? createAutoProtectMaskDataUrl(item.src, nextTarget) : item.maskDataUrl
+                }));
+              });
+            }
+          }}
+          selectedValues={advancedSettingSelections}
+          types={toolModuleConfig.modelGenerateTypes}
+        />
+      ) : null;
+    }
+
+    if (section === "model-generate-parameters") {
+      return toolModuleConfig.modelGenerateTypes?.length ? (
+        <ModelGenerateFeatureSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["gender", "appearance", "age", "persona", "bodyType", "scene"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      ) : null;
     }
 
     if (section === "advanced-settings") {
@@ -15436,26 +15652,6 @@ function ConfigPanel({
           selectedValues={advancedSettingSelections}
           supplementValue={supplementValue}
           toolKey={tool.key}
-        />
-      ) : null;
-    }
-
-    if (section === "model-generate-setup") {
-      return toolModuleConfig.modelGenerateTypes?.length ? (
-        <ModelGenerateSetupSection
-          onSelectionChange={setAdvancedSettingValues}
-          onSelectionMapChange={(values) => {
-            const sectionKeys = ["modelGenerateTypeKey", "modelGenerateType", "gender", "appearance", "age", "persona", "bodyType"];
-            setAdvancedSettingSelections((current) => {
-              const nextSelections = { ...current };
-              sectionKeys.forEach((key) => {
-                delete nextSelections[key];
-              });
-              return { ...nextSelections, ...values };
-            });
-          }}
-          selectedValues={advancedSettingSelections}
-          types={toolModuleConfig.modelGenerateTypes}
         />
       ) : null;
     }
@@ -15678,6 +15874,7 @@ function ConfigPanel({
           onRejectedUpload={onRejectedUpload}
           onRemoveUpload={onRemoveUpload}
           onSelectionChange={setAdvancedSettingValues}
+          onUpdateUploadItems={onUpdateUploadItems}
           onSelectionMapChange={(values) => {
             const sectionKeys = [
               "patternRepeatType",
