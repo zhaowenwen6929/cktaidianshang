@@ -16317,6 +16317,8 @@ function ConfigPanel({
       const supplementFormBlockClassName =
         tool.key === "video-replica"
           ? "ck-form-block ck-set-pack-selling-points ck-video-replica-supplement"
+          : tool.key === "video-replace"
+            ? "ck-form-block ck-set-pack-selling-points ck-video-script-detail"
           : tool.key === "model-adjust"
             ? "ck-form-block ck-set-pack-selling-points ck-model-input-detail"
             : undefined;
