@@ -1,0 +1,1720 @@
+[
+  {
+    "platform": "amazon",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 98,
+    "platform_notes": "Amazon A+ 首页主视觉核心模块",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化",
+      "不使用主图白底规范替代A+逻辑"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "适合 Amazon A+ 卖点强化",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合补充真实使用场景与价值代入",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 68,
+    "platform_notes": "适合作为氛围补充模块",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 68,
+    "platform_notes": "适合有品牌心智的商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合尺寸、容量和尺码说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合通过对比强化理解与转化",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "参数模块适合 Amazon A+ 详情表达",
+    "platform_constraints": [
+      "参数信息不得虚构"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合工艺、结构和品质背书说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合配件、包装内容和清单展示",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合多色、多款和SKU系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 60,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合作为详情首屏价值引导",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "Temu 详情更强调价值点直给和转化效率",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读",
+      "强调价格价值感和信息读取效率"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合补充真实使用场景与价值代入",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 62,
+    "platform_notes": "仅适合作为辅助氛围补充",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 50,
+    "platform_notes": "适合品牌型商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值",
+      "避免过重品牌叙事影响转化"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合尺寸、容量和尺码说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合对比型卖点快速理解",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "适合参数与规格信息结构化表达",
+    "platform_constraints": [
+      "参数信息不得虚构"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合工艺、结构和品质背书说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合配件、包装内容和清单展示",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合多色、多款和SKU系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 66,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "TikTok Shop 首屏需要更强吸引力",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化",
+      "强化首屏抓眼力，但商品仍需清楚可辨"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "适合核心卖点强化与收益表达",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合生活方式场景和快速理解表达",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合增强抓眼氛围和停留感",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 62,
+    "platform_notes": "适合品牌型商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合尺寸、容量和尺码说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合通过对比强化理解与转化",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合参数与规格信息结构化表达",
+    "platform_constraints": [
+      "参数信息不得虚构",
+      "避免过度参数堆叠影响浏览节奏"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合工艺、结构和品质背书说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合配件、包装内容和清单展示",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合多色、多款和SKU系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 62,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合作为详情首屏价值引导",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 98,
+    "platform_notes": "适合商品优势直观输出",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读",
+      "避免堆砌复杂本地化符号"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合补充真实使用场景与价值代入",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 68,
+    "platform_notes": "适合作为氛围补充模块",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 54,
+    "platform_notes": "适合品牌型商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合尺寸、容量和尺码说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合通过对比强化理解与转化",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 98,
+    "platform_notes": "速卖通适合全球消费者易理解的规格表达",
+    "platform_constraints": [
+      "参数信息不得虚构",
+      "信息结构需利于跨语境理解"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合工艺、结构和品质背书说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合包装清单和随箱内容说明",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合多色、多款和SKU系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 62,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合作为详情首屏价值引导",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 99,
+    "platform_notes": "Shopee 详情页卖点模块优先级高",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读",
+      "保持转化导向，避免无效留白"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合场景与商品关系直接明了的表达",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 66,
+    "platform_notes": "适合作为氛围补充模块",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 52,
+    "platform_notes": "适合品牌型商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合补充规格与容量说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合通过对比强化理解与转化",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合参数与规格信息结构化表达",
+    "platform_constraints": [
+      "参数信息不得虚构"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合工艺、结构和品质背书说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合配件、包装内容和清单展示",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合多色、多款和SKU系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 66,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合作为详情首屏价值引导",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "卖点表达应规范直接",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读",
+      "避免夸张营销话术"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合补充真实使用场景与价值代入",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主",
+      "偏使用价值说明而非强生活方式种草"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 60,
+    "platform_notes": "适合作为氛围补充模块",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 48,
+    "platform_notes": "适合品牌型商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合尺寸、容量和尺码说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合通过对比强化理解与转化",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "OZON 用户更依赖理性清晰的参数说明",
+    "platform_constraints": [
+      "参数信息不得虚构"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合结构、工艺与品质说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合配件、包装内容和清单展示",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合多色、多款和SKU系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 62,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合作为详情首屏价值引导",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合核心卖点强化与收益表达",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合应用场景展示",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 54,
+    "platform_notes": "适合作为氛围补充模块",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 42,
+    "platform_notes": "适合品牌型商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值",
+      "不作为工业和B端商品主模块"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合尺寸、容量和尺码说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合通过对比强化理解与转化",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "阿里国际站 B2B/B2C 参数模块核心",
+    "platform_constraints": [
+      "参数信息不得虚构",
+      "强调结构、规格、应用与可信度"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "适合制作工艺和品质说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合包装与配件清单",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 70,
+    "platform_notes": "适合多色、多款和SKU系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 66,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-hero",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "SHEIN 适合年轻化强视觉首屏",
+    "platform_constraints": [
+      "强调商品主体与核心价值",
+      "避免促销海报化",
+      "强调年轻感、颜色吸引力和版式节奏"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-core-selling",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合核心卖点强化与收益表达",
+    "platform_constraints": [
+      "卖点需真实可信",
+      "标题要直给易读"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-scene-usage",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "适合穿搭或生活方式氛围表达",
+    "platform_constraints": [
+      "商品主体必须清晰",
+      "场景不可喧宾夺主"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-multi-angle",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合补充多视角外观与结构理解",
+    "platform_constraints": [
+      "角度和结构必须一致真实"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-atmosphere",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合强化潮流氛围",
+    "platform_constraints": [
+      "不能弱化商品识别度"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-detail",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化材质、做工和细节质感",
+    "platform_constraints": [
+      "细节表达必须真实可对应"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-brand-story",
+    "is_allowed": true,
+    "priority": 64,
+    "platform_notes": "适合品牌型商品补充表达",
+    "platform_constraints": [
+      "品牌叙事不能压过商品价值"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-size",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合尺寸、容量和尺码说明",
+    "platform_constraints": [
+      "数值和比例不得虚构"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-compare",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合通过对比强化理解与转化",
+    "platform_constraints": [
+      "对比关系需真实，不得夸张"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-spec",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合参数与规格信息结构化表达",
+    "platform_constraints": [
+      "参数信息不得虚构",
+      "参数区应轻量，避免破坏时尚浏览感"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-craft",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合工艺、结构和品质背书说明",
+    "platform_constraints": [
+      "工艺流程需真实可信"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-accessories",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合配件、包装内容和清单展示",
+    "platform_constraints": [
+      "配件和清单不得遗漏或虚构"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-series",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合颜色、款式和系列展示",
+    "platform_constraints": [
+      "不得展示不存在的变体"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-ingredient",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合成分、配方或材质类信息表达",
+    "platform_constraints": [
+      "成分与材质信息必须已确认"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-after-sale",
+    "is_allowed": true,
+    "priority": 62,
+    "platform_notes": "适合作为售后与保障补充模块",
+    "platform_constraints": [
+      "服务承诺不得虚构"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-usage-advice",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充使用方法与注意事项",
+    "platform_constraints": [
+      "建议内容要真实准确"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合服饰与家居类适配说明",
+    "platform_constraints": [
+      "版型/适配说明需真实可信"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合功能拆解与结构说明",
+    "platform_constraints": [
+      "结构和功能点需一一对应"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合家具家居类空间适配说明",
+    "platform_constraints": [
+      "空间比例和尺寸需真实"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充适用对象说明",
+    "platform_constraints": [
+      "人群描述应克制且有依据"
+    ]
+  },
+  {
+    "platform": "amazon",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合做理性对比说明",
+    "platform_constraints": [
+      "对比信息不得夸张"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合快速说明版型与适配效果",
+    "platform_constraints": [
+      "表达需直给易懂"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "Temu 适合功能拆解和价值点直给",
+    "platform_constraints": [
+      "强调功能收益和读取效率"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合作为空间适配补充模块",
+    "platform_constraints": [
+      "避免复杂空间叙事"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合说明谁最适合购买",
+    "platform_constraints": [
+      "人群与利益点需前置"
+    ]
+  },
+  {
+    "platform": "temu",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合快速做差异对比",
+    "platform_constraints": [
+      "对比要强但真实"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合上身/使用效果说明",
+    "platform_constraints": [
+      "强调代入感和真实效果"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合作为功能亮点补充",
+    "platform_constraints": [
+      "节奏要快，避免过度技术化"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合通过场景展示空间适配",
+    "platform_constraints": [
+      "保持画面抓眼和易懂"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合说明适合谁用，增强代入感",
+    "platform_constraints": [
+      "人群表达要清晰易感知"
+    ]
+  },
+  {
+    "platform": "tiktok-shop",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合抓重点做差异说明",
+    "platform_constraints": [
+      "差异表达要短平快"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合服饰/家居类适配补充说明",
+    "platform_constraints": [
+      "表达需跨语境易理解"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合做功能拆解说明",
+    "platform_constraints": [
+      "功能逻辑要全球消费者易读"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合作为空间适配补充",
+    "platform_constraints": [
+      "空间表达需直观规范"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合补充适用对象说明",
+    "platform_constraints": [
+      "避免强地域化人群表达"
+    ]
+  },
+  {
+    "platform": "aliexpress",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合方案差异说明",
+    "platform_constraints": [
+      "对比关系需明确规范"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合版型与适配效果说明",
+    "platform_constraints": [
+      "信息要清楚直给"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合功能拆解与价值点说明",
+    "platform_constraints": [
+      "功能收益表达需明确"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合作为空间类商品补充",
+    "platform_constraints": [
+      "空间适配需配合场景直观呈现"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 74,
+    "platform_notes": "适合说明适用对象",
+    "platform_constraints": [
+      "表达应直接有效"
+    ]
+  },
+  {
+    "platform": "shopee",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合做选择理由对比",
+    "platform_constraints": [
+      "对比项应清晰简洁"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 70,
+    "platform_notes": "适合服饰与尺寸适配补充",
+    "platform_constraints": [
+      "避免情绪化描述"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "OZON 适合功能与结构理性拆解",
+    "platform_constraints": [
+      "说明需规范直接"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合作为空间适配补充",
+    "platform_constraints": [
+      "重点突出可理解性"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 68,
+    "platform_notes": "适合补充适用对象说明",
+    "platform_constraints": [
+      "人群描述需克制准确"
+    ]
+  },
+  {
+    "platform": "ozon",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合参数和方案对比说明",
+    "platform_constraints": [
+      "强调可验证的差异点"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 56,
+    "platform_notes": "阿里国际站不以版型说明为主模块",
+    "platform_constraints": [
+      "优先结构、规格、应用说明"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合功能拆解与专业结构说明",
+    "platform_constraints": [
+      "功能逻辑需服务B端判断"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合空间、安装或场地适配说明",
+    "platform_constraints": [
+      "适配关系需专业清晰"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合说明适用对象、行业或采购场景",
+    "platform_constraints": [
+      "对象说明需专业准确"
+    ]
+  },
+  {
+    "platform": "alibaba-international",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合方案、型号和配置对比",
+    "platform_constraints": [
+      "对比维度需明确且可信"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-fit",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "SHEIN 适合版型、穿搭与上身效果说明",
+    "platform_constraints": [
+      "强调年轻化和穿搭氛围"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-function",
+    "is_allowed": true,
+    "priority": 70,
+    "platform_notes": "适合作为轻量功能补充",
+    "platform_constraints": [
+      "避免破坏时尚浏览感"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-space-fit",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合家居或生活方式空间适配补充",
+    "platform_constraints": [
+      "画面需保持时尚感"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-audience",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合说明适合人群和风格对象",
+    "platform_constraints": [
+      "强调人群气质与使用场景"
+    ]
+  },
+  {
+    "platform": "shein",
+    "module_key": "aplus-comparison",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合做轻量差异说明",
+    "platform_constraints": [
+      "不宜过度理工化"
+    ]
+  }
+]

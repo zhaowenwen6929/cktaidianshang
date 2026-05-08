@@ -1,0 +1,362 @@
+[
+  {
+    "platform": "taobao",
+    "category_key": "fashion_apparel",
+    "priority": 95,
+    "preferred_image_types": ["core_selling_point", "fit_explanation", "detail_closeup", "styling_scene", "try_on_or_demo"]
+  },
+  {
+    "platform": "taobao",
+    "category_key": "beauty_personal_care",
+    "priority": 92,
+    "preferred_image_types": ["core_selling_point", "ingredient_highlight", "usage_step", "detail_closeup", "scene_image"]
+  },
+  {
+    "platform": "taobao",
+    "category_key": "home_living",
+    "priority": 88,
+    "preferred_image_types": ["scene_image", "space_fit", "usage_comparison", "specification_chart"]
+  },
+  {
+    "platform": "taobao",
+    "category_key": "consumer_electronics",
+    "priority": 90,
+    "preferred_image_types": ["function_explain", "specification_chart", "parts_accessories", "compatibility_info"]
+  },
+  {
+    "platform": "tmall",
+    "category_key": "fashion_apparel",
+    "priority": 96,
+    "preferred_image_types": ["material_craft", "fit_explanation", "styling_scene", "hero_banner", "detail_closeup"]
+  },
+  {
+    "platform": "tmall",
+    "category_key": "beauty_personal_care",
+    "priority": 94,
+    "preferred_image_types": ["ingredient_highlight", "detail_closeup", "usage_step", "hero_banner", "scene_image"]
+  },
+  {
+    "platform": "tmall",
+    "category_key": "home_appliance",
+    "priority": 90,
+    "preferred_image_types": ["function_explain", "specification_chart", "scene_image", "parts_accessories"]
+  },
+  {
+    "platform": "jd",
+    "category_key": "consumer_electronics",
+    "priority": 98,
+    "preferred_image_types": ["function_explain", "specification_chart", "compatibility_info", "detail_closeup", "parts_accessories"]
+  },
+  {
+    "platform": "jd",
+    "category_key": "home_appliance",
+    "priority": 96,
+    "preferred_image_types": ["function_explain", "usage_step", "specification_chart", "parts_accessories"]
+  },
+  {
+    "platform": "jd",
+    "category_key": "home_living",
+    "priority": 84,
+    "preferred_image_types": ["specification_chart", "usage_comparison", "scene_image", "space_fit"]
+  },
+  {
+    "platform": "jd",
+    "category_key": "beauty_personal_care",
+    "priority": 82,
+    "preferred_image_types": ["ingredient_highlight", "usage_step", "detail_closeup", "core_selling_point"]
+  },
+  {
+    "platform": "pinduoduo",
+    "category_key": "home_living",
+    "priority": 94,
+    "preferred_image_types": ["core_selling_point", "usage_comparison", "specification_chart", "scene_image"]
+  },
+  {
+    "platform": "pinduoduo",
+    "category_key": "storage_cleaning",
+    "priority": 95,
+    "preferred_image_types": ["usage_comparison", "space_fit", "core_selling_point", "function_explain"]
+  },
+  {
+    "platform": "pinduoduo",
+    "category_key": "fashion_apparel",
+    "priority": 90,
+    "preferred_image_types": ["core_selling_point", "fit_explanation", "detail_closeup", "try_on_or_demo"]
+  },
+  {
+    "platform": "pinduoduo",
+    "category_key": "kitchen_tableware",
+    "priority": 91,
+    "preferred_image_types": ["core_selling_point", "usage_comparison", "scene_image", "specification_chart"]
+  },
+  {
+    "platform": "1688",
+    "category_key": "industrial_goods",
+    "priority": 100,
+    "preferred_image_types": ["b2b_industrial_sheet", "specification_chart", "compatibility_info", "packaging_display", "detail_feature"]
+  },
+  {
+    "platform": "1688",
+    "category_key": "hardware_tools",
+    "priority": 98,
+    "preferred_image_types": ["b2b_industrial_sheet", "function_explain", "detail_closeup", "usage_step", "specification_chart"]
+  },
+  {
+    "platform": "1688",
+    "category_key": "commercial_equipment",
+    "priority": 97,
+    "preferred_image_types": ["b2b_industrial_sheet", "specification_chart", "function_explain", "scene_image"]
+  },
+  {
+    "platform": "1688",
+    "category_key": "packaging_supplies",
+    "priority": 94,
+    "preferred_image_types": ["specification_chart", "b2b_industrial_sheet", "usage_comparison", "packaging_display"]
+  },
+  {
+    "platform": "douyin",
+    "category_key": "beauty_personal_care",
+    "priority": 98,
+    "preferred_image_types": ["short_video_cover", "usage_step", "scene_image", "ingredient_highlight", "human_interaction"]
+  },
+  {
+    "platform": "douyin",
+    "category_key": "fashion_apparel",
+    "priority": 96,
+    "preferred_image_types": ["short_video_cover", "try_on_or_demo", "styling_scene", "core_selling_point"]
+  },
+  {
+    "platform": "douyin",
+    "category_key": "home_appliance",
+    "priority": 92,
+    "preferred_image_types": ["short_video_cover", "function_explain", "usage_step", "scene_image"]
+  },
+  {
+    "platform": "douyin",
+    "category_key": "food_beverage",
+    "priority": 90,
+    "preferred_image_types": ["short_video_cover", "scene_image", "core_selling_point", "holiday_campaign"]
+  },
+  {
+    "platform": "kuaishou",
+    "category_key": "home_living",
+    "priority": 92,
+    "preferred_image_types": ["short_video_cover", "core_selling_point", "usage_comparison", "scene_image"]
+  },
+  {
+    "platform": "kuaishou",
+    "category_key": "beauty_personal_care",
+    "priority": 91,
+    "preferred_image_types": ["short_video_cover", "core_selling_point", "usage_step", "detail_closeup"]
+  },
+  {
+    "platform": "kuaishou",
+    "category_key": "consumer_electronics",
+    "priority": 88,
+    "preferred_image_types": ["short_video_cover", "function_explain", "specification_chart", "usage_comparison"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "category_key": "fashion_apparel",
+    "priority": 100,
+    "preferred_image_types": ["lifestyle_image", "styling_scene", "try_on_or_demo", "detail_closeup", "hero_banner"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "category_key": "beauty_personal_care",
+    "priority": 98,
+    "preferred_image_types": ["lifestyle_image", "short_video_cover", "ingredient_highlight", "usage_step", "human_interaction"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "category_key": "home_textile",
+    "priority": 90,
+    "preferred_image_types": ["lifestyle_image", "scene_image", "material_craft", "space_fit"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "category_key": "gifts_culture",
+    "priority": 92,
+    "preferred_image_types": ["lifestyle_image", "hero_banner", "packaging_display", "holiday_campaign"]
+  },
+  {
+    "platform": "amazon",
+    "category_key": "consumer_electronics",
+    "priority": 100,
+    "preferred_image_types": ["amazon_main", "amazon_sub", "specification_chart", "function_explain", "compatibility_info"]
+  },
+  {
+    "platform": "amazon",
+    "category_key": "home_appliance",
+    "priority": 98,
+    "preferred_image_types": ["amazon_main", "amazon_sub", "function_explain", "usage_step", "specification_chart"]
+  },
+  {
+    "platform": "amazon",
+    "category_key": "fashion_apparel",
+    "priority": 94,
+    "preferred_image_types": ["amazon_main", "multi_angle", "detail_closeup", "fit_explanation", "size_reference"]
+  },
+  {
+    "platform": "amazon",
+    "category_key": "home_living",
+    "priority": 92,
+    "preferred_image_types": ["amazon_main", "specification_chart", "scene_image", "space_fit", "detail_feature"]
+  },
+  {
+    "platform": "temu",
+    "category_key": "home_living",
+    "priority": 96,
+    "preferred_image_types": ["product_white_bg", "core_selling_point", "usage_comparison", "specification_chart"]
+  },
+  {
+    "platform": "temu",
+    "category_key": "fashion_apparel",
+    "priority": 92,
+    "preferred_image_types": ["product_white_bg", "core_selling_point", "detail_closeup", "fit_explanation"]
+  },
+  {
+    "platform": "temu",
+    "category_key": "kitchen_tableware",
+    "priority": 93,
+    "preferred_image_types": ["product_white_bg", "core_selling_point", "scene_image", "usage_comparison"]
+  },
+  {
+    "platform": "temu",
+    "category_key": "storage_cleaning",
+    "priority": 94,
+    "preferred_image_types": ["core_selling_point", "usage_comparison", "space_fit", "function_explain"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "category_key": "beauty_personal_care",
+    "priority": 99,
+    "preferred_image_types": ["short_video_cover", "usage_step", "scene_image", "human_interaction", "ingredient_highlight"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "category_key": "fashion_apparel",
+    "priority": 98,
+    "preferred_image_types": ["short_video_cover", "try_on_or_demo", "styling_scene", "human_interaction"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "category_key": "home_appliance",
+    "priority": 90,
+    "preferred_image_types": ["short_video_cover", "function_explain", "usage_step", "scene_image"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "category_key": "gifts_culture",
+    "priority": 88,
+    "preferred_image_types": ["short_video_cover", "hero_banner", "holiday_campaign", "lifestyle_image"]
+  },
+  {
+    "platform": "alibaba_international",
+    "category_key": "industrial_goods",
+    "priority": 100,
+    "preferred_image_types": ["b2b_industrial_sheet", "specification_chart", "compatibility_info", "packaging_display", "detail_feature"]
+  },
+  {
+    "platform": "alibaba_international",
+    "category_key": "commercial_equipment",
+    "priority": 99,
+    "preferred_image_types": ["b2b_industrial_sheet", "function_explain", "specification_chart", "scene_image"]
+  },
+  {
+    "platform": "alibaba_international",
+    "category_key": "packaging_supplies",
+    "priority": 95,
+    "preferred_image_types": ["b2b_industrial_sheet", "specification_chart", "packaging_display", "usage_comparison"]
+  },
+  {
+    "platform": "alibaba_international",
+    "category_key": "home_living",
+    "priority": 70,
+    "preferred_image_types": ["product_white_bg", "specification_chart", "scene_image", "core_selling_point"]
+  },
+  {
+    "platform": "aliexpress",
+    "category_key": "fashion_apparel",
+    "priority": 94,
+    "preferred_image_types": ["product_white_bg", "detail_closeup", "fit_explanation", "size_reference", "scene_image"]
+  },
+  {
+    "platform": "aliexpress",
+    "category_key": "consumer_electronics",
+    "priority": 95,
+    "preferred_image_types": ["product_white_bg", "function_explain", "specification_chart", "compatibility_info"]
+  },
+  {
+    "platform": "aliexpress",
+    "category_key": "home_living",
+    "priority": 90,
+    "preferred_image_types": ["product_white_bg", "core_selling_point", "specification_chart", "scene_image"]
+  },
+  {
+    "platform": "aliexpress",
+    "category_key": "sports_outdoor",
+    "priority": 88,
+    "preferred_image_types": ["product_white_bg", "scene_image", "material_craft", "compatibility_info"]
+  },
+  {
+    "platform": "shopee",
+    "category_key": "fashion_apparel",
+    "priority": 95,
+    "preferred_image_types": ["product_white_bg", "core_selling_point", "detail_closeup", "fit_explanation", "scene_image"]
+  },
+  {
+    "platform": "shopee",
+    "category_key": "home_living",
+    "priority": 94,
+    "preferred_image_types": ["product_white_bg", "core_selling_point", "usage_comparison", "scene_image"]
+  },
+  {
+    "platform": "shopee",
+    "category_key": "beauty_personal_care",
+    "priority": 93,
+    "preferred_image_types": ["product_white_bg", "core_selling_point", "usage_step", "ingredient_highlight"]
+  },
+  {
+    "platform": "shopee",
+    "category_key": "consumer_electronics",
+    "priority": 90,
+    "preferred_image_types": ["product_white_bg", "function_explain", "specification_chart", "compatibility_info"]
+  },
+  {
+    "platform": "ozon",
+    "category_key": "home_living",
+    "priority": 90,
+    "preferred_image_types": ["product_white_bg", "specification_chart", "scene_image", "detail_feature"]
+  },
+  {
+    "platform": "ozon",
+    "category_key": "consumer_electronics",
+    "priority": 92,
+    "preferred_image_types": ["product_white_bg", "specification_chart", "function_explain", "compatibility_info"]
+  },
+  {
+    "platform": "ozon",
+    "category_key": "fashion_apparel",
+    "priority": 86,
+    "preferred_image_types": ["product_white_bg", "detail_closeup", "fit_explanation", "size_reference"]
+  },
+  {
+    "platform": "shein",
+    "category_key": "fashion_apparel",
+    "priority": 100,
+    "preferred_image_types": ["styling_scene", "try_on_or_demo", "detail_closeup", "fit_explanation", "material_craft"]
+  },
+  {
+    "platform": "shein",
+    "category_key": "jewelry_accessories",
+    "priority": 88,
+    "preferred_image_types": ["detail_closeup", "human_interaction", "lifestyle_image", "product_white_bg"]
+  },
+  {
+    "platform": "shein",
+    "category_key": "beauty_personal_care",
+    "priority": 80,
+    "preferred_image_types": ["product_white_bg", "detail_closeup", "ingredient_highlight", "short_video_cover"]
+  }
+]

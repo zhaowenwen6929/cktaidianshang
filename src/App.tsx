@@ -396,6 +396,14 @@ type GeneratePayload = {
   creationModeSelection: CreationModeSelection | null;
 };
 
+type VideoReplacePromptContext = {
+  sourceUploads: UploadItem[];
+  videoUploads?: UploadItem[];
+  supplementValue: string;
+  creationModeSelection: CreationModeSelection | null;
+  advancedSelections: AdvancedSelectionMap;
+};
+
 type AplusPlanStatus = "idle" | "generating" | "ready";
 
 type AplusPlanModule = {
@@ -616,6 +624,8 @@ type SupplementAiPolishContext = {
 
 type AdvancedSelectionMap = Record<string, string>;
 
+type ModelGenerateProtectTarget = "apparel" | "hair";
+
 type AdvancedAiAssistResult = {
   fieldValues: AdvancedSelectionMap;
   supplementValue?: string;
@@ -689,6 +699,7 @@ type ToolModuleSectionKey =
   | "generation-rule-notice"
   | "model-change-action"
   | "model-generate-setup"
+  | "model-generate-parameters"
   | "model-try-setup"
   | "pod-crop-mode"
   | "pod-extract-setup"
@@ -2697,6 +2708,11 @@ const modelGenerateTypes: ModelGenerateTypeConfig[] = [
   { key: "mannequin-model", label: "人台模特图" },
   { key: "wig-model", label: "假发模特图" }
 ];
+const modelGenerateProtectTargetByType: Record<string, ModelGenerateProtectTarget> = {
+  "real-model": "apparel",
+  "mannequin-model": "apparel",
+  "wig-model": "hair"
+};
 const modelGenerateAppearanceOptions = ["欧美白人", "中国人", "亚洲人", "东南亚人", "非裔", "中东人", "拉丁裔"];
 const modelGenerateAgeOptions = ["青少年", "青年", "中年", "老年"];
 const modelGeneratePersonaOptions = ["上班族", "测评博主", "学生", "健身人群", "家庭主妇", "其他"];
@@ -3040,6 +3056,14 @@ const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig
     modelLabel: "创客贴AI卖点图润色",
     prompt: "优化卖点图补充说明，强化视觉重点、文案承载和商业表达。"
   },
+  "video-replica": {
+    modelLabel: "创客贴AI爆款复刻视频润色",
+    prompt: "优化爆款复刻视频描述，强调先提炼参考视频中的爆款镜头逻辑，再结合上传商品多视角图片完成迁移复刻，同时让卖点节奏、商品一致性、镜头真实性和商业成片感更具体、清晰、可执行。"
+  },
+  "video-replace": {
+    modelLabel: "创客贴AI商品替换视频润色",
+    prompt: "优化商品替换视频描述，强调保留原视频动作和运镜不变，同时让新商品在多视角一致性、真实结构、光影透视和商业成片稳定性上更具体、清晰、可执行。"
+  },
   "model-try": {
     modelLabel: "创客贴AI补充说明润色",
     prompt: "优化试衣补充说明，使描述更具体、清晰、可执行。"
@@ -3080,7 +3104,8 @@ const advancedAiAssistPromptConfigs: Partial<Record<string, string>> = {
 
 const supplementPlaceholderOverrides: Partial<Record<string, string>> = {
   "goods-detail": "请输入您对图片的细节补充描述，例如：色调、构图、氛围等。",
-  "model-try": "请输入模特试穿细节补充，例如：希望突出上身效果、面料垂感、搭配氛围或人物状态。"
+  "model-try": "请输入模特试穿细节补充，例如：希望突出上身效果、面料垂感、搭配氛围或人物状态。",
+  "video-replace": "请输入视频描述，例如：保留原视频全部动作和镜头节奏，将原商品替换为上传商品，重点突出瓶身高光、标签清晰和开箱拿取时的真实手部接触。"
 };
 
 function normalizeUploadClueText(items: UploadItem[]) {
@@ -3600,6 +3625,149 @@ function buildFashionSceneTypes(modules: AplusPlanModule[]) {
     count: 1,
     sortOrder: index + 1
   })) satisfies SetPackTypeItem[];
+}
+
+function buildVideoReplicaPrompt(context: VideoReplacePromptContext) {
+  const sourceCount = context.sourceUploads.length;
+  const videoName = context.videoUploads?.[0]?.name || "参考视频";
+  const modeId = context.creationModeSelection?.modeId ?? "normal";
+  const modeLabel = context.creationModeSelection?.modeLabel ?? "普通模式";
+  const ratio = context.creationModeSelection?.ratio ?? "竖9:16";
+  const resolution = context.creationModeSelection?.resolution ?? "480p";
+  const duration = context.advancedSelections.videoReplicaDuration ?? "10s";
+  const sound = context.advancedSelections.videoReplicaHasSound ?? "无声";
+  const userDescription = context.supplementValue.trim();
+  const modeSpecificLines =
+    modeId === "advanced"
+      ? [
+          "高级模式附加要求：",
+          "1. 在复刻参考视频爆款感的前提下，进一步强化商业成片质感、镜头衔接稳定性和平台可投放感。",
+          "2. 更严格约束商品在跨镜头中的颜色、结构、材质、品牌元素和局部细节一致性，避免忽大忽小、忽清忽糊或结构漂移。",
+          "3. 更严格控制人物动作、手部接触、遮挡恢复、反光高光、阴影透视和环境反射，让商品与场景关系更可信。",
+          "4. 更强调对参考视频节奏、转场逻辑、情绪氛围、景别变化和卖点推进顺序的高保真复刻。",
+          "5. 输出结果需兼顾爆款氛围、真实商品表达和后续广告投放可用性。"
+        ]
+      : [
+          "普通模式执行重点：",
+          "1. 优先复刻参考视频的镜头结构、运镜节奏、主体动作和爆款表达路径。",
+          "2. 优先保证上传商品在主要镜头中的结构、颜色、材质和核心卖点表达稳定一致。",
+          "3. 在生成稳定的前提下，尽量还原原视频的情绪氛围、场景关系和成交感。"
+        ];
+
+  const promptLines = [
+    "你是一位电商爆款视频复刻导演、镜头拆解策划师与商品一致性审核专家。",
+    `请基于用户上传的 1 条参考视频《${videoName}》和 ${sourceCount} 张同一商品的多视角参考图，执行“爆款复刻”任务。`,
+    "任务目标：先提取参考视频中的爆款表达逻辑，再将该逻辑迁移到用户商品上，生成一条新的商品视频。",
+    "执行顺序要求：",
+    "1. 先理解参考视频：拆解镜头顺序、景别变化、机位关系、运镜节奏、主体动作、转场方式、卖点推进路径、氛围风格和成交感来源。",
+    "2. 再理解商品图片：以用户上传的 1~5 张同一商品多视角图为唯一商品依据，识别商品的颜色、材质、结构、比例、纹理、功能点、品牌元素和适合重点展示的局部细节。",
+    "3. 最后完成复刻：保留参考视频中值得复用的爆款逻辑、镜头语言和节奏组织，但将画面主体、卖点表达和特写内容替换为用户商品。",
+    "参考视频提词要求：",
+    "1. 从参考视频中提炼可迁移的提示词维度，包括：开场方式、主体亮相方式、核心卖点镜头、细节特写、对比/演示动作、人物互动、场景氛围、节奏强弱、结尾收束方式。",
+    "2. 提取的是“视频表达方法”而不是照抄参考商品本身，不要继承参考商品的品牌、文字、包装信息、品类专属结构或不可迁移元素。",
+    "3. 若参考视频存在夸张特效、虚假功效暗示、不可复用文案或与用户商品冲突的镜头元素，应只保留其节奏与表现方法，不直接照搬。",
+    "商品一致性要求：",
+    "1. 新视频中的商品必须严格依据用户上传图片，保持同一商品在所有镜头中的颜色、材质、结构、比例、纹理、配件和细节一致。",
+    "2. 必须根据不同镜头调用匹配的商品视角，避免正侧背关系错乱、局部特写与整体结构不一致、细节凭空生成或缺失。",
+    "3. 商品与人物、手部、道具、桌面、包装或环境接触时，需保证透视、受力、遮挡、阴影、高光和反射自然可信。",
+    "4. 不得将用户商品改造成其他品类，不得凭空增加原图不存在的卖点结构、按钮、接口、材质效果或品牌信息。",
+    "复刻边界要求：",
+    "1. 可以复刻参考视频的爆款逻辑、节奏、镜头编排、情绪风格和卖点推进方式。",
+    "2. 不可以直接复制参考视频中与原商品强绑定的品牌内容、包装信息、字幕文案、Logo、特定人物身份或侵权元素。",
+    "3. 若用户补充描述与参考视频冲突，以“保留爆款逻辑但服务于用户商品真实表达”为最高原则进行重写。",
+    "成片质量要求：",
+    "1. 输出应保持真实商业广告片观感，避免闪烁、结构漂移、局部变形、边缘融化、贴图跳动、帧间不一致和明显 AI 感。",
+    "2. 商品主体必须清晰可辨，卖点镜头需要服务转化，不要只做空泛炫技镜头或脱离商品本身的无效视觉包装。",
+    "3. 若参考视频有字幕、贴纸、屏幕字或包装字样，复刻时仅保留其信息组织方式，不直接沿用原文字内容。",
+    ...modeSpecificLines,
+    `生成模式：${modeLabel}；视频时长：${duration}；目标比例：${ratio}；目标分辨率：${resolution}；音频要求：${sound}。`,
+    userDescription
+      ? `用户补充创作要求：${userDescription}。请将其吸收到最终复刻方案中，但不得破坏“参考视频逻辑可迁移、用户商品真实一致、成片稳定可用”这三条硬约束。`
+      : "用户未补充额外视频描述。默认按“先提炼参考视频爆款逻辑，再迁移到用户商品，确保真实一致和商业稳定”执行。",
+    "最终只输出一条完成爆款逻辑迁移的新商品视频。"
+  ];
+
+  return promptLines.join("\n");
+}
+
+function buildVideoReplicaPromptSummary(context: VideoReplacePromptContext) {
+  const parts = [
+    "参考视频 1 条",
+    `商品图 ${context.sourceUploads.length} 张`,
+    context.creationModeSelection?.modeLabel ?? "普通模式",
+    context.creationModeSelection?.ratio ?? "竖9:16",
+    context.creationModeSelection?.resolution ?? "480p"
+  ];
+  if (context.advancedSelections.videoReplicaDuration) {
+    parts.push(context.advancedSelections.videoReplicaDuration);
+  }
+  return parts.join(" / ");
+}
+
+function buildVideoReplacePrompt(context: VideoReplacePromptContext) {
+  const sourceCount = context.sourceUploads.length;
+  const videoName = context.videoUploads?.[0]?.name || "参考视频";
+  const modeId = context.creationModeSelection?.modeId ?? "normal";
+  const modeLabel = context.creationModeSelection?.modeLabel ?? "普通模式";
+  const ratio = context.creationModeSelection?.ratio ?? "竖9:16";
+  const resolution = context.creationModeSelection?.resolution ?? "480p";
+  const duration = context.advancedSelections.videoReplicaDuration ?? "10s";
+  const sound = context.advancedSelections.videoReplicaHasSound ?? "保留原视频音频";
+  const userDescription = context.supplementValue.trim();
+  const modeSpecificLines =
+    modeId === "advanced"
+      ? [
+          "高级模式附加要求：",
+          "1. 强化跨镜头商品一致性，尤其是近景、特写、转场和遮挡恢复后的细节连续性。",
+          "2. 强化商品边缘融合、透明材质、金属反光、高光过渡、阴影衔接和环境反射的真实性。",
+          "3. 强化人与商品、商品与道具、商品与台面的接触可信度，避免悬浮感、穿插错误和受力异常。",
+          "4. 强化整片稳定性，重点抑制帧间闪烁、结构漂移、局部变形、贴图跳动和颜色忽明忽暗。",
+          "5. 在保证原视频节奏不变的前提下，让最终成片达到更强的商业广告质感与可投放质量。"
+        ]
+      : [
+          "普通模式执行重点：",
+          "1. 优先保证商品替换成功，动作不变、运镜不变、主体不跑偏。",
+          "2. 优先保证主要镜头中的商品结构、颜色和大轮廓稳定一致。",
+          "3. 在保证生成稳定的前提下，尽量还原原视频中的场景接触关系与真实观感。"
+        ];
+
+  const promptLines = [
+    "你是一位商品替换视频生成导演与电商商品一致性审核专家。",
+    `请基于用户上传的 1 条参考视频《${videoName}》和 ${sourceCount} 张同一商品的多视角参考图，执行“商品替换”任务。`,
+    "目标：将原视频中的原商品替换为用户上传的新商品，并生成一条新的电商视频。",
+    "镜头与动作要求：严格保留参考视频中的镜头顺序、机位关系、运镜节奏、主体动作、交互逻辑、场景空间关系与叙事结构，不得擅自改写脚本。",
+    "商品一致性要求：",
+    "1. 新商品必须以用户上传的多视角图片为唯一商品依据，保持同一商品在颜色、材质、结构、纹理、比例、品牌元素与细节上的一致性。",
+    "2. 如果参考图包含正面、侧面、背面、俯视、局部特写等信息，需在不同镜头中正确调用对应视角，避免视角跳变、结构错乱、细节丢失。",
+    "3. 替换后商品尺寸、透视、受力、遮挡、高光、反射、阴影和接触关系必须与原场景真实匹配。",
+    "4. 不得替换为其他品类，不得凭空增删商品组件，不得改变商品核心卖点和真实外观。",
+    "视频质量要求：",
+    "1. 输出应保持商业级真实感，避免闪烁、抖动、漂移、穿帮、边缘融化、贴图错位、结构重影和帧间不一致。",
+    "2. 人手持握、人物穿戴、桌面摆放、液体接触、开合按压等交互场景，需要保证商品与人物/环境接触自然。",
+    "3. 若参考视频存在文字、Logo、包装、标签或屏幕内容，替换时需尽量与新商品信息协调，避免明显冲突。",
+    ...modeSpecificLines,
+    `生成模式：${modeLabel}；视频时长：${duration}；目标比例：${ratio}；目标分辨率：${resolution}；音频要求：${sound}。`,
+    userDescription
+      ? `用户补充创作要求：${userDescription}。在不破坏“动作和运镜不变、商品真实一致”的前提下，优先满足这些补充要求。`
+      : "用户未补充额外视频描述。默认按“动作和运镜不变、商品真实一致、商业观感稳定”执行。",
+    "最终只输出一条完成商品替换的新视频。"
+  ];
+
+  return promptLines.join("\n");
+}
+
+function buildVideoReplacePromptSummary(context: VideoReplacePromptContext) {
+  const parts = [
+    "参考视频 1 条",
+    `商品图 ${context.sourceUploads.length} 张`,
+    context.creationModeSelection?.modeLabel ?? "普通模式",
+    context.creationModeSelection?.ratio ?? "竖9:16",
+    context.creationModeSelection?.resolution ?? "480p"
+  ];
+  if (context.advancedSelections.videoReplicaDuration) {
+    parts.push(context.advancedSelections.videoReplicaDuration);
+  }
+  return parts.join(" / ");
 }
 
 function getDefaultCreationModeSelection(configKey: string, count: number): CreationModeSelection | null {
@@ -4502,6 +4670,14 @@ const supplementToolStrategies: Record<string, PolishStrategy> = {
     minKeywordHint: "请补充卖点、主体重点或风格需求",
     preferredCategories: ["copy", "focus", "composition", "style"]
   },
+  "video-replace": {
+    chinesePrefix: "建议将商品替换视频描述优化为",
+    englishPrefix: "Product replacement video with",
+    chineseSuffix: ["严格保持原视频动作与运镜节奏不变", "替换商品在多镜头下结构一致且透视真实", "整体成片稳定自然并适合电商投放"],
+    englishSuffix: ["original motion and camera movement preserved", "consistent product structure across shots", "stable commercial video output"],
+    minKeywordHint: "请补充想保留的镜头节奏、商品展示重点、场景氛围或成片风格要求",
+    preferredCategories: ["focus", "scene", "lighting", "style", "texture", "composition"]
+  },
   default: {
     chinesePrefix: "建议将补充说明优化为",
     englishPrefix: "Refined product visual with",
@@ -5385,14 +5561,14 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
     title: "创作模式",
     showSupplement: true,
     supplementLabel: "视频描述",
-    supplementPlaceholder: "将视频1中的<产品>替换成参考图中的<产品>，动作和运镜不变。",
+    supplementPlaceholder: "请描述替换后的商品视频要求，例如：保留原视频动作和运镜不变，使用上传的多视角商品图替换原商品，重点确保结构一致、透视自然、手持接触真实。",
     supplementMaxLength: 2000,
     modes: [
       {
         id: "normal",
         label: "普通模式",
         apiModel: "mock://video-replace-normal",
-        logicNote: "使用商品替换普通模型。",
+        logicNote: "使用商品替换普通模型，基于参考视频与 1~5 张商品多视角图完成原商品替换，保留动作和运镜。",
         ratioOptions: videoReplicaRatioOptions,
         countOptions: ["1"],
         resolutionOptions: videoReplicaResolutionOptions,
@@ -5405,7 +5581,7 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
         id: "advanced",
         label: "高级模式",
         apiModel: "mock://video-replace-advanced",
-        logicNote: "使用商品替换高级模型。",
+        logicNote: "使用商品替换高级模型，强化多镜头商品一致性、边缘融合、光影透视与商业成片稳定性。",
         ratioOptions: videoReplicaRatioOptions,
         countOptions: ["1"],
         resolutionOptions: videoReplicaResolutionOptions,
@@ -6836,6 +7012,8 @@ function UploadField({
   values: UploadItem[];
   onAdd: (fieldKey: string, nextValues: UploadItem[]) => void;
   onRemove: (fieldKey: string, index: number) => void;
+  onEditItem?: (fieldKey: string, index: number) => void;
+  onRefreshItem?: (fieldKey: string, index: number) => void;
   onOpenLibrary: (fieldKey: string) => void;
   onRejectedUpload: (message: string) => void;
   onAtLimit: () => void;
@@ -6856,6 +7034,15 @@ function UploadField({
   const galleryHeight = Math.min(420, visibleRows * 124 + Math.max(0, visibleRows - 1) * 8);
   const [isDragging, setIsDragging] = useState(false);
   const [showFade, setShowFade] = useState(false);
+  const [previewIds, setPreviewIds] = useState<string[]>([]);
+
+  const activatePreview = (itemId: string) => {
+    setPreviewIds((current) => (current.includes(itemId) ? current : [...current, itemId]));
+  };
+
+  const deactivatePreview = (itemId: string) => {
+    setPreviewIds((current) => current.filter((id) => id !== itemId));
+  };
 
   const refreshFade = () => {
     const gallery = galleryRef.current;
@@ -6993,6 +7180,10 @@ function UploadField({
   }, [values.length]);
 
   useEffect(() => {
+    setPreviewIds((current) => current.filter((id) => values.some((item) => item.id === id)));
+  }, [values]);
+
+  useEffect(() => {
     const gallery = galleryRef.current;
     if (!gallery) return;
 
@@ -7066,12 +7257,69 @@ function UploadField({
                 </div>
               ) : null}
               {values.map((value, index) => (
-                <div className="ck-upload-filled" key={`${fieldKey}-${index}`}>
-                  {value.status === "ready" && value.src ? <img alt={`${label}${index + 1}`} src={value.src} /> : <span className="ck-upload-loading" />}
+                <div className={`ck-upload-filled${previewIds.includes(value.id) ? " previewing" : ""}`} key={`${fieldKey}-${index}`}>
+                  {value.status === "ready" && value.src ? (
+                    previewIds.includes(value.id) && value.maskDataUrl ? (
+                      <div className="ck-upload-preview-stage">
+                        <div className="ck-upload-preview-grid" />
+                        <img
+                          alt={`${label}${index + 1}`}
+                          className="ck-upload-preview-image"
+                          src={value.src}
+                          style={{
+                            WebkitMaskImage: `url(${value.maskDataUrl})`,
+                            WebkitMaskSize: "100% 100%",
+                            WebkitMaskRepeat: "no-repeat",
+                            maskImage: `url(${value.maskDataUrl})`,
+                            maskSize: "100% 100%",
+                            maskRepeat: "no-repeat"
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <img alt={`${label}${index + 1}`} src={value.src} />
+                        {value.maskDataUrl ? (
+                          <span
+                            className="ck-upload-mask-overlay"
+                            style={{
+                              WebkitMaskImage: `url(${value.maskDataUrl})`,
+                              WebkitMaskSize: "100% 100%",
+                              WebkitMaskRepeat: "no-repeat",
+                              maskImage: `url(${value.maskDataUrl})`,
+                              maskSize: "100% 100%",
+                              maskRepeat: "no-repeat"
+                            }}
+                          />
+                        ) : null}
+                      </>
+                    )
+                  ) : (
+                    <span className="ck-upload-loading" />
+                  )}
                   {value.status === "ready" ? (
-                    <button className="ck-upload-delete" onClick={() => onRemove(fieldKey, index)} type="button">
-                      <img alt="" className="ck-upload-delete-bg" src={figmaIcons.deleteBg} />
-                      <img alt="" className="ck-upload-delete-line" src={figmaIcons.deleteLine} />
+                    <div className="ck-upload-tools">
+                      {onEditItem ? (
+                        <button aria-label={value.maskDataUrl ? "优化选区" : "编辑选区"} className="ck-upload-tool-btn" onClick={() => onEditItem(fieldKey, index)} type="button">
+                          ◌
+                        </button>
+                      ) : null}
+                      <button aria-label="删除" className="ck-upload-tool-btn" onClick={() => onRemove(fieldKey, index)} type="button">
+                        <img alt="" className="ck-upload-delete-bg" src={figmaIcons.deleteBg} />
+                        <img alt="" className="ck-upload-delete-line" src={figmaIcons.deleteLine} />
+                      </button>
+                    </div>
+                  ) : null}
+                  {value.status === "ready" ? (
+                    <button
+                      className={`ck-upload-preview-btn${previewIds.includes(value.id) ? " active" : ""}`}
+                      onPointerCancel={() => deactivatePreview(value.id)}
+                      onPointerDown={() => activatePreview(value.id)}
+                      onPointerLeave={() => deactivatePreview(value.id)}
+                      onPointerUp={() => deactivatePreview(value.id)}
+                      type="button"
+                    >
+                      预览
                     </button>
                   ) : null}
                 </div>
@@ -7764,6 +8012,7 @@ function RichSelectField({
   required,
   placeholder,
   fullWidth,
+  className,
   options,
   onChange
 }: {
@@ -7772,6 +8021,7 @@ function RichSelectField({
   required?: boolean;
   placeholder?: string;
   fullWidth?: boolean;
+  className?: string;
   options: RichSelectOption[];
   onChange?: (value: string) => void;
 }) {
@@ -11489,7 +11739,7 @@ function BaselineModelSection({
             <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
           </div>
           <UnifiedTextareaField
-            formBlockClassName="ck-baseline-model-supplement"
+            formBlockClassName="ck-form-block ck-set-pack-selling-points ck-model-input-detail"
             label="细节补充"
             maxLength={600}
             onChange={setDetailSupplement}
@@ -11833,7 +12083,7 @@ function ModelTrySetupSection({
               <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
             </div>
             <UnifiedTextareaField
-              formBlockClassName="ck-baseline-model-supplement"
+              formBlockClassName="ck-form-block ck-set-pack-selling-points ck-model-input-detail"
               label="细节补充"
               maxLength={600}
               onChange={setDetailSupplement}
@@ -16064,10 +16314,17 @@ function ConfigPanel({
     }
 
     if (section === "supplement") {
+      const supplementFormBlockClassName =
+        tool.key === "video-replica"
+          ? "ck-form-block ck-set-pack-selling-points ck-video-replica-supplement"
+          : tool.key === "model-adjust"
+            ? "ck-form-block ck-set-pack-selling-points ck-model-input-detail"
+            : undefined;
+
       return creationModeConfig.showSupplement ? (
         <SupplementField
           aiPolishConfig={supplementAiPolishConfig}
-          formBlockClassName={tool.key === "video-replica" ? "ck-form-block ck-set-pack-selling-points ck-video-replica-supplement" : undefined}
+          formBlockClassName={supplementFormBlockClassName}
           label={creationModeConfig.supplementLabel}
           maxLength={creationModeConfig.supplementMaxLength}
           onAiPolish={(value) =>
@@ -16288,6 +16545,52 @@ function ConfigPanel({
     );
   };
 
+  const resolvedSupplementValue =
+    tool.key === "video-replace"
+      ? buildVideoReplacePrompt({
+          sourceUploads: uploads[mainUploadKey] ?? [],
+          videoUploads: uploads[videoUploadKey] ?? [],
+          supplementValue,
+          creationModeSelection: resolvedCreationModeSelection,
+          advancedSelections: advancedSettingSelections
+        })
+      : tool.key === "video-replica"
+        ? buildVideoReplicaPrompt({
+            sourceUploads: uploads[mainUploadKey] ?? [],
+            videoUploads: uploads[videoUploadKey] ?? [],
+            supplementValue,
+            creationModeSelection: resolvedCreationModeSelection,
+            advancedSelections: advancedSettingSelections
+          })
+      : supplementValue;
+
+  const resolvedAdvancedSelections =
+    tool.key === "video-replace"
+      ? {
+          ...advancedSettingSelections,
+          videoReplacePromptSummary: buildVideoReplacePromptSummary({
+            sourceUploads: uploads[mainUploadKey] ?? [],
+            videoUploads: uploads[videoUploadKey] ?? [],
+            supplementValue,
+            creationModeSelection: resolvedCreationModeSelection,
+            advancedSelections: advancedSettingSelections
+          }),
+          videoReplaceUserDescription: supplementValue.trim()
+        }
+      : tool.key === "video-replica"
+        ? {
+            ...advancedSettingSelections,
+            videoReplicaPromptSummary: buildVideoReplicaPromptSummary({
+              sourceUploads: uploads[mainUploadKey] ?? [],
+              videoUploads: uploads[videoUploadKey] ?? [],
+              supplementValue,
+              creationModeSelection: resolvedCreationModeSelection,
+              advancedSelections: advancedSettingSelections
+            }),
+            videoReplicaUserDescription: supplementValue.trim()
+          }
+      : advancedSettingSelections;
+
   const handleGenerateClick = () => {
     if (tool.key === "set-main" && isGeneratingLocked) {
       onToast("当前套图仍在生成中，请等待全部结果完成后再继续提交", "warning");
@@ -16342,8 +16645,8 @@ function ConfigPanel({
             : uploads[mainUploadKey] ?? [],
       referenceUploads: uploads[refUploadKey] ?? [],
       videoUploads: uploads[videoUploadKey] ?? [],
-      advancedSelections: advancedSettingSelections,
-      supplementValue,
+      advancedSelections: resolvedAdvancedSelections,
+      supplementValue: resolvedSupplementValue,
       creationModeSelection: resolvedCreationModeSelection
     } satisfies GeneratePayload;
 
@@ -16362,7 +16665,7 @@ function ConfigPanel({
 
   return (
     <section
-      className={`ck-panel ck-panel-tool-${tool.key}${isSetPackLikeTool(tool.key) ? " ck-panel-set-pack" : ""}${showAplusPlanStep || showFashionPlanStep ? " ck-panel-step-layout" : ""}`}
+      className={`ck-panel ck-panel-tool-${tool.key}${tool.key.startsWith("goods-") ? " ck-panel-ai-goods" : ""}${isSetPackLikeTool(tool.key) ? " ck-panel-set-pack" : ""}${showAplusPlanStep || showFashionPlanStep ? " ck-panel-step-layout" : ""}`}
     >
       {showAplusPlanStep ? (
         <AplusPlanEditorSection
@@ -16392,6 +16695,29 @@ function ConfigPanel({
             <div className="ck-panel-title">{tool.panelTitle}</div>
             {renderFields()}
           </div>
+          {tool.key === "model-generate" && editingUploadItem?.src ? (
+            <MaskEditorModal
+              autoTargetLabel={modelGenerateProtectLabel}
+              imageSrc={editingUploadItem.src}
+              initialMaskDataUrl={editingUploadItem.maskDataUrl}
+              onClose={() => setEditingUploadState(null)}
+              onSave={(nextMaskDataUrl) => {
+                if (!editingUploadState) return;
+                onUpdateUploadItems(editingUploadState.fieldKey, (currentItems) =>
+                  currentItems.map((item, currentIndex) =>
+                    currentIndex === editingUploadState.index
+                      ? {
+                          ...item,
+                          maskDataUrl: nextMaskDataUrl,
+                          maskLabel: modelGenerateProtectLabel
+                        }
+                      : item
+                  )
+                );
+                setEditingUploadState(null);
+              }}
+            />
+          ) : null}
 
           <div className="ck-panel-footer">
             <button className={`ck-generate-btn${isFashionTool ? " fashion-step-btn" : ""}`} disabled={tool.key === "set-main" && isGeneratingLocked} onClick={handleGenerateClick} type="button">
@@ -17199,6 +17525,10 @@ function ResultDetailModal({
   const originalImageSrc = task?.snapshot.mainUploads[0]?.previewSrc ?? task?.snapshot.mainUploads[0]?.src ?? "";
   const createdAtLabel = task ? formatTaskRecordDateTime(task.createdAt) : "--";
   const modeSelection = task?.snapshot.creationModeSelection;
+  const videoReplicaSummary = task?.snapshot.advancedSelections.videoReplicaPromptSummary;
+  const videoReplicaUserDescription = task?.snapshot.advancedSelections.videoReplicaUserDescription;
+  const videoReplaceSummary = task?.snapshot.advancedSelections.videoReplacePromptSummary;
+  const videoReplaceUserDescription = task?.snapshot.advancedSelections.videoReplaceUserDescription;
   const toolbarActions = [
     { key: "video-main", label: "生成视频", icon: "◧" },
     { key: "image-upscale", label: "4K放大", icon: "⤢" }
@@ -17207,6 +17537,14 @@ function ResultDetailModal({
     { icon: "✣", label: "功能模块", value: toolLabel },
     { icon: "T", label: "尺寸比例", value: modeSelection?.ratio ?? "自适应尺寸" },
     { icon: "▤", label: "生成数量", value: String(task?.totalCount ?? "--") },
+    ...(task?.toolKey === "video-replica" && videoReplicaSummary ? [{ icon: "↻", label: "复刻摘要", value: videoReplicaSummary }] : []),
+    ...(task?.toolKey === "video-replica" && videoReplicaUserDescription
+      ? [{ icon: "✎", label: "用户描述", value: videoReplicaUserDescription }]
+      : []),
+    ...(task?.toolKey === "video-replace" && videoReplaceSummary ? [{ icon: "↺", label: "替换摘要", value: videoReplaceSummary }] : []),
+    ...(task?.toolKey === "video-replace" && videoReplaceUserDescription
+      ? [{ icon: "✎", label: "用户描述", value: videoReplaceUserDescription }]
+      : []),
     { icon: "◔", label: "创建时间", value: createdAtLabel },
     { icon: "#", label: "任务ID", value: item?.id ?? task?.taskId ?? "--" }
   ];
@@ -17741,6 +18079,13 @@ export const App = () => {
 
   const handleAddUpload = (fieldKey: string, nextValues: UploadItem[]) => {
     setUploads((current) => ({ ...current, [fieldKey]: nextValues }));
+  };
+
+  const handleUpdateUploadItems = (fieldKey: string, updater: (items: UploadItem[]) => UploadItem[]) => {
+    setUploads((current) => ({
+      ...current,
+      [fieldKey]: updater(current[fieldKey] ?? [])
+    }));
   };
 
   const handleRemoveUpload = (fieldKey: string, index: number) => {
@@ -19436,6 +19781,7 @@ export const App = () => {
               onSupplementAiAssist={handleSupplementAiAssist}
               onSupplementAiPolish={handleSupplementAiPolish}
               onSupplementChange={handleSupplementChange}
+              onUpdateUploadItems={handleUpdateUploadItems}
               onUpdateAplusModule={handleUpdateAplusModule}
               onUpdateFashionScene={handleUpdateFashionScene}
               onUploadModels={handleUploadModels}

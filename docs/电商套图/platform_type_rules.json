@@ -1,0 +1,514 @@
+[
+  {
+    "platform": "taobao",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合作为基础商品首图或清晰展示图",
+    "platform_constraints": ["可带轻文案但不宜过多", "商品主体需清晰完整"]
+  },
+  {
+    "platform": "taobao",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 95,
+    "platform_notes": "适合主图点击和详情页卖点强化",
+    "platform_constraints": ["卖点需直观", "文案可适度强化转化"]
+  },
+  {
+    "platform": "taobao",
+    "type_key": "usage_comparison",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合表达前后差异和使用价值",
+    "platform_constraints": ["避免过度夸张对比"]
+  },
+  {
+    "platform": "taobao",
+    "type_key": "hero_banner",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合活动页和首页氛围图",
+    "platform_constraints": ["需预留标题区"]
+  },
+  {
+    "platform": "tmall",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合高质感商品首图",
+    "platform_constraints": ["风格需更整洁高级"]
+  },
+  {
+    "platform": "tmall",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "适合品牌化卖点表达",
+    "platform_constraints": ["避免低质促销感"]
+  },
+  {
+    "platform": "tmall",
+    "type_key": "material_craft",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强化品质感与工艺感",
+    "platform_constraints": ["强调质感和品牌感"]
+  },
+  {
+    "platform": "tmall",
+    "type_key": "holiday_campaign",
+    "is_allowed": true,
+    "priority": 78,
+    "platform_notes": "适合品牌大促节点",
+    "platform_constraints": ["活动元素需克制，不要过度廉价"]
+  },
+  {
+    "platform": "jd",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 84,
+    "platform_notes": "适合标准商品展示",
+    "platform_constraints": ["强调清晰和可信"]
+  },
+  {
+    "platform": "jd",
+    "type_key": "specification_chart",
+    "is_allowed": true,
+    "priority": 93,
+    "platform_notes": "京东用户对参数图接受度高",
+    "platform_constraints": ["参数需规整，不得乱编"]
+  },
+  {
+    "platform": "jd",
+    "type_key": "function_explain",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "适合功能型商品转化",
+    "platform_constraints": ["功能表达需理性清晰"]
+  },
+  {
+    "platform": "jd",
+    "type_key": "usage_comparison",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合提升决策效率",
+    "platform_constraints": ["不得夸张前后差异"]
+  },
+  {
+    "platform": "pinduoduo",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 98,
+    "platform_notes": "拼多多强转化图优先",
+    "platform_constraints": ["信息密度可高", "利益点直给"]
+  },
+  {
+    "platform": "pinduoduo",
+    "type_key": "usage_comparison",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合低决策成本商品转化",
+    "platform_constraints": ["对比逻辑必须一眼看懂"]
+  },
+  {
+    "platform": "pinduoduo",
+    "type_key": "specification_chart",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合参数一图看懂",
+    "platform_constraints": ["版式需直白"]
+  },
+  {
+    "platform": "pinduoduo",
+    "type_key": "hero_banner",
+    "is_allowed": true,
+    "priority": 60,
+    "platform_notes": "适合活动页，不是主要推荐",
+    "platform_constraints": ["避免过于品牌化空镜感"]
+  },
+  {
+    "platform": "1688",
+    "type_key": "b2b_industrial_sheet",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "1688/B2B类最关键图型",
+    "platform_constraints": ["强调规格、供货、结构、应用信息"]
+  },
+  {
+    "platform": "1688",
+    "type_key": "specification_chart",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "参数和规格是核心决策信息",
+    "platform_constraints": ["不得虚构参数"]
+  },
+  {
+    "platform": "1688",
+    "type_key": "packaging_display",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合展示包装与批发发货逻辑",
+    "platform_constraints": ["强调供货交付"]
+  },
+  {
+    "platform": "1688",
+    "type_key": "lifestyle_image",
+    "is_allowed": false,
+    "priority": 10,
+    "platform_notes": "1688不优先生活方式氛围图",
+    "platform_constraints": ["不建议作为核心图型"]
+  },
+  {
+    "platform": "douyin",
+    "type_key": "short_video_cover",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "内容电商强封面图优先",
+    "platform_constraints": ["第一眼吸引力强", "商品主体识别快"]
+  },
+  {
+    "platform": "douyin",
+    "type_key": "scene_image",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "适合场景种草和代入感表达",
+    "platform_constraints": ["商品仍需清晰"]
+  },
+  {
+    "platform": "douyin",
+    "type_key": "usage_step",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合强解释型商品",
+    "platform_constraints": ["步骤要短平快"]
+  },
+  {
+    "platform": "douyin",
+    "type_key": "hero_banner",
+    "is_allowed": true,
+    "priority": 70,
+    "platform_notes": "适合活动或橱窗头图",
+    "platform_constraints": ["更偏内容化而非纯品牌KV"]
+  },
+  {
+    "platform": "kuaishou",
+    "type_key": "short_video_cover",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "快手内容商品封面核心图型",
+    "platform_constraints": ["卖点表达直给", "信息不宜过虚"]
+  },
+  {
+    "platform": "kuaishou",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 95,
+    "platform_notes": "适合强化购买理由",
+    "platform_constraints": ["文案可偏直接转化"]
+  },
+  {
+    "platform": "kuaishou",
+    "type_key": "usage_comparison",
+    "is_allowed": true,
+    "priority": 89,
+    "platform_notes": "适合高转化表达",
+    "platform_constraints": ["逻辑需明确，不要夸张"]
+  },
+  {
+    "platform": "kuaishou",
+    "type_key": "lifestyle_image",
+    "is_allowed": true,
+    "priority": 62,
+    "platform_notes": "可用但不是主推",
+    "platform_constraints": ["不要过于文艺弱转化"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "type_key": "short_video_cover",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合种草封面和内容入口",
+    "platform_constraints": ["封面感强", "文案需克制有质感"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "type_key": "lifestyle_image",
+    "is_allowed": true,
+    "priority": 98,
+    "platform_notes": "小红书氛围种草图最重要",
+    "platform_constraints": ["重情绪和生活方式感"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "type_key": "styling_scene",
+    "is_allowed": true,
+    "priority": 95,
+    "platform_notes": "适合服饰与生活方式品类",
+    "platform_constraints": ["强调自然、真实、可模仿"]
+  },
+  {
+    "platform": "xiaohongshu",
+    "type_key": "amazon_main",
+    "is_allowed": false,
+    "priority": 5,
+    "platform_notes": "不适合小红书表达语境",
+    "platform_constraints": ["不推荐平台标准白底主图作为核心图"]
+  },
+  {
+    "platform": "amazon",
+    "type_key": "amazon_main",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "Amazon主图核心必备",
+    "platform_constraints": ["纯白背景", "无人物", "无文案", "无场景"]
+  },
+  {
+    "platform": "amazon",
+    "type_key": "amazon_sub",
+    "is_allowed": true,
+    "priority": 98,
+    "platform_notes": "Amazon辅图承载卖点与参数",
+    "platform_constraints": ["信息需规整", "避免夸张承诺"]
+  },
+  {
+    "platform": "amazon",
+    "type_key": "specification_chart",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "参数图适合Amazon详情辅助",
+    "platform_constraints": ["参数不得虚构"]
+  },
+  {
+    "platform": "amazon",
+    "type_key": "holiday_campaign",
+    "is_allowed": false,
+    "priority": 10,
+    "platform_notes": "不适合主商品图核心体系",
+    "platform_constraints": ["如需节日氛围应转站外或品牌页"]
+  },
+  {
+    "platform": "temu",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "Temu基础展示图需求高",
+    "platform_constraints": ["主体清晰", "信息识别快"]
+  },
+  {
+    "platform": "temu",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 95,
+    "platform_notes": "Temu强转化卖点图优先",
+    "platform_constraints": ["卖点表达直白"]
+  },
+  {
+    "platform": "temu",
+    "type_key": "usage_comparison",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "适合低价高转化逻辑",
+    "platform_constraints": ["对比清楚，避免虚假"]
+  },
+  {
+    "platform": "temu",
+    "type_key": "hero_banner",
+    "is_allowed": true,
+    "priority": 58,
+    "platform_notes": "可用于活动，不是主推荐",
+    "platform_constraints": ["避免过度品牌化"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "type_key": "short_video_cover",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "TikTok Shop封面图优先",
+    "platform_constraints": ["抓眼强", "商品识别要快"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "type_key": "scene_image",
+    "is_allowed": true,
+    "priority": 94,
+    "platform_notes": "适合场景内容化转化",
+    "platform_constraints": ["场景和商品要有强关系"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "type_key": "try_on_or_demo",
+    "is_allowed": true,
+    "priority": 93,
+    "platform_notes": "适合上身/演示类商品",
+    "platform_constraints": ["人物互动自然，商品清晰"]
+  },
+  {
+    "platform": "tiktok_shop",
+    "type_key": "b2b_industrial_sheet",
+    "is_allowed": false,
+    "priority": 5,
+    "platform_notes": "不适合TikTok Shop主流内容表达",
+    "platform_constraints": []
+  },
+  {
+    "platform": "alibaba_international",
+    "type_key": "b2b_industrial_sheet",
+    "is_allowed": true,
+    "priority": 100,
+    "platform_notes": "阿里国际站B2B图核心",
+    "platform_constraints": ["强调参数、结构、供货和应用信息"]
+  },
+  {
+    "platform": "alibaba_international",
+    "type_key": "specification_chart",
+    "is_allowed": true,
+    "priority": 97,
+    "platform_notes": "国际B2B参数需求强",
+    "platform_constraints": ["专业可信"]
+  },
+  {
+    "platform": "alibaba_international",
+    "type_key": "packaging_display",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合说明交付和包装方式",
+    "platform_constraints": ["强调出口/发货逻辑"]
+  },
+  {
+    "platform": "alibaba_international",
+    "type_key": "lifestyle_image",
+    "is_allowed": true,
+    "priority": 45,
+    "platform_notes": "仅在消费品类目中可辅助使用",
+    "platform_constraints": ["不作为工业主推"]
+  },
+  {
+    "platform": "aliexpress",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合基础商品展示",
+    "platform_constraints": ["主体清晰"]
+  },
+  {
+    "platform": "aliexpress",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 92,
+    "platform_notes": "适合跨境详情卖点表达",
+    "platform_constraints": ["文案短句清晰"]
+  },
+  {
+    "platform": "aliexpress",
+    "type_key": "specification_chart",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "参数和尺寸图很关键",
+    "platform_constraints": ["参数不得乱编"]
+  },
+  {
+    "platform": "aliexpress",
+    "type_key": "scene_image",
+    "is_allowed": true,
+    "priority": 80,
+    "platform_notes": "适合提升场景化转化",
+    "platform_constraints": ["场景要真实有帮助"]
+  },
+  {
+    "platform": "shopee",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "Shopee基础展示图必要",
+    "platform_constraints": ["主体清晰，信息直给"]
+  },
+  {
+    "platform": "shopee",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "Shopee卖点强化图优先",
+    "platform_constraints": ["转化表达清楚"]
+  },
+  {
+    "platform": "shopee",
+    "type_key": "usage_comparison",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合东南亚市场直观理解",
+    "platform_constraints": ["避免夸张"]
+  },
+  {
+    "platform": "shopee",
+    "type_key": "holiday_campaign",
+    "is_allowed": true,
+    "priority": 72,
+    "platform_notes": "适合大促会场与活动页",
+    "platform_constraints": ["活动元素可较明显"]
+  },
+  {
+    "platform": "ozon",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "适合标准货架展示",
+    "platform_constraints": ["主体清晰、画面简洁"]
+  },
+  {
+    "platform": "ozon",
+    "type_key": "specification_chart",
+    "is_allowed": true,
+    "priority": 90,
+    "platform_notes": "参数图和说明图重要",
+    "platform_constraints": ["信息需规整可读"]
+  },
+  {
+    "platform": "ozon",
+    "type_key": "scene_image",
+    "is_allowed": true,
+    "priority": 76,
+    "platform_notes": "适合增强理解与信任",
+    "platform_constraints": ["避免复杂杂乱"]
+  },
+  {
+    "platform": "ozon",
+    "type_key": "core_selling_point",
+    "is_allowed": true,
+    "priority": 86,
+    "platform_notes": "适合提升点击和详情效率",
+    "platform_constraints": ["保持真实可信"]
+  },
+  {
+    "platform": "shein",
+    "type_key": "product_white_bg",
+    "is_allowed": true,
+    "priority": 82,
+    "platform_notes": "适合基础商品首图",
+    "platform_constraints": ["主体清楚，适合货架浏览"]
+  },
+  {
+    "platform": "shein",
+    "type_key": "styling_scene",
+    "is_allowed": true,
+    "priority": 98,
+    "platform_notes": "SHEIN服饰穿搭场景图很重要",
+    "platform_constraints": ["强调搭配氛围和风格表达"]
+  },
+  {
+    "platform": "shein",
+    "type_key": "try_on_or_demo",
+    "is_allowed": true,
+    "priority": 96,
+    "platform_notes": "适合模特试穿和风格展示",
+    "platform_constraints": ["商品版型需真实"]
+  },
+  {
+    "platform": "shein",
+    "type_key": "material_craft",
+    "is_allowed": true,
+    "priority": 88,
+    "platform_notes": "有助于降低面料感知不确定性",
+    "platform_constraints": ["不要虚构高端面料成分"]
+  }
+]

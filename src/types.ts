@@ -15,6 +15,7 @@ export type InputSelectFieldConfig = {
   required?: boolean;
   placeholder?: string;
   options: string[];
+  optionPrompts?: Record<string, string>;
 };
 
 export type TextAreaFieldConfig = {
@@ -38,6 +39,7 @@ export type LinkedFieldGroup =
 export type EditModeOption = {
   id: string;
   label: string;
+  prompt?: string;
   fields: LinkedFieldGroup[];
 };
 

@@ -2813,6 +2813,50 @@ a {
   font-weight: 600;
 }
 
+.ck-panel-ai-goods .ck-select,
+.ck-panel-ai-goods .ck-input-select {
+  border: 1px solid #ebeef5;
+  background: #fff;
+  color: #1b2337;
+  box-shadow: none;
+}
+
+.ck-panel-ai-goods .ck-select:hover,
+.ck-panel-ai-goods .ck-input-select:hover {
+  border-color: #dfe5f0;
+}
+
+.ck-panel-ai-goods .ck-select.placeholder,
+.ck-panel-ai-goods .ck-input-select input::placeholder {
+  color: #8693ab;
+}
+
+.ck-panel-ai-goods .ck-input-select.active,
+.ck-panel-ai-goods .ck-input-select:focus-within {
+  border-color: #d9dfeb;
+  box-shadow: inset 0 0 0 1px rgba(99, 95, 242, 0.06);
+}
+
+.ck-panel-ai-goods .ck-select-dropdown-menu {
+  border: 1px solid #ebeef5;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(27, 35, 55, 0.08);
+}
+
+.ck-panel-ai-goods .ck-select-dropdown-menu button {
+  height: 32px;
+  border-radius: 8px;
+  color: #505a71;
+  line-height: 32px;
+}
+
+.ck-panel-ai-goods .ck-select-dropdown-menu button.active {
+  background: #f4f6fb;
+  color: #1b2337;
+  font-weight: 500;
+}
+
 .ck-number-stepper-field {
   align-items: center;
 }
@@ -3147,6 +3191,54 @@ a {
   font-size: 12px;
   line-height: 18px;
   margin-top: 0;
+}
+
+.ck-panel-tool-model-try .ck-model-input-detail,
+.ck-panel-tool-model-generate .ck-model-input-detail,
+.ck-panel-tool-model-change .ck-model-input-detail {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.ck-panel-tool-model-try .ck-model-input-detail .ck-field-title,
+.ck-panel-tool-model-generate .ck-model-input-detail .ck-field-title,
+.ck-panel-tool-model-change .ck-model-input-detail .ck-field-title {
+  margin-bottom: 8px;
+}
+
+.ck-panel-tool-model-try .ck-model-input-detail .ck-textarea-wrap,
+.ck-panel-tool-model-generate .ck-model-input-detail .ck-textarea-wrap,
+.ck-panel-tool-model-change .ck-model-input-detail .ck-textarea-wrap {
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+}
+
+.ck-panel-tool-model-try .ck-model-input-detail .ck-textarea-wrap textarea,
+.ck-panel-tool-model-generate .ck-model-input-detail .ck-textarea-wrap textarea,
+.ck-panel-tool-model-change .ck-model-input-detail .ck-textarea-wrap textarea {
+  min-height: 124px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 9px 10px 0;
+  color: #1b2337;
+  line-height: 22px;
+  resize: none;
+}
+
+.ck-panel-tool-model-try .ck-model-input-detail .ck-textarea-wrap textarea::placeholder,
+.ck-panel-tool-model-generate .ck-model-input-detail .ck-textarea-wrap textarea::placeholder,
+.ck-panel-tool-model-change .ck-model-input-detail .ck-textarea-wrap textarea::placeholder {
+  color: #8693ab;
+}
+
+.ck-panel-tool-model-try .ck-model-input-detail .ck-textarea-actions,
+.ck-panel-tool-model-generate .ck-model-input-detail .ck-textarea-actions,
+.ck-panel-tool-model-change .ck-model-input-detail .ck-textarea-actions {
+  height: auto;
+  margin-top: 0;
+  padding: 10px 12px;
 }
 
 .ck-baseline-model-ai-actions {
@@ -4592,6 +4684,37 @@ a {
   margin-left: auto;
   color: #c5c8ce;
   font-size: 12px;
+}
+
+.ck-panel-ai-goods .ck-textarea-wrap {
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+}
+
+.ck-panel-ai-goods .ck-textarea-wrap textarea {
+  height: 124px;
+  min-height: 124px;
+  border: 0;
+  border-radius: 0;
+  padding: 9px 10px 0;
+  background: transparent;
+  color: #1b2337;
+  line-height: 22px;
+}
+
+.ck-panel-ai-goods .ck-textarea-wrap textarea::placeholder {
+  color: #8693ab;
+}
+
+.ck-panel-ai-goods .ck-textarea-actions {
+  height: auto;
+  margin-top: 0;
+  padding: 10px 12px;
+}
+
+.ck-panel-ai-goods .ck-textarea-actions span {
+  color: #a0a9ba;
 }
 
 .ck-ai-polish {

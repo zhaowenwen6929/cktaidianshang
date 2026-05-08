@@ -1,0 +1,347 @@
+[
+  {
+    "category_key": "fashion_apparel",
+    "category_name": "服饰鞋包",
+    "applicable_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-scene-usage",
+      "aplus-multi-angle",
+      "aplus-atmosphere",
+      "aplus-detail",
+      "aplus-brand-story",
+      "aplus-size",
+      "aplus-series",
+      "aplus-usage-advice",
+      "aplus-fit",
+      "aplus-audience",
+      "aplus-comparison"
+    ],
+    "recommended_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-scene-usage",
+      "aplus-detail",
+      "aplus-size",
+      "aplus-series",
+      "aplus-fit"
+    ],
+    "forbidden_modules": [
+      "aplus-craft",
+      "aplus-accessories"
+    ],
+    "display_focus_rules": [
+      "版型廓形",
+      "面料纹理",
+      "领口肩线袖型",
+      "穿搭氛围"
+    ],
+    "prompt_patch_rules": [
+      "重点突出版型、轮廓、面料纹理、穿搭效果与上身氛围",
+      "若涉及人物展示，应确保穿着逻辑自然，版型真实"
+    ],
+    "risk_rules": [
+      "不要虚构显瘦、增高、塑形等绝对效果",
+      "不要把普通面料生成成羊绒、真丝、真皮等未确认材质"
+    ]
+  },
+  {
+    "category_key": "beauty_personal_care",
+    "category_name": "美妆个护",
+    "applicable_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-scene-usage",
+      "aplus-atmosphere",
+      "aplus-detail",
+      "aplus-brand-story",
+      "aplus-ingredient",
+      "aplus-after-sale",
+      "aplus-usage-advice",
+      "aplus-audience",
+      "aplus-comparison"
+    ],
+    "recommended_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-detail",
+      "aplus-scene-usage",
+      "aplus-ingredient"
+    ],
+    "forbidden_modules": [
+      "aplus-size",
+      "aplus-series"
+    ],
+    "display_focus_rules": [
+      "包装识别度",
+      "质地表现",
+      "使用方式",
+      "成分卖点"
+    ],
+    "prompt_patch_rules": [
+      "重点突出包装识别度、质地表现、使用步骤和成分卖点，整体风格需干净、可信、专业"
+    ],
+    "risk_rules": [
+      "不要使用治疗修复逆龄等高风险表述",
+      "不要虚构医生背书或实验数据"
+    ]
+  },
+  {
+    "category_key": "consumer_electronics",
+    "category_name": "3C数码",
+    "applicable_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-scene-usage",
+      "aplus-multi-angle",
+      "aplus-detail",
+      "aplus-size",
+      "aplus-compare",
+      "aplus-spec",
+      "aplus-craft",
+      "aplus-accessories",
+      "aplus-after-sale",
+      "aplus-usage-advice",
+      "aplus-function",
+      "aplus-comparison"
+    ],
+    "recommended_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-spec",
+      "aplus-compare",
+      "aplus-accessories",
+      "aplus-function"
+    ],
+    "forbidden_modules": [
+      "aplus-atmosphere",
+      "aplus-brand-story"
+    ],
+    "display_focus_rules": [
+      "接口",
+      "按键",
+      "结构部件",
+      "连接方式",
+      "参数点"
+    ],
+    "prompt_patch_rules": [
+      "重点突出结构、接口、功能点、使用场景和参数逻辑，整体风格应偏理性、科技、清晰"
+    ],
+    "risk_rules": [
+      "不得虚构芯片、续航、分辨率、快充功率等参数"
+    ]
+  },
+  {
+    "category_key": "home_appliance",
+    "category_name": "家用电器",
+    "applicable_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-scene-usage",
+      "aplus-detail",
+      "aplus-size",
+      "aplus-compare",
+      "aplus-spec",
+      "aplus-craft",
+      "aplus-accessories",
+      "aplus-after-sale",
+      "aplus-usage-advice",
+      "aplus-function",
+      "aplus-comparison"
+    ],
+    "recommended_modules": [
+      "aplus-core-selling",
+      "aplus-spec",
+      "aplus-compare",
+      "aplus-accessories",
+      "aplus-scene-usage",
+      "aplus-function"
+    ],
+    "forbidden_modules": [
+      "aplus-series",
+      "aplus-brand-story"
+    ],
+    "display_focus_rules": [
+      "功能模块",
+      "操作方式",
+      "配件构成",
+      "使用场景",
+      "参数信息"
+    ],
+    "prompt_patch_rules": [
+      "重点展示功能模块、操作方式、配件构成、使用场景与生活便利性"
+    ],
+    "risk_rules": [
+      "不得写功率、杀菌率、静音值、续航等未确认参数"
+    ]
+  },
+  {
+    "category_key": "home_living",
+    "category_name": "家居生活",
+    "applicable_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-scene-usage",
+      "aplus-atmosphere",
+      "aplus-detail",
+      "aplus-brand-story",
+      "aplus-size",
+      "aplus-spec",
+      "aplus-series",
+      "aplus-usage-advice",
+      "aplus-space-fit",
+      "aplus-audience"
+    ],
+    "recommended_modules": [
+      "aplus-hero",
+      "aplus-scene-usage",
+      "aplus-atmosphere",
+      "aplus-detail",
+      "aplus-size",
+      "aplus-space-fit"
+    ],
+    "forbidden_modules": [
+      "aplus-craft"
+    ],
+    "display_focus_rules": [
+      "空间搭配",
+      "材质纹理",
+      "尺寸适配",
+      "日常使用感"
+    ],
+    "prompt_patch_rules": [
+      "重点突出空间适配关系、居家氛围、材质感和使用便利性"
+    ],
+    "risk_rules": []
+  },
+  {
+    "category_key": "industrial_goods",
+    "category_name": "工业品",
+    "applicable_modules": [
+      "aplus-scene-usage",
+      "aplus-detail",
+      "aplus-size",
+      "aplus-compare",
+      "aplus-spec",
+      "aplus-craft",
+      "aplus-accessories",
+      "aplus-after-sale",
+      "aplus-usage-advice",
+      "aplus-function",
+      "aplus-comparison",
+      "aplus-audience"
+    ],
+    "recommended_modules": [
+      "aplus-spec",
+      "aplus-craft",
+      "aplus-accessories",
+      "aplus-detail",
+      "aplus-function"
+    ],
+    "forbidden_modules": [
+      "aplus-atmosphere",
+      "aplus-brand-story",
+      "aplus-series"
+    ],
+    "display_focus_rules": [
+      "规格",
+      "结构",
+      "工艺",
+      "应用场景",
+      "接口尺寸逻辑"
+    ],
+    "prompt_patch_rules": [
+      "重点突出规格、结构、工艺、应用场景和采购判断信息，整体风格应专业、工程化、可信"
+    ],
+    "risk_rules": [
+      "不要虚构行业标准、认证、材质等级"
+    ]
+  },
+  {
+    "category_key": "commercial_equipment",
+    "category_name": "商用设备",
+    "applicable_modules": [
+      "aplus-scene-usage",
+      "aplus-detail",
+      "aplus-size",
+      "aplus-spec",
+      "aplus-craft",
+      "aplus-accessories",
+      "aplus-after-sale",
+      "aplus-usage-advice",
+      "aplus-function",
+      "aplus-comparison",
+      "aplus-audience"
+    ],
+    "recommended_modules": [
+      "aplus-spec",
+      "aplus-craft",
+      "aplus-scene-usage",
+      "aplus-accessories",
+      "aplus-function"
+    ],
+    "forbidden_modules": [
+      "aplus-brand-story",
+      "aplus-atmosphere"
+    ],
+    "display_focus_rules": [
+      "商用场景",
+      "设备结构",
+      "功能模块",
+      "安装逻辑",
+      "规格信息"
+    ],
+    "prompt_patch_rules": [
+      "重点表达商用场景、设备结构、功能模块、安装逻辑和采购所关心的规格信息"
+    ],
+    "risk_rules": []
+  },
+  {
+    "category_key": "virtual_services",
+    "category_name": "虚拟服务",
+    "applicable_modules": [
+      "aplus-hero",
+      "aplus-core-selling",
+      "aplus-scene-usage",
+      "aplus-size",
+      "aplus-compare",
+      "aplus-spec",
+      "aplus-after-sale",
+      "aplus-usage-advice",
+      "aplus-function",
+      "aplus-comparison",
+      "aplus-audience"
+    ],
+    "recommended_modules": [
+      "aplus-core-selling",
+      "aplus-function",
+      "aplus-compare",
+      "aplus-spec",
+      "aplus-usage-advice"
+    ],
+    "forbidden_modules": [
+      "aplus-detail",
+      "aplus-craft",
+      "aplus-brand-story",
+      "aplus-atmosphere",
+      "aplus-accessories",
+      "aplus-series",
+      "aplus-ingredient"
+    ],
+    "display_focus_rules": [
+      "服务内容",
+      "交付形式",
+      "使用流程",
+      "权益范围",
+      "适用对象"
+    ],
+    "prompt_patch_rules": [
+      "重点表达服务内容、交付方式、使用流程、权益范围和适用对象，整体风格应清晰、可信、易理解",
+      "优先使用流程说明、功能说明、对比说明等信息型模块，不要误生成实体商品质感和材质工艺表达"
+    ],
+    "risk_rules": [
+      "不要把虚拟服务生成成实体商品包装、材质或工艺细节",
+      "不要虚构服务权益、交付内容、时效或售后承诺"
+    ]
+  }
+]

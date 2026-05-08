@@ -1,0 +1,322 @@
+[
+  {
+    "type_key": "product_white_bg",
+    "type_name": "产品白底图",
+    "category": "基础展示类",
+    "type_description": "纯白背景展示商品主体",
+    "base_prompt_template": "请为商品“{product_name}”生成一张电商产品白底图。要求商品主体完整、清晰、居中或略微偏中构图，背景为纯白或接近纯白，不添加复杂场景、无关道具和夸张装饰。必须保持商品原始颜色、结构、比例、材质观感和细节真实可信，重点突出商品轮廓、主体造型和核心外观特征。适配平台 {platform}，目标市场 {market}，目标语言 {language}，视觉风格 {visual_style}。",
+    "base_negative_prompt": "不要复杂背景，不要生活场景，不要人物，不要虚构品牌标识，不要改变商品颜色，不要改变商品结构比例，不要添加不存在的细节，不要模糊，不要裁切主体，不要过度阴影，不要廉价促销感。",
+    "default_layout_guidance": "主体居中，留白充足，适合标准主图裁切",
+    "default_text_guidance": "默认无文案，可预留极少量角标位"
+  },
+  {
+    "type_key": "multi_angle",
+    "type_name": "产品多角度图",
+    "category": "基础展示类",
+    "type_description": "多视角展示商品结构",
+    "base_prompt_template": "请为商品“{product_name}”生成一张多角度展示图，通过多个视角清晰展示商品外观结构，可包含正面、侧面、背面、顶部、局部关键角度等。要求各角度之间商品比例一致、颜色一致、结构一致，画面分区清晰，便于用户快速理解商品全貌。",
+    "base_negative_prompt": "不要视角混乱，不要不同角度颜色不一致，不要比例错误，不要出现互相矛盾的结构，不要复杂场景干扰。",
+    "default_layout_guidance": "宫格布局或一主多辅布局",
+    "default_text_guidance": "可加角度短标签"
+  },
+  {
+    "type_key": "detail_closeup",
+    "type_name": "细节特写图",
+    "category": "基础展示类",
+    "type_description": "放大细节突出质感工艺",
+    "base_prompt_template": "请为商品“{product_name}”生成一张细节特写图，聚焦最能体现品质感的局部细节，重点展示 {display_focus}，如纹理、缝线、接口、材质表面、按键、边缘处理、工艺细节等。要求局部清晰、放大合理、质感突出，并与商品整体真实一致。",
+    "base_negative_prompt": "不要虚构不存在的细节，不要把普通材质生成成高端材质，不要过度锐化，不要模糊。",
+    "default_layout_guidance": "局部大特写，可叠加局部放大框",
+    "default_text_guidance": "适合一句短卖点"
+  },
+  {
+    "type_key": "detail_feature",
+    "type_name": "细节展示图",
+    "category": "基础展示类",
+    "type_description": "整体图配合局部特征说明",
+    "base_prompt_template": "请为商品“{product_name}”生成一张细节展示图，以商品整体图配合局部细节说明的形式，突出 {display_focus}。画面应兼顾整体和局部，让用户既能看到商品全貌，也能快速理解关键细节特征。",
+    "base_negative_prompt": "不要重点分散，不要堆积过多局部，不要虚构零件或纹理。",
+    "default_layout_guidance": "整体图加2到4个局部框",
+    "default_text_guidance": "每个细节1句短说明"
+  },
+  {
+    "type_key": "specification_chart",
+    "type_name": "规格参数图",
+    "category": "基础展示类",
+    "type_description": "尺寸结构容量规格参数说明",
+    "base_prompt_template": "请为商品“{product_name}”生成一张规格参数图，重点表现商品尺寸、结构、部位名称、容量、规格或关键参数信息。若输入信息中没有明确数值，请预留规范的参数展示区域，不得虚构具体参数。",
+    "base_negative_prompt": "不要虚构尺寸或数值，不要参数排版混乱，不要装饰过多。",
+    "default_layout_guidance": "表格式或标注式布局",
+    "default_text_guidance": "参数名加参数值短标签"
+  },
+  {
+    "type_key": "packaging_display",
+    "type_name": "包装展示图",
+    "category": "基础展示类",
+    "type_description": "展示商品与包装或交付形式",
+    "base_prompt_template": "请为商品“{product_name}”生成一张包装展示图，展示商品本体与包装、外盒、袋装或附件的组合关系，突出完整度与交付感。若原始输入未明确包装样式，请以通用包装展示逻辑表达，不得虚构具体品牌包装设计。",
+    "base_negative_prompt": "不要虚构品牌包装细节，不要出现不符合商品定位的豪华礼盒，不要错误增加赠品。",
+    "default_layout_guidance": "商品本体为主，包装为辅",
+    "default_text_guidance": "适合包装内容短句"
+  },
+  {
+    "type_key": "parts_accessories",
+    "type_name": "配件展示图",
+    "category": "基础展示类",
+    "type_description": "展示主件与配件对应关系",
+    "base_prompt_template": "请为商品“{product_name}”生成一张配件展示图，清晰展示商品主件与配件、附属部件、连接件或使用附件的对应关系。要求结构清楚，配件归属明确。",
+    "base_negative_prompt": "不要虚构配件，不要错配部件，不要配件数量混乱。",
+    "default_layout_guidance": "平铺分解式布局",
+    "default_text_guidance": "配件名称短标签"
+  },
+  {
+    "type_key": "size_reference",
+    "type_name": "尺寸参考图",
+    "category": "基础展示类",
+    "type_description": "尺寸或比例参照图",
+    "base_prompt_template": "请为商品“{product_name}”生成一张尺寸参考图，重点说明商品尺寸、穿着或摆放比例、人与物或物与空间之间的大小关系。若缺少准确数值，请以比例感展示为主，不得编造精确尺寸。",
+    "base_negative_prompt": "不要虚构尺寸数值，不要比例夸张，不要错误使用人物身高体型参照。",
+    "default_layout_guidance": "商品图加尺寸线或比例参照",
+    "default_text_guidance": "适合尺寸标签和建议参考"
+  },
+  {
+    "type_key": "fit_explanation",
+    "type_name": "版型说明图",
+    "category": "基础展示类",
+    "type_description": "解释版型廓形和结构",
+    "base_prompt_template": "请为商品“{product_name}”生成一张版型说明图，重点表现商品廓形、版型结构、肩线、袖型、腰线、下摆、长度感或贴合程度，帮助用户理解商品轮廓特征。",
+    "base_negative_prompt": "不要改变商品原始版型，不要虚构修身或显瘦效果。",
+    "default_layout_guidance": "整体轮廓图为主，标签辅助",
+    "default_text_guidance": "适合宽松修身直筒等短标签"
+  },
+  {
+    "type_key": "core_selling_point",
+    "type_name": "核心卖点图",
+    "category": "卖点转化类",
+    "type_description": "一图一卖点强化",
+    "base_prompt_template": "请基于商品“{product_name}”的核心卖点 {selling_points} 生成一张卖点图。画面围绕最重要的1个卖点展开，突出商品优势，并通过构图、光线、局部细节或场景强化该卖点对应的视觉感受。",
+    "base_negative_prompt": "不要堆叠多个无关卖点，不要夸大不存在的功能，不要弱化商品主体。",
+    "default_layout_guidance": "一图一卖点，主体明显",
+    "default_text_guidance": "主标题加副说明"
+  },
+  {
+    "type_key": "pain_point_solution",
+    "type_name": "客户痛点图",
+    "category": "卖点转化类",
+    "type_description": "问题与解决结构图",
+    "base_prompt_template": "请为商品“{product_name}”生成一张客户痛点图，围绕目标用户在选购或使用同类商品时的常见问题展开，并突出该商品的解决价值。画面应具备明确的问题与解决结构。",
+    "base_negative_prompt": "不要制造极端焦虑，不要虚构医学化问题，不要夸张宣称彻底解决所有问题。",
+    "default_layout_guidance": "左痛点右解决或上下对照",
+    "default_text_guidance": "问题句加解决句"
+  },
+  {
+    "type_key": "usage_comparison",
+    "type_name": "使用对比图",
+    "category": "卖点转化类",
+    "type_description": "使用前后或有无对比",
+    "base_prompt_template": "请为商品“{product_name}”生成一张使用对比图，通过左右或上下结构直观体现商品的使用价值、体验差异或有无使用时的对比效果。画面必须逻辑清晰、对比自然。",
+    "base_negative_prompt": "不要虚构极端前后差异，不要制造违反常识的变化。",
+    "default_layout_guidance": "左右对比或上下对比",
+    "default_text_guidance": "对比标题和差异标签"
+  },
+  {
+    "type_key": "material_craft",
+    "type_name": "材质工艺图",
+    "category": "卖点转化类",
+    "type_description": "突出材质纹理和工艺细节",
+    "base_prompt_template": "请为商品“{product_name}”生成一张材质工艺图，重点突出商品的材质纹理、织法、表面触感、工艺细节、边缘处理或拼接方式，强调品质感和细节完成度。",
+    "base_negative_prompt": "不要虚构高端成分，不要将普通材质表现成完全不同的材质。",
+    "default_layout_guidance": "局部质感为主，整体图辅助",
+    "default_text_guidance": "适合质感类短句"
+  },
+  {
+    "type_key": "function_explain",
+    "type_name": "功能说明图",
+    "category": "卖点转化类",
+    "type_description": "系统化展示功能和结构作用",
+    "base_prompt_template": "请为商品“{product_name}”生成一张功能说明图，系统化展示商品的核心功能、使用方式或结构作用。画面应清晰说明功能点与商品结构之间的对应关系。",
+    "base_negative_prompt": "不要虚构功能，不要功能点过多过杂，不要脱离商品真实结构。",
+    "default_layout_guidance": "功能点分区和标注结构",
+    "default_text_guidance": "每个功能点一句"
+  },
+  {
+    "type_key": "advantage_summary",
+    "type_name": "优势总结图",
+    "category": "卖点转化类",
+    "type_description": "汇总3到5个主要优势",
+    "base_prompt_template": "请为商品“{product_name}”生成一张优势总结图，系统梳理3到5个主要优势，帮助用户快速建立购买认知。整体需要整洁、信息层级分明。",
+    "base_negative_prompt": "不要写成大段说明，不要卖点重复，不要堆满信息。",
+    "default_layout_guidance": "模块化分栏或卡片式",
+    "default_text_guidance": "短卖点列表"
+  },
+  {
+    "type_key": "ingredient_highlight",
+    "type_name": "成分卖点图",
+    "category": "卖点转化类",
+    "type_description": "展示可确认成分原料配料",
+    "base_prompt_template": "请为商品“{product_name}”生成一张成分卖点图，重点展示可确认的成分、原料、配料或材质来源信息，并将其与商品卖点做合理关联。仅可使用已确认或高可信输入，不得虚构成分。",
+    "base_negative_prompt": "不要虚构成分含量，不要医学化疗效化，不要使用未确认原料。",
+    "default_layout_guidance": "成分模块加商品图",
+    "default_text_guidance": "成分名加卖点短句"
+  },
+  {
+    "type_key": "usage_step",
+    "type_name": "使用步骤图",
+    "category": "卖点转化类",
+    "type_description": "分步骤说明使用流程",
+    "base_prompt_template": "请为商品“{product_name}”生成一张使用步骤图，以分步骤方式展示商品的使用流程、操作顺序或穿戴步骤。画面需要结构清晰、步骤明确、便于快速理解。",
+    "base_negative_prompt": "不要步骤跳跃，不要错误操作，不要复杂到难以理解。",
+    "default_layout_guidance": "Step流程式布局",
+    "default_text_guidance": "每步一句"
+  },
+  {
+    "type_key": "audience_match",
+    "type_name": "适用人群图",
+    "category": "卖点转化类",
+    "type_description": "说明适合谁和适合原因",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适用人群图，围绕目标人群 {target_audience} 与需求 {audience_need}，表达商品适合谁、为什么适合。画面应自然、清晰。",
+    "base_negative_prompt": "不要歧视性表达，不要过度狭窄标签化，不要虚构人人适用的绝对结论。",
+    "default_layout_guidance": "人群标签加商品图",
+    "default_text_guidance": "适合人群标签化"
+  },
+  {
+    "type_key": "compatibility_info",
+    "type_name": "适配说明图",
+    "category": "卖点转化类",
+    "type_description": "说明适配设备场景空间对象",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适配说明图，重点表达商品适配的设备、场景、空间、对象或搭配组合。要求兼容关系明确，不得虚构适配范围。",
+    "base_negative_prompt": "不要虚构适配型号，不要扩大兼容范围，不要出现错误接口或错误搭配。",
+    "default_layout_guidance": "适配对象分组展示",
+    "default_text_guidance": "适配对象短标签"
+  },
+  {
+    "type_key": "scene_image",
+    "type_name": "场景图",
+    "category": "场景种草类",
+    "type_description": "真实场景融入商品",
+    "base_prompt_template": "请为商品“{product_name}”生成一张场景图，将商品自然融入 {usage_scenarios} 对应的真实环境中，氛围符合 {lifestyle_context}。场景应服务于商品展示，而不是喧宾夺主。",
+    "base_negative_prompt": "不要复杂到看不清商品，不要出现无关大量道具，不要场景抢主体。",
+    "default_layout_guidance": "商品为主，场景为辅",
+    "default_text_guidance": "可配一条场景化短标题"
+  },
+  {
+    "type_key": "try_on_or_demo",
+    "type_name": "试穿试用图",
+    "category": "场景种草类",
+    "type_description": "人物上身上手或实际使用图",
+    "base_prompt_template": "请为商品“{product_name}”生成一张试穿或试用图，通过人物上身、上手或实际使用状态，直观体现商品效果、比例、互动方式和使用感。人物与商品关系要自然，商品仍是核心主体。",
+    "base_negative_prompt": "不要人物喧宾夺主，不要改变商品版型，不要错误使用方式。",
+    "default_layout_guidance": "人物与商品互动，商品清晰",
+    "default_text_guidance": "适合上身效果类短句"
+  },
+  {
+    "type_key": "human_interaction",
+    "type_name": "人物互动图",
+    "category": "场景种草类",
+    "type_description": "通过人物互动增强代入感",
+    "base_prompt_template": "请为商品“{product_name}”生成一张人物互动图，通过人物与商品的自然互动增强代入感和信任感。人物气质需符合 {target_audience} 与 {market} 审美偏好，整体调性符合 {visual_style}。",
+    "base_negative_prompt": "不要人物压过商品，不要不符合目标市场审美，不要夸张表演感。",
+    "default_layout_guidance": "人物辅助表达商品价值",
+    "default_text_guidance": "适合生活方式类标题"
+  },
+  {
+    "type_key": "hero_banner",
+    "type_name": "首屏视觉图",
+    "category": "场景种草类",
+    "type_description": "首页首屏或详情首屏主视觉",
+    "base_prompt_template": "请为商品“{product_name}”生成一张首屏视觉图，用于首页首屏、活动页头图或详情页第一屏。画面需要兼顾商品展示、品牌感、氛围表达与转化导向，同时预留标题、副标题和按钮区域。",
+    "base_negative_prompt": "不要信息过满，不要商品过小，不要标题区无留白，不要只有氛围没有商品。",
+    "default_layout_guidance": "横版或大视觉，明确标题区",
+    "default_text_guidance": "主标题副标题CTA"
+  },
+  {
+    "type_key": "lifestyle_image",
+    "type_name": "生活方式氛围图",
+    "category": "场景种草类",
+    "type_description": "塑造情绪季节感与生活方式质感",
+    "base_prompt_template": "请为商品“{product_name}”生成一张生活方式氛围图，围绕 {visual_keywords} 和 {lifestyle_context} 塑造情绪、季节感与生活方式质感。画面需要自然、有情绪、有商品存在感。",
+    "base_negative_prompt": "不要纯氛围没有商品，不要风格方向与商品不匹配。",
+    "default_layout_guidance": "沉浸式场景，商品自然出现",
+    "default_text_guidance": "适合种草短句"
+  },
+  {
+    "type_key": "holiday_campaign",
+    "type_name": "节日活动图",
+    "category": "场景种草类",
+    "type_description": "节庆活动促销视觉图",
+    "base_prompt_template": "请为商品“{product_name}”生成一张节日活动图，结合 {market} 市场的节日氛围与 {visual_style} 风格，强化活动感、购买动机和礼赠或上新氛围，同时保持商品主体清晰可见。",
+    "base_negative_prompt": "不要廉价促销感，不要让活动元素淹没商品，不要与平台规范冲突。",
+    "default_layout_guidance": "活动标题区加商品区",
+    "default_text_guidance": "活动标题和卖点短句"
+  },
+  {
+    "type_key": "styling_scene",
+    "type_name": "穿搭场景图",
+    "category": "场景种草类",
+    "type_description": "突出搭配关系和整体穿搭氛围",
+    "base_prompt_template": "请为商品“{product_name}”生成一张穿搭场景图，将商品置于符合目标人群与风格偏好的穿搭环境中，重点体现搭配关系、整体气质和场景代入感。",
+    "base_negative_prompt": "不要搭配风格偏离商品，不要过于复杂掩盖商品。",
+    "default_layout_guidance": "人物或平铺搭配",
+    "default_text_guidance": "适合搭配建议短句"
+  },
+  {
+    "type_key": "handheld_demo",
+    "type_name": "上手使用图",
+    "category": "场景种草类",
+    "type_description": "展示手持操作或接触状态",
+    "base_prompt_template": "请为商品“{product_name}”生成一张上手使用图，直观展示商品被手持、操作、接触或使用时的状态，强调尺寸感、交互感和真实体验。",
+    "base_negative_prompt": "不要错误手势，不要不符合人体工学，不要让商品主体被遮挡过多。",
+    "default_layout_guidance": "手部交互清晰",
+    "default_text_guidance": "适合手感体验类短句"
+  },
+  {
+    "type_key": "space_fit",
+    "type_name": "空间适配图",
+    "category": "场景种草类",
+    "type_description": "展示商品与空间的比例和适配感",
+    "base_prompt_template": "请为商品“{product_name}”生成一张空间适配图，展示商品与目标空间之间的尺寸关系、摆放关系和风格匹配度，适合表达居家、办公、收纳、家具等商品的适配性。",
+    "base_negative_prompt": "不要空间比例失真，不要摆放逻辑错误，不要虚构超大或超小适配感。",
+    "default_layout_guidance": "商品在空间中的自然呈现",
+    "default_text_guidance": "适合适配场景短标签"
+  },
+  {
+    "type_key": "amazon_main",
+    "type_name": "亚马逊主图",
+    "category": "平台适配类",
+    "type_description": "符合Amazon主图规范",
+    "base_prompt_template": "请为商品“{product_name}”生成一张符合亚马逊主图风格的商品图片。要求纯白背景，商品主体占画面主要区域，完整、清晰、边缘干净，不添加文字、人物、场景和无关道具。必须保持商品原始颜色、结构和材质观感。",
+    "base_negative_prompt": "不要复杂背景，不要人物，不要场景，不要文案，不要角标，不要与平台规范冲突。",
+    "default_layout_guidance": "标准居中主图",
+    "default_text_guidance": "不放文案"
+  },
+  {
+    "type_key": "amazon_sub",
+    "type_name": "亚马逊辅图",
+    "category": "平台适配类",
+    "type_description": "Amazon详情辅助说明图",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合亚马逊辅图的展示图，可用于说明卖点、细节、参数或使用方式。画面需要结构清晰、信息可读，同时保持商品主体与卖点表达的平衡。",
+    "base_negative_prompt": "不要信息堆砌，不要过度促销感，不要虚构功能。",
+    "default_layout_guidance": "商品加信息区分屏结构",
+    "default_text_guidance": "卖点短句和图解说明"
+  },
+  {
+    "type_key": "short_video_cover",
+    "type_name": "内容电商封面图",
+    "category": "平台适配类",
+    "type_description": "适合短视频和内容商品卡封面",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合内容电商、短视频商品卡或封面图的视觉图片。要求第一眼吸引力强，商品主体清楚，卖点直观，氛围或人物表达符合 {platform} 与 {market} 内容消费习惯。",
+    "base_negative_prompt": "不要过度杂乱，不要封面信息过满，不要弱化商品主体。",
+    "default_layout_guidance": "冲击力强，标题区明确",
+    "default_text_guidance": "强标题和强卖点"
+  },
+  {
+    "type_key": "b2b_industrial_sheet",
+    "type_name": "B2B参数说明图",
+    "category": "平台适配类",
+    "type_description": "工业品商用品批发参数说明图",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合B2B、工业品、批发商品详情使用的参数说明图。重点展示规格、结构、工艺、应用场景、包装或供货信息，整体风格专业、清晰、可信，便于采购和询盘决策。",
+    "base_negative_prompt": "不要消费品氛围化表达，不要过度感性，不要虚构行业标准和认证。",
+    "default_layout_guidance": "工程化排版，参数模块化",
+    "default_text_guidance": "专业术语和参数标签"
+  }
+]

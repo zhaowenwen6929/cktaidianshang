@@ -1,0 +1,103 @@
+{
+  "status": "ready",
+  "signature": "aplus-demo-signature-002",
+  "summary": [
+    "先用首屏主视觉传递商品整体价值和秋冬氛围感。",
+    "第二模块突出核心卖点，强化保暖、百搭和宽松舒适的穿着认知。",
+    "第三模块通过使用场景图展示商品在秋冬日常通勤中的真实代入感。",
+    "第四模块放大针织纹理、领口织法和袖口细节，强化质感与可信度。",
+    "最后使用尺寸/规格信息模块补充结构和已知参数信息，帮助用户理解版型与尺寸。"
+  ],
+  "modules": [
+    {
+      "id": "aplus-hero",
+      "category": "首屏主视觉",
+      "description": "传递温暖松弛的秋冬穿搭价值与品牌质感。",
+      "headline": "Warm Texture For Everyday Winter Style",
+      "focus_line": "围绕粗针织纹理、厚实保暖和宽松舒适的穿着感受建立首屏价值表达，突出商品整体廓形和秋冬氛围。",
+      "visual_line": "保持温暖、柔和、简约、有留白的首屏视觉，强调米棕燕麦色调和自然生活方式感。",
+      "module_payload": {
+        "title_text": "Warm Texture For Everyday Winter Style",
+        "subtitle_text": "Soft, Cozy, Easy To Pair",
+        "title_position": "left-top",
+        "title_font_style": "clean-sans",
+        "title_size": "large",
+        "target_language": "en"
+      }
+    },
+    {
+      "id": "aplus-core-selling",
+      "category": "核心卖点图",
+      "description": "清晰传达保暖、百搭与宽松舒适三项核心卖点。",
+      "headline": "Cozy Warmth, Relaxed Fit, Easy Pairing",
+      "focus_line": "突出厚实温暖、杂色针织层次和宽松落肩版型，帮助用户快速理解穿着收益和搭配价值。",
+      "visual_line": "信息层级清晰，商品主体和卖点分区明确，图文一一对应，不要卖点堆叠。",
+      "module_payload": {
+        "bullet_points": [
+          "Chunky knit texture",
+          "Relaxed drop-shoulder fit",
+          "Easy to style for daily wear"
+        ],
+        "highlight_style": "短句强调",
+        "callout_count": 3
+      }
+    },
+    {
+      "id": "aplus-scene-usage",
+      "category": "使用场景图",
+      "description": "呈现秋冬日常通勤和周末出街的真实穿搭场景。",
+      "headline": "Perfect For Daily Commute",
+      "focus_line": "强化温柔慵懒风格和真实生活方式代入感，让用户理解这件毛衣在日常通勤与休闲场景中的适配性。",
+      "visual_line": "使用奶油色、米色、木质和暖调室内环境，场景真实自然，商品主体始终清晰。",
+      "module_payload": {
+        "title_text": "Perfect For Daily Commute",
+        "title_position": "left-top",
+        "title_font_style": "medium-rounded-sans",
+        "title_size": "medium",
+        "target_language": "en"
+      }
+    },
+    {
+      "id": "aplus-detail",
+      "category": "商品细节图",
+      "description": "放大针织纹理、领口织法和袖口细节，强化材质与做工感知。",
+      "headline": "See The Knit In Detail",
+      "focus_line": "展示罗纹领口、罗纹袖口和整体粗针织肌理，让用户直观看到商品质感和结构细节。",
+      "visual_line": "特写真实、清楚、有质感，局部放大区域与整体结构保持对应关系，不过度锐化。",
+      "module_payload": {
+        "zoom_points": [
+          "Ribbed neckline",
+          "Chunky knit texture",
+          "Ribbed cuff detail"
+        ],
+        "label_style": "纯文字小标签",
+        "label_position": "局部旁注"
+      }
+    },
+    {
+      "id": "aplus-size",
+      "category": "尺寸/容量/尺码图",
+      "description": "补充圆领、长袖、宽松版型与已知尺码/结构信息。",
+      "headline": "Fit & Size Overview",
+      "focus_line": "展示已知版型和结构信息，帮助用户理解宽松感与穿着轮廓；未确认尺码数据保持待补充状态。",
+      "visual_line": "参数排版规整、易读，商品示意和标注关系清楚，不虚构具体数值。",
+      "module_payload": {
+        "size_items": [
+          {
+            "label": "Neckline",
+            "value": "Crew neck"
+          },
+          {
+            "label": "Sleeve",
+            "value": "Long sleeve"
+          },
+          {
+            "label": "Fit",
+            "value": "Relaxed fit"
+          }
+        ],
+        "unit_system": "metric"
+      }
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "version": "2026-05-08",
+  "video_global_constraints": {
+    "max_total_duration_sec": 15,
+    "voiceover_max_chars_for_15s": 40,
+    "must_be_realistic": true,
+    "must_be_ecommerce_compliant": true,
+    "forbidden_claim_words_zh": ["第一", "最好", "顶级", "国家级", "永久", "100%", "全网最低", "根治", "绝对有效"]
+  },
+  "platform_rules": {
+    "通用平台": {
+      "recommended_ratios": ["9:16", "1:1", "3:4", "16:9"],
+      "recommended_duration": "15秒内",
+      "content_focus": "前2-3秒出主体和核心卖点，信息简洁，真实可拍",
+      "style_tone": "通用电商，真实可信",
+      "compliance_notes": ["避免夸大宣传", "避免虚构认证和销量", "禁止侵权素材"],
+      "strict_forbidden": ["绝对化用语", "医疗功效暗示", "竞品贬低"],
+      "aigc_publish_note": "如平台要求，发布链路需勾选或声明AIGC"
+    },
+    "抖音电商": {
+      "recommended_ratios": ["9:16"],
+      "recommended_duration": "15秒内",
+      "content_focus": "前2秒强吸引，节奏快，商品主体清晰",
+      "style_tone": "年轻化，原生短视频感",
+      "compliance_notes": ["减少硬广感", "加强真实口语和真实场景"],
+      "strict_forbidden": ["绝对化用语", "虚假低价", "低质猎奇剧情"],
+      "aigc_publish_note": "按平台发布规范完成AIGC标注"
+    },
+    "小红书电商": {
+      "recommended_ratios": ["1:1", "3:4", "4:3"],
+      "recommended_duration": "15秒内",
+      "content_focus": "真实分享感、生活方式表达、审美一致",
+      "style_tone": "真诚种草，克制广告",
+      "compliance_notes": ["强调真实体验", "弱化强促销口吻"],
+      "strict_forbidden": ["绝对化保证词", "医疗保健越界表达"],
+      "aigc_publish_note": "按平台规则处理AIGC披露"
+    },
+    "快手电商": {
+      "recommended_ratios": ["9:16", "16:9"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "真实接地气，展示可感知价值",
+      "style_tone": "亲切直接，信任感",
+      "compliance_notes": ["避免过度包装", "展示真实使用"],
+      "strict_forbidden": ["虚假承诺", "不实对比"],
+      "aigc_publish_note": "按发布场景要求执行AIGC说明"
+    },
+    "淘宝": {
+      "recommended_ratios": ["3:4", "1:1", "16:9"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "开头快显卖点，主体+细节+场景",
+      "style_tone": "清晰直观，促转化",
+      "compliance_notes": ["价格与活动信息需真实", "避免牛皮癣式堆叠文案"],
+      "strict_forbidden": ["绝对化用语", "虚假宣传"],
+      "aigc_publish_note": "依据当前发布端规范处理AIGC声明"
+    },
+    "天猫": {
+      "recommended_ratios": ["3:4", "1:1", "16:9"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "品牌质感与核心卖点并重",
+      "style_tone": "精致高级，可信",
+      "compliance_notes": ["突出品质与服务信息真实性"],
+      "strict_forbidden": ["夸大功效", "绝对化表达"],
+      "aigc_publish_note": "依据当前发布端规范处理AIGC声明"
+    },
+    "京东": {
+      "recommended_ratios": ["1:1", "16:9"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "参数与功能表达清晰，强调专业可信",
+      "style_tone": "理性专业",
+      "compliance_notes": ["参数展示需准确", "避免信息误导"],
+      "strict_forbidden": ["虚构资质", "绝对化话术"],
+      "aigc_publish_note": "按发布端合规要求执行"
+    },
+    "拼多多": {
+      "recommended_ratios": ["9:16", "1:1"],
+      "recommended_duration": "15秒内",
+      "content_focus": "快速展示价格效率和核心卖点，减少无效铺垫",
+      "style_tone": "直白、实用、高转化导向",
+      "compliance_notes": ["价格与优惠信息需真实可兑现", "突出主体清晰与实用价值"],
+      "strict_forbidden": ["虚假低价", "绝对化承诺", "不实功效宣传"],
+      "aigc_publish_note": "按发布端实际规则执行AIGC披露"
+    },
+    "1688": {
+      "recommended_ratios": ["16:9", "4:3", "1:1"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "突出材质工艺、规格参数、供货能力与稳定性",
+      "style_tone": "工业实用、专业可信",
+      "compliance_notes": ["参数与工艺信息可验证", "建议增加细节特写与规格表达"],
+      "strict_forbidden": ["虚构产能", "虚构认证", "绝对化质量承诺"],
+      "aigc_publish_note": "按商家后台要求执行AIGC披露"
+    },
+    "亚马逊": {
+      "recommended_ratios": ["16:9", "1:1"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "功能与使用场景清晰，不做竞品踩踏",
+      "style_tone": "国际通用，干净直接",
+      "compliance_notes": ["信息必须准确", "避免促销噱头硬植入"],
+      "strict_forbidden": ["贬低竞品", "无法验证声明"],
+      "aigc_publish_note": "按站点最新政策处理合规披露"
+    },
+    "TikTok Shop": {
+      "recommended_ratios": ["9:16"],
+      "recommended_duration": "15秒内",
+      "content_focus": "原生短视频节奏，强停留与清晰主体",
+      "style_tone": "潮流、自然、轻剧情",
+      "compliance_notes": ["素材需真实反映商品", "避免误导性视觉"],
+      "strict_forbidden": ["绝对化用语", "误导性承诺", "违规AIGC未披露"],
+      "aigc_publish_note": "按商家后台与发布链路要求标注AIGC"
+    },
+    "Temu": {
+      "recommended_ratios": ["9:16", "1:1"],
+      "recommended_duration": "15秒内",
+      "content_focus": "性价比表达清晰，主体与价格信息不冲突",
+      "style_tone": "直接、高效",
+      "compliance_notes": ["价格/优惠信息必须真实可履约"],
+      "strict_forbidden": ["虚假低价", "无法兑现促销"],
+      "aigc_publish_note": "依据平台最新发布要求执行"
+    },
+    "阿里国际站": {
+      "recommended_ratios": ["16:9", "4:3", "1:1"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "强调B2B采购关键信息：材质、工艺、产能、定制能力",
+      "style_tone": "专业、理性、信任导向",
+      "compliance_notes": ["减少情绪化营销词", "突出可验证信息与场景"],
+      "strict_forbidden": ["虚假资质", "虚假产地", "无法验证承诺"],
+      "aigc_publish_note": "按当前站点发布规范执行AIGC披露"
+    },
+    "Shopee": {
+      "recommended_ratios": ["9:16", "1:1"],
+      "recommended_duration": "15秒内",
+      "content_focus": "快速识别商品与用途，本地化表达",
+      "style_tone": "活泼清晰",
+      "compliance_notes": ["重视可读性与清晰度"],
+      "strict_forbidden": ["敏感元素违规", "误导性描述"],
+      "aigc_publish_note": "按当地站点发布规则执行"
+    },
+    "OZON": {
+      "recommended_ratios": ["16:9", "1:1"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "强调实用属性、物流使用场景与耐用价值",
+      "style_tone": "克制理性、信息清晰",
+      "compliance_notes": ["避免夸张戏剧化镜头", "优先功能可理解表达"],
+      "strict_forbidden": ["政治敏感违规", "虚假功能与材质"],
+      "aigc_publish_note": "按平台发布规范执行AIGC披露"
+    },
+    "SHEIN": {
+      "recommended_ratios": ["9:16", "3:4", "1:1"],
+      "recommended_duration": "15秒内",
+      "content_focus": "时尚穿搭导向，快速展示版型与上身效果",
+      "style_tone": "年轻潮流、节奏明快",
+      "compliance_notes": ["突出版型细节与面料质感", "保持表达合规不过界"],
+      "strict_forbidden": ["擦边内容", "绝对化话术", "误导性尺寸表达"],
+      "aigc_publish_note": "按发布端要求执行AIGC披露"
+    },
+    "速卖通": {
+      "recommended_ratios": ["16:9", "1:1"],
+      "recommended_duration": "15-30秒（本系统按15秒）",
+      "content_focus": "国际买家可理解，多语言字幕可选",
+      "style_tone": "简洁、跨文化",
+      "compliance_notes": ["信息表达国际化，避免文化歧义"],
+      "strict_forbidden": ["政治敏感违规", "不实承诺"],
+      "aigc_publish_note": "按发布端规则执行AIGC披露"
+    }
+  },
+  "category_alias_mapping": {
+    "通用品类": ["通用", "其他", "未知品类", "general-merchandise"],
+    "服饰类": ["女装", "男装", "童装", "内衣", "袜子", "服饰", "上衣", "裤子", "裙子"],
+    "鞋靴类": ["运动鞋", "皮鞋", "凉鞋", "靴子", "鞋", "鞋靴"],
+    "箱包类": ["双肩包", "女包", "箱包", "行李箱", "钱包", "背包"],
+    "珠宝饰品类": ["项链", "戒指", "耳饰", "手链", "首饰", "珠宝", "饰品"],
+    "美妆个护类": ["护肤品", "彩妆", "洗护", "香水", "美妆", "个护"],
+    "食品饮料类": ["零食", "茶饮", "粮油", "保健食品", "食品", "饮料"],
+    "家居百货类": ["收纳用品", "厨具", "清洁用品", "家纺", "家居", "百货"],
+    "家电数码类": ["小家电", "耳机", "手机配件", "鼠标", "键盘", "数码", "家电"],
+    "家具大件类": ["桌椅", "柜体", "沙发", "家具"],
+    "母婴玩具类": ["婴童用品", "益智玩具", "毛绒玩具", "母婴", "玩具"],
+    "宠物用品类": ["宠物窝", "宠物玩具", "喂食器", "宠物用品"],
+    "汽配五金类": ["车载支架", "工具", "配件耗材", "汽配", "五金"]
+  },
+  "category_rules": {
+    "通用品类": {
+      "video_style_hint": "主体清晰、细节可见、场景克制",
+      "music_mood_hint": "按节奏匹配，不喧宾夺主",
+      "visual_hint": "白底或轻生活方式",
+      "voiceover_hint": "自然口吻，简短可信"
+    },
+    "服饰类": {
+      "video_style_hint": "上身动态+面料细节，避免过度磨皮",
+      "music_mood_hint": "轻快时尚或松弛感",
+      "visual_hint": "时尚大片/生活方式",
+      "voiceover_hint": "年轻自然女声或弱旁白"
+    },
+    "鞋靴类": {
+      "video_style_hint": "上脚行走+鞋底细节+包裹感展示",
+      "music_mood_hint": "动感节奏",
+      "visual_hint": "运动潮流/工业硬朗",
+      "voiceover_hint": "清晰有力，少形容词"
+    },
+    "箱包类": {
+      "video_style_hint": "开合结构+容量演示+通勤场景",
+      "music_mood_hint": "轻奢优雅",
+      "visual_hint": "轻奢大片/生活方式",
+      "voiceover_hint": "知性女声，强调实用点"
+    },
+    "珠宝饰品类": {
+      "video_style_hint": "微距高光+佩戴特写，避免过曝闪烁",
+      "music_mood_hint": "克制高级",
+      "visual_hint": "黑白光影/极简白底",
+      "voiceover_hint": "温柔克制，少夸张词"
+    },
+    "美妆个护类": {
+      "video_style_hint": "质地特写+使用步骤，避免功效绝对化",
+      "music_mood_hint": "清新治愈",
+      "visual_hint": "高级棚拍/科技简约",
+      "voiceover_hint": "自然种草口吻"
+    },
+    "食品饮料类": {
+      "video_style_hint": "开封/冲泡/入口反应，强调真实食欲感",
+      "music_mood_hint": "温馨日常或活力",
+      "visual_hint": "生活方式/温馨家居",
+      "voiceover_hint": "轻松口语化"
+    },
+    "家居百货类": {
+      "video_style_hint": "前后对比+使用过程，突出收纳/清洁效率",
+      "music_mood_hint": "松弛或趣味",
+      "visual_hint": "温馨家居",
+      "voiceover_hint": "自然解释型"
+    },
+    "家电数码类": {
+      "video_style_hint": "功能分镜+操作动线+参数点到即止",
+      "music_mood_hint": "科技动感",
+      "visual_hint": "科技简约/工业硬朗",
+      "voiceover_hint": "专业旁白，避免玄学形容"
+    },
+    "家具大件类": {
+      "video_style_hint": "空间关系+材质近景+尺寸感对照",
+      "music_mood_hint": "温和叙述",
+      "visual_hint": "生活方式/轻奢",
+      "voiceover_hint": "稳重自然"
+    },
+    "母婴玩具类": {
+      "video_style_hint": "亲子互动+安全细节，不夸大教育功效",
+      "music_mood_hint": "温馨童趣",
+      "visual_hint": "活泼趣味/温馨家居",
+      "voiceover_hint": "亲和温柔"
+    },
+    "宠物用品类": {
+      "video_style_hint": "宠物真实使用+细节功能展示",
+      "music_mood_hint": "轻松可爱",
+      "visual_hint": "生活方式/活泼趣味",
+      "voiceover_hint": "自然口吻"
+    },
+    "汽配五金类": {
+      "video_style_hint": "安装演示+承重/耐用测试，可验证",
+      "music_mood_hint": "硬朗节奏",
+      "visual_hint": "工业硬朗/极简白底",
+      "voiceover_hint": "专业男声或中性专业旁白"
+    }
+  },
+  "video_prompt_generator": {
+    "output_schema": {
+      "video_prompt_en": "string",
+      "video_structure": {
+        "total_duration_sec": "number",
+        "shot_count": "number",
+        "shots": [
+          {
+            "shot_id": "number",
+            "duration_sec": "number",
+            "camera": "string",
+            "visual_action": "string",
+            "transition": "string",
+            "voiceover": "string",
+            "sfx": "string"
+          }
+        ]
+      },
+      "negative_prompt_en": "string",
+      "render_notes_zh": "string",
+      "compliance_checklist": ["string"]
+    },
+    "negative_prompt_baseline_en": "no floating objects, no surreal light beams, no plastic skin, no deformed hands or fingers, no extra product parts, no fake logo or watermark overlays, no excessive CGI particles, no oversaturation, no over-sharpening, no misleading medical-claim visuals, no frame-to-frame identity drift, no product geometry inconsistency across shots"
+  }
+}

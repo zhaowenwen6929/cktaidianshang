@@ -1,0 +1,168 @@
+{
+  "selection_context": {
+    "platform": "xiaohongshu",
+    "market": "cn",
+    "language": "zh-CN",
+    "visual_style": "warm_lifestyle",
+    "category_key": "fashion_apparel",
+    "product_name": "杂色粗针圆领宽松毛衣"
+  },
+  "recommended_image_types": {
+    "must_have": [
+      "lifestyle_image",
+      "styling_scene",
+      "detail_closeup"
+    ],
+    "recommended": [
+      "try_on_or_demo",
+      "hero_banner",
+      "core_selling_point"
+    ],
+    "optional": [
+      "fit_explanation",
+      "material_craft",
+      "holiday_campaign"
+    ],
+    "not_recommended": [
+      "amazon_main",
+      "b2b_industrial_sheet",
+      "specification_chart"
+    ]
+  },
+  "recommendation_reasoning": [
+    {
+      "type_key": "lifestyle_image",
+      "reason": "适合小红书种草语境，能突出温暖、柔和、生活方式感，适合当前毛衣类商品的秋冬氛围表达。"
+    },
+    {
+      "type_key": "styling_scene",
+      "reason": "服饰鞋包品类在小红书更适合通过穿搭场景图强化版型、风格和可模仿感，适合温柔慵懒风的毛衣商品。"
+    },
+    {
+      "type_key": "detail_closeup",
+      "reason": "当前商品粗针织纹理、领口织法和袖口下摆都是重要细节，适合通过特写图强化质感。"
+    },
+    {
+      "type_key": "try_on_or_demo",
+      "reason": "若后续需要更强上身代入感，可通过试穿图强化宽松版型和穿搭效果。"
+    },
+    {
+      "type_key": "hero_banner",
+      "reason": "适合做秋冬上新头图或活动页首屏，但优先级低于种草和细节表达。"
+    },
+    {
+      "type_key": "core_selling_point",
+      "reason": "适合补充一张更偏转化表达的卖点图，用于强调保暖、百搭和舒适。"
+    },
+    {
+      "type_key": "amazon_main",
+      "reason": "当前平台不是亚马逊，小红书不适合以平台白底主图为核心表达方式。"
+    },
+    {
+      "type_key": "b2b_industrial_sheet",
+      "reason": "当前商品属于服饰鞋包，不适用工业参数说明图。"
+    },
+    {
+      "type_key": "specification_chart",
+      "reason": "当前商品图片缺少明确尺寸数值和尺码信息，规格参数图可做但不适合作为当前平台的优先推荐。"
+    }
+  ],
+  "prompts_by_image_type": [
+    {
+      "type_source": "system",
+      "type_key": "lifestyle_image",
+      "type_name": "生活方式氛围图",
+      "type_description": "塑造情绪季节感与生活方式质感",
+      "base_type_reference": "lifestyle_image",
+      "goal": "强化秋冬毛衣的温暖氛围、生活方式感和种草表达",
+      "use_case": "小红书商品封面、笔记头图、种草图",
+      "custom_requirements": [],
+      "prompt": "请为商品“杂色粗针圆领宽松毛衣”生成一张生活方式氛围图，围绕 温暖、柔和、质感、简约、高级、松弛感、秋冬氛围 和 咖啡馆、室内家居、轻松生活方式场景 塑造情绪、季节感与生活方式质感。画面需要自然、有情绪、有商品存在感。重点突出版型、轮廓、面料纹理、穿搭效果与上身氛围。若涉及人物展示，应确保穿着逻辑自然，版型真实，不得擅自改成更修身、更显瘦或更挺括的效果。若无明确尺码信息，不要虚构具体尺码建议。适配小红书种草语境，画面应强调自然、真实、生活方式感和审美统一性。整体视觉偏温暖、柔和、自然，推荐使用奶油色、米色、木质与暖调室内场景，标题表达克制，不要过强促销感。",
+      "negative_prompt": "不要纯氛围没有商品，不要风格方向与商品不匹配，不要人物喧宾夺主，不要虚构显瘦、增高、塑形等绝对效果，不要把普通面料生成成羊绒、真丝、真皮等未确认材质，不得偏离商品原始米棕色系。",
+      "layout_guidance": "沉浸式场景，商品自然出现，适合竖版种草图和封面图",
+      "text_guidance": "适合种草短句，标题少字有情绪，不宜堆砌信息",
+      "platform_notes": "适合小红书商品封面、种草头图和内容封面",
+      "risk_flags": []
+    },
+    {
+      "type_source": "system",
+      "type_key": "styling_scene",
+      "type_name": "穿搭场景图",
+      "type_description": "突出搭配关系和整体穿搭氛围",
+      "base_type_reference": "styling_scene",
+      "goal": "强化毛衣在真实穿搭中的版型、风格和搭配关系",
+      "use_case": "小红书穿搭图、服饰种草图、服饰详情补充图",
+      "custom_requirements": [],
+      "prompt": "请为商品“杂色粗针圆领宽松毛衣”生成一张穿搭场景图，将商品置于符合目标人群与风格偏好的穿搭环境中，重点体现搭配关系、整体气质和场景代入感。重点突出版型、轮廓、面料纹理、穿搭效果与上身氛围。若涉及人物展示，应确保穿着逻辑自然，版型真实，不得擅自改成更修身、更显瘦或更挺括的效果。若无明确尺码信息，不要虚构具体尺码建议。适配小红书种草语境，画面应强调自然、真实、可模仿的穿搭表达，适合温柔慵懒风格的生活方式展示。整体视觉偏温暖、柔和、自然，推荐使用奶油色、米色、木质与暖调室内场景。",
+      "negative_prompt": "不要搭配风格偏离商品，不要过于复杂掩盖商品，不要人物喧宾夺主，不要虚构显瘦、增高、塑形等绝对效果，不得偏离商品原始米棕色系，不得改成修身版型。",
+      "layout_guidance": "人物或平铺搭配构图，商品仍是中心，适合竖版种草图",
+      "text_guidance": "适合搭配建议短句和少量风格标签",
+      "platform_notes": "适合小红书服饰场景种草和穿搭表达",
+      "risk_flags": []
+    },
+    {
+      "type_source": "system",
+      "type_key": "detail_closeup",
+      "type_name": "细节特写图",
+      "type_description": "放大细节突出质感工艺",
+      "base_type_reference": "detail_closeup",
+      "goal": "突出毛衣的粗针织纹理、领口织法和质感细节",
+      "use_case": "小红书商品细节图、详情页卖点图、服饰质感图",
+      "custom_requirements": [],
+      "prompt": "请为商品“杂色粗针圆领宽松毛衣”生成一张细节特写图，聚焦最能体现品质感的局部细节，重点展示 领口织法、整体粗针织纹理、宽松袖型、下摆收口，如纹理、缝线、接口、材质表面、按键、边缘处理、工艺细节等。要求局部清晰、放大合理、质感突出，并与商品整体真实一致。重点突出版型、轮廓、面料纹理、穿搭效果与上身氛围。若无明确尺码信息，不要虚构具体尺码建议。适配小红书种草语境，画面应保留生活方式感和审美统一性，避免过强货架促销感，细节表达要真实、干净、有质感。",
+      "negative_prompt": "不要虚构不存在的细节，不要把普通材质生成成高端材质，不要过度锐化，不要模糊，不要虚构显瘦、增高、塑形等绝对效果，不得偏离商品原始米棕色系。",
+      "layout_guidance": "局部大特写，可叠加局部放大框，适合竖版细节展示",
+      "text_guidance": "适合一句短卖点，文案点到为止",
+      "platform_notes": "适合小红书细节图和种草补充图",
+      "risk_flags": []
+    },
+    {
+      "type_source": "system",
+      "type_key": "try_on_or_demo",
+      "type_name": "试穿试用图",
+      "type_description": "人物上身上手或实际使用图",
+      "base_type_reference": "try_on_or_demo",
+      "goal": "展示毛衣上身后的宽松版型和穿着氛围",
+      "use_case": "服饰试穿展示图、上身效果图、穿搭补充图",
+      "custom_requirements": [],
+      "prompt": "请为商品“杂色粗针圆领宽松毛衣”生成一张试穿图，通过人物上身状态，直观体现商品效果、比例、互动方式和穿着感。人物与商品关系要自然，商品仍是核心主体。重点突出版型、轮廓、面料纹理、穿搭效果与上身氛围。适配小红书服饰种草表达，画面应强调真实上身效果和可模仿感，整体风格温暖、自然、克制。",
+      "negative_prompt": "不要人物喧宾夺主，不要改变商品版型，不要错误使用方式，不要虚构显瘦或显高效果，不得偏离商品原始米棕色系。",
+      "layout_guidance": "人物与商品互动，适合中近景竖版构图",
+      "text_guidance": "适合上身效果短句",
+      "platform_notes": "适合小红书服饰种草和试穿说明",
+      "risk_flags": []
+    },
+    {
+      "type_source": "system",
+      "type_key": "hero_banner",
+      "type_name": "首屏视觉图",
+      "type_description": "首页首屏或详情首屏主视觉",
+      "base_type_reference": "hero_banner",
+      "goal": "用于秋冬上新、服饰专题或活动页头图",
+      "use_case": "活动页首屏、专题头图、品牌主视觉",
+      "custom_requirements": [],
+      "prompt": "请为商品“杂色粗针圆领宽松毛衣”生成一张首屏视觉图，用于首页首屏、活动页头图或详情页第一屏。画面需要兼顾商品展示、品牌感、氛围表达与转化导向，同时预留标题、副标题和按钮区域。重点突出版型、面料纹理和秋冬氛围。整体视觉偏温暖、柔和、自然，适合秋冬上新和温柔慵懒风格表达。",
+      "negative_prompt": "不要信息过满，不要商品过小，不要标题区无留白，不要只有氛围没有商品，不得偏离商品原始米棕色系。",
+      "layout_guidance": "竖版或横版首屏构图，预留清晰标题区",
+      "text_guidance": "主标题副标题结构，字数适中",
+      "platform_notes": "适合专题页和品牌风格展示，不是首要种草图型",
+      "risk_flags": []
+    },
+    {
+      "type_source": "system",
+      "type_key": "core_selling_point",
+      "type_name": "核心卖点图",
+      "type_description": "一图一卖点强化",
+      "base_type_reference": "core_selling_point",
+      "goal": "强化保暖、百搭、舒适等核心卖点，补充转化表达",
+      "use_case": "详情页卖点图、电商卖点图、单卖点强化图",
+      "custom_requirements": [],
+      "prompt": "请基于商品“杂色粗针圆领宽松毛衣”的核心卖点 粗针织纹理明显，厚实温暖，秋冬氛围感强；杂色纱线更有层次，视觉质感自然耐看；圆领设计简洁百搭，日常穿搭不易出错；宽松落肩版型舒适松弛，不挑身材 生成一张卖点图。画面围绕最重要的1个卖点展开，突出商品优势，并通过构图、光线、局部细节或场景强化该卖点对应的视觉感受。适配小红书内容语境，卖点表达应有审美，不宜过于生硬促销。",
+      "negative_prompt": "不要堆叠多个无关卖点，不要夸大不存在的功能，不要弱化商品主体，不要过强促销感，不得偏离商品原始米棕色系。",
+      "layout_guidance": "商品主体加单卖点标题，适合简洁转化图",
+      "text_guidance": "主标题加副说明，控制信息量",
+      "platform_notes": "适合作为种草图补充，不是小红书最优先主图型",
+      "risk_flags": []
+    }
+  ]
+}

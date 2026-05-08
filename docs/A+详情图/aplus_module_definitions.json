@@ -1,0 +1,1188 @@
+[
+  {
+    "module_key": "aplus-hero",
+    "module_name": "首屏主视觉",
+    "module_category": "首屏模块",
+    "module_description": "传递核心价值",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页首屏的主视觉模块图，突出商品核心价值、品牌质感和视觉冲击力。围绕卖点“{primary_selling_point}”构建主标题氛围，并预留标题、副标题与品牌表达区域。整体视觉应符合 {platform} 平台详情内容语境、{market} 市场审美和 {visual_style} 风格。",
+    "base_negative_prompt": "不要做成纯促销海报，不要让文字遮挡商品主体，不要信息过满，不要空镜化到看不出商品价值。",
+    "default_layout_guidance": "大视觉主图，保留标题、副标题、品牌表达区",
+    "default_text_guidance": "适合主标题+副标题+品牌短句",
+    "payload_field_meta": {
+      "title_text": {
+        "label": "主标题文案",
+        "description": "首屏主标题内容"
+      },
+      "subtitle_text": {
+        "label": "副标题文案",
+        "description": "首屏副标题内容"
+      },
+      "title_position": {
+        "label": "标题位置",
+        "description": "标题在画面中的摆放位置"
+      },
+      "title_font_style": {
+        "label": "标题字体",
+        "description": "标题采用的字体风格"
+      },
+      "title_size": {
+        "label": "标题字号",
+        "description": "标题字号大小"
+      },
+      "target_language": {
+        "label": "目标语言",
+        "description": "标题输出语言"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title_text", "subtitle_text", "title_position", "title_font_style", "title_size", "target_language"],
+      "properties": {
+        "title_text": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "subtitle_text": { "type": "string", "maxLength": 80 },
+        "title_position": { "type": "string", "enum": ["left-top", "right-top", "left-bottom", "center-top"] },
+        "title_font_style": { "type": "string", "enum": ["medium-rounded-sans", "clean-sans", "elegant-serif"] },
+        "title_size": { "type": "string", "enum": ["small", "medium", "large"] },
+        "target_language": { "type": "string", "enum": ["zh-CN", "zh-TW", "en", "ja", "ko", "de", "fr"] }
+      }
+    },
+    "default_payload": {
+      "title_text": "",
+      "subtitle_text": "",
+      "title_position": "left-top",
+      "title_font_style": "clean-sans",
+      "title_size": "large",
+      "target_language": "zh-CN"
+    },
+    "payload_prompt_template": "主标题文案为“{title_text}”，副标题为“{subtitle_text}”，标题位置为 {title_position}，字体风格为 {title_font_style}，字号为 {title_size}，输出语言为 {target_language}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "首屏",
+      "主视觉",
+      "价值"
+    ]
+  },
+  {
+    "module_key": "aplus-core-selling",
+    "module_name": "核心卖点图",
+    "module_category": "卖点模块",
+    "module_description": "突出差异优势",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的核心卖点模块图，围绕卖点“{primary_selling_point}”与“{secondary_selling_point}”进行图文强化，突出商品差异化优势与用户收益。画面需兼顾商品主体和卖点说明结构。",
+    "base_negative_prompt": "不要堆叠过多卖点，不要卖点与商品无关，不要夸大不存在的功能或绝对效果。",
+    "default_layout_guidance": "商品主体加卖点分区，适合一主两辅信息结构",
+    "default_text_guidance": "适合主标题+1到2条卖点短句",
+    "payload_field_meta": {
+      "bullet_points": {
+        "label": "卖点短句",
+        "description": "核心卖点的短句列表"
+      },
+      "highlight_style": {
+        "label": "强调样式",
+        "description": "卖点采用什么强调形式"
+      },
+      "callout_count": {
+        "label": "卖点点位数",
+        "description": "当前模块重点突出的卖点数量"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bullet_points", "highlight_style", "callout_count"],
+      "properties": {
+        "bullet_points": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": { "type": "string" }
+        },
+        "highlight_style": {
+          "type": "string",
+          "enum": ["短句强调", "标签强调", "图标+短句"]
+        },
+        "callout_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        }
+      }
+    },
+    "default_payload": {
+      "bullet_points": [],
+      "highlight_style": "短句强调",
+      "callout_count": 2
+    },
+    "payload_prompt_template": "卖点短句为：{bullet_points_joined}。强化方式为 {highlight_style}，建议突出 {callout_count} 个卖点点位。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "卖点",
+      "优势",
+      "转化"
+    ]
+  },
+  {
+    "module_key": "aplus-scene-usage",
+    "module_name": "使用场景图",
+    "module_category": "场景模块",
+    "module_description": "呈现真实使用场景",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的使用场景模块图，将商品自然融入 {scenario} 对应的真实环境中，体现商品在具体使用情境下的价值表达。画面需兼顾场景氛围和主体辨识度。",
+    "base_negative_prompt": "不要场景喧宾夺主，不要商品不可辨识，不要过度摆拍或脱离真实使用逻辑。",
+    "default_layout_guidance": "场景图为主，商品清晰可见，适合中景或广角生活化构图",
+    "default_text_guidance": "适合主标题+场景收益说明",
+    "payload_field_meta": {
+      "title_text": {
+        "label": "主标题文案",
+        "description": "场景图主标题内容"
+      },
+      "title_position": {
+        "label": "标题位置",
+        "description": "主标题在画面中的位置"
+      },
+      "title_font_style": {
+        "label": "标题字体",
+        "description": "主标题使用的字体风格"
+      },
+      "title_size": {
+        "label": "标题字号",
+        "description": "主标题字号大小"
+      },
+      "target_language": {
+        "label": "目标语言",
+        "description": "主标题输出语言"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title_text",
+        "title_position",
+        "title_font_style",
+        "title_size",
+        "target_language"
+      ],
+      "properties": {
+        "title_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "title_position": {
+          "type": "string",
+          "enum": [
+            "left-top",
+            "right-top",
+            "left-bottom",
+            "center-top"
+          ]
+        },
+        "title_font_style": {
+          "type": "string",
+          "enum": [
+            "medium-rounded-sans",
+            "clean-sans",
+            "elegant-serif"
+          ]
+        },
+        "title_size": {
+          "type": "string",
+          "enum": [
+            "small",
+            "medium",
+            "large"
+          ]
+        },
+        "target_language": {
+          "type": "string",
+          "enum": [
+            "zh-CN",
+            "zh-TW",
+            "en",
+            "ja",
+            "ko",
+            "de",
+            "fr"
+          ]
+        }
+      }
+    },
+    "default_payload": {
+      "title_text": "",
+      "title_position": "left-top",
+      "title_font_style": "clean-sans",
+      "title_size": "medium",
+      "target_language": "en"
+    },
+    "payload_prompt_template": "主标题文案为“{title_text}”，标题位置为 {title_position}，字体风格为 {title_font_style}，字号为 {title_size}，输出语言为 {target_language}。",
+    "default_ratio": "4:5",
+    "default_resolution": "1K",
+    "keywords": [
+      "场景",
+      "使用",
+      "代入"
+    ]
+  },
+  {
+    "module_key": "aplus-multi-angle",
+    "module_name": "多角度图",
+    "module_category": "展示模块",
+    "module_description": "多角度呈现外观",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的多角度展示模块图，通过多个视角清晰展示商品外观结构、正侧背面或关键角度，帮助用户快速理解商品全貌与结构。",
+    "base_negative_prompt": "不要不同角度颜色不一致，不要比例错误，不要出现互相矛盾的结构，不要复杂背景干扰。",
+    "default_layout_guidance": "宫格或一主多辅结构，主视角更突出",
+    "default_text_guidance": "适合角度标签和结构说明短句",
+    "payload_field_meta": {
+      "angle_labels": {
+        "label": "角度标签",
+        "description": "每一个角度画面对应的文字标签"
+      },
+      "label_style": {
+        "label": "标签样式",
+        "description": "标签文字采用什么视觉风格"
+      },
+      "label_position": {
+        "label": "标签位置",
+        "description": "标签放在每格下方、上方或图内角标"
+      },
+      "grid_count": {
+        "label": "宫格数量",
+        "description": "当前模块要展示几个角度画面"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "angle_labels",
+        "label_style",
+        "label_position",
+        "grid_count"
+      ],
+      "properties": {
+        "angle_labels": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {
+            "type": "string"
+          }
+        },
+        "label_style": {
+          "type": "string",
+          "enum": [
+            "纯文字小标签",
+            "描边标签",
+            "底色标签"
+          ]
+        },
+        "label_position": {
+          "type": "string",
+          "enum": [
+            "每格下方",
+            "每格上方",
+            "图内角标"
+          ]
+        },
+        "grid_count": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 6
+        }
+      }
+    },
+    "default_payload": {
+      "angle_labels": [
+        "Front View",
+        "Side View",
+        "Back View",
+        "Detail View"
+      ],
+      "label_style": "纯文字小标签",
+      "label_position": "每格下方",
+      "grid_count": 4
+    },
+    "payload_prompt_template": "展示 {grid_count} 个角度画面，标签依次为：{angle_labels_joined}。标签样式为 {label_style}，标签位置为 {label_position}。",
+    "default_ratio": "4:5",
+    "default_resolution": "1K",
+    "keywords": [
+      "角度",
+      "外观",
+      "结构"
+    ]
+  },
+  {
+    "module_key": "aplus-atmosphere",
+    "module_name": "场景氛围图",
+    "module_category": "场景模块",
+    "module_description": "展示使用场景",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的场景氛围模块图，营造更有氛围感的环境画面，强化商品气质、季节感和生活方式表达，同时保证商品主体在画面中真实可辨。",
+    "base_negative_prompt": "不要纯氛围没有商品，不要让背景压过商品，不要偏离商品原始调性。",
+    "default_layout_guidance": "氛围感场景构图，商品作为主视觉之一",
+    "default_text_guidance": "适合情绪化标题和简短场景说明",
+    "payload_field_meta": {
+      "title_text": {
+        "label": "标题文案",
+        "description": "氛围图主标题内容"
+      },
+      "mood_keywords": {
+        "label": "氛围关键词",
+        "description": "描述场景情绪和风格的关键词"
+      },
+      "title_position": {
+        "label": "标题位置",
+        "description": "标题在画面中的摆放位置"
+      },
+      "target_language": {
+        "label": "目标语言",
+        "description": "标题输出语言"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title_text", "mood_keywords", "title_position", "target_language"],
+      "properties": {
+        "title_text": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "mood_keywords": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "type": "string" }
+        },
+        "title_position": { "type": "string", "enum": ["left-top", "right-top", "left-bottom", "center-top"] },
+        "target_language": { "type": "string", "enum": ["zh-CN", "zh-TW", "en", "ja", "ko", "de", "fr"] }
+      }
+    },
+    "default_payload": {
+      "title_text": "",
+      "mood_keywords": [],
+      "title_position": "left-top",
+      "target_language": "zh-CN"
+    },
+    "payload_prompt_template": "标题文案为“{title_text}”，情绪关键词为：{mood_keywords_joined}，标题位置为 {title_position}，输出语言为 {target_language}。",
+    "default_ratio": "4:5",
+    "default_resolution": "1K",
+    "keywords": [
+      "氛围",
+      "场景",
+      "生活方式"
+    ]
+  },
+  {
+    "module_key": "aplus-detail",
+    "module_name": "商品细节图",
+    "module_category": "细节模块",
+    "module_description": "放大材质与工艺",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的商品细节模块图，用局部特写放大商品材质、纹理、做工和结构细节，增强信任感和品质感。",
+    "base_negative_prompt": "不要虚构不存在的细节，不要夸大材质等级，不要过度锐化，不要脱离实物。",
+    "default_layout_guidance": "特写或整体图加局部放大结构",
+    "default_text_guidance": "适合局部特征短标题+工艺说明",
+    "payload_field_meta": {
+      "zoom_points": {
+        "label": "细节聚焦点",
+        "description": "需要重点放大的细节部位"
+      },
+      "label_style": {
+        "label": "标签样式",
+        "description": "细节标签的视觉风格"
+      },
+      "label_position": {
+        "label": "标签位置",
+        "description": "细节标签在画面中的位置"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zoom_points", "label_style", "label_position"],
+      "properties": {
+        "zoom_points": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "type": "string" }
+        },
+        "label_style": {
+          "type": "string",
+          "enum": ["纯文字小标签", "描边标签", "底色标签"]
+        },
+        "label_position": {
+          "type": "string",
+          "enum": ["图内角标", "局部旁注", "下方说明"]
+        }
+      }
+    },
+    "default_payload": {
+      "zoom_points": [],
+      "label_style": "纯文字小标签",
+      "label_position": "局部旁注"
+    },
+    "payload_prompt_template": "需要放大的细节点为：{zoom_points_joined}。标签样式为 {label_style}，标签位置为 {label_position}。",
+    "default_ratio": "4:5",
+    "default_resolution": "1K",
+    "keywords": [
+      "细节",
+      "材质",
+      "工艺"
+    ]
+  },
+  {
+    "module_key": "aplus-fit",
+    "module_name": "版型说明图",
+    "module_category": "版型模块",
+    "module_description": "说明版型与穿着效果",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的版型说明模块图，围绕版型、廓形、剪裁、上身效果或适配关系做图文说明，帮助用户理解商品穿着效果与适用特征。",
+    "base_negative_prompt": "不要虚构显瘦、显高、塑形等绝对效果，不要制造不真实的人体比例或穿着状态。",
+    "default_layout_guidance": "人物示意或商品轮廓加版型说明分区",
+    "default_text_guidance": "适合版型标题+版型特点短句",
+    "payload_field_meta": {
+      "fit_points": {
+        "label": "版型说明点",
+        "description": "需要说明的版型和穿着特点"
+      },
+      "label_style": {
+        "label": "说明样式",
+        "description": "版型说明采用的标签或分点形式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fit_points", "label_style"],
+      "properties": {
+        "fit_points": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "type": "string" }
+        },
+        "label_style": {
+          "type": "string",
+          "enum": ["短句标签", "分点说明", "图标标签"]
+        }
+      }
+    },
+    "default_payload": {
+      "fit_points": [],
+      "label_style": "分点说明"
+    },
+    "payload_prompt_template": "版型说明点为：{fit_points_joined}。标签风格为 {label_style}。",
+    "default_ratio": "4:5",
+    "default_resolution": "1K",
+    "keywords": [
+      "版型",
+      "廓形",
+      "穿着"
+    ]
+  },
+  {
+    "module_key": "aplus-function",
+    "module_name": "功能拆解图",
+    "module_category": "功能模块",
+    "module_description": "拆解结构与功能逻辑",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的功能拆解模块图，将商品核心功能、结构组件、工作方式或使用逻辑做拆解展示，帮助用户快速理解功能价值与操作逻辑。",
+    "base_negative_prompt": "不要虚构不存在的结构、配件、技术方案或功能效果，不要用复杂装饰遮挡功能对应关系。",
+    "default_layout_guidance": "结构拆解图或一主多辅功能分区布局",
+    "default_text_guidance": "适合功能标题+分点功能说明",
+    "payload_field_meta": {
+      "function_items": {
+        "label": "功能点",
+        "description": "当前模块要拆解展示的功能列表"
+      },
+      "diagram_style": {
+        "label": "图示风格",
+        "description": "功能拆解采用的结构图形式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["function_items", "diagram_style"],
+      "properties": {
+        "function_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "type": "string" }
+        },
+        "diagram_style": {
+          "type": "string",
+          "enum": ["结构图", "流程图", "分区图"]
+        }
+      }
+    },
+    "default_payload": {
+      "function_items": [],
+      "diagram_style": "结构图"
+    },
+    "payload_prompt_template": "功能点为：{function_items_joined}。图示风格为 {diagram_style}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "功能",
+      "拆解",
+      "结构"
+    ]
+  },
+  {
+    "module_key": "aplus-space-fit",
+    "module_name": "空间适配图",
+    "module_category": "空间模块",
+    "module_description": "展示空间尺寸与适配效果",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的空间适配模块图，结合真实空间或尺寸参照，展示商品在不同空间中的摆放、占比、适配关系与使用效果。",
+    "base_negative_prompt": "不要虚构空间尺度，不要夸大商品尺寸，不要制造与真实使用不符的摆放关系。",
+    "default_layout_guidance": "空间场景图加尺寸/占比说明区域",
+    "default_text_guidance": "适合空间标题+适配说明短句",
+    "payload_field_meta": {
+      "space_labels": {
+        "label": "空间标签",
+        "description": "需要强调的空间适配点"
+      },
+      "reference_objects": {
+        "label": "参考物",
+        "description": "用于帮助理解尺寸比例的参照物"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["space_labels", "reference_objects"],
+      "properties": {
+        "space_labels": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": { "type": "string" }
+        },
+        "reference_objects": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "default_payload": {
+      "space_labels": [],
+      "reference_objects": []
+    },
+    "payload_prompt_template": "空间适配标签为：{space_labels_joined}。参考物为：{reference_objects_joined}。",
+    "default_ratio": "4:5",
+    "default_resolution": "1K",
+    "keywords": [
+      "空间",
+      "适配",
+      "尺寸"
+    ]
+  },
+  {
+    "module_key": "aplus-audience",
+    "module_name": "适用人群图",
+    "module_category": "人群模块",
+    "module_description": "说明适合的人群与使用对象",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的适用人群模块图，围绕适合的人群、使用对象、细分需求或典型使用者特征做图文说明，帮助用户快速判断是否适合自己。",
+    "base_negative_prompt": "不要虚构不具备依据的人群结论，不要使用歧视性、夸大性或不真实的人群标签。",
+    "default_layout_guidance": "人群分组卡片或人物示意加说明布局",
+    "default_text_guidance": "适合人群标题+适用对象分点说明",
+    "payload_field_meta": {
+      "audience_segments": {
+        "label": "人群分组",
+        "description": "当前模块要说明的适用人群"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["audience_segments"],
+      "properties": {
+        "audience_segments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "default_payload": {
+      "audience_segments": []
+    },
+    "payload_prompt_template": "适用人群分组为：{audience_segments_joined}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "人群",
+      "适用",
+      "对象"
+    ]
+  },
+  {
+    "module_key": "aplus-comparison",
+    "module_name": "对比说明图",
+    "module_category": "对比模块",
+    "module_description": "对比方案差异与选择理由",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的对比说明模块图，通过不同方案、型号、配置、状态或使用方式的对比说明，帮助用户理解差异点、优势和选择理由。",
+    "base_negative_prompt": "不要虚构对比对象，不要夸张优劣差异，不要制造缺乏依据的性能结论。",
+    "default_layout_guidance": "左右/上下对比式布局，差异项清晰对齐",
+    "default_text_guidance": "适合对比标题+差异点列表说明",
+    "payload_field_meta": {
+      "comparison_items": {
+        "label": "对比项",
+        "description": "当前模块要对齐比较的项目"
+      },
+      "comparison_axis": {
+        "label": "对比方向",
+        "description": "对比采用左右还是上下布局"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["comparison_items", "comparison_axis"],
+      "properties": {
+        "comparison_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "type": "string" }
+        },
+        "comparison_axis": {
+          "type": "string",
+          "enum": ["left-right", "top-bottom"]
+        }
+      }
+    },
+    "default_payload": {
+      "comparison_items": [],
+      "comparison_axis": "left-right"
+    },
+    "payload_prompt_template": "对比项为：{comparison_items_joined}。对比轴向为 {comparison_axis}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "对比",
+      "差异",
+      "选择"
+    ]
+  },
+  {
+    "module_key": "aplus-brand-story",
+    "module_name": "品牌故事图",
+    "module_category": "品牌模块",
+    "module_description": "传达品牌理念",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的品牌故事模块图，结合品牌调性、产品理念和视觉叙事，输出更具品牌表达的详情模块，让用户理解品牌气质与价值观。",
+    "base_negative_prompt": "不要变成活动海报，不要文案堆叠，不要用与品牌气质不符的强叫卖表达。",
+    "default_layout_guidance": "大图叙事加品牌短句区域",
+    "default_text_guidance": "适合品牌标题+理念短句",
+    "payload_field_meta": {
+      "brand_message": {
+        "label": "品牌主张",
+        "description": "品牌故事图要表达的核心主张"
+      },
+      "brand_keywords": {
+        "label": "品牌关键词",
+        "description": "品牌调性关键词"
+      },
+      "target_language": {
+        "label": "目标语言",
+        "description": "品牌文案输出语言"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["brand_message", "brand_keywords", "target_language"],
+      "properties": {
+        "brand_message": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "brand_keywords": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "type": "string" }
+        },
+        "target_language": { "type": "string", "enum": ["zh-CN", "zh-TW", "en", "ja", "ko", "de", "fr"] }
+      }
+    },
+    "default_payload": {
+      "brand_message": "",
+      "brand_keywords": [],
+      "target_language": "zh-CN"
+    },
+    "payload_prompt_template": "品牌主张为“{brand_message}”，品牌关键词为：{brand_keywords_joined}，输出语言为 {target_language}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "品牌",
+      "故事",
+      "理念"
+    ]
+  },
+  {
+    "module_key": "aplus-size",
+    "module_name": "尺寸/容量/尺码图",
+    "module_category": "参数模块",
+    "module_description": "展示规格信息",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的尺寸/容量/尺码模块图，清晰呈现尺寸、容量、尺码或规格信息，帮助用户快速理解大小和适配关系。若没有明确数值，请保留规范展示位，不得虚构具体数据。",
+    "base_negative_prompt": "不要虚构尺寸和容量数据，不要比例夸张，不要让版式影响可读性。",
+    "default_layout_guidance": "商品示意图加标注线或参数区",
+    "default_text_guidance": "适合参数标题+分项尺码/容量说明",
+    "payload_field_meta": {
+      "size_items": {
+        "label": "尺寸项",
+        "description": "需要展示的尺寸、容量或尺码信息"
+      },
+      "unit_system": {
+        "label": "单位体系",
+        "description": "尺寸展示采用的单位体系"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["size_items", "unit_system"],
+      "properties": {
+        "size_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "value"],
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          }
+        },
+        "unit_system": {
+          "type": "string",
+          "enum": ["metric", "imperial", "mixed"]
+        }
+      }
+    },
+    "default_payload": {
+      "size_items": [],
+      "unit_system": "metric"
+    },
+    "payload_prompt_template": "尺寸/容量项为：{size_items_joined}。单位体系为 {unit_system}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "尺寸",
+      "容量",
+      "尺码"
+    ]
+  },
+  {
+    "module_key": "aplus-compare",
+    "module_name": "效果对比图",
+    "module_category": "对比模块",
+    "module_description": "使用前后效果对比",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的效果对比模块图，通过使用前后、不同方案或有无对照结构，直观呈现商品带来的体验差异或优势提升。",
+    "base_negative_prompt": "不要夸张前后差异，不要制造违背常识的结果，不要虚构医学化或绝对化效果。",
+    "default_layout_guidance": "左右或上下对比布局，差异点清晰",
+    "default_text_guidance": "适合对比标题+差异标签",
+    "payload_field_meta": {
+      "before_label": {
+        "label": "前状态标签",
+        "description": "对比前的标识文案"
+      },
+      "after_label": {
+        "label": "后状态标签",
+        "description": "对比后的标识文案"
+      },
+      "comparison_axis": {
+        "label": "对比方向",
+        "description": "对比采用左右还是上下布局"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before_label", "after_label", "comparison_axis"],
+      "properties": {
+        "before_label": { "type": "string", "minLength": 1, "maxLength": 30 },
+        "after_label": { "type": "string", "minLength": 1, "maxLength": 30 },
+        "comparison_axis": {
+          "type": "string",
+          "enum": ["left-right", "top-bottom"]
+        }
+      }
+    },
+    "default_payload": {
+      "before_label": "Before",
+      "after_label": "After",
+      "comparison_axis": "left-right"
+    },
+    "payload_prompt_template": "对比标签为“{before_label} / {after_label}”，对比轴向为 {comparison_axis}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "对比",
+      "前后",
+      "效果"
+    ]
+  },
+  {
+    "module_key": "aplus-spec",
+    "module_name": "详细规格/参数表",
+    "module_category": "参数模块",
+    "module_description": "展示详细商品数据",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的详细规格/参数表模块图，使用表格或信息卡形式展示详细规格参数、材质信息和产品数据。若无明确参数，请预留规范参数位，不得虚构具体数值。",
+    "base_negative_prompt": "不要虚构参数或材质成分，不要排版混乱，不要为了装饰降低参数可读性。",
+    "default_layout_guidance": "参数表或卡片式信息模块，规整清晰",
+    "default_text_guidance": "适合参数标题+列表/表格内容",
+    "payload_field_meta": {
+      "spec_items": {
+        "label": "参数项",
+        "description": "需要展示的规格参数列表"
+      },
+      "table_style": {
+        "label": "表格样式",
+        "description": "参数区域采用的版式样式"
+      },
+      "unit_system": {
+        "label": "单位体系",
+        "description": "参数展示采用的单位体系"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spec_items", "table_style", "unit_system"],
+      "properties": {
+        "spec_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "value"],
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          }
+        },
+        "table_style": {
+          "type": "string",
+          "enum": ["table", "card-grid", "two-column-list"]
+        },
+        "unit_system": {
+          "type": "string",
+          "enum": ["metric", "imperial", "mixed"]
+        }
+      }
+    },
+    "default_payload": {
+      "spec_items": [],
+      "table_style": "table",
+      "unit_system": "metric"
+    },
+    "payload_prompt_template": "参数项为：{spec_items_joined}。参数展示样式为 {table_style}，单位体系为 {unit_system}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "规格",
+      "参数",
+      "表格"
+    ]
+  },
+  {
+    "module_key": "aplus-craft",
+    "module_name": "工艺制作图",
+    "module_category": "工艺模块",
+    "module_description": "展示工艺制作过程",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的工艺制作模块图，拆解制作工艺、生产流程或结构工法，强化品质背书和工艺可信度。",
+    "base_negative_prompt": "不要虚构工艺流程，不要制造不存在的生产场景，不要泛泛而谈缺乏对应关系。",
+    "default_layout_guidance": "流程式或步骤式结构图文模块",
+    "default_text_guidance": "适合工艺标题+流程说明",
+    "payload_field_meta": {
+      "process_steps": {
+        "label": "流程步骤",
+        "description": "需要展示的工艺或制作步骤"
+      },
+      "diagram_style": {
+        "label": "图示风格",
+        "description": "流程图采用的展示形式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["process_steps", "diagram_style"],
+      "properties": {
+        "process_steps": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "type": "string" }
+        },
+        "diagram_style": {
+          "type": "string",
+          "enum": ["timeline", "step-cards", "flowchart"]
+        }
+      }
+    },
+    "default_payload": {
+      "process_steps": [],
+      "diagram_style": "step-cards"
+    },
+    "payload_prompt_template": "工艺/流程步骤为：{process_steps_joined}。图示风格为 {diagram_style}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "工艺",
+      "制作",
+      "流程"
+    ]
+  },
+  {
+    "module_key": "aplus-accessories",
+    "module_name": "配件/赠品图",
+    "module_category": "配件模块",
+    "module_description": "明确收货的所有物品",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的配件/赠品模块图，清晰列出随箱配件、赠品或包装内容，避免信息遗漏，并帮助用户理解收货清单。",
+    "base_negative_prompt": "不要虚构赠品或配件，不要数量错乱，不要主件和配件关系不清。",
+    "default_layout_guidance": "平铺陈列或主件加配件清单结构",
+    "default_text_guidance": "适合清单式标签和短说明",
+    "payload_field_meta": {
+      "accessory_items": {
+        "label": "配件列表",
+        "description": "随箱配件或赠品项目"
+      },
+      "list_style": {
+        "label": "清单样式",
+        "description": "配件清单采用的展示形式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accessory_items", "list_style"],
+      "properties": {
+        "accessory_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": { "type": "string" }
+        },
+        "list_style": {
+          "type": "string",
+          "enum": ["平铺标签", "清单列表", "编号卡片"]
+        }
+      }
+    },
+    "default_payload": {
+      "accessory_items": [],
+      "list_style": "清单列表"
+    },
+    "payload_prompt_template": "配件/赠品列表为：{accessory_items_joined}。清单样式为 {list_style}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "配件",
+      "赠品",
+      "清单"
+    ]
+  },
+  {
+    "module_key": "aplus-series",
+    "module_name": "系列展示图",
+    "module_category": "系列模块",
+    "module_description": "多色或多SKU展示",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的系列展示模块图，展示系列款式、多色、多规格或 SKU 组合，便于用户横向比较和选择。",
+    "base_negative_prompt": "不要展示不存在的颜色或SKU，不要让系列关系混乱，不要虚构组合差异。",
+    "default_layout_guidance": "多款并列或系列矩阵展示",
+    "default_text_guidance": "适合系列标题+款式标签",
+    "payload_field_meta": {
+      "series_items": {
+        "label": "系列项",
+        "description": "需要展示的系列款式、颜色或 SKU"
+      },
+      "layout_mode": {
+        "label": "展示布局",
+        "description": "系列展示采用的布局模式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["series_items", "layout_mode"],
+      "properties": {
+        "series_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "type": "string" }
+        },
+        "layout_mode": {
+          "type": "string",
+          "enum": ["matrix", "row", "main-plus-sub"]
+        }
+      }
+    },
+    "default_payload": {
+      "series_items": [],
+      "layout_mode": "matrix"
+    },
+    "payload_prompt_template": "系列/SKU 项为：{series_items_joined}。展示布局为 {layout_mode}。",
+    "default_ratio": "4:5",
+    "default_resolution": "1K",
+    "keywords": [
+      "系列",
+      "SKU",
+      "多色"
+    ]
+  },
+  {
+    "module_key": "aplus-ingredient",
+    "module_name": "商品成分图",
+    "module_category": "成分模块",
+    "module_description": "展示配方/材质/成分",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的商品成分模块图，图文展示原料、配方、面料或核心成分及其对应价值。仅能使用已确认信息，不得虚构成分含量和功效。",
+    "base_negative_prompt": "不要虚构原料或成分含量，不要医学化、疗效化，不要使用未经确认的高价值原料。",
+    "default_layout_guidance": "成分模块加商品图，适合分栏展示",
+    "default_text_guidance": "适合成分标题+价值短句",
+    "payload_field_meta": {
+      "ingredient_items": {
+        "label": "成分项",
+        "description": "需要展示的原料、配方或材质项"
+      },
+      "display_style": {
+        "label": "展示样式",
+        "description": "成分信息采用的展示形式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ingredient_items", "display_style"],
+      "properties": {
+        "ingredient_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "type": "string" }
+        },
+        "display_style": {
+          "type": "string",
+          "enum": ["分栏标签", "卡片说明", "图标说明"]
+        }
+      }
+    },
+    "default_payload": {
+      "ingredient_items": [],
+      "display_style": "分栏标签"
+    },
+    "payload_prompt_template": "成分/材质项为：{ingredient_items_joined}。展示样式为 {display_style}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "成分",
+      "配方",
+      "材质"
+    ]
+  },
+  {
+    "module_key": "aplus-after-sale",
+    "module_name": "售后保障图",
+    "module_category": "保障模块",
+    "module_description": "说明质保退换政策",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的售后保障模块图，明确售后保障、质保时效、退换政策和服务承诺，降低用户决策顾虑。仅表达已确认的服务内容，不得虚构保障条款。",
+    "base_negative_prompt": "不要虚构售后政策，不要承诺无法兑现的服务，不要用强促销海报式表达代替保障说明。",
+    "default_layout_guidance": "图标化保障模块或服务卡片结构",
+    "default_text_guidance": "适合保障标题+服务条目",
+    "payload_field_meta": {
+      "service_items": {
+        "label": "保障条目",
+        "description": "需要展示的售后和服务内容"
+      },
+      "card_style": {
+        "label": "卡片样式",
+        "description": "保障信息采用的展示样式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service_items", "card_style"],
+      "properties": {
+        "service_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "type": "string" }
+        },
+        "card_style": {
+          "type": "string",
+          "enum": ["icon-cards", "list-cards", "simple-list"]
+        }
+      }
+    },
+    "default_payload": {
+      "service_items": [],
+      "card_style": "icon-cards"
+    },
+    "payload_prompt_template": "售后/保障条目为：{service_items_joined}。展示样式为 {card_style}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "售后",
+      "保障",
+      "服务"
+    ]
+  },
+  {
+    "module_key": "aplus-usage-advice",
+    "module_name": "使用建议图",
+    "module_category": "说明模块",
+    "module_description": "商品使用的注意事项",
+    "base_prompt_template": "请为商品“{product_name}”生成一张适合 A+详情页的使用建议模块图，补充使用方法、注意事项、保养建议或适用提醒，帮助用户获得更好的使用体验。若无明确说明，不得编造专业建议。",
+    "base_negative_prompt": "不要虚构使用方法，不要给出错误保养建议，不要产生安全误导。",
+    "default_layout_guidance": "步骤式或提醒卡片式布局",
+    "default_text_guidance": "适合注意事项标题+分项建议",
+    "payload_field_meta": {
+      "advice_items": {
+        "label": "建议条目",
+        "description": "需要展示的使用建议或注意事项"
+      },
+      "display_style": {
+        "label": "展示样式",
+        "description": "建议内容采用的展示形式"
+      }
+    },
+    "payload_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["advice_items", "display_style"],
+      "properties": {
+        "advice_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "type": "string" }
+        },
+        "display_style": {
+          "type": "string",
+          "enum": ["步骤卡片", "提醒列表", "图标说明"]
+        }
+      }
+    },
+    "default_payload": {
+      "advice_items": [],
+      "display_style": "提醒列表"
+    },
+    "payload_prompt_template": "使用建议/注意事项为：{advice_items_joined}。展示样式为 {display_style}。",
+    "default_ratio": "3:4",
+    "default_resolution": "1K",
+    "keywords": [
+      "建议",
+      "注意事项",
+      "使用"
+    ]
+  }
+]
