@@ -1,0 +1,92 @@
+{
+  "toolKey": "video-scene-grid",
+  "version": "2026-05-09",
+  "builderByTool": {
+    "video-scene-grid": {
+      "requiredFields": [
+        "toolKey",
+        "videoSceneGridMode",
+        "videoSceneGridVariation",
+        "videoSceneGridDetailDimensions",
+        "videoSceneGridRatio",
+        "videoSceneGridOutputCount"
+      ],
+      "optionalFields": [
+        "videoSceneGridUnitCreditCost",
+        "videoSceneGridTotalCreditCost",
+        "supplement"
+      ],
+      "promptTemplates": {
+        "task": "基于同一主题生成可成组使用的多联画，保证组内风格一致、变化清晰、可直接用于电商/POD场景投放。",
+        "mode": "{modePrompt}",
+        "params": "变化维度={videoSceneGridMode}；变化方向={videoSceneGridVariation}；详细维度={videoSceneGridDetailDimensions}；出图比例={videoSceneGridRatio}；生图数量={videoSceneGridOutputCount}。",
+        "variation": "{variationValuePrompt}",
+        "ratio": "{ratioValuePrompt}",
+        "detailDimensions": "{detailDimensionPromptsJoined}",
+        "required": "必须满足：{modeRequiredJoined}",
+        "forbidden": "禁止：{modeForbiddenJoined}",
+        "supplement": "补充说明：{supplement}"
+      },
+      "segmentOrder": [
+        "task",
+        "mode",
+        "params",
+        "variation",
+        "ratio",
+        "detailDimensions",
+        "required",
+        "forbidden",
+        "universalNegativePrompt",
+        "universalQualityPrompt",
+        "supplement"
+      ],
+      "strictMode": {
+        "enabled": true,
+        "onMissingModeRule": "error",
+        "onMissingRequiredField": "error",
+        "onUnknownVariation": "error",
+        "onUnknownRatio": "error",
+        "onUnknownDetailDimension": "warn_and_skip"
+      },
+      "trimPolicy": {
+        "cannotTrim": [
+          "required",
+          "forbidden",
+          "universalNegativePrompt",
+          "universalQualityPrompt"
+        ],
+        "canTrimPriority": [
+          "detailDimensions",
+          "ratio",
+          "variation",
+          "mode"
+        ]
+      }
+    }
+  },
+  "demo": {
+    "input": {
+      "toolKey": "video-scene-grid",
+      "videoSceneGridMode": "系列图案",
+      "videoSceneGridVariation": "裂变主题",
+      "videoSceneGridDetailDimensions": "主题方向延展 / 统一配色氛围 / 强化视觉母题",
+      "videoSceneGridRatio": "1:1",
+      "videoSceneGridOutputCount": "6"
+    },
+    "expectedSegmentHighlights": {
+      "mustInclude": [
+        "变化维度=系列图案",
+        "变化方向=裂变主题",
+        "出图比例=1:1",
+        "生图数量=6",
+        "必须满足：",
+        "禁止："
+      ],
+      "mustNotInclude": [
+        "随机无关主体",
+        "风格完全断裂",
+        "不可读乱码文本"
+      ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "toolKey": "goods-translate",
+  "version": "2026-05-09",
+  "goodsTranslateOptionValueExpansions": {
+    "targetLanguage": {
+      "fieldKey": "targetLanguage",
+      "values": {
+        "简体中文": { "valuePrompt": "输出自然简体中文电商表达，短句清晰，避免机翻腔。" },
+        "英语": { "valuePrompt": "输出自然英文电商表达，短句优先，避免中式直译和冗长从句。" },
+        "繁体中文": { "valuePrompt": "输出自然繁体中文表达，词汇符合繁中阅读习惯。" },
+        "日语": { "valuePrompt": "输出自然日语表达，礼貌且简洁，避免生硬直译。" },
+        "韩语": { "valuePrompt": "输出自然韩语表达，语气统一，适配电商浏览节奏。" },
+        "西班牙语": { "valuePrompt": "输出自然西语电商表达，重点前置，减少冗长修饰。" },
+        "俄语": { "valuePrompt": "输出自然俄语表达，术语准确，保证参数与单位一致。" },
+        "法语": { "valuePrompt": "输出自然法语表达，语义准确并保持版面可读。" },
+        "泰语": { "valuePrompt": "输出自然泰语表达，词义准确，避免缩写歧义。" },
+        "印尼语": { "valuePrompt": "输出自然印尼语表达，句式简洁，适配快读场景。" },
+        "阿拉伯语": { "valuePrompt": "输出自然阿拉伯语表达，注意RTL阅读习惯与排版层级。" }
+      }
+    },
+    "platformInfo": {
+      "fieldKey": "platformInfo",
+      "values": {
+        "全平台通用（16平台）": { "valuePrompt": "采用跨平台保守表达，不绑定单平台术语和夸张营销口吻。" },
+        "亚马逊": { "valuePrompt": "强调客观中性描述，避免绝对化、保证性承诺。" },
+        "TikTok Shop": { "valuePrompt": "保持短句和高扫读效率，避免信息堆叠。" },
+        "阿里国际站": { "valuePrompt": "强化B2B规格与交付信息表达，减少情绪化修饰。" }
+      }
+    },
+    "languageTone": {
+      "fieldKey": "languageTone",
+      "values": {
+        "简洁促转化": { "valuePrompt": "语句压缩，重点前置，保留必要信息密度。" },
+        "品牌克制": { "valuePrompt": "语气克制、整洁有序，避免强刺激促销词。" },
+        "理性参数化": { "valuePrompt": "优先参数、规格、结构信息表达，语义精确。" }
+      }
+    },
+    "textDirection": {
+      "fieldKey": "textDirection",
+      "values": {
+        "LTR": { "valuePrompt": "按从左到右阅读顺序组织文本块，保持原层级对齐关系。" },
+        "RTL": { "valuePrompt": "按从右到左阅读顺序重排文本块，避免断词与标点方向错误。" }
+      }
+    }
+  }
+}

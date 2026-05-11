@@ -1,0 +1,70 @@
+{
+  "toolKey": "goods-bg",
+  "version": "2026-05-09",
+  "requiredFields": [
+    "toolKey",
+    "platformLabel",
+    "productCategory",
+    "backgroundType",
+    "lightingStyle"
+  ],
+  "optionalFields": [
+    "platformRuleDetail",
+    "supplementText",
+    "modeId",
+    "ratio",
+    "resolution",
+    "count"
+  ],
+  "buildOrder": [
+    "task",
+    "category",
+    "platformPrompt",
+    "params",
+    "valuePrompts",
+    "platformRequired",
+    "platformForbidden",
+    "universalNegative",
+    "universalQuality",
+    "platformRuleDetail",
+    "supplement"
+  ],
+  "segments": {
+    "task": "任务目标：基于上传商品图在保持商品主体真实不变前提下，生成可用于电商展示的换背景图片。",
+    "category": "当前商品品类为「{productCategory}」，{categoryPrompt}",
+    "platformPrompt": "平台规则：{platformPrompt}",
+    "params": "换背景参数：背景类型={backgroundType}；风格与光影={lightingStyle}。",
+    "valuePrompts": "字段扩展：{backgroundTypeValuePrompt} {lightingStyleValuePrompt}",
+    "platformRequired": "必须满足：{platformRequiredJoined}",
+    "platformForbidden": "禁止：{platformForbiddenJoined}",
+    "universalNegative": "{universalNegativePrompt}",
+    "universalQuality": "{universalQualityPrompt}",
+    "platformRuleDetail": "平台细节补充：{platformRuleDetail}",
+    "supplement": "补充说明：{supplementText}"
+  },
+  "universalNegativePrompt": "通用负向约束：1. 严禁改变商品主体结构、颜色、材质、文字信息和SKU语义。2. 严禁新增不存在的商品、配件、Logo、水印、边框、价格贴和营销字。3. 严禁出现抠图毛边、吞边、漂浮、错位、断层、穿帮、镜像错误。4. 严禁背景抢占主体，严禁不真实夸张特效主导画面。5. 严禁输出违规、误导、侵权元素。",
+  "universalQualityPrompt": "通用质量要求：1. 主体保真：轮廓、比例、材质、纹理与原商品一致。2. 融合真实：背景与主体在光向、色温、阴影、反射、透视上保持一致。3. 画面可用：主体完整清晰，缩略图与详情图场景下都可稳定识别。4. 商业完成度：构图干净，背景语义服务商品展示，不喧宾夺主。5. 电商可投放：结果可直接用于主图/附图链路（按平台规则区分）。",
+  "lengthControl": {
+    "nonTrimmableSegments": [
+      "platformRequired",
+      "platformForbidden",
+      "universalNegative",
+      "universalQuality"
+    ],
+    "trimPriority": [
+      "valuePrompts",
+      "platformPrompt",
+      "supplement",
+      "platformRuleDetail"
+    ]
+  },
+  "demoInput": {
+    "toolKey": "goods-bg",
+    "platformLabel": "亚马逊",
+    "productCategory": "家电数码类",
+    "backgroundType": "电商白底",
+    "lightingStyle": "柔光棚拍风",
+    "platformRuleDetail": "主图禁止任何促销贴片与附加图形。",
+    "supplementText": "黑色机身边缘要清晰，轻微接触阴影即可。"
+  }
+}

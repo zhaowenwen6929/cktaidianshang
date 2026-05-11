@@ -5,6 +5,10 @@
     "voiceover_max_chars_for_15s": 40,
     "must_be_realistic": true,
     "must_be_ecommerce_compliant": true,
+    "language_policy": {
+      "default_output_language": "zh-CN",
+      "allow_english_only_when_user_input_is_english": true
+    },
     "forbidden_claim_words_zh": ["第一", "最好", "顶级", "国家级", "永久", "100%", "全网最低", "根治", "绝对有效"]
   },
   "platform_rules": {
@@ -259,7 +263,7 @@
   },
   "video_prompt_generator": {
     "output_schema": {
-      "video_prompt_en": "string",
+      "视频生成提示词": "string",
       "video_structure": {
         "total_duration_sec": "number",
         "shot_count": "number",
@@ -275,9 +279,13 @@
           }
         ]
       },
-      "negative_prompt_en": "string",
+      "负面提示词": "string",
       "render_notes_zh": "string",
       "compliance_checklist": ["string"]
+    },
+    "output_schema_compat": {
+      "video_prompt_en": "string",
+      "negative_prompt_en": "string"
     },
     "negative_prompt_baseline_en": "no floating objects, no surreal light beams, no plastic skin, no deformed hands or fingers, no extra product parts, no fake logo or watermark overlays, no excessive CGI particles, no oversaturation, no over-sharpening, no misleading medical-claim visuals, no frame-to-frame identity drift, no product geometry inconsistency across shots"
   }

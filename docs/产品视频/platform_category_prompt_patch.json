@@ -121,6 +121,6 @@
   "runtime_usage": {
     "step_1_ai_fill_prompt": "先归一平台与品类（platform_normalization + category_normalization），再叠加 prompt_patch_by_platform + prompt_patch_by_category 进行字段推荐。",
     "step_2_script_prompt": "先归一平台与品类，再将双补丁写入镜头规则与旁白策略，最终生成<=15秒脚本。",
-    "step_3_video_prompt": "先归一平台与品类，再将双补丁写入video_prompt_en与video_structure，确保跨镜头一致与低AI感。"
+    "step_3_video_prompt": "先归一平台与品类，再将双补丁写入“视频生成提示词”和video_structure，确保跨镜头一致与低AI感。"
   }
 }

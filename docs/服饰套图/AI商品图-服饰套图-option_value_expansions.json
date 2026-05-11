@@ -1,0 +1,50 @@
+{
+  "toolKey": "set-fashion",
+  "version": "2026-05-09",
+  "optionValueExpansions": {
+    "modelGenerateType": {
+      "fieldLabel": "模特类型",
+      "values": {
+        "真人模特图": { "valuePrompt": "真人模特表现需自然，皮肤质感与姿态可信，服装细节不被人像风格吞没。" },
+        "人台模特图": { "valuePrompt": "人台展示需结构端正，重点突出服装版型、领口、肩线与垂感。" },
+        "假发模特图": { "valuePrompt": "假发类需突出发丝层次、发际线自然度与佩戴贴合度，避免边缘穿帮。" }
+      }
+    },
+    "gender": {
+      "fieldLabel": "性别",
+      "values": {
+        "男": { "valuePrompt": "男装表达偏利落有力量感，肩背线条清晰，姿态简洁。" },
+        "女": { "valuePrompt": "女装表达偏自然舒展，强调版型、腰线与面料垂感。" }
+      }
+    },
+    "age": {
+      "fieldLabel": "年龄段",
+      "values": {
+        "青少年": { "valuePrompt": "人物状态年轻清爽，场景语义贴近校园与日常。" },
+        "青年": { "valuePrompt": "人物状态成熟活力，场景语义贴近通勤与都市生活。" },
+        "中年": { "valuePrompt": "人物状态稳重可信，场景语义贴近日常与商务。" },
+        "老年": { "valuePrompt": "人物状态从容自然，场景语义贴近舒适与生活化。" }
+      }
+    },
+    "persona": {
+      "fieldLabel": "人设",
+      "values": {
+        "上班族": { "valuePrompt": "场景偏通勤与办公，画面干净克制。" },
+        "测评博主": { "valuePrompt": "场景偏内容创作与展示，强调上镜感。" },
+        "学生": { "valuePrompt": "场景偏校园与日常，表达轻松自然。" },
+        "健身人群": { "valuePrompt": "场景偏运动与功能表达，动作姿态有活力。" },
+        "家庭主妇": { "valuePrompt": "场景偏居家与生活化，表达亲和真实。" },
+        "其他": { "valuePrompt": "场景按补充说明执行，优先保证服装主体表达。" }
+      }
+    },
+    "bodyType": {
+      "fieldLabel": "体型",
+      "values": {
+        "纤细": { "valuePrompt": "体态线条轻盈，保持服装松量与版型真实。" },
+        "标准": { "valuePrompt": "体态比例中性平衡，强调通用穿搭参考价值。" },
+        "微胖": { "valuePrompt": "体态表达自然包容，强调服装包裹与舒适度。" },
+        "大码": { "valuePrompt": "体态表达自信稳定，强调尺码友好与剪裁适配。" }
+      }
+    }
+  }
+}

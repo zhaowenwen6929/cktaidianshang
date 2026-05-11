@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "toolKey": "set-replica",
+  "description": "爆款套图复刻最终提示词拼接模板（对齐一键场景图标准）。",
+  "assembleOrder": [
+    "task_goal",
+    "category_rule",
+    "dimension_rule",
+    "direction_rule",
+    "parameter_line",
+    "option_expansion_lines",
+    "usage_slot_rule",
+    "required_rule",
+    "forbidden_rule",
+    "universal_negative",
+    "universal_quality",
+    "user_supplement"
+  ],
+  "segments": {
+    "task_goal": "{taskGoal}",
+    "category_rule": "当前商品品类：{productCategory}。{categoryPrompt}",
+    "dimension_rule": "{dimensionPrompt}",
+    "direction_rule": "{directionPrompt}",
+    "parameter_line": "参数：复刻强度={replicaStrength}；主体一致性={subjectConsistency}；背景复杂度={backgroundComplexity}；目标市场={targetMarket}；出图比例={ratio}；分辨率={resolution}；数量={outputCount}",
+    "option_expansion_lines": "{optionExpansionPrompts}",
+    "usage_slot_rule": "用途限制：本次结果默认用于套图中的转化辅图位，不替代有强白底要求的平台主首图。",
+    "required_rule": "必须满足：{requiredList}",
+    "forbidden_rule": "禁止：{forbiddenList}",
+    "universal_negative": "{universalNegativePrompt}",
+    "universal_quality": "{universalQualityPrompt}",
+    "user_supplement": "补充要求：{userSupplement}"
+  },
+  "trimPolicy": {
+    "neverTrim": [
+      "usage_slot_rule",
+      "required_rule",
+      "forbidden_rule",
+      "universal_negative",
+      "universal_quality"
+    ],
+    "trimPriority": [
+      "option_expansion_lines",
+      "direction_rule",
+      "dimension_rule",
+      "category_rule"
+    ]
+  }
+}

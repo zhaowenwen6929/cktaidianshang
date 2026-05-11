@@ -1,0 +1,70 @@
+{
+  "toolKey": "pod-variation",
+  "version": "2026-05-09",
+  "optionValueExpansions": {
+    "podVariationMode": {
+      "fieldKey": "podVariationMode",
+      "values": {
+        "艺术设计": { "valuePrompt": "走设计感升级路线，强调画面高级感与视觉统一性。" },
+        "文字强化": { "valuePrompt": "提升文字可读性与版式秩序，保证图文协同表达。" },
+        "爆款二创": { "valuePrompt": "执行强差异裂变，保持核心卖点同时强化新鲜感。" },
+        "通用": { "valuePrompt": "执行稳健型裂变，平衡保真与可控变化。" }
+      }
+    },
+    "podVariationReferenceStyleLevel": {
+      "fieldKey": "podVariationReferenceStyleLevel",
+      "values": {
+        "低": { "valuePrompt": "参考样式约束较弱，允许更大风格探索，但不得偏离主体语义。" },
+        "中": { "valuePrompt": "参考样式约束适中，在保留风格基因上做可控变化。" },
+        "高": { "valuePrompt": "参考样式约束较强，优先保持原图风格语言与设计节奏。" }
+      }
+    },
+    "podVariationReferenceStrength": {
+      "fieldKey": "podVariationReferenceStrength",
+      "rangePrompts": [
+        { "min": 0, "max": 0.34, "valuePrompt": "原图参考强度较低，允许更高创意改写，但核心识别资产不可丢失。" },
+        { "min": 0.35, "max": 0.69, "valuePrompt": "原图参考强度中等，在保真和创新之间保持平衡。" },
+        { "min": 0.7, "max": 1, "valuePrompt": "原图参考强度较高，优先保持原图构图基因、主色关系与主体轮廓。" }
+      ]
+    },
+    "podVariationDivergenceLevel": {
+      "fieldKey": "podVariationDivergenceLevel",
+      "values": {
+        "低": { "valuePrompt": "创意变化保守，重点优化质量与可用性。" },
+        "中": { "valuePrompt": "创意变化适中，在稳定性和新鲜感间平衡。" },
+        "高": { "valuePrompt": "创意变化积极，但必须维持核心卖点与可识别度。" }
+      }
+    },
+    "podVariationBackgroundColor": {
+      "fieldKey": "podVariationBackgroundColor",
+      "values": {
+        "随机": { "valuePrompt": "背景色可智能匹配，但需保证主体对比度与可读性。" },
+        "黑色": { "valuePrompt": "使用黑色背景策略，强化高亮主体和色彩对比。" },
+        "白色": { "valuePrompt": "使用白色背景策略，保证主体边缘干净与商业展示清晰。" }
+      }
+    },
+    "podVariationBurstContent": {
+      "fieldKey": "podVariationBurstContent",
+      "values": {
+        "改主体": { "valuePrompt": "裂变重点放在主体造型与视觉主体关系的重构。" },
+        "改姿势": { "valuePrompt": "裂变重点放在动作姿态变化，保持主体身份连续。" },
+        "改背景": { "valuePrompt": "裂变重点放在场景背景变化，主体本体尽量稳定。" },
+        "✨爆改✨": { "valuePrompt": "执行高强度创意重构，但核心识别资产必须保留。" }
+      }
+    },
+    "podVariationContent": {
+      "fieldKey": "podVariationContent",
+      "values": {
+        "仅裂变素材中的图片部分": { "valuePrompt": "仅对素材中的图片主体进行裂变，不改动无关信息层。" },
+        "未开启": { "valuePrompt": "未开启额外裂变内容约束，按模式与品类规则执行。" }
+      }
+    },
+    "podVariationShape": {
+      "fieldKey": "podVariationShape",
+      "values": {
+        "默认": { "valuePrompt": "保持默认形状逻辑，不强制几何裁切。" },
+        "圆形": { "valuePrompt": "按圆形适配构图，确保中心聚焦与边缘闭合完整。" }
+      }
+    }
+  }
+}

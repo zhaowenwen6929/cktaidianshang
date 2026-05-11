@@ -1,0 +1,52 @@
+{
+  "toolKey": "set-fashion",
+  "version": "2026-05-09",
+  "assemblyOrder": [
+    "taskTarget",
+    "modeRulePrompt",
+    "categoryRulePrompt",
+    "paramsLine",
+    "dimensionDirectionPrompt",
+    "optionValueExpansionPrompt",
+    "requiredMerged",
+    "forbiddenMerged",
+    "universalNegativePrompt",
+    "universalQualityPrompt",
+    "supplementPrompt"
+  ],
+  "template": "任务目标：基于上传服装图生成服饰套图，突出版型、面料、上身效果与真实场景转化表达。\\n\\n模式规则：{modePrompt}\\n\\n品类规则：{categoryPrompt}\\n\\n参数：模特来源={baselineModelSourceLabel}；模特类型={modelGenerateType}；性别={gender}；年龄={age}；外貌={appearance}；人设={persona}；体型={bodyType}；比例={ratio}；分辨率={resolution}；套图数量={count}。\\n\\n维度与方向：{dimensionPrompt} {directionPrompt}\\n\\n字段扩展：{valueExpansionJoined}\\n\\n必须满足：{requiredJoined}\\n\\n禁止：{forbiddenJoined}\\n\\n{universalNegativePrompt}\\n\\n{universalQualityPrompt}\\n\\n补充说明：{supplementText}",
+  "universalNegativePrompt": "通用负向约束：1. 严禁改变商品真实结构、版型、颜色和关键设计元素。2. 严禁人体结构错误（手指、肢体、五官、关节异常）和多人物误生。3. 严禁出现水印、Logo、二维码、联系方式、侵权图案或违规文案贴片。4. 严禁背景喧宾夺主导致服装主体不可辨。5. 严禁低清晰度、边缘融化、纹理糊化、透视错位。",
+  "universalQualityPrompt": "通用质量要求：1. 服装主体清晰，版型与材质细节可辨。2. 人物姿态、光影、接触关系符合真实物理。3. 多张套图风格统一但场景有区分，避免重复构图。4. 输出可直接用于电商图位，缩略图下仍保持主体识别。5. 与上传商品SKU一致，不新增用户无法收到的商品元素。",
+  "priorityAndTruncation": {
+    "nonTruncatable": [
+      "requiredMerged",
+      "forbiddenMerged",
+      "universalNegativePrompt",
+      "universalQualityPrompt"
+    ],
+    "truncatable": [
+      "optionValueExpansionPrompt",
+      "categoryRulePrompt",
+      "modeRulePrompt"
+    ],
+    "conflictPriority": "forbidden > required > optionValueExpansionPrompt > categoryRulePrompt > modeRulePrompt"
+  },
+  "demo": {
+    "input": {
+      "baselineModelSource": "ai",
+      "modelGenerateType": "真人模特图",
+      "gender": "女",
+      "appearance": "中国人",
+      "age": "青年",
+      "persona": "上班族",
+      "bodyType": "标准",
+      "productCategory": "上装",
+      "ratio": "3:4",
+      "resolution": "1K",
+      "count": 6,
+      "direction": "三分之二侧",
+      "supplementText": "偏通勤轻商务风，突出衬衫挺括与垂感，不要过度修图。"
+    },
+    "outputPrompt": "任务目标：基于上传服装图生成服饰套图，突出版型、面料、上身效果与真实场景转化表达。\\n\\n模式规则：根据用户选择的性别、年龄、外貌、人设、体型生成基准模特，并围绕服装商品形成高可用的服饰场景套图。\\n\\n品类规则：重点展示领口、肩线、胸背版型与袖型细节，确保上身轮廓真实。\\n\\n参数：模特来源=AI生成；模特类型=真人模特图；性别=女；年龄=青年；外貌=中国人；人设=上班族；体型=标准；比例=3:4；分辨率=1K；套图数量=6。\\n\\n维度与方向：竖版偏人物与上身比例展示，适合服饰主体。 以三分之二侧视角兼顾轮廓、层次和立体感。\\n\\n字段扩展：真人模特表现需自然，皮肤质感与姿态可信，服装细节不被人像风格吞没。女装表达偏自然舒展，强调版型、腰线与面料垂感。人物状态成熟活力，场景语义贴近通勤与都市生活。场景偏通勤与办公，画面干净克制。体态比例中性平衡，强调通用穿搭参考价值。\\n\\n必须满足：模特参数必须严格命中用户选择、服装上身效果清晰，主次关系以服装为核心、不同场景保持同一商品与同一模特设定、画面具备真实穿搭代入感、领口与肩线结构清晰、上装长度与版型不失真。\\n\\n禁止：模特参数与用户设置不一致、过度特效导致服装不可辨、背景喧宾夺主抢占服装主体、多人物误生或人物漂移、领口变形、袖型错误。\\n\\n通用负向约束：1. 严禁改变商品真实结构、版型、颜色和关键设计元素。2. 严禁人体结构错误（手指、肢体、五官、关节异常）和多人物误生。3. 严禁出现水印、Logo、二维码、联系方式、侵权图案或违规文案贴片。4. 严禁背景喧宾夺主导致服装主体不可辨。5. 严禁低清晰度、边缘融化、纹理糊化、透视错位。\\n\\n通用质量要求：1. 服装主体清晰，版型与材质细节可辨。2. 人物姿态、光影、接触关系符合真实物理。3. 多张套图风格统一但场景有区分，避免重复构图。4. 输出可直接用于电商图位，缩略图下仍保持主体识别。5. 与上传商品SKU一致，不新增用户无法收到的商品元素。\\n\\n补充说明：偏通勤轻商务风，突出衬衫挺括与垂感，不要过度修图。"
+  }
+}

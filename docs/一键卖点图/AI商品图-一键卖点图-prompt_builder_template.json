@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "toolKey": "goods-sell",
+  "description": "一键卖点图最终提示词拼接模板（对齐一键场景图标准）。",
+  "assembleOrder": [
+    "task_goal",
+    "category_rule",
+    "platform_rule_prompt",
+    "scene_slot_advice",
+    "dimension_rule",
+    "direction_rule",
+    "parameter_line",
+    "option_expansion_lines",
+    "required_rule",
+    "forbidden_rule",
+    "universal_negative",
+    "universal_quality",
+    "user_supplement"
+  ],
+  "segments": {
+    "task_goal": "{taskGoal}",
+    "category_rule": "当前商品品类：{productCategory}。{categoryPrompt}",
+    "platform_rule_prompt": "平台规则：{platformPrompt}",
+    "scene_slot_advice": "用途限制：{sceneSlotAdvice}",
+    "dimension_rule": "{dimensionPrompt}",
+    "direction_rule": "{directionPrompt}",
+    "parameter_line": "参数：产品类型={productType}；场景类型={sceneType}；文案语种={copyLanguage}；核心卖点={coreSellingPoint}；表现形式={presentationForm}；卖点重心={sellingPointFocus}；主副标题={mainTitle}；副标题={subtitle}；字体风格={fontStyle}；元素辅助={assistElement}；目标市场={targetMarket}；出图比例={ratio}；分辨率={resolution}；数量={outputCount}",
+    "option_expansion_lines": "{optionExpansionPrompts}",
+    "required_rule": "必须满足：{requiredList}",
+    "forbidden_rule": "禁止：{forbiddenList}",
+    "universal_negative": "{universalNegativePrompt}",
+    "universal_quality": "{universalQualityPrompt}",
+    "user_supplement": "补充要求：{userSupplement}"
+  },
+  "trimPolicy": {
+    "neverTrim": [
+      "scene_slot_advice",
+      "required_rule",
+      "forbidden_rule",
+      "universal_negative",
+      "universal_quality"
+    ],
+    "trimPriority": [
+      "option_expansion_lines",
+      "direction_rule",
+      "dimension_rule",
+      "category_rule",
+      "platform_rule_prompt"
+    ]
+  },
+  "fallbackRules": {
+    "productCategory": "通用品类",
+    "platformLabel": "全平台通用（16平台）",
+    "sceneType": "智能匹配",
+    "copyLanguage": "无文案",
+    "presentationForm": "智能匹配",
+    "whenMissingResolution": "omit_segment"
+  }
+}

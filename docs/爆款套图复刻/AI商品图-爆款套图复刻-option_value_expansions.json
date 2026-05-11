@@ -1,0 +1,70 @@
+{
+  "version": "1.0.0",
+  "toolKey": "set-replica",
+  "description": "爆款套图复刻字段值扩展提示词。组装时优先拼接 valuePrompt，而不是仅拼接值文本。",
+  "fields": [
+    {
+      "fieldKey": "replicaStrength",
+      "fieldLabel": "复刻强度",
+      "values": {
+        "低保真复刻": {
+          "valuePrompt": "以参考图为灵感做轻度借鉴，允许更高原创重组比例，优先稳定产出。"
+        },
+        "平衡复刻": {
+          "valuePrompt": "平衡参考风格迁移与商品真实表达，保持商业可用与视觉一致。"
+        },
+        "高保真复刻": {
+          "valuePrompt": "高保真迁移参考图的构图与氛围逻辑，但禁止继承侵权元素和错误结构。"
+        }
+      }
+    },
+    {
+      "fieldKey": "subjectConsistency",
+      "fieldLabel": "主体一致性",
+      "values": {
+        "标准一致": {
+          "valuePrompt": "保持主体核心结构、颜色和材质稳定，允许轻度风格化修饰。"
+        },
+        "严格一致": {
+          "valuePrompt": "严格保持主体结构、比例、材质、纹理和关键细节的一致性，不得漂移。"
+        }
+      }
+    },
+    {
+      "fieldKey": "backgroundComplexity",
+      "fieldLabel": "背景复杂度",
+      "values": {
+        "低复杂": {
+          "valuePrompt": "背景简洁，减少干扰元素，突出主体与卖点。"
+        },
+        "中等复杂": {
+          "valuePrompt": "背景保留必要层次与氛围，主次关系明确。"
+        },
+        "高复杂": {
+          "valuePrompt": "允许丰富场景元素，但必须保证主体清晰可辨、信息不拥挤。"
+        }
+      }
+    },
+    {
+      "fieldKey": "targetMarket",
+      "fieldLabel": "目标市场",
+      "values": {
+        "国内电商": {
+          "valuePrompt": "适配国内电商浏览与转化习惯，强调信息清晰与主体直给。"
+        },
+        "欧美市场": {
+          "valuePrompt": "适配欧美视觉偏好，强调自然光感、质感与生活方式表达。"
+        },
+        "日韩市场": {
+          "valuePrompt": "适配日韩审美，强调干净构图、细节克制与精致氛围。"
+        },
+        "东南亚市场": {
+          "valuePrompt": "适配东南亚电商语境，强调高识别度与移动端快速理解。"
+        },
+        "全球通用": {
+          "valuePrompt": "采用跨市场保守策略，兼顾主流平台通用可读性与合规性。"
+        }
+      }
+    }
+  ]
+}

@@ -404,6 +404,13 @@ type VideoReplacePromptContext = {
   advancedSelections: AdvancedSelectionMap;
 };
 
+type ImageExpandPromptContext = {
+  sourceUploads: UploadItem[];
+  referenceUploads?: UploadItem[];
+  supplementValue: string;
+  creationModeSelection: CreationModeSelection | null;
+};
+
 type AplusPlanStatus = "idle" | "generating" | "ready";
 
 type AplusPlanModule = {
@@ -630,6 +637,32 @@ type AdvancedAiAssistResult = {
   fieldValues: AdvancedSelectionMap;
   supplementValue?: string;
 };
+
+type PromptRuleLevel = "A" | "B" | "C";
+
+type PromptPlatformRule = {
+  ruleLevel: PromptRuleLevel;
+  prompt: string;
+  required?: string[];
+  forbidden?: string[];
+  sceneSlotAdvice?: string;
+};
+
+type PromptCategoryRule = {
+  label: string;
+  aliases: string[];
+  prompt: string;
+  focusPoints: string[];
+};
+
+type PromptOptionExpansionMap = Record<
+  string,
+  {
+    fieldKey: string;
+    name: string;
+    values: Record<string, { valuePrompt: string }>;
+  }
+>;
 
 type AdvancedSettingsConfig = {
   title: string;
@@ -2429,7 +2462,7 @@ const podExtractSceneOptions: Record<PodExtractModeKey, string[]> = {
   "全能提取": ["全能", "全幅印", "桌布", "手机壳", "凤玲", "挂钟"]
 };
 const podExtractRatioOptions: Record<PodExtractModeKey, string[]> = {
-  "专项提取": ["自动检测比例", "自定义比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
+  "专项提取": ["自动检测比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
   "全能提取": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"]
 };
 const videoSceneGridModeCards: Array<{ key: "系列图案" | "主副图案" | "情侣图案"; label: string; badge?: string }> = [
@@ -3056,6 +3089,10 @@ const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig
     modelLabel: "创客贴AI卖点图润色",
     prompt: "优化卖点图补充说明，强化视觉重点、文案承载和商业表达。"
   },
+  "image-expand": {
+    modelLabel: "创客贴AI图片扩图润色",
+    prompt: "优化图片扩图需求描述，强调延展方向、边界衔接、空间连续性、光影一致性和主体结构稳定性，使扩图结果更自然、完整、可执行。"
+  },
   "video-replica": {
     modelLabel: "创客贴AI爆款复刻视频润色",
     prompt: "优化爆款复刻视频描述，强调先提炼参考视频中的爆款镜头逻辑，再结合上传商品多视角图片完成迁移复刻，同时让卖点节奏、商品一致性、镜头真实性和商业成片感更具体、清晰、可执行。"
@@ -3090,12 +3127,12 @@ const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig
 const advancedAiAssistPromptConfigs: Partial<Record<string, string>> = {
   "goods-white": `你是一位电商商品白底图顾问。目标是为全品类商品提供统一适配的白底主图能力，优先覆盖 ${goodsWhiteUniversalPresetConfig.platforms.join("、")}。请先判断商品是否已经出现明确的平台线索：若能明确识别，则仅回填对应“平台信息”字段；若无法从商品图判断具体平台，请优先回填“${goodsWhiteUniversalPlatformLabel}”，表示采用跨平台统一白底图规范。回填时不要编造其他字段，不要输出额外解释。`,
   "goods-marketing": `你是一位电商营销主图策划师。请根据商品图片与商品线索，分别判断并回填：产品类型、场景背景、平台信息、商品信息、视觉风格、营销元素、文案语种。必须只从当前字段可选项中选择最匹配的值；无法确认时优先回填“智能识别 / 智能生成 / 自动匹配 / 无 / 无文案”等空语义选项。`,
-  "goods-retouch": `你是一位商品精修顾问。请根据商品图片判断更适合的电商平台与地区站点，仅回填当前高级设置中的平台、地区字段；不要补充无关内容。若判断不出则留空。`,
+  "goods-retouch": `你是一位商品精修顾问。请根据商品图片判断更适合的平台信息与目标市场，仅回填当前高级设置中的平台信息、目标市场字段；不要补充无关内容。若判断不出则留空。`,
   "goods-scene": `你是一位电商场景图策划师。请根据商品图片线索，回填：产品类型、场景类型、产品展示、排版呈现、氛围营造、价值导向、目标市场、文案语种。所有字段必须贴合当前商品，不确定时选择最通用或最弱承诺的选项，不要生成字段外内容。`,
   "goods-bg": `你是一位电商换背景策划师。请根据商品图片与主体特征，回填背景类型、风格与光影两个字段。若主体更适合白底、电商展台、居家、户外、广告风等，请选择最贴近的选项；不要填无关字段。`,
   "goods-view": `你是一位商品多视角展示顾问。请根据商品图片判断其平台信息对应的展示规范，仅回填“平台信息”字段；若无法识别则回填“无平台信息”。`,
   "goods-translate": `你是一位跨境电商图片翻译顾问。请根据商品图片与已有视觉线索，回填平台信息，并在需要时为非预置的平台规范触发细节补充；不要默认带出语种或其他无关字段。`,
-  "goods-buyer": `你是一位买家秀策划师。请根据商品图片，回填产品类型、产品状态、呈现方式、场景氛围、产品真实感、环境真实感、拍摄真实感、目标市场。仅从当前字段选项中挑选最符合真实买家秀气质的值。`,
+  "goods-buyer": `你是一位买家秀策划师。请根据商品图片，回填产品类型、产品状态、呈现方式、场景氛围、产品真实感、环境真实感、拍摄真实感、目标市场。仅从当前字段选项中挑选最符合真实买家秀气质的值；回填 productType 后，需基于 productTypeToCategoryMap 推导 productCategory，并优先匹配对应品类规则与字段扩展，不要输出字段外内容。`,
   "goods-detail": `你是一位商品细节图策划师。请根据商品图片，回填产品类型与展示形式，帮助细节图更明确地表达材质、结构或局部功能。`,
   "goods-sell": `你是一位商品卖点图策划师。请根据商品图片，回填产品类型、场景类型、文案语种、核心卖点、表现形式、卖点重心、主副标题、副标题、字体风格、元素辅助、目标市场。必须让每个字段服务于“卖点表达”而不是泛化描述。`,
   "goods-spoke": `你是一位电商代言图策划师。请根据商品图片，回填产品类型、互动方式、人物特点、场景背景、排版方式、人种肤色、性别风格、年龄特点、展示重点、目标市场。所有字段要服务于“人物代言商品”的广告表达。`,
@@ -3770,6 +3807,103 @@ function buildVideoReplacePromptSummary(context: VideoReplacePromptContext) {
   return parts.join(" / ");
 }
 
+const imageExpandSystemPrompt = `你是一位电商图片扩图专家。你的任务是基于用户上传的原图，在保持主体结构、材质、颜色、透视和商业质感稳定的前提下，对画面边界进行自然延展。
+
+请严格遵守以下要求：
+1. 原图主体不得被改坏、拉伸、重绘走样或替换。
+2. 扩展区域必须与原图在光线方向、阴影强弱、透视关系、景深和色温上保持连续。
+3. 若用户明确描述扩展方向、场景元素或留白用途，优先满足该要求。
+4. 若用户未明确描述，默认做“保守扩图”：
+   - 优先补全背景与环境
+   - 保持主体居中或当前构图重心不变
+   - 不新增喧宾夺主的大元素
+5. 若原图是商品图，扩展结果必须继续服务商品展示，不要把画面做成无关海报或超现实插画。
+6. 若用户上传参考图，仅将其作为扩展方向和氛围参考，不直接照搬主体内容。
+
+输出目标：
+- 扩展区域自然完整
+- 边缘无明显拼接痕迹
+- 主体边界稳定
+- 适合电商视觉继续编辑或投放`;
+
+const imageExpandNegativeConstraints = [
+  "- 不要改坏原图主体，不要拉伸、截断、重绘走样或替换主体",
+  "- 不要出现边缘断裂、拼接痕迹、重复纹理、镜像复制或背景补丁感",
+  "- 不要出现透视错误、空间关系矛盾、地平线错位或建筑结构变形",
+  "- 不要出现光线方向冲突、阴影错误、高光漂移、色温跳变或明暗断层",
+  "- 不要新增与原图无关的大型主体、人物、动物、文字、水印、Logo 或装饰物",
+  "- 不要出现明显 AI 伪影、局部模糊、结构漂移、材质错乱、边缘融化或清晰度不一致"
+];
+
+function buildImageExpandReferencePrompt(referenceUploads: UploadItem[]) {
+  if (!referenceUploads.length) {
+    return "若无额外参考，请基于原图已有场景语义做保守延展。";
+  }
+
+  return `请参考上传的 ${referenceUploads.length} 张参考图的场景氛围、空间走向、材质风格或装饰元素，但必须保持原商品主体和原图视觉逻辑不变。`;
+}
+
+function buildImageExpandModePrompt(context: ImageExpandPromptContext) {
+  const modeId = context.creationModeSelection?.modeId ?? "normal";
+  const modeLabel = context.creationModeSelection?.modeLabel ?? "普通模式";
+  const resolution = context.creationModeSelection?.resolution;
+  const modeInstruction =
+    modeId === "advanced"
+      ? "在保证主体稳定的基础上，增强场景延展完整度、空间层次、光影过渡和细节真实性，适合更复杂的背景补全与商业级扩图。"
+      : "以稳定自然扩展为优先，优先补齐背景、留白与环境边缘，不主动增加复杂新元素。";
+
+  const parts = [modeLabel, modeInstruction];
+  if (resolution) {
+    parts.push(`输出分辨率目标：${resolution}`);
+  }
+  return parts.join("；");
+}
+
+function buildImageExpandUserPrompt(context: ImageExpandPromptContext) {
+  const userDescription = context.supplementValue.trim() || "未填写额外扩图需求，请按保守扩图策略执行。";
+  const referencePrompt = buildImageExpandReferencePrompt(context.referenceUploads ?? []);
+  const modePrompt = buildImageExpandModePrompt(context);
+
+  return [
+    "请基于上传原图进行图片扩图。",
+    "",
+    "用户需求描述：",
+    userDescription,
+    "",
+    "参考图要求：",
+    referencePrompt,
+    "",
+    "创作模式：",
+    modePrompt,
+    "",
+    "通用约束：",
+    "- 保持原图主体结构、材质、颜色和比例稳定",
+    "- 扩展区域与原图边缘自然衔接",
+    "- 保持透视、空间关系、光影和清晰度连续",
+    "- 不新增与商品无关的主体",
+    "- 不制造明显AI感、拼接感或边缘断裂",
+    "",
+    "通用负向约束：",
+    ...imageExpandNegativeConstraints
+  ].join("\n");
+}
+
+function buildImageExpandPrompt(context: ImageExpandPromptContext) {
+  return [imageExpandSystemPrompt, "", buildImageExpandUserPrompt(context)].join("\n\n");
+}
+
+function buildImageExpandPromptSummary(context: ImageExpandPromptContext) {
+  const parts = [
+    `原图 ${context.sourceUploads.length} 张`,
+    context.referenceUploads?.length ? `参考图 ${context.referenceUploads.length} 张` : "无参考图",
+    context.creationModeSelection?.modeLabel ?? "普通模式"
+  ];
+  if (context.creationModeSelection?.resolution) {
+    parts.push(context.creationModeSelection.resolution);
+  }
+  return parts.join(" / ");
+}
+
 function getDefaultCreationModeSelection(configKey: string, count: number): CreationModeSelection | null {
   const config = creationModeConfigs[configKey];
   const defaultMode = config?.modes[0];
@@ -4058,6 +4192,252 @@ function inferRegionalTargetMarket(sourceText: string) {
     ],
     "大陆"
   );
+}
+
+const goodsBuyerCategoryRules: PromptCategoryRule[] = [
+  {
+    label: "服饰类",
+    aliases: ["服装", "T恤", "瑜伽服", "卫衣", "裙子", "外套", "裤子"],
+    prompt: "场景重点体现上身、穿搭或面料状态，保持版型、垂感、纹理和颜色真实。",
+    focusPoints: ["版型", "垂感", "面料纹理", "真实颜色"]
+  },
+  {
+    label: "鞋靴类",
+    aliases: ["鞋子", "运动鞋", "靴子", "皮鞋", "凉鞋", "拖鞋"],
+    prompt: "场景重点体现穿着、落地、行走或陈列状态，保持鞋型、鞋底结构和材质真实。",
+    focusPoints: ["鞋型", "鞋底结构", "成对关系", "材质真实"]
+  },
+  {
+    label: "箱包类",
+    aliases: ["背包", "行李箱", "手提包", "斜挎包", "旅行箱"],
+    prompt: "场景重点体现通勤、出行、手提或肩背状态，保持包体立体结构、肩带受力和五金细节可信。",
+    focusPoints: ["包体结构", "肩带受力", "五金细节", "开合逻辑"]
+  },
+  {
+    label: "珠宝饰品类",
+    aliases: ["项链", "耳环", "戒指", "手链", "手镯", "吊坠"],
+    prompt: "场景重点体现佩戴氛围与细节高光，保留金属、宝石等材质反光和细节。",
+    focusPoints: ["金属反光", "宝石细节", "佩戴氛围", "精致感"]
+  },
+  {
+    label: "美妆个护类",
+    aliases: ["化妆品", "香水", "护肤", "口红", "精华"],
+    prompt: "场景重点体现梳妆台或护肤使用语境，包装结构、瓶身反光和质地状态应真实自然。",
+    focusPoints: ["包装结构", "瓶身反光", "质地状态", "使用语境"]
+  },
+  {
+    label: "食品饮料类",
+    aliases: ["水果", "饮料", "食品", "咖啡", "奶茶"],
+    prompt: "场景重点体现可食用可饮用的真实语境，不夸大功效，不让非售卖配料主导画面。",
+    focusPoints: ["可食用语境", "包装可读", "成分真实", "主体优先"]
+  },
+  {
+    label: "家居百货类",
+    aliases: ["文具", "健身器材", "收纳", "日用"],
+    prompt: "场景重点体现居家使用关系和实用价值，保持结构功能和配件完整。",
+    focusPoints: ["功能关系", "配件完整", "空间比例", "实用价值"]
+  },
+  {
+    label: "家电数码类",
+    aliases: ["小家电", "电视", "蓝牙耳机", "手机", "笔记本电脑"],
+    prompt: "场景重点体现真实使用界面、按键、接口或佩戴状态，避免过度特效遮挡结构。",
+    focusPoints: ["接口结构", "按键细节", "屏幕/指示状态", "佩戴或摆放逻辑"]
+  },
+  {
+    label: "家具大件类",
+    aliases: ["沙发", "吊灯", "家具"],
+    prompt: "场景重点体现真实空间尺度和搭配关系，透视必须正确，尺寸比例不得失真。",
+    focusPoints: ["空间尺度", "透视关系", "结构比例", "摆放逻辑"]
+  },
+  {
+    label: "母婴玩具类",
+    aliases: ["玩具", "手办"],
+    prompt: "场景重点体现安全、亲和、真实日常的互动或陈列，组件完整，不渲染危险姿态。",
+    focusPoints: ["安全感", "组件完整", "互动真实", "亲和氛围"]
+  },
+  {
+    label: "汽配五金类",
+    aliases: ["汽车", "机械设备", "集装箱"],
+    prompt: "场景重点体现安装、维修或工况关系，孔位、连接和结构逻辑必须正确。",
+    focusPoints: ["工况关系", "孔位结构", "连接逻辑", "材质真实"]
+  },
+  {
+    label: "通用品类",
+    aliases: ["智能识别"],
+    prompt: "优先保持商品主体真实、结构准确和用途明确，场景仅作辅助，不以强风格化背景替代商品信息。",
+    focusPoints: ["主体真实", "结构准确", "用途明确", "背景克制"]
+  }
+];
+
+const goodsBuyerPlatformRules: Record<string, PromptPlatformRule> = {
+  "全平台通用（16平台）": {
+    ruleLevel: "A",
+    prompt: "买家秀图应以真实生活感为核心，商品主体清晰可辨，不做夸张商业特效，不制造误导性使用场景。",
+    required: ["真实感", "商品可识别", "场景与用途一致"],
+    forbidden: ["虚假功效演绎", "不实对比", "过度修图导致商品失真", "违规水印/联系方式"]
+  }
+};
+
+const goodsBuyerOptionValueExpansions: PromptOptionExpansionMap = {
+  platformInfo: {
+    fieldKey: "platformInfo",
+    name: "平台信息",
+    values: Object.fromEntries(
+      platformInfoInputOptions.map((option) => [
+        option,
+        {
+          valuePrompt:
+            option === "无平台信息"
+              ? "未指定平台时按跨平台保守买家秀规则执行：主体清晰、真实可信、避免过度风格化。"
+              : `按${option}平台语境优化买家秀表达，保持真实生活感、主体识别优先和合规展示边界。`
+        }
+      ])
+    )
+  },
+  productState: {
+    fieldKey: "productState",
+    name: "产品状态",
+    values: {
+      完整快递箱: { valuePrompt: "表现开箱前真实状态，包装完整但不强调物流文案噪声。" },
+      产品与配件自然陈列: { valuePrompt: "产品与配件陈列应自然可信，不摆拍过度整齐商业感。" },
+      新品未拆封: { valuePrompt: "保持新品完整感与封装逻辑，不出现违和拆封痕迹。" },
+      产品自然摆放场景: { valuePrompt: "以自然摆放体现真实使用语义，避免强海报化构图。" },
+      安装场景: { valuePrompt: "展示安装中或安装后的真实关系，结构连接逻辑正确。" },
+      穿戴状态: { valuePrompt: "体现真实穿戴效果与轮廓关系，避免夸张体型修饰。" },
+      长期使用状态: { valuePrompt: "允许轻微使用痕迹，但主体和关键卖点仍需清晰可辨。" },
+      使用状态: { valuePrompt: "体现真实使用过程，允许轻微动态痕迹但主体清晰。" }
+    }
+  },
+  presentationStyle: {
+    fieldKey: "presentationStyle",
+    name: "呈现方式",
+    values: {
+      主体展示: { valuePrompt: "主体作为画面核心焦点，构图清晰直观，背景仅辅助表达。" },
+      细节局部拍摄: { valuePrompt: "局部特写需有明确焦点，同时保留对商品整体的可识别关联。" },
+      自然摆放: { valuePrompt: "通过自然摆放表现生活感，避免道具和布局喧宾夺主。" },
+      穿戴拍摄: { valuePrompt: "强调真实穿戴关系与体感，保持比例、面料与轮廓可信。" },
+      "对镜子自拍": { valuePrompt: "保留自拍视角真实感，但镜面反射不应遮挡主体。" },
+      使用中拍摄: { valuePrompt: "突出使用瞬间与动作语义，关键结构与卖点区域清晰可读。" },
+      日常物品大小对比: { valuePrompt: "使用合理参照物表达尺寸感，避免误导性比例对比。" },
+      手持拍摄: { valuePrompt: "体现手持抓拍感，主体仍需处于视觉中心。" }
+    }
+  },
+  sceneAtmosphere: {
+    fieldKey: "sceneAtmosphere",
+    name: "场景氛围",
+    values: {
+      无场景: { valuePrompt: "背景保持简洁低干扰，优先突出主体轮廓与商品识别。" },
+      居家场景: { valuePrompt: "生活化居家环境，光线自然，避免棚拍感过重。" },
+      局部或模糊场景: { valuePrompt: "场景可弱化或虚化，但主体边界和关键细节必须可辨。" },
+      车内场景: { valuePrompt: "车内元素仅作语义辅助，不遮挡商品，不制造危险驾驶暗示。" },
+      移动运动场景: { valuePrompt: "允许轻微动感表达，但需控制模糊度，主体识别优先。" },
+      日常外出场景: { valuePrompt: "体现日常通勤/出行语境，画面真实自然。" }
+      ,
+      节日场景: { valuePrompt: "节日元素点到为止，强调商品与真实生活关系，不做促销堆叠。" }
+    }
+  },
+  productReality: {
+    fieldKey: "productReality",
+    name: "产品真实感",
+    values: {
+      包装与产品褶皱: { valuePrompt: "保留轻微自然褶皱和接触痕迹，不做塑料感抹平。" },
+      长期使用磨损: { valuePrompt: "磨损表现需克制且合理，不影响商品关键结构识别。" },
+      使用中的真实: { valuePrompt: "保留使用语义和轻微痕迹，保证主体完整度与可信度。" }
+    }
+  },
+  environmentReality: {
+    fieldKey: "environmentReality",
+    name: "环境真实感",
+    values: {
+      杂乱环境: { valuePrompt: "允许受控杂乱感，但必须确保主体边界清楚、阅读路径清晰。" },
+      宠物偶然入镜: { valuePrompt: "宠物仅作陪衬，不能遮挡主体或误导售卖范围。" },
+      人物局部入镜: { valuePrompt: "局部人物入镜应自然，避免人物抢占主体视觉中心。" },
+      临时摆放随意感: { valuePrompt: "保留随意摆放生活感，同时维持商品信息完整可读。" },
+      人物素颜: { valuePrompt: "人物肤质保持自然真实，避免重磨皮和失真修饰。" },
+      人物日常穿搭: { valuePrompt: "穿搭应生活化并服务商品表达，不喧宾夺主。" }
+    }
+  },
+  shotReality: {
+    fieldKey: "shotReality",
+    name: "拍摄真实感",
+    values: {
+      随手拍摄无美感: { valuePrompt: "保留随手拍真实感，但不牺牲主体识别和关键信息可读性。" },
+      较低像素: { valuePrompt: "允许轻微颗粒感，主体轮廓与卖点细节仍需可辨。" },
+      手抖模糊: { valuePrompt: "仅允许轻度动态模糊，禁止整体糊片和结构漂移。" },
+      反光逆光: { valuePrompt: "可保留逆光氛围，但禁止主体关键区域过曝或死黑。" },
+      对镜自拍: { valuePrompt: "保留镜像自拍语义，镜面高光与遮挡关系要自然。" },
+      手持自拍: { valuePrompt: "强调真实手持自拍视角，主体保持稳定可辨识。" }
+    }
+  },
+  targetMarket: {
+    fieldKey: "targetMarket",
+    name: "目标市场",
+    values: {
+      大陆: { valuePrompt: "表达偏生活化直观，强调真实体验和转化效率。" },
+      北美: { valuePrompt: "表达偏简洁直接，强调功能可信和使用体验。" },
+      韩国: { valuePrompt: "表达偏清爽审美与质感统一，画面克制干净。" },
+      日本: { valuePrompt: "表达偏克制有秩序，强调细节与生活感平衡。" },
+      俄罗斯: { valuePrompt: "表达强调主体完整和质感可信，避免过度修饰。" },
+      中东阿拉伯: { valuePrompt: "表达注重完整度与质感，避免不合语境元素。" },
+      港澳: { valuePrompt: "表达偏精致简洁，保证主体清晰和信息效率。" },
+      中国台湾: { valuePrompt: "表达偏生活感和清新审美并重，避免硬广化。" },
+      土耳其: { valuePrompt: "表达偏真实与色彩平衡，避免过度滤镜与高饱和失真。" },
+      南美: { valuePrompt: "表达可适度活力，但主体识别与真实度优先。" },
+      澳洲: { valuePrompt: "表达偏自然光与生活场景，保持干净可信。" },
+      东南亚: { valuePrompt: "表达偏明快直观和高识别，避免复杂背景干扰。" },
+      印度: { valuePrompt: "表达强调真实使用语义和信息可读性。" },
+      非洲: { valuePrompt: "表达注重主体完整、材质真实和用途清晰。" },
+      英国: { valuePrompt: "表达偏克制与实用，强调真实可信和结构清楚。" },
+      德国: { valuePrompt: "表达偏理性清晰，强调结构逻辑与品质感。" },
+      法国: { valuePrompt: "表达兼顾审美与真实，避免过度商业化堆叠。" },
+      欧洲: { valuePrompt: "表达偏简洁质感，主体清晰和体验可信并重。" },
+      东欧: { valuePrompt: "表达注重真实可读和商品完整展示。"}
+    }
+  }
+};
+
+function normalizeGoodsBuyerCategoryByAliases(productType?: string) {
+  const normalized = (productType ?? "").trim().toLowerCase();
+  if (!normalized) return "通用品类";
+  const matched = goodsBuyerCategoryRules.find((rule) => rule.aliases.some((alias) => normalized.includes(alias.toLowerCase())));
+  return matched?.label ?? "通用品类";
+}
+
+function buildGoodsBuyerPromptAssembly(selectionMap: AdvancedSelectionMap = {}, supplementValue = "") {
+  const productType = selectionMap.productType ?? "智能识别";
+  const category = normalizeGoodsBuyerCategoryByAliases(productType);
+  const categoryRule = goodsBuyerCategoryRules.find((rule) => rule.label === category) ?? goodsBuyerCategoryRules[goodsBuyerCategoryRules.length - 1];
+  const platformRule = goodsBuyerPlatformRules["全平台通用（16平台）"];
+  const paramLine = `产品类型=${productType}；平台信息=${selectionMap.platformInfo ?? ""}；产品状态=${selectionMap.productState ?? ""}；呈现方式=${selectionMap.presentationStyle ?? ""}；场景氛围=${selectionMap.sceneAtmosphere ?? ""}；产品真实感=${selectionMap.productReality ?? ""}；环境真实感=${selectionMap.environmentReality ?? ""}；拍摄真实感=${selectionMap.shotReality ?? ""}；目标市场=${selectionMap.targetMarket ?? ""}。`;
+  const expansionLines = Object.values(goodsBuyerOptionValueExpansions)
+    .map((field) => {
+      const value = selectionMap[field.fieldKey];
+      if (!value) return "";
+      return field.values[value]?.valuePrompt ?? "";
+    })
+    .filter(Boolean)
+    .join(" ");
+  const focusPointsLine = categoryRule.focusPoints.length ? `品类关注点：${categoryRule.focusPoints.join("、")}。` : "";
+  const commonNegativeLine =
+    "通用负向约束：严禁虚假功效、误导性前后对比、违规导流信息、侵权元素、主体结构失真、过度滤镜与低质AI伪影。";
+  const commonQualityLine =
+    "通用质量要求：商品主体清晰，结构颜色材质与原商品一致，光影透视遮挡关系自然可信，场景与用途一致，缩略图与详情页均可稳定识别。";
+  const prompt = [
+    "生成真实自然、生活化的买家秀风格商品图。",
+    `当前商品品类为「${category}」，${categoryRule.prompt}`,
+    focusPointsLine,
+    platformRule.prompt,
+    paramLine,
+    expansionLines,
+    platformRule.required?.length ? `必须满足：${platformRule.required.join("、")}。` : "",
+    platformRule.forbidden?.length ? `禁止：${platformRule.forbidden.join("、")}。` : "",
+    commonNegativeLine,
+    commonQualityLine,
+    supplementValue.trim() ? `补充要求：${supplementValue.trim()}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  return { category, prompt };
 }
 
 function inferPlatformLabelForField(sourceText: string, platformOptions: PlatformMock[]) {
@@ -4479,6 +4859,7 @@ function buildAdvancedAiAssistResult(
       return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
     case "goods-scene":
       fieldValues.productType = inferProductType(sourceText);
+      fieldValues.platformInfo = inferPlatformInfo(sourceText);
       fieldValues.sceneType = inferBackgroundType(sourceText, "智能生成");
       fieldValues.productDisplay = inferSceneProductDisplay(sourceText);
       fieldValues.layoutStyle = inferSceneLayoutStyle(sourceText);
@@ -4497,6 +4878,10 @@ function buildAdvancedAiAssistResult(
     case "goods-translate":
       fieldValues.platformInfo = inferPlatformInfo(sourceText);
       return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
+    case "goods-retouch":
+      fieldValues.platformInfo = inferPlatformInfo(sourceText);
+      fieldValues.targetMarket = inferRegionalTargetMarket(sourceText);
+      return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
     case "goods-sell":
       fieldValues.productType = inferProductType(sourceText);
       fieldValues.sceneType = inferSellingPointSceneType(sourceText);
@@ -4512,6 +4897,7 @@ function buildAdvancedAiAssistResult(
       return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
     case "goods-buyer":
       fieldValues.productType = inferProductType(sourceText);
+      fieldValues.platformInfo = inferPlatformInfo(sourceText);
       fieldValues.productState = inferBuyerShowProductState(sourceText);
       fieldValues.presentationStyle = inferBuyerShowPresentation(sourceText);
       fieldValues.sceneAtmosphere = inferBuyerShowAtmosphere(sourceText);
@@ -4519,6 +4905,7 @@ function buildAdvancedAiAssistResult(
       fieldValues.environmentReality = inferBuyerShowEnvironmentReality(sourceText);
       fieldValues.shotReality = inferBuyerShowShotReality(sourceText);
       fieldValues.targetMarket = inferRegionalTargetMarket(sourceText);
+      fieldValues.productCategory = normalizeGoodsBuyerCategoryByAliases(fieldValues.productType);
       return { fieldValues: finalizeFieldValues(fieldValues), supplementValue: extraDetails };
     case "goods-spoke":
       fieldValues.productType = inferProductType(sourceText);
@@ -4677,6 +5064,14 @@ const supplementToolStrategies: Record<string, PolishStrategy> = {
     englishSuffix: ["original motion and camera movement preserved", "consistent product structure across shots", "stable commercial video output"],
     minKeywordHint: "请补充想保留的镜头节奏、商品展示重点、场景氛围或成片风格要求",
     preferredCategories: ["focus", "scene", "lighting", "style", "texture", "composition"]
+  },
+  "image-expand": {
+    chinesePrefix: "建议将图片扩图需求优化为",
+    englishPrefix: "Outpainting request with",
+    chineseSuffix: ["延展区域与原图自然衔接", "空间透视与光影逻辑连续", "主体结构稳定且边缘完整"],
+    englishSuffix: ["natural edge continuation", "consistent perspective and lighting", "stable subject structure"],
+    minKeywordHint: "请补充扩展方向、场景延展、边缘衔接或光影连续性要求",
+    preferredCategories: ["scene", "composition", "lighting", "focus", "style", "texture"]
   },
   default: {
     chinesePrefix: "建议将补充说明优化为",
@@ -5785,11 +6180,25 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "goods-retouch": {
     creationModeConfigKey: "retouch",
-    sectionOrder: ["upload-main", "mode-choice", "creation-mode", "supplement"],
+    sectionOrder: ["upload-main", "mode-choice", "creation-mode", "advanced-settings", "supplement"],
     advancedSettings: {
       title: "高级设置",
-      fields: ["platform", "region"],
-      platformIds: ["taobao", "tmall", "jd", "pdd", "amazon", "temu", "tiktok-shop", "shopee", "other"]
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        },
+        {
+          key: "targetMarket",
+          label: "目标市场",
+          mode: "input-select",
+          options: spokespersonTargetMarketOptions
+        }
+      ]
     },
     uploads: {
       main: {
@@ -5981,6 +6390,12 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
           options: productTypeInputOptions
         },
         {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        },
+        {
           key: "productState",
           label: "产品状态",
           mode: "input-select",
@@ -6054,6 +6469,12 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
           label: "产品类型",
           mode: "input-select",
           options: productTypeInputOptions
+        },
+        {
+          key: "platformInfo",
+          label: "平台信息",
+          mode: "input-select",
+          options: platformInfoInputOptions
         },
         {
           key: "sceneType",
@@ -8683,20 +9104,22 @@ function AdaptiveChoiceField({
   options,
   value,
   required,
+  columns,
   onChange
 }: {
   label: string;
   options: Array<{ key: string; label: string }>;
   value: string;
   required?: boolean;
+  columns?: number;
   onChange: (value: string) => void;
 }) {
-  const columns = Math.min(3, Math.max(1, options.length));
+  const resolvedColumns = Math.max(1, Math.min(columns ?? 3, options.length));
 
   return (
     <div className="ck-form-block">
       {label ? <FieldTitle label={label} required={required} /> : null}
-      <div className="ck-adaptive-choice-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+      <div className="ck-adaptive-choice-grid" style={{ gridTemplateColumns: `repeat(${resolvedColumns}, minmax(0, 1fr))` }}>
         {options.map((option) => (
           <button
             className={`ck-adaptive-choice-item${option.key === value ? " active" : ""}`}
@@ -8768,6 +9191,7 @@ function PodExtractSetupSection({
   const [mode, setMode] = useState<PodExtractModeKey>(defaultMode);
   const [scene, setScene] = useState(selectedValues?.podExtractScene ?? podExtractSceneOptions[defaultMode][0]);
   const [ratio, setRatio] = useState(selectedValues?.podExtractRatio ?? podExtractRatioOptions[defaultMode][0]);
+  const [transparentBackground, setTransparentBackground] = useState(selectedValues?.podExtractTransparentBackground === "1");
 
   useEffect(() => {
     const nextScenes = podExtractSceneOptions[mode];
@@ -8804,11 +9228,12 @@ function PodExtractSetupSection({
   }, [mode, selectedValues]);
 
   useEffect(() => {
-    onSelectionChange?.([mode, scene, ratio]);
+    onSelectionChange?.([mode, scene, ratio, `透明底图 ${transparentBackground ? "开启" : "关闭"}`]);
     onSelectionMapChange?.({
       podExtractMode: mode,
       podExtractScene: scene,
-      podExtractRatio: ratio
+      podExtractRatio: ratio,
+      podExtractTransparentBackground: transparentBackground ? "1" : "0"
     });
     onCreationModeChange?.({
       modeId: `pod-extract-${mode}`,
@@ -8817,7 +9242,7 @@ function PodExtractSetupSection({
       count: 1,
       unitCreditCost: 5
     });
-  }, [mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, scene]);
+  }, [mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, scene, transparentBackground]);
 
   return (
     <div className="ck-form-block">
@@ -8840,6 +9265,7 @@ function PodExtractSetupSection({
       </div>
 
       <AdaptiveChoiceField
+        columns={4}
         label="产品场景"
         onChange={setScene}
         options={podExtractSceneOptions[mode].map((option) => ({ key: option, label: option }))}
@@ -8849,7 +9275,27 @@ function PodExtractSetupSection({
 
       <div className="ck-inline-field ck-aligned-inline-field">
         <FieldTitle label="出图比例" required />
-        <SelectField hideLabel label="出图比例" onChange={setRatio} options={podExtractRatioOptions[mode]} required value={ratio} />
+        <SelectField
+          className="ck-pod-extract-ratio-select"
+          hideLabel
+          label="出图比例"
+          onChange={setRatio}
+          options={podExtractRatioOptions[mode]}
+          required
+          value={ratio}
+        />
+      </div>
+
+      <div className="ck-inline-field ck-aligned-inline-field">
+        <FieldTitle label="透明底图" />
+        <button
+          aria-pressed={transparentBackground}
+          className={`ck-pod-extract-toggle${transparentBackground ? " active" : ""}`}
+          onClick={() => setTransparentBackground((value) => !value)}
+          type="button"
+        >
+          <span />
+        </button>
       </div>
     </div>
   );
@@ -8861,7 +9307,6 @@ function InlineSliderField({
   min = 0,
   max = 1,
   step = 0.1,
-  helpText = "?",
   valueFormatter,
   onChange
 }: {
@@ -8870,7 +9315,6 @@ function InlineSliderField({
   min?: number;
   max?: number;
   step?: number;
-  helpText?: string;
   valueFormatter?: (value: number) => string;
   onChange: (value: number) => void;
 }) {
@@ -8878,22 +9322,19 @@ function InlineSliderField({
 
   return (
     <div className="ck-inline-field ck-slider-inline-field">
-      <div className="ck-slider-inline-label">
+      <div className="ck-slider-inline-head">
         <FieldTitle label={label} required />
-        <span className="ck-slider-inline-help">{helpText}</span>
-      </div>
-      <div className="ck-slider-inline-control">
-        <input
-          className="ck-slider-inline-range"
-          max={max}
-          min={min}
-          onChange={(event) => onChange(Number(event.target.value))}
-          step={step}
-          type="range"
-          value={value}
-        />
         <span className="ck-slider-inline-value">{displayValue}</span>
       </div>
+      <input
+        className="ck-slider-inline-range"
+        max={max}
+        min={min}
+        onChange={(event) => onChange(Number(event.target.value))}
+        step={step}
+        type="range"
+        value={value}
+      />
     </div>
   );
 }
@@ -9845,24 +10286,21 @@ function PodVariationSetupSection({
 
   return (
     <div className="ck-form-block">
-      <div className="ck-form-block">
+      <div className="ck-inline-field ck-pod-variation-inline-field">
         <FieldTitle label="品类" required />
-        <div className="ck-adaptive-choice-grid ck-adaptive-choice-grid-row ck-pod-variation-category-row">
-          {podVariationCategoryOptions.map((option) => (
-            <button
-              className={`ck-adaptive-choice-item${option === category ? " active" : ""}`}
-              key={option}
-              onClick={() => {
-                skipSelectedValuesSyncRef.current = true;
-                hasManualCategoryRef.current = true;
-                setCategory(option);
-              }}
-              type="button"
-            >
-              {option}
-            </button>
-          ))}
-        </div>
+        <SelectField
+          className="ck-pod-variation-inline-field"
+          hideLabel
+          label="品类"
+          onChange={(value) => {
+            skipSelectedValuesSyncRef.current = true;
+            hasManualCategoryRef.current = true;
+            setCategory(value);
+          }}
+          options={[...podVariationCategoryOptions]}
+          required
+          value={category}
+        />
       </div>
 
       <div className="ck-form-block">
@@ -9931,7 +10369,7 @@ function PodVariationSetupSection({
             value={podVariationDivergenceLevels.indexOf(divergenceLevel)}
             valueFormatter={(current) => podVariationDivergenceLevels[Math.round(current)] ?? "低"}
           />
-          <div className="ck-inline-field">
+          <div className="ck-inline-field ck-pod-variation-inline-field">
             <FieldTitle label="指定背景色" required />
             <SelectField
               hideLabel
@@ -9949,7 +10387,7 @@ function PodVariationSetupSection({
       ) : null}
 
       {mode === "爆款二创" ? (
-        <div className="ck-inline-field">
+        <div className="ck-inline-field ck-pod-variation-inline-field">
           <FieldTitle label="裂变内容" required />
           <SelectField
             hideLabel
@@ -9964,7 +10402,7 @@ function PodVariationSetupSection({
           />
         </div>
       ) : (
-        <div className="ck-inline-field">
+        <div className="ck-inline-field ck-pod-variation-inline-field">
           <FieldTitle label="裂变内容" required />
           <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 120 }}>
             <button
@@ -9992,7 +10430,7 @@ function PodVariationSetupSection({
       )}
 
       {mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? (
-        <div className="ck-inline-field">
+        <div className="ck-inline-field ck-pod-variation-inline-field">
           <FieldTitle label="形状" required />
           <SelectField
             hideLabel
@@ -10367,48 +10805,40 @@ function VideoSceneGridSetupSection({
     const nextValue = Number(selectedValues?.videoSceneGridOutputCount ?? 2);
     return Math.min(10, Math.max(2, Number.isFinite(nextValue) ? nextValue : 2));
   });
+  const lastSyncedValuesRef = useRef("");
+  const lastAppliedExternalRef = useRef("");
 
   useEffect(() => {
-    const nextOptions = videoSceneGridVariationOptions[mode];
-    if (!nextOptions.includes(variation)) {
-      setVariation(nextOptions[0]);
-    }
-  }, [mode, variation]);
-
-  useEffect(() => {
-    const nextMode = selectedValues?.videoSceneGridMode;
-    if (nextMode && videoSceneGridModeCards.some((item) => item.key === nextMode) && nextMode !== mode) {
-      setMode(nextMode as VideoSceneGridModeKey);
-    }
-  }, [mode, selectedValues]);
-
-  useEffect(() => {
-    const nextVariation = selectedValues?.videoSceneGridVariation;
-    if (nextVariation && videoSceneGridVariationOptions[mode].includes(nextVariation) && nextVariation !== variation) {
-      setVariation(nextVariation);
-    }
-  }, [mode, selectedValues, variation]);
-
-  useEffect(() => {
-    const nextRatio = selectedValues?.videoSceneGridRatio;
-    if (nextRatio && videoSceneGridRatioOptions.includes(nextRatio as (typeof videoSceneGridRatioOptions)[number]) && nextRatio !== ratio) {
-      setRatio(nextRatio);
-    }
-  }, [ratio, selectedValues]);
-
-  useEffect(() => {
-    const nextOutputCount = Number(selectedValues?.videoSceneGridOutputCount ?? outputCount);
-    const normalizedOutputCount = Math.min(10, Math.max(2, Number.isFinite(nextOutputCount) ? nextOutputCount : 2));
-    if (normalizedOutputCount !== outputCount) {
-      setOutputCount(normalizedOutputCount);
-    }
-  }, [outputCount, selectedValues]);
+    const nextModeRaw = selectedValues?.videoSceneGridMode;
+    const nextMode = videoSceneGridModeCards.some((item) => item.key === nextModeRaw) ? (nextModeRaw as VideoSceneGridModeKey) : mode;
+    const nextVariationOptions = videoSceneGridVariationOptions[nextMode];
+    const nextVariationRaw = selectedValues?.videoSceneGridVariation;
+    const nextVariation = nextVariationRaw && nextVariationOptions.includes(nextVariationRaw) ? nextVariationRaw : nextVariationOptions[0];
+    const nextRatioRaw = selectedValues?.videoSceneGridRatio;
+    const nextRatio = nextRatioRaw && videoSceneGridRatioOptions.includes(nextRatioRaw as (typeof videoSceneGridRatioOptions)[number])
+      ? nextRatioRaw
+      : ratio;
+    const nextOutputCountRaw = Number(selectedValues?.videoSceneGridOutputCount ?? outputCount);
+    const nextOutputCount = Math.min(10, Math.max(2, Number.isFinite(nextOutputCountRaw) ? nextOutputCountRaw : 2));
+    const externalSignature = JSON.stringify({
+      mode: nextMode,
+      variation: nextVariation,
+      ratio: nextRatio,
+      outputCount: nextOutputCount
+    });
+    if (externalSignature === lastAppliedExternalRef.current || externalSignature === lastSyncedValuesRef.current) return;
+    lastAppliedExternalRef.current = externalSignature;
+    setMode(nextMode);
+    setVariation(nextVariation);
+    setRatio(nextRatio);
+    setOutputCount(nextOutputCount);
+  }, [mode, outputCount, ratio, selectedValues]);
 
   const detailDimensions = videoSceneGridDetailDimensionMap[mode][variation] ?? [];
   const totalCredits = uploadCount * outputCount * 5;
 
   useEffect(() => {
-    onSelectionMapChange?.({
+    const nextSelectionMap: AdvancedSelectionMap = {
       videoSceneGridMode: mode,
       videoSceneGridVariation: variation,
       videoSceneGridDetailDimensions: detailDimensions.join(" / "),
@@ -10416,15 +10846,26 @@ function VideoSceneGridSetupSection({
       videoSceneGridOutputCount: String(outputCount),
       videoSceneGridUnitCreditCost: "5",
       videoSceneGridTotalCreditCost: String(totalCredits)
-    });
-    onSelectionChange?.([mode, variation, ...detailDimensions, `出图比例 ${ratio}`, `生图数量 ${outputCount}`]);
-    onCreationModeChange?.({
+    };
+    const nextSelectionValues = [mode, variation, ...detailDimensions, `出图比例 ${ratio}`, `生图数量 ${outputCount}`];
+    const nextCreationModeSelection: CreationModeSelection = {
       modeId: `video-scene-grid-${mode}-${variation}`,
       modeLabel: `${mode}·${variation}`,
       ratio,
       count: outputCount,
       unitCreditCost: 5
+    };
+    const nextSyncSignature = JSON.stringify({
+      mode,
+      variation,
+      ratio,
+      outputCount
     });
+    if (lastSyncedValuesRef.current === nextSyncSignature) return;
+    lastSyncedValuesRef.current = nextSyncSignature;
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(nextSelectionValues);
+    onCreationModeChange?.(nextCreationModeSelection);
   }, [detailDimensions, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, ratio, totalCredits, variation]);
 
   return (
@@ -10436,7 +10877,13 @@ function VideoSceneGridSetupSection({
             <button
               className={`ck-video-scene-grid-mode-card${mode === option.key ? " active" : ""}`}
               key={option.key}
-              onClick={() => setMode(option.key)}
+              onClick={() => {
+                if (mode === option.key) return;
+                const nextOptions = videoSceneGridVariationOptions[option.key];
+                const nextVariation = nextOptions.includes(variation) ? variation : nextOptions[0];
+                setMode(option.key);
+                setVariation(nextVariation);
+              }}
               type="button"
             >
               <div className="ck-video-scene-grid-mode-card-head">
@@ -16195,6 +16642,8 @@ function ConfigPanel({
               "videoSceneGridTotalCreditCost"
             ];
             setAdvancedSettingSelections((current) => {
+              const isSame = sectionKeys.every((key) => (current[key] ?? "") === (values[key] ?? ""));
+              if (isSame) return current;
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
                 delete nextSelections[key];
@@ -16318,6 +16767,8 @@ function ConfigPanel({
         tool.key === "video-replica"
           ? "ck-form-block ck-set-pack-selling-points ck-video-replica-supplement"
           : tool.key === "video-replace"
+            ? "ck-form-block ck-set-pack-selling-points ck-video-script-detail"
+          : tool.key === "image-expand"
             ? "ck-form-block ck-set-pack-selling-points ck-video-script-detail"
           : tool.key === "model-adjust"
             ? "ck-form-block ck-set-pack-selling-points ck-model-input-detail"
@@ -16548,7 +16999,14 @@ function ConfigPanel({
   };
 
   const resolvedSupplementValue =
-    tool.key === "video-replace"
+    tool.key === "image-expand"
+      ? buildImageExpandPrompt({
+          sourceUploads: uploads[mainUploadKey] ?? [],
+          referenceUploads: uploads[refUploadKey] ?? [],
+          supplementValue,
+          creationModeSelection: resolvedCreationModeSelection
+        })
+      : tool.key === "video-replace"
       ? buildVideoReplacePrompt({
           sourceUploads: uploads[mainUploadKey] ?? [],
           videoUploads: uploads[videoUploadKey] ?? [],
@@ -16564,10 +17022,30 @@ function ConfigPanel({
             creationModeSelection: resolvedCreationModeSelection,
             advancedSelections: advancedSettingSelections
           })
+      : tool.key === "goods-buyer"
+      ? buildGoodsBuyerPromptAssembly(advancedSettingSelections, supplementValue).prompt
       : supplementValue;
 
   const resolvedAdvancedSelections =
-    tool.key === "video-replace"
+    tool.key === "image-expand"
+      ? {
+          ...advancedSettingSelections,
+          imageExpandPromptSummary: buildImageExpandPromptSummary({
+            sourceUploads: uploads[mainUploadKey] ?? [],
+            referenceUploads: uploads[refUploadKey] ?? [],
+            supplementValue,
+            creationModeSelection: resolvedCreationModeSelection
+          }),
+          imageExpandSystemPrompt: imageExpandSystemPrompt,
+          imageExpandUserPrompt: buildImageExpandUserPrompt({
+            sourceUploads: uploads[mainUploadKey] ?? [],
+            referenceUploads: uploads[refUploadKey] ?? [],
+            supplementValue,
+            creationModeSelection: resolvedCreationModeSelection
+          }),
+          imageExpandUserDescription: supplementValue.trim()
+        }
+      : tool.key === "video-replace"
       ? {
           ...advancedSettingSelections,
           videoReplacePromptSummary: buildVideoReplacePromptSummary({
@@ -16590,6 +17068,12 @@ function ConfigPanel({
               advancedSelections: advancedSettingSelections
             }),
             videoReplicaUserDescription: supplementValue.trim()
+          }
+      : tool.key === "goods-buyer"
+        ? {
+            ...advancedSettingSelections,
+            productCategory: normalizeGoodsBuyerCategoryByAliases(advancedSettingSelections.productType),
+            goodsBuyerPrompt: buildGoodsBuyerPromptAssembly(advancedSettingSelections, supplementValue).prompt
           }
       : advancedSettingSelections;
 
@@ -17522,6 +18006,7 @@ function ResultDetailModal({
   onDeleteCurrent: (item: ResultItem, taskItems: ResultItem[]) => void;
   onUseTool: (toolKey: string, label: string, item: ResultItem) => void;
 }) {
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const currentIndex = item ? taskItems.findIndex((taskItem) => taskItem.id === item.id) : -1;
   const hasOriginalImage = Boolean(task?.snapshot.mainUploads[0]?.previewSrc || task?.snapshot.mainUploads[0]?.src);
   const originalImageSrc = task?.snapshot.mainUploads[0]?.previewSrc ?? task?.snapshot.mainUploads[0]?.src ?? "";
@@ -17685,6 +18170,26 @@ function ResultDetailModal({
                     ))}
                   </div>
                 </div>
+
+                <div className="ck-result-detail-mobile-entries">
+                  <button
+                    className="ck-result-detail-mobile-entry"
+                    onClick={() => setMobileInfoOpen((value) => !value)}
+                    type="button"
+                  >
+                    生成信息
+                  </button>
+                </div>
+                {mobileInfoOpen ? (
+                  <div className="ck-result-detail-mobile-info">
+                    {infoItems.map((info) => (
+                      <div className="ck-result-detail-mobile-info-item" key={`mobile-${info.label}`}>
+                        <span>{info.label}</span>
+                        <strong>{info.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </>
           ) : (
@@ -17928,9 +18433,12 @@ export const App = () => {
       navigate(activeBasePath, { replace: true });
       return;
     }
-    if (location.pathname.startsWith("/mine") || location.pathname.startsWith("/tools/")) {
-      navigate(activeBasePath, { replace: true });
-    }
+
+    const isMinePath = location.pathname === "/mine" || location.pathname === "/mine/creation" || location.pathname === "/mine/models";
+    const isToolPath = /^\/tools\/[^/]+\/?$/.test(location.pathname);
+    if (isMinePath || isToolPath) return;
+
+    navigate(activeBasePath, { replace: true });
   }, [activeBasePath, detailRoute, location.pathname, navigate]);
 
   useEffect(() => {

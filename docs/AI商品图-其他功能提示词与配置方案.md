@@ -20,6 +20,8 @@
 补充说明：
 
 - `模特调整` 已单独整理为专项文档，见 [AI商品图-模特调整-提示词与配置方案](/Users/zhaowenwen/CODEX/CKTAI电商/docs/AI商品图-模特调整-提示词与配置方案.md)。
+- `模特生成` 已单独整理为专项文档，见 [AI商品图-模特生成-提示词与配置方案](/Users/zhaowenwen/CODEX/CKTAI电商/docs/AI商品图-模特生成-提示词与配置方案.md)。
+- `图片扩图` 属于图片处理工具，但本次也已单独整理可直接开发接入的提示词文档，见 [图片扩图-提示词与配置方案](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图片扩图-提示词与配置方案.md)。
 
 ## 2. 统一组装规范
 
@@ -92,6 +94,7 @@ const advancedAiAssistPromptConfigs = {
 
 ```ts
 const supplementAiPolishConfigs = {
+  "image-expand": { modelLabel: "创客贴AI图片扩图润色", prompt: "优化图片扩图需求描述，强调延展方向、边界衔接、空间连续性、光影一致性和主体结构稳定性，使扩图结果更自然、完整、可执行。" },
   "goods-marketing": { modelLabel: "创客贴AI营销主图润色", prompt: "优化营销主图细节补充，强调产品卖点、营销氛围、构图和商业质感。" },
   "goods-scene": { modelLabel: "创客贴AI场景图润色", prompt: "优化场景图细节补充，强调场景搭建、氛围、光线、主体展示和代入感。" },
   "goods-bg": { modelLabel: "创客贴AI换背景润色", prompt: "优化换背景补充描述，强调背景融合、真实光影、空间关系与主体协调。" },

@@ -1,0 +1,20 @@
+{
+  "toolKey": "pod-crop",
+  "version": "2026-05-09",
+  "optionValueExpansions": {
+    "podCropMode": {
+      "fieldKey": "podCropMode",
+      "values": {
+        "通用": {
+          "valuePrompt": "按通用电商图案裁剪执行，优先平衡主体完整度、边缘净度和后续复用效率。"
+        },
+        "铁皮画": {
+          "valuePrompt": "按铁皮画语义裁剪，保留复古颗粒、磨损细节与硬朗图形关系，避免关键文案和徽标被切断。"
+        },
+        "装饰画": {
+          "valuePrompt": "按装饰画语义裁剪，保持视觉中心、层次关系和叙事完整，避免破坏画面平衡。"
+        }
+      }
+    }
+  }
+}

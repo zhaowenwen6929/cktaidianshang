@@ -1,0 +1,62 @@
+{
+  "toolKey": "pod-partial-edit",
+  "version": "2026-05-09",
+  "optionValueExpansionsByTool": {
+    "podPartialEditRequirement": {
+      "替换“文字”和元素": {
+        "targetText": {
+          "valuePrompt": "目标文案需清晰可读且与原排版层级匹配。",
+          "negative": "禁止乱码、错拼、不可读文字。"
+        },
+        "elementDescription": {
+          "valuePrompt": "新增元素需与原风格一致并保持可印刷细节。",
+          "negative": "禁止引入与主题无关的装饰或侵权元素。"
+        },
+        "referenceImage": {
+          "valuePrompt": "若提供参考图，仅提取风格特征，不直接搬运版权内容。",
+          "negative": "禁止直接照搬受版权保护的图案。"
+        }
+      },
+      "去除商品印花": {
+        "removeArea": {
+          "valuePrompt": "去除区域应明确到商品的具体位置，避免误删主体结构。",
+          "negative": "禁止去除范围不明导致主体误伤。"
+        },
+        "retainTexture": {
+          "valuePrompt": "优先保留原底材纹理与微光泽，确保去除后自然。",
+          "negative": "禁止底材被抹平或失去材质感。"
+        }
+      },
+      "商品换色": {
+        "targetPart": {
+          "valuePrompt": "目标部位需明确到主体、边框、背景或局部细节。",
+          "negative": "禁止颜色溢出到非目标区域。"
+        },
+        "targetColor": {
+          "valuePrompt": "目标颜色需服务真实售卖观感，兼顾高光与阴影过渡。",
+          "negative": "禁止死板平涂导致材质失真。"
+        }
+      },
+      "服饰做纹理": {
+        "textureType": {
+          "valuePrompt": "纹理类型要和服饰材质、风格及商品定位一致。",
+          "negative": "禁止使用与面料逻辑冲突的纹理。"
+        },
+        "textureReference": {
+          "valuePrompt": "纹理参考图仅用于风格约束，不直接复制具体图案版权资产。",
+          "negative": "禁止直接搬运参考图原样内容。"
+        },
+        "textureDirection": {
+          "valuePrompt": "纹理方向需与衣片结构、褶皱走向和受力逻辑一致。",
+          "negative": "禁止纹理逆向拉伸或断裂。"
+        }
+      },
+      "自定义提示词": {
+        "customPrompt": {
+          "valuePrompt": "严格执行用户自定义局部改图指令。",
+          "negative": "禁止超范围修改与任务无关内容。"
+        }
+      }
+    }
+  }
+}

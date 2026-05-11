@@ -1,0 +1,40 @@
+{
+  "toolKey": "goods-detail",
+  "version": "2026-05-09",
+  "promptAssembly": {
+    "strictOrder": [
+      "task_goal",
+      "category_rule",
+      "platform_rule",
+      "category_dimension_direction_rule",
+      "parameter_block",
+      "value_prompt_block",
+      "required_block",
+      "forbidden_block",
+      "universal_negative_block",
+      "universal_quality_block",
+      "user_supplement_block",
+      "reference_image_block"
+    ],
+    "template": "任务目标：生成一张电商可用的一键细节图，准确放大商品关键局部，突出材质、结构、工艺或功能细节，并保持与原商品一致。\\n\\n品类规则：当前商品品类为「{productCategory}」，{categoryPrompt}\\n\\n平台规则：{platformPrompt}\\n\\n维度方向规则：品类锚点={detailCategory}；细节维度={detailDimension}；展示方向={detailDirection}。{categoryDimensionDirectionPrompt}\\n\\n细节图参数：产品类型={productType}；展示形式={displayType}；平台信息={platformInfo}；比例={ratio}；分辨率={resolution}；出图数量={count}。\\n\\n字段扩展：{productTypeValuePrompt} {displayTypeValuePrompt} {platformInfoValuePrompt} {detailDimensionValuePrompt} {detailDirectionValuePrompt}\\n\\n必须满足：{requiredJoined}\\n\\n禁止：{forbiddenJoined}\\n\\n通用负向约束：\\n1. 严禁改变商品SKU本体结构、关键部件位置、材质属性和颜色关系。\\n2. 严禁虚构原图不存在的接口、纹理、工艺层、配件或功能构造。\\n3. 严禁局部放大区域与整体商品不一致，或出现错误拼接。\\n4. 严禁过度锐化、过度磨皮、噪点涂抹导致材质失真。\\n5. 严禁违规水印、联系方式、二维码、侵权Logo、误导性功效表达。\\n\\n通用质量要求：\\n1. 局部焦点明确，用户能一眼看懂放大位置。\\n2. 局部与整体强一致，结构、比例、透视、光线逻辑一致。\\n3. 材质/纹理/工艺可辨，边缘干净，无脏边和融边。\\n4. 商业可用，适合电商详情页和附图场景。\\n5. 多图生成时风格统一，细节表达口径一致。\\n\\n用户补充说明：{supplement}\\n\\n参考图约束：{referenceConstraint}",
+    "trimPolicy": {
+      "neverTrim": [
+        "required_block",
+        "forbidden_block",
+        "universal_negative_block",
+        "universal_quality_block"
+      ],
+      "trimFirst": [
+        "value_prompt_block",
+        "platform_rule",
+        "user_supplement_block"
+      ]
+    },
+    "outputFields": [
+      "finalPrompt",
+      "finalNegativePrompt",
+      "appliedRules",
+      "debugTrace"
+    ]
+  }
+}
