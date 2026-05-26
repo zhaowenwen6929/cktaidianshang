@@ -23,6 +23,7 @@
 - `podExtractMode`：`专项提取 | 全能提取`
 - `podExtractScene`：随模式切换
 - `podExtractRatio`：随模式切换
+- `podExtractTransparentBackground`：`0 | 1`
 
 真实选项：
 
@@ -36,7 +37,8 @@
   "podExtractRatioByMode": {
     "专项提取": ["自动检测比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
     "全能提取": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"]
-  }
+  },
+  "podExtractTransparentBackground": ["0", "1"]
 }
 ```
 
@@ -59,6 +61,7 @@
 - 覆盖字段：
 - `podExtractScene`
 - `podExtractRatio`
+- `podExtractTransparentBackground`
 
 ### 2.3 通用固定段
 
@@ -73,8 +76,8 @@
 
 1. 任务目标段
 2. 模式规则正文段（`modeRule.prompt`）
-3. 参数段（`mode/scene/ratio`）
-4. 字段值扩展段（`scene.valuePrompt + ratio.valuePrompt`）
+3. 参数段（`mode/scene/ratio/transparentBackground`）
+4. 字段值扩展段（`scene.valuePrompt + ratio.valuePrompt + transparentBackground.valuePrompt`）
 5. 模式 `required` 段
 6. 模式 `forbidden` 段
 7. 通用负向约束段
@@ -98,6 +101,11 @@
 - `自动检测比例` 必须进入 prompt
 - 固定比例（如 `1:1`、`3:4`）转为“构图与边界约束”描述
 
+### 4.4 透明底图值扩展
+
+- `1`：输出透明背景结果，便于后续直接贴图与排版
+- `0`：默认按非透明底图输出，优先便于人工复核图案完整性和边缘质量
+
 ## 5. 拼接模板（开发可直接用）
 
 ```text
@@ -105,9 +113,9 @@
 
 模式规则：{modePrompt}
 
-提取参数：模式={podExtractMode}；产品场景={podExtractScene}；出图比例={podExtractRatio}。
+提取参数：模式={podExtractMode}；产品场景={podExtractScene}；出图比例={podExtractRatio}；透明底图={podExtractTransparentBackground}。
 
-字段扩展：{podExtractSceneValuePrompt} {podExtractRatioValuePrompt}
+字段扩展：{podExtractSceneValuePrompt} {podExtractRatioValuePrompt} {podExtractTransparentBackgroundValuePrompt}
 
 必须满足：{modeRequiredJoined}
 
@@ -127,21 +135,25 @@ function buildPodExtractPrompt(input: {
   podExtractMode?: string;
   podExtractScene?: string;
   podExtractRatio?: string;
+  podExtractTransparentBackground?: string;
   supplementText?: string;
 }) {
   const mode = input.podExtractMode || "专项提取";
   const scene = input.podExtractScene || "通用";
   const ratio = input.podExtractRatio || "自动检测比例";
+  const transparentBackground = input.podExtractTransparentBackground || "0";
 
   const modeRule = modeRulesByTool[mode] ?? modeRulesByTool["专项提取"];
   const sceneValuePrompt = optionValueExpansions.podExtractScene?.values?.[scene]?.valuePrompt || "";
   const ratioValuePrompt = optionValueExpansions.podExtractRatio?.values?.[ratio]?.valuePrompt || "";
+  const transparentBackgroundValuePrompt =
+    optionValueExpansions.podExtractTransparentBackground?.values?.[transparentBackground]?.valuePrompt || "";
 
   const parts = [
     "任务目标：从上传商品图中提取可复用的印花图案，输出可直接用于POD后续链路（裂变/连续图/尺寸延展）的高质量图案。",
     `模式规则：${modeRule.prompt}`,
-    `提取参数：模式=${mode}；产品场景=${scene}；出图比例=${ratio}。`,
-    [sceneValuePrompt, ratioValuePrompt].filter(Boolean).join(" "),
+    `提取参数：模式=${mode}；产品场景=${scene}；出图比例=${ratio}；透明底图=${transparentBackground}。`,
+    [sceneValuePrompt, ratioValuePrompt, transparentBackgroundValuePrompt].filter(Boolean).join(" "),
     modeRule.required?.length ? `必须满足：${modeRule.required.join("、")}。` : "",
     modeRule.forbidden?.length ? `禁止：${modeRule.forbidden.join("、")}。` : "",
     UNIVERSAL_NEGATIVE_PROMPT,
@@ -162,7 +174,8 @@ function buildPodExtractPrompt(input: {
   "toolKey": "pod-extract",
   "podExtractMode": "全能提取",
   "podExtractScene": "家纺",
-  "podExtractRatio": "3:4"
+  "podExtractRatio": "3:4",
+  "podExtractTransparentBackground": "1"
 }
 ```
 
@@ -173,9 +186,9 @@ function buildPodExtractPrompt(input: {
 
 模式规则：用于大幅褶皱、遮挡严重、透视变形明显的印花提取。需先消除基底干扰与形变影响，再重建可平铺、可复用的完整印花表达。
 
-提取参数：模式=全能提取；产品场景=家纺；出图比例=3:4。
+提取参数：模式=全能提取；产品场景=家纺；出图比例=3:4；透明底图=1。
 
-字段扩展：重点处理布料褶皱、纤维噪点与织物阴影，恢复可平面复用的图案纹理。 输出竖向电商常用比例，避免主体裁切。
+字段扩展：重点处理布料褶皱、纤维噪点与织物阴影，恢复可平面复用的图案纹理。 输出竖向电商常用比例，避免主体裁切。 输出透明背景结果，仅保留可复用印花主体，不保留底色、地影、商品基底和无关背景信息，边缘闭合干净，便于后续直接贴图与排版。
 
 必须满足：优先恢复被褶皱/遮挡影响的图案连续性、修正明显透视拉伸和局部扭曲、保留风格主色与关键识别元素、输出图案具备后续排版与延展可用性。
 
@@ -191,7 +204,7 @@ function buildPodExtractPrompt(input: {
 1. 当前 `pod-extract` 页面未暴露补充说明输入；如果后续新增，直接接入模板第 9 段即可。
 2. 若 prompt 超长，仅允许裁剪：`modeRule.prompt` 和 `valuePrompt`；不得裁剪 `required / forbidden / 通用负向 / 通用质量`。
 3. 模式切换后要重新校验 `scene/ratio` 合法值（当前前端已做联动校验）。
-4. 建议在任务快照持久化：`podExtractMode/podExtractScene/podExtractRatio/finalPrompt`，便于复现与排查。
+4. 建议在任务快照持久化：`podExtractMode/podExtractScene/podExtractRatio/podExtractTransparentBackground/finalPrompt`，便于复现与排查。
 
 ## 9. 上传后自动识别产品场景（新增）
 

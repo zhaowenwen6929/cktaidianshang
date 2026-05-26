@@ -4,6 +4,7 @@
   "optionValueExpansions": {
     "podExtractScene": {
       "fieldKey": "podExtractScene",
+      "name": "产品场景",
       "values": {
         "通用": { "valuePrompt": "按通用印花提取执行，优先保证图案完整、边缘干净和颜色还原。" },
         "手机壳": { "valuePrompt": "重点去除壳体高光、弧面透视与开孔干扰，保留图案主体与线条细节。" },
@@ -17,6 +18,7 @@
     },
     "podExtractRatio": {
       "fieldKey": "podExtractRatio",
+      "name": "出图比例",
       "values": {
         "自动检测比例": { "valuePrompt": "自动识别图案原始比例并优先保留，不强行拉伸。" },
         "1:1": { "valuePrompt": "输出正方形构图，主体居中并保留完整关键元素。" },
@@ -31,6 +33,18 @@
         "9:16": { "valuePrompt": "输出长竖比例，重点控制上下连续性与细节完整。" },
         "16:9": { "valuePrompt": "输出长横比例，重点控制左右连续性与细节完整。" },
         "18:23": { "valuePrompt": "输出特殊竖向比例，优先保留中心主题和边缘闭合。" }
+      }
+    },
+    "podExtractTransparentBackground": {
+      "fieldKey": "podExtractTransparentBackground",
+      "name": "透明底图",
+      "values": {
+        "1": {
+          "valuePrompt": "输出透明背景结果，仅保留可复用印花主体，不保留底色、地影、商品基底和无关背景信息，边缘闭合干净，便于后续直接贴图与排版。"
+        },
+        "0": {
+          "valuePrompt": "默认按非透明底图输出，背景保持干净中性，优先便于人工复核图案完整性和边缘质量，不额外制造复杂底色和阴影。"
+        }
       }
     }
   }

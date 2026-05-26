@@ -22,6 +22,7 @@
     "platformPrompt",
     "params",
     "valuePrompts",
+    "technicalHintPrompt",
     "platformRequired",
     "platformForbidden",
     "universalNegative",
@@ -35,6 +36,7 @@
     "platformPrompt": "平台规则：{platformPrompt}",
     "params": "换背景参数：背景类型={backgroundType}；风格与光影={lightingStyle}。",
     "valuePrompts": "字段扩展：{backgroundTypeValuePrompt} {lightingStyleValuePrompt}",
+    "technicalHintPrompt": "内部技术提示：{technicalHintPrompt}",
     "platformRequired": "必须满足：{platformRequiredJoined}",
     "platformForbidden": "禁止：{platformForbiddenJoined}",
     "universalNegative": "{universalNegativePrompt}",
@@ -64,6 +66,16 @@
     "productCategory": "家电数码类",
     "backgroundType": "电商白底",
     "lightingStyle": "柔光棚拍风",
+    "technicalHints": {
+      "lightDirection": "front-left",
+      "materialHints": [
+        "metal",
+        "glossy-plastic"
+      ],
+      "reflectionRisk": "medium",
+      "shadowNeed": "soft-contact",
+      "edgeRisk": "medium"
+    },
     "platformRuleDetail": "主图禁止任何促销贴片与附加图形。",
     "supplementText": "黑色机身边缘要清晰，轻微接触阴影即可。"
   }

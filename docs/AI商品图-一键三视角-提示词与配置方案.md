@@ -441,9 +441,9 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 - `count`
   - 更适合作为生成参数，不需要扩成自然语言长约束。
 
-## 6. 选项值扩展提示词配置（三视图专属 JSON）
+### 5.4 选项值扩展提示词配置（三视图专属 JSON）
 
-## 6.1 `cameraAngle` 扩展
+#### 5.4.1 `cameraAngle` 扩展
 
 ```json
 {
@@ -483,7 +483,7 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 }
 ```
 
-## 6.2 `platformInfo` 扩展
+#### 5.4.2 `platformInfo` 扩展
 
 说明：这是当前页面真实高级字段，建议不要只拼平台名，而是直接拼平台值对应的详细规则 prompt。
 
@@ -518,7 +518,7 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 }
 ```
 
-## 7. 最终提示词组装模板（推荐）
+### 5.5 最终提示词组装模板（推荐）
 
 ```json
 {
@@ -548,30 +548,42 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 }
 ```
 
-## 8. 推荐组装顺序
+## 6. 拼装规则（后端/中台）
 
-1. 平台规则段
-2. 品类规则段
-3. `cameraAngle` 扩展段
-4. 全局一致性段
-5. 输出规格段
-6. `platformRuleDetail` 人工补充段
+1. 先确定平台、视角方案与品类：
+- 平台来源优先级：`platformInfo`（高级设置） > `无平台信息`。
+- 视角来源：`cameraAngle`（必填）直接命中预置单视角或品类预设视角。
+- 品类来源优先级：`productCategory`（识别/上游注入） > 无品类时仅使用 `cameraAngle` 预设语义。
+2. 读取平台规则：`platformRulesByTool[platformInfo]`，拼接首视图/补充视图角色、背景要求以及 `required + forbidden`。
+3. 读取品类规则：若有 `productCategory`，命中品类规则后拼接结构、材质、比例和配件一致性约束。
+4. 读取字段值扩展：
+- `cameraAngle` 必须命中 `valuePrompt`，决定三张图各自承担的视角职责。
+- `platformInfo` 需命中 `valuePrompt`，把“平台名”变成“这个平台下三视图应该怎么用”的规则。
+5. 三视图字段分层必须固定：
+- `platformInfo` 决定首视图是不是主图标准、背景能否纯白、后两张图能否补结构信息。
+- `cameraAngle` 决定三张图的角度分工，避免重复视角。
+- `productCategory` 负责补足行业结构常识，例如鞋靴看鞋底、箱包看侧厚、数码看接口。
+- `platformRuleDetail` 只能细化平台例外规则，不能覆盖硬约束。
+6. 约束优先级必须固定：`platform forbidden` > `platform required` > `cameraAnglePrompt` > `category prompt` > `platformInfoValuePrompt` > `platformRuleDetail`。
+7. 若平台主图要求纯白或高识别，首视图必须明确承担主图职责；第二、第三视图才允许补充侧面、背面、底部、俯视等信息。
+8. 若 `cameraAngle` 选的是品类预设（如“鞋靴类”“数码产品”），最终提示词必须显式写出“三张图各自看什么”，不能只保留标签值。
+9. `platformRuleDetail` 仅在自定义平台或业务补充规则时拼接，适合放“禁用元素、首图角度、包装是否可出镜”等细则。
+10. 安全兜底：最终串必须包含“同一SKU、同一颜色、同一材质、同一结构、同一比例、同一布光逻辑，禁止视角重复和结构漂移”的语义。
 
-不要只拼：
+### 6.1 字段与规则源映射（必须按此读取）
 
-```text
-平台=亚马逊；拍摄视角=鞋靴类
-```
+| 拼装变量 | 来源字段 | 规则文件/章节 | 说明 |
+| --- | --- | --- | --- |
+| `platformInfo` | `advanced-settings.platformInfo` | 本文第 3 章 `platformRulesByTool` | 当前页面唯一主高级字段 |
+| `cameraAnglePrompt` | `cameraAngle` 命中值 | 本文第 5.4.1 节 | 必须转成三张图的分工描述 |
+| `platformInfoValuePrompt` | `platformInfo` 命中值 | 本文第 5.4.2 节 | 平台补充语义，不替代硬规则 |
+| `productCategory` | 图片识别或上游注入 | 本文第 1.6 节说明 | 当前页面无显式字段 |
+| `platformRuleDetail` | 条件显示的“细节补充”字段 | 无 | 自定义平台/业务补充规则 |
+| `ratio/resolution/count` | 创作模式参数 | 无 | 输出规格段 |
 
-要拼成：
+## 7. 拼装 Demo（输入 + 输出）
 
-```text
-适配亚马逊商品图规则：首视图必须按主图标准处理，使用纯白背景，仅展示实际售卖商品主体；其余视图用于补足侧面、背面或鞋底信息。按鞋靴三视图处理：首视图优先正面或 45 度展示鞋面识别，第二视图补足侧轮廓和鞋底厚度，第三视图展示后跟或鞋底纹路。保持鞋型、鞋带、鞋底花纹和材质一致。
-```
-
-## 9. 可直接联调示例
-
-输入：
+### 7.1 Demo 输入
 
 ```json
 {
@@ -587,7 +599,7 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 }
 ```
 
-输出：
+### 7.2 Demo 输出（最终提示词）
 
 ```text
 生成电商商品三视图展示图。
@@ -603,7 +615,14 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 输出比例=1:1；输出数量=1；输出分辨率=1K。
 ```
 
-## 10. 端到端建议
+### 7.3 Demo 说明（规则如何生效）
+
+1. `platformInfo=亚马逊` 先命中平台硬规则，锁定“首视图纯白、主体完整、适合上架”的职责。
+2. `cameraAngle=鞋靴类` 命中品类预设视角扩展，不是简单写“鞋靴类”，而是拆成“首视图看鞋面、第二视图看侧轮廓、第三视图看后跟/鞋底”。
+3. `productCategory=鞋靴类` 进一步补强鞋型、鞋带、鞋底花纹、材质一致性，防止跨视图漂移。
+4. 若存在 `platformRuleDetail`，它只能细化例如“包装是否可出镜”“是否允许鞋盒同框”等业务细则，不能推翻亚马逊白底主图规范。
+
+## 8. 端到端建议
 
 若要让该功能真正达到“像买家秀那样完整可配置”的状态，最小补齐项如下：
 
@@ -615,7 +634,7 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
    - `goods-view.sectionOrder` 增加 `supplement`
 5. 若要启用 AI 帮写，需将 `goods-view.advancedSettings.showAiAssist` 改为 `true`，并把 AI assist 输出从“只回填 platformInfo”扩成“回填 platformInfo + 推荐 productCategory + 推荐 cameraAngle”。
 
-## 11. 当前可引用来源（2026-05-01 检索）
+## 9. 当前可引用来源（2026-05-01 检索）
 
 - Amazon Seller Forums / Product image requirements  
   <https://sellercentral.amazon.com/seller-forums/discussions/t/5eef969a1508af21fb64e9db01ba5a7e?mons_sel_locale=zh_CN>
@@ -636,7 +655,7 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 - SHEIN marketplace guide（公开接入侧资料，非 SHEIN 官方原始卖家中心规则）  
   <https://support.channelengine.com/hc/en-us/articles/21552893542941-SHEIN-marketplace-guide>
 
-## 12. 与当前代码对应的关键位置
+## 10. 与当前代码对应的关键位置
 
 - `src/App.tsx:5052` `three-view` 创作模式
 - `src/App.tsx:5740` `goods-view` 模块配置
@@ -644,4 +663,3 @@ type GoodsViewPromptBuildParams = GoodsViewRuntimeParams & {
 - `src/App.tsx:3152` `advancedAiAssistPromptConfigs["goods-view"]`
 - `src/App.tsx:3099` `supplementAiPolishConfigs["goods-view"]`
 - `src/config/goodsWhitePromptConfig.ts:57` `goodsWhitePlatformLabels`
-

@@ -576,38 +576,39 @@ inferBackgroundLightingStyle(sourceText)
 - 若用户明确选择某个背景类型，以用户选择优先；
 - 若用户未选且识别不充分，按 `category -> preferredBackgroundTypes[0]` 兜底更稳。
 
-## 6. 最终组装模板与规则（JSON）
+## 6. 拼装规则（后端/中台）
 
-```json
-{
-  "builderByTool": {
-    "goods-bg": {
-      "requiredFields": ["toolKey", "platformLabel", "productCategory", "backgroundType", "lightingStyle"],
-      "promptTemplates": {
-        "task": "请基于上传的商品原图，在保持商品主体真实不变的前提下，生成合规、真实、可用于电商商品展示的换背景图片。",
-        "category": "当前商品品类为「{productCategory}」，请保持该品类应有的真实结构、材质、颜色、纹理、比例关系与细节特征，禁止错误改造商品形态，禁止替换商品主体。",
-        "platform": "{platformPrompt}",
-        "params": "背景类型={backgroundType}；风格与光影={lightingStyle}。",
-        "quality": "背景与主体必须自然融合，阴影、反射、色温、透视关系与空间层次真实一致；边缘干净无毛边、无吞边、无漂浮感、无穿帮，不出现拼贴断层和不真实倒影。",
-        "outputSpec": "输出比例={ratio}；输出分辨率={resolution}；输出数量={count}。",
-        "supplement": "补充要求：{supplement}"
-      },
-      "appendOptionExpansions": true,
-      "optionExpansionMode": "detailed_prompt_first",
-      "strictMode": {
-        "enabled": true,
-        "onMissingPlatformRule": "error",
-        "onMissingCategoryRule": "error",
-        "onUnknownParamValue": "error"
-      }
-    }
-  }
-}
-```
+1. 先确定平台与品类：
+- 平台来源优先级：`platformLabel`（上游注入） > `全平台通用（16平台）`。
+- 品类来源优先级：`productCategory`（识别/上游回填） > `通用品类`。
+2. 读取平台规则：`platformRulesByTool[platformLabel]`，拼接背景合法性、主图/附图角色约束以及 `required + forbidden`。
+3. 读取品类规则：`categoryRulesByTool[productCategory]`，约束主体结构、材质、反光/透明件处理和空间语义。
+4. 读取高级字段值扩展：按 `backgroundType / lightingStyle` 的命中值追加 `valuePrompt`。
+5. 换背景字段分层必须固定：
+- `productCategory` 决定主体保真边界和常见风险材质。
+- `backgroundType` 决定场景类型、图位属性和道具容忍度。
+- `lightingStyle` 决定光影方向、阴影软硬、色温和商业氛围。
+6. 约束优先级必须固定：`platform forbidden` > `category hard prompt` > `platform required` > `backgroundType` > `lightingStyle` > `supplement`。
+7. 当 `backgroundType=电商白底` 时，必须强制压制所有实景道具、营销贴片、复杂倒影和装饰元素；若平台主图要求纯白，该项属于硬约束。
+8. 当 `backgroundType` 为实景/广告风时，若平台主图规则严格，最终提示词必须显式写明“只能作为附图/内容图，不作为主图”。
+9. `lightingStyle` 只能改变背景光感与融合方式，不能借机改变商品主色、结构、表面材质或新增不存在的高光反射。
+10. `resolution` 仅在高级模式稳定传入；普通模式没有分辨率时，`outputSpec` 自动降级为 `输出比例={ratio}；输出数量={count}。`
+11. `supplement` 为空时整段删除；若用户补充与平台/品类硬规则冲突，例如要求“白底加大字促销贴片”，按高优先级规则裁掉。
+12. 安全兜底：最终串必须包含“保持商品主体真实不变、背景融合自然、边缘干净、阴影反射可信”的语义。
 
-## 7. 可直接联调示例
+### 6.1 字段与规则源映射（必须按此读取）
 
-输入：
+| 拼装变量 | 来源字段 | 规则文件/章节 | 说明 |
+| --- | --- | --- | --- |
+| `platformLabel` | 上游注入或父页面传入 | 本文第 2 章 `platformRulesByTool` | 当前面板无平台控件，属于外部注入 |
+| `productCategory` | 图片识别或上游商品信息 | 本文第 3 章 `categoryRulesByTool` | 决定主体保真边界 |
+| `backgroundTypePrompt` / `lightingStylePrompt` | 各高级设置字段值 | 本文第 4 章 `optionValueExpansionsByTool` | 细化背景语义和光影融合 |
+| `ratio/resolution/count` | 创作模式参数 | 无 | 输出规格段 |
+| `supplement` | 补充说明（可为空） | 无 | 最后拼接，优先级最低 |
+
+## 7. 拼装 Demo（输入 + 输出）
+
+### 7.1 Demo 输入
 
 ```json
 {
@@ -621,30 +622,37 @@ inferBackgroundLightingStyle(sourceText)
     "resolution": "1K",
     "count": "1",
     "supplement": "保留黑色耳机外壳高光和金属边缘，白底纯净，不要强倒影。"
-  },
-  "strict": true
+  }
 }
 ```
 
-输出（示例）：
+### 7.2 Demo 输出（最终提示词）
 
 ```text
 请基于上传的商品原图，在保持商品主体真实不变的前提下，生成合规、真实、可用于电商商品展示的换背景图片。
 
-当前商品品类为「家电数码类」，请保持该品类应有的真实结构、材质、颜色、纹理、比例关系与细节特征，禁止错误改造商品形态，禁止替换商品主体。
+平台约束：请严格遵守 Amazon 主图规则：若当前结果作为主图，则必须使用纯白背景（RGB 255,255,255），仅展示实际售卖商品本体，不添加文字、Logo、水印、边框、额外图形或非售卖配件；若选择实景室内、室外场景或商业广告风，则该结果只能作为附图或内容图风格理解，不能伪装成主图。 必须满足：白底纯净、主体完整、无额外元素、真实可售。 禁止：营销贴片、非售卖配件、复杂倒影、主图伪装场景化。
 
-请严格遵守 Amazon 主图规则：若当前结果作为主图，则必须使用纯白背景（RGB 255,255,255），仅展示实际售卖商品本体，不添加文字、Logo、水印、边框、额外图形或非售卖配件；若选择实景室内、室外场景或商业广告风，则该结果只能作为附图或内容图风格理解，不能伪装成主图。
+品类约束：当前商品品类为「家电数码类」，请保持该品类应有的真实结构、材质、颜色、纹理、比例关系与细节特征，禁止错误改造商品形态，禁止替换商品主体。 重点关注：金属反光、塑料壳体、高光边缘、结构接口。
 
-背景类型=电商白底；风格与光影=柔光棚拍风。
+高级设置：背景类型=电商白底；风格与光影=柔光棚拍风。
 
-输出纯白或极干净中性白背景，主体完整居中，边缘清晰锐利，只允许极轻接触阴影或弱倒影；不加入场景元素、道具、营销贴片、文字、水印、Logo、边框和无关反光。采用均匀柔和的棚拍光线，阴影边缘柔化，主体轮廓清晰，适合突出材质、形体和商业整洁度；避免硬光打出不真实重影。
+选项扩展约束：输出纯白或极干净中性白背景，主体完整居中，边缘清晰锐利，只允许极轻接触阴影或弱倒影；不加入场景元素、道具、营销贴片、文字、水印、Logo、边框和无关反光。采用均匀柔和的棚拍光线，阴影边缘柔化，主体轮廓清晰，适合突出材质、形体和商业整洁度；避免硬光打出不真实重影。
 
-背景与主体必须自然融合，阴影、反射、色温、透视关系与空间层次真实一致；边缘干净无毛边、无吞边、无漂浮感、无穿帮，不出现拼贴断层和不真实倒影。
+质量要求：背景与主体必须自然融合，阴影、反射、色温、透视关系与空间层次真实一致；边缘干净无毛边、无吞边、无漂浮感、无穿帮，不出现拼贴断层和不真实倒影。
 
 输出比例=1:1；输出分辨率=1K；输出数量=1。
 
 补充要求：保留黑色耳机外壳高光和金属边缘，白底纯净，不要强倒影。
 ```
+
+### 7.3 Demo 说明（规则如何生效）
+
+1. `platformLabel=亚马逊` 先命中平台规则，锁定“主图纯白、只展示商品本体”的硬约束。
+2. `productCategory=家电数码类` 负责限制换背景过程中不能改坏耳机结构、金属边缘和高光逻辑。
+3. `backgroundType=电商白底` 决定图位属性，优先级高于风格化表达。
+4. `lightingStyle=柔光棚拍风` 只负责白底图下的布光语义，不能改变主体材质和主色。
+5. `supplement` 只做低优先级补充；若用户要求“白底上加大促销文案”“做夸张镜面倒影”，执行层应自动压制。
 
 ## 8. 三个关键能力的提示词配置（完整可用）
 

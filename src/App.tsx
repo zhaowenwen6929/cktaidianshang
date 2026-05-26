@@ -18006,6 +18006,50 @@ function ResultDetailModal({
   onDeleteCurrent: (item: ResultItem, taskItems: ResultItem[]) => void;
   onUseTool: (toolKey: string, label: string, item: ResultItem) => void;
 }) {
+  const renderDetailGlyph = (type: "video" | "upscale" | "download" | "delete" | "close") => {
+    if (type === "video") {
+      return (
+        <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+          <rect height="10" rx="2" stroke="currentColor" strokeWidth="1.4" width="8.8" x="2.2" y="3" />
+          <path d="M11 6.1 13.6 4.5c.33-.2.74.04.74.43v6.14c0 .39-.41.63-.74.43L11 9.9V6.1Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.4" />
+        </svg>
+      );
+    }
+    if (type === "upscale") {
+      return (
+        <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+          <path d="M6 2.7H3.8A1.1 1.1 0 0 0 2.7 3.8V6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+          <path d="M10 2.7h2.2c.61 0 1.1.49 1.1 1.1V6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+          <path d="M6 13.3H3.8a1.1 1.1 0 0 1-1.1-1.1V10" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+          <path d="M10 13.3h2.2c.61 0 1.1-.49 1.1-1.1V10" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+        </svg>
+      );
+    }
+    if (type === "download") {
+      return (
+        <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+          <path d="M8 2.5v7.1" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+          <path d="m5.1 7.6 2.9 3 2.9-3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" />
+          <path d="M2.8 12.5h10.4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+        </svg>
+      );
+    }
+    if (type === "delete") {
+      return (
+        <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+          <path d="M3.5 4.4h9" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+          <path d="M6.3 2.9h3.4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+          <path d="M5 4.4v7c0 .88.72 1.6 1.6 1.6h2.8c.88 0 1.6-.72 1.6-1.6v-7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" />
+          <path d="M6.9 6.8v3.2M9.1 6.8v3.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+        </svg>
+      );
+    }
+    return (
+      <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+        <path d="M4 4 12 12M12 4 4 12" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+      </svg>
+    );
+  };
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const currentIndex = item ? taskItems.findIndex((taskItem) => taskItem.id === item.id) : -1;
   const hasOriginalImage = Boolean(task?.snapshot.mainUploads[0]?.previewSrc || task?.snapshot.mainUploads[0]?.src);
@@ -18017,23 +18061,23 @@ function ResultDetailModal({
   const videoReplaceSummary = task?.snapshot.advancedSelections.videoReplacePromptSummary;
   const videoReplaceUserDescription = task?.snapshot.advancedSelections.videoReplaceUserDescription;
   const toolbarActions = [
-    { key: "video-main", label: "生成视频", icon: "◧" },
-    { key: "image-upscale", label: "4K放大", icon: "⤢" }
+    { key: "video-main", label: "生成视频", icon: "video" as const },
+    { key: "image-upscale", label: "4K放大", icon: "upscale" as const }
   ];
   const infoItems = [
-    { icon: "✣", label: "功能模块", value: toolLabel },
-    { icon: "T", label: "尺寸比例", value: modeSelection?.ratio ?? "自适应尺寸" },
-    { icon: "▤", label: "生成数量", value: String(task?.totalCount ?? "--") },
-    ...(task?.toolKey === "video-replica" && videoReplicaSummary ? [{ icon: "↻", label: "复刻摘要", value: videoReplicaSummary }] : []),
+    { label: "功能模块：", value: toolLabel },
+    { label: "尺寸比例：", value: modeSelection?.ratio ?? "自适应尺寸" },
+    { label: "生成数量：", value: String(task?.totalCount ?? "--") },
+    ...(task?.toolKey === "video-replica" && videoReplicaSummary ? [{ label: "复刻摘要：", value: videoReplicaSummary }] : []),
     ...(task?.toolKey === "video-replica" && videoReplicaUserDescription
-      ? [{ icon: "✎", label: "用户描述", value: videoReplicaUserDescription }]
+      ? [{ label: "用户描述：", value: videoReplicaUserDescription }]
       : []),
-    ...(task?.toolKey === "video-replace" && videoReplaceSummary ? [{ icon: "↺", label: "替换摘要", value: videoReplaceSummary }] : []),
+    ...(task?.toolKey === "video-replace" && videoReplaceSummary ? [{ label: "替换摘要：", value: videoReplaceSummary }] : []),
     ...(task?.toolKey === "video-replace" && videoReplaceUserDescription
-      ? [{ icon: "✎", label: "用户描述", value: videoReplaceUserDescription }]
+      ? [{ label: "用户描述：", value: videoReplaceUserDescription }]
       : []),
-    { icon: "◔", label: "创建时间", value: createdAtLabel },
-    { icon: "#", label: "任务ID", value: item?.id ?? task?.taskId ?? "--" }
+    { label: "创建时间：", value: createdAtLabel },
+    { label: "任务ID：", value: item?.id ?? task?.taskId ?? "--", multiline: true }
   ];
 
   return (
@@ -18062,7 +18106,7 @@ function ResultDetailModal({
                       {hasOriginalImage ? (
                         <div className="ck-result-detail-main-card original">
                           <span className="ck-result-detail-corner-tag original">原图</span>
-                          <div className="ck-result-detail-image-wrap narrow">
+                          <div className="ck-result-detail-image-wrap original-wrap">
                             <img alt="原图" referrerPolicy="no-referrer" src={originalImageSrc} />
                           </div>
                         </div>
@@ -18089,12 +18133,8 @@ function ResultDetailModal({
                             </button>
                           </>
                         ) : null}
-                        <div className="ck-result-detail-image-wrap wide">
+                        <div className="ck-result-detail-image-wrap result-wrap">
                           <img alt={item.label} referrerPolicy="no-referrer" src={item.src} />
-                        </div>
-                        <div className="ck-result-detail-watermark">
-                          <span>由SeeAny生成</span>
-                          <strong>ID:{currentIndex >= 0 ? currentIndex : 0}</strong>
                         </div>
                       </div>
                     </div>
@@ -18105,28 +18145,28 @@ function ResultDetailModal({
                       {toolbarActions.map((action) => (
                         <button key={`${action.key}-${action.label}`} onClick={() => onUseTool(action.key, action.label, item)} type="button">
                           <span className="ck-result-detail-tool-icon" aria-hidden="true">
-                            {action.icon}
+                            {renderDetailGlyph(action.icon)}
                           </span>
                           <span>{action.label}</span>
                         </button>
                       ))}
                     </div>
                     <div className="ck-result-detail-core-actions">
-                      <button className="secondary" onClick={() => onDownloadCurrent(item)} type="button">
+                      <button className="secondary outlined" onClick={() => onDownloadCurrent(item)} type="button">
                         <span className="ck-result-detail-core-icon" aria-hidden="true">
-                          ↓
+                          {renderDetailGlyph("download")}
                         </span>
                         下载当前图
                       </button>
                       <button className="primary" onClick={() => onDownloadAll(task)} type="button">
                         <span className="ck-result-detail-core-icon" aria-hidden="true">
-                          ↓
+                          {renderDetailGlyph("download")}
                         </span>
                         下载全部图
                       </button>
-                      <button className="ghost" onClick={() => onDeleteCurrent(item, taskItems)} type="button">
+                      <button className="ghost icon-only" onClick={() => onDeleteCurrent(item, taskItems)} type="button">
                         <span className="ck-result-detail-core-icon" aria-hidden="true">
-                          🗑
+                          {renderDetailGlyph("delete")}
                         </span>
                       </button>
                     </div>
@@ -18150,7 +18190,7 @@ function ResultDetailModal({
 
                 <div className="ck-result-detail-info">
                   <button className="ck-result-detail-close plain" onClick={onClose} type="button">
-                    ×
+                    {renderDetailGlyph("close")}
                   </button>
                   <div className="ck-result-detail-info-title">
                     <span className="ck-result-detail-info-accent" aria-hidden="true" />
@@ -18158,10 +18198,7 @@ function ResultDetailModal({
                   </div>
                   <div className="ck-result-detail-info-list">
                     {infoItems.map((info) => (
-                      <div className="ck-result-detail-info-item" key={info.label}>
-                        <span className="ck-result-detail-info-icon" aria-hidden="true">
-                          {info.icon}
-                        </span>
+                      <div className={`ck-result-detail-info-item${info.multiline ? " multiline" : ""}`} key={info.label}>
                         <div className="ck-result-detail-info-copy">
                           <span>{info.label}</span>
                           <strong>{info.value}</strong>

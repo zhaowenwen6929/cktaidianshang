@@ -1,13 +1,4 @@
-# AI商品图-一键代言图-提示词与配置方案（功能级样板）
-
-> 目标：基于“一键代言图”在代码中的真实业务流程、真实字段、平台规则和品类差异，生成合规且正确的人物代言商品图。  
-> 适用：开发直接落地（配置驱动提示词组装）。  
-> 更新时间：2026-05-01
-
-## 1. 页面真实流程与字段（Source of Truth）
-
-## 1.1 使用流程（真实）
-
+## 使用流程
 1. 上传商品图（`upload-main`）
 2. 选择创作模式（`creation-mode`：普通/高级/中文增强）
 3. 配置高级设置（`advanced-settings`）
@@ -15,18 +6,7 @@
 5. 上传参考图（`upload-reference`，可选）
 6. 生成
 
-对应代码配置（`src/App.tsx`）：
-
-- `toolKey`: `goods-spoke`
-- `creationModeConfigKey`: `spoke`
-- `sectionOrder`: `["upload-main","creation-mode","advanced-settings","supplement","upload-reference"]`
-- `uploads.main.maxCount`: `24`
-- `uploads.reference.maxCount`: `1`
-- `advancedAiAssistPromptConfigs["goods-spoke"]`：AI回填高级字段
-- `supplementAiPolishConfigs["goods-spoke"]`：补充说明润色
-
-## 1.1.1 端到端使用流程（建议落地）
-
+## 端到端使用流程
 1. 用户上传商品图（`upload-main`，最多24张）。
 2. 系统执行图片理解与商品信息提取，识别商品品类、产品细分和适合的代言表达方向。
 3. 系统触发 AI Assist，回填代言图高级字段。
@@ -37,14 +17,7 @@
 8. 系统按 strict 规则组装最终提示词并提交生成。
 9. 结果返回后，用户可继续换平台、换人物风格、换目标市场做二次生成。
 
-## 1.2 高级设置字段与可选值（真实）
-
-注意：
-
-- 下列字段来自 `src/App.tsx` 中 `toolModuleConfigs["goods-spoke"].advancedSettings.extraSelects`。
-- 当前页面真实已有的是“代言图参数字段”，不包含单独的“平台信息”输入框。
-- `platformLabel` 更适合视为外部工作流、父级页面或最终生成参数注入字段，而不是本工具面板内现有控件。
-
+## 高级设置字段与可选值
 ```json
 {
   "advancedFields": {
@@ -62,128 +35,20 @@
 }
 ```
 
-## 1.3 平台与品类输入字段（本功能）
-
-建议系统层统一补上以下两个输入锚点：
-
-```json
-{
-  "platformField": "platformLabel",
-  "platformOptions": ["全平台通用（16平台）", "淘宝", "天猫", "京东", "拼多多", "1688", "抖音电商", "快手电商", "小红书电商", "亚马逊", "Temu", "TikTok Shop", "阿里国际站", "速卖通", "Shopee", "OZON", "SHEIN"],
-  "categoryField": "productCategory",
-  "categoryOptions": ["服饰类", "鞋靴类", "箱包类", "珠宝饰品类", "美妆个护类", "食品饮料类", "家居百货类", "家电数码类", "家具大件类", "母婴玩具类", "宠物用品类", "汽配五金类"]
-}
-```
-
+## 2. 平台提示词配置
 说明：
 
-- `platformLabel`：当前不是 `goods-spoke` 面板内置高级字段，但最终提示词里强烈建议参与拼接。
-- `productCategory`：当前页面也未单独暴露控件，建议由图片识别或上游商品信息回填。
-- `productType` 是细分商品类型；`productCategory` 是统一品类规则锚点，两者要同时保留。
-
-## 1.4 上传图片识别与商品信息提取（关键环节）
-
-## 1.4.1 目标
-
-- 从上传图中提取“代言图生成所需的商品信息”；
-- 为高级字段回填与提示词组装提供结构化输入；
-- 在不让人物喧宾夺主的前提下，识别更适合的互动方式、人物气质和市场表达。
-
-## 1.4.2 识别输入
-
-```json
-{
-  "imageUrl": "上传图片地址",
-  "title": "商品标题（可选）",
-  "toolKey": "goods-spoke"
-}
-```
-
-## 1.4.3 识别输出（建议结构）
-
-```json
-{
-  "category": {
-    "categoryId": "beauty-skincare",
-    "categoryLabel": "美妆个护类",
-    "confidence": 0.95,
-    "keywords": ["瓶身", "护肤品包装", "泵头结构", "成分卖点"]
-  },
-  "productSignals": {
-    "detectedProductType": "化妆品",
-    "detectedInteractionHints": ["手持展示", "推荐代言"],
-    "detectedCharacterHints": ["网络达人", "真实素人"],
-    "detectedSceneHints": ["真实场景", "居家场景"],
-    "detectedLayoutHints": ["突出产品主体"],
-    "detectedFocusHints": ["产品突出"],
-    "detectedMarketHints": ["大陆"]
-  }
-}
-```
-
-## 1.4.4 识别到字段回填映射
-
-结合现有代码中的推断函数：
-
-- `inferProductType`
-- `inferSpokespersonInteraction`
-- `inferSpokespersonCharacter`
-- `inferSpokespersonSceneBackground`
-- `inferSpokespersonLayout`
-- `inferSkinTone`
-- `inferGenderStyle`
-- `inferAgeTrait`
-- `inferDisplayFocus`
-- `inferRegionalTargetMarket`
-
-建议映射：
-
-```json
-{
-  "category.categoryLabel": "productCategory",
-  "productSignals.detectedProductType": "productType",
-  "productSignals.detectedInteractionHints[0]": "interactionType",
-  "productSignals.detectedCharacterHints[0]": "characterTrait",
-  "productSignals.detectedSceneHints[0]": "sceneBackground",
-  "productSignals.detectedLayoutHints[0]": "layoutStyle",
-  "productSignals.detectedFocusHints[0]": "displayFocus",
-  "productSignals.detectedMarketHints[0]": "targetMarket"
-}
-```
-
-## 1.4.5 回填策略（strict 推荐）
-
-- 命中字段值必须在该字段 `options` 内；
-- 若识别值不在 options 内或识别不足：该字段回填空字符串 `""`，并加入 `needsUserConfirm`；
-- `productCategory` 未命中统一12类时：回填 `通用品类` 并强制人工确认；
-- `skinTone / genderStyle / ageTrait` 若图中无可靠线索，不要强猜，优先留空等待用户确认；
-- 所有自动回填字段都允许用户手动覆盖。
-
-## 1.4.6 失败兜底
-
-- 识别失败时不阻塞流程；
-- 最小可用集：
-  - `productCategory=通用品类`
-  - `productType=智能识别`
-  - `displayFocus=产品突出`
-  - 其余字段保持用户可选未填状态
-- 进入“人工确认优先”路径再生成。
-
-## 2. 平台提示词配置（代言图专属 JSON）
-
-说明：
-
-- 代言图不是“白底主图”，不能直接复用白底图规则。
-- 但不同平台对商品图片、主图、营销内容、真实性、禁止元素仍然有共通约束。
-- 对人物代言图功能，平台规则应转成“允许做人物场景表达，但要避免让画面变成不合规主图或误导性广告图”。
-- `ruleLevel` 含义：
-  - `A`: 官方明确或高一致性强约束
-  - `B`: 官方间接+行业稳定约束
-  - `C`: 公开趋势明确，但仍建议后台复核
++ 代言图不是“白底主图”，不能直接复用白底图规则。
++ 但不同平台对商品图片、主图、营销内容、真实性、禁止元素仍然有共通约束。
++ 对人物代言图功能，平台规则应转成“允许做人物场景表达，但要避免让画面变成不合规主图或误导性广告图”。
++ `ruleLevel` 含义：
+    - `A`: 官方明确或高一致性强约束
+    - `B`: 官方间接+行业稳定约束
+    - `C`: 公开趋势明确，但仍建议后台复核
 
 基线来源统一参考：
 
-- [商品白底图-16平台最新规范与品类补充.md](/Users/zhaowenwen/CODEX/CKTAI电商/docs/商品白底图-16平台最新规范与品类补充.md)
++ [商品白底图-16平台最新规范与品类补充.md](/Users/zhaowenwen/CODEX/CKTAI电商/docs/商品白底图-16平台最新规范与品类补充.md)
 
 平台规则转换原则：
 
@@ -301,30 +166,25 @@
 ```
 
 ## 2.1 `ruleLevel` 多规则使用逻辑（同一平台存在多条规则时）
-
 适用场景：一个平台可能同时命中“平台规则 + 场景位规则 + 品类规则 + 活动规则”。
 
 ### 2.1.1 规则定位
-
-- `ruleLevel=A`：高优先级硬约束，不可被低级规则覆盖。
-- `ruleLevel=B`：常规约束，可被 A 覆盖。
-- `ruleLevel=C`：补充约束，可被 A/B 覆盖，且可在 token 紧张时优先裁剪。
++ `ruleLevel=A`：高优先级硬约束，不可被低级规则覆盖。
++ `ruleLevel=B`：常规约束，可被 A 覆盖。
++ `ruleLevel=C`：补充约束，可被 A/B 覆盖，且可在 token 紧张时优先裁剪。
 
 ### 2.1.2 组装顺序（强制）
-
 1. 合并所有命中规则的 `required`（去重后全部保留）。
 2. 合并所有命中规则的 `forbidden`（去重后全部保留）。
 3. `prompt` 按优先级拼接：`A -> B -> C`。
 4. 若提示词长度超限，仅从低优先级描述裁剪：先裁 `C.prompt`，再裁 `B.prompt`；`A.prompt`、`required`、`forbidden` 不裁。
 
 ### 2.1.3 冲突处理（强制）
-
-- 若高低级规则存在冲突，按优先级覆盖：`A > B > C`。
-- 对代言图功能，若平台规则与“人物必须出镜”冲突，优先保平台硬规则，并将图位降级为“附图/内容图”。
++ 若高低级规则存在冲突，按优先级覆盖：`A > B > C`。
++ 对代言图功能，若平台规则与“人物必须出镜”冲突，优先保平台硬规则，并将图位降级为“附图/内容图”。
 
 ### 2.1.4 最终拼接建议
-
-```text
+```latex
 平台硬性要求（A层）：{A层prompt合并}
 平台常规要求（B层）：{B层prompt合并}
 平台补充要求（C层）：{C层prompt合并，可裁剪}
@@ -333,7 +193,6 @@
 ```
 
 ## 3. 品类提示词配置（代言图专属 JSON）
-
 代言图比买家秀更依赖“人物是否适合该品类”，因此品类规则不仅约束商品本体，也约束人物和互动方式是否合理。
 
 ```json
@@ -415,52 +274,19 @@
 }
 ```
 
+<font style="color:rgb(26, 28, 31);">说明：</font>
+
++ <font style="color:rgb(26, 28, 31);">label</font><font style="color:rgb(26, 28, 31);"> </font><font style="color:rgb(26, 28, 31);">用于标准品类名输出</font>
++ <font style="color:rgb(26, 28, 31);">aliases</font><font style="color:rgb(26, 28, 31);"> </font><font style="color:rgb(26, 28, 31);">用于上传图识别后的品类归一，也用于承接</font><font style="color:rgb(26, 28, 31);"> </font><font style="color:rgb(26, 28, 31);">productType</font><font style="color:rgb(26, 28, 31);">、子品类词、近义词</font>
++ <font style="color:rgb(26, 28, 31);">prompt</font><font style="color:rgb(26, 28, 31);"> </font><font style="color:rgb(26, 28, 31);">用于代言图品类约束拼接</font>
++ <font style="color:rgb(26, 28, 31);">focusPoints</font><font style="color:rgb(26, 28, 31);"> 用于提示词增强或人工校验</font>
+
+## 4. 高级选项值扩展提示词配置
 说明：
 
-- `label` 用于标准品类名输出
-- `aliases` 用于上传图识别后的品类归一，也用于承接 `productType`、子品类词、近义词
-- `prompt` 用于代言图品类约束拼接
-- `focusPoints` 用于提示词增强或人工校验
-
-### 3.1 品类归一方式
-
-这里不再单独维护 `productType -> productCategory` 映射表，统一改为：
-
-- 上传图识别出的品类词，先匹配各品类配置中的 `aliases`
-- 高级字段里的 `productType`，也直接匹配各品类配置中的 `aliases`
-- 命中后直接归一到对应 `label`
-- 后续统一读取该品类下的 `prompt` 和 `focusPoints`
-
-统一归一链路：
-
-`原始识别词 / productType / 子品类词 -> aliases -> label -> 品类规则`
-
-### 3.2 推荐归一规则
-
-```ts
-type CategoryRule = {
-  label: string;
-  aliases: string[];
-  prompt: string;
-  focusPoints: string[];
-};
-
-function normalizeCategory(keyword: string, categoryRules: CategoryRule[]) {
-  const hit = categoryRules.find((rule) =>
-    [rule.label, ...rule.aliases].some((alias) => alias === keyword)
-  );
-
-  return hit?.label ?? "通用品类";
-}
-```
-
-## 4. 高级选项值扩展提示词配置（代言图专属 JSON）
-
-说明：
-
-- 代言图不能只把“选项值字符串”原样拼进提示词。
-- 每个选项值都应带一段 `valuePrompt`，把“这个选项值对画面到底意味着什么”说清楚。
-- 尤其是 `interactionType / characterTrait / sceneBackground / layoutStyle / displayFocus`，如果不扩展，很容易生成不合规、不正确或人物压过商品的图。
++ 代言图不能只把“选项值字符串”原样拼进提示词。
++ 每个选项值都应带一段 `valuePrompt`，把“这个选项值对画面到底意味着什么”说清楚。
++ 尤其是 `interactionType / characterTrait / sceneBackground / layoutStyle / displayFocus`，如果不扩展，很容易生成不合规、不正确或人物压过商品的图。
 
 ```json
 {
@@ -599,185 +425,23 @@ function normalizeCategory(keyword: string, categoryRules: CategoryRule[]) {
 }
 ```
 
-## 4.1 哪些高级选项值必须扩展提示词
 
-结论：
 
-- 必须扩展：`interactionType`、`characterTrait`、`sceneBackground`、`layoutStyle`、`displayFocus`
-- 强建议扩展：`targetMarket`、`productType`、`productCategory`
-- 条件扩展：`skinTone`、`genderStyle`、`ageTrait`
+## <font style="color:rgb(26, 28, 31);">拼装规则</font>
+### 拼装顺序
+1. <font style="color:rgb(26, 28, 31);">task</font><font style="color:rgb(26, 28, 31);">（任务目标）</font>
+2. <font style="color:rgb(26, 28, 31);">platform</font><font style="color:rgb(26, 28, 31);">（平台约束）</font>
+3. <font style="color:rgb(26, 28, 31);">category</font><font style="color:rgb(26, 28, 31);">（品类约束）</font>
+4. <font style="color:rgb(26, 28, 31);">params</font><font style="color:rgb(26, 28, 31);">（高级设置参数行）</font>
+5. <font style="color:rgb(26, 28, 31);">optionValuePrompts</font><font style="color:rgb(26, 28, 31);">（选项扩展约束）</font>
+6. <font style="color:rgb(26, 28, 31);">universalNegative</font><font style="color:rgb(26, 28, 31);">（通用负向约束）</font>
+7. <font style="color:rgb(26, 28, 31);">universalQuality</font><font style="color:rgb(26, 28, 31);">（通用质量要求）</font>
+8. <font style="color:rgb(26, 28, 31);">quality</font><font style="color:rgb(26, 28, 31);">（质量要求）</font>
+9. <font style="color:rgb(26, 28, 31);">outputSpec</font><font style="color:rgb(26, 28, 31);">（输出规格）</font>
+10. <font style="color:rgb(26, 28, 31);">supplement</font><font style="color:rgb(26, 28, 31);">（补充要求，可选）</font>
 
-原因：
-
-- 这些字段如果只传值，不传语义，很容易导致模型误判为“随便加个人物”。
-- 扩展提示词的作用是把值翻译成“构图要求、合规边界、场景适配、人物与商品关系”。
-- `skinTone / genderStyle / ageTrait` 涉及人物属性，必须限制为“风格建议”，不能导向歧视、不当成人化或不合规暗示。
-
-## 5. 最终组装模板与规则（JSON）
-
+### <font style="color:rgb(26, 28, 31);">通用负向约束</font>
 ```json
-{
-  "builderByTool": {
-    "goods-spoke": {
-      "requiredFields": ["toolKey", "platformLabel", "productCategory", "productType", "interactionType", "characterTrait", "sceneBackground", "layoutStyle", "displayFocus", "targetMarket"],
-      "promptTemplates": {
-        "task": "生成一张以人物代言商品为核心的电商营销附图/场景图，强化商品信任感、品牌感和使用代入感。",
-        "category": "当前商品品类为「{productCategory}」，请保持该品类应有的真实结构、材质、颜色、比例和使用逻辑，不改变SKU核心特征。",
-        "platform": "{platformPrompt}",
-        "params": "产品类型={productType}；互动方式={interactionType}；人物特点={characterTrait}；场景背景={sceneBackground}；排版方式={layoutStyle}；人种肤色={skinTone}；性别风格={genderStyle}；年龄特点={ageTrait}；展示重点={displayFocus}；目标市场={targetMarket}。",
-        "universalNegative": "{universalNegativePrompt}",
-        "universalQuality": "{universalQualityPrompt}",
-        "quality": "人物与商品关系必须自然可信，商品主体清晰可辨，不得让人物过度抢焦，不得制造虚假代言、虚假功效或侵权名人形象。",
-        "outputSpec": "输出比例={ratio}；输出分辨率={resolution}；输出数量={count}。",
-        "supplement": "补充要求：{supplement}"
-      },
-      "appendOptionExpansions": true,
-      "optionExpansionMode": "detailed_prompt_first",
-      "strictMode": {
-        "enabled": true,
-        "onMissingPlatformRule": "error",
-        "onMissingCategoryRule": "error",
-        "onUnknownParamValue": "error"
-      }
-    }
-  }
-}
-```
-
-### 5.1 开发可直接使用的最终提示词模板
-
-```text
-生成一张以人物代言商品为核心的电商营销附图/场景图，强化商品信任感、品牌感和使用代入感。
-
-平台约束：{platformPrompt}{platformRequiredJoined}{platformForbiddenJoined}
-
-品类约束：当前商品品类为「{productCategory}」，{categoryPrompt}{categoryFocusPointsJoined}
-
-高级设置：产品类型={productType}；互动方式={interactionType}；人物特点={characterTrait}；场景背景={sceneBackground}；排版方式={layoutStyle}；人种肤色={skinTone}；性别风格={genderStyle}；年龄特点={ageTrait}；展示重点={displayFocus}；目标市场={targetMarket}。
-
-选项扩展约束：{optionValuePromptsJoined}
-
-通用负向约束：{universalNegativePrompt}
-
-通用质量要求：{universalQualityPrompt}
-
-质量要求：人物与商品关系必须自然可信，商品主体清晰可辨，不得让人物过度抢焦，不得制造虚假代言、虚假功效或侵权名人形象。
-
-输出比例={ratio}；输出分辨率={resolution}；输出数量={count}。
-
-补充要求：{supplement}
-```
-
-说明：
-
-- `{platformPrompt}`：来自 `platformRulesByTool[platformLabel].prompt`
-- `{platformRequiredJoined}`：若有值，拼成 ` 必须满足：{required.join("，")}。`
-- `{platformForbiddenJoined}`：若有值，拼成 ` 禁止：{forbidden.join("，")}。`
-- `{categoryPrompt}`：来自 `categoryRulesByTool[normalizedCategory].prompt`
-- `{categoryFocusPointsJoined}`：若有值，拼成 ` 重点关注：{focusPoints.join("，")}。`
-- `{optionValuePromptsJoined}`：按字段顺序拼接所有命中的 `valuePrompt`，中间用空格或句号分隔
-- `{universalNegativePrompt}`：固定通用负向约束，不随字段缺失而删除
-- `{universalQualityPrompt}`：固定通用质量要求，不随字段缺失而删除
-- `{supplement}` 为空时整段删除
-- `{resolution}` 为空时，`输出比例={ratio}；输出分辨率={resolution}；输出数量={count}。` 整行降级为 `输出比例={ratio}；输出数量={count}。`
-
-#### 5.1.1 `optionValuePrompts`（选项扩展约束）详细模板
-
-这部分不是简单把字段值重复一遍，而是把“选中的值”翻译成模型可执行的画面约束。开发拼装时建议按下面固定顺序输出：
-
-1. `productType`（产品类型）
-2. `interactionType`（互动方式）
-3. `characterTrait`（人物特点）
-4. `sceneBackground`（场景背景）
-5. `layoutStyle`（排版方式）
-6. `skinTone`（人种肤色）
-7. `genderStyle`（性别风格）
-8. `ageTrait`（年龄特点）
-9. `displayFocus`（展示重点）
-10. `targetMarket`（目标市场）
-
-推荐模板：
-
-```text
-选项扩展约束：
-[产品类型] {productTypeValuePrompt}
-[互动方式] {interactionTypeValuePrompt}
-[人物特点] {characterTraitValuePrompt}
-[场景背景] {sceneBackgroundValuePrompt}
-[排版方式] {layoutStyleValuePrompt}
-[人种肤色] {skinToneValuePrompt}
-[性别风格] {genderStyleValuePrompt}
-[年龄特点] {ageTraitValuePrompt}
-[展示重点] {displayFocusValuePrompt}
-[目标市场] {targetMarketValuePrompt}
-```
-
-开发实现时建议注意：
-
-- `productTypeValuePrompt`
-  作用：补充细分商品的真实使用关系或结构语义。
-  例：化妆品要强调瓶身包装和手持关系；耳机要强调佩戴/触点/仓体结构。
-- `interactionTypeValuePrompt`
-  作用：决定人物如何与商品发生关系。
-  例：手持展示、穿戴展示、推荐代言、使用状态展示，都会直接影响动作和遮挡风险。
-- `characterTraitValuePrompt`
-  作用：决定人物气质和广告感方向。
-  例：网络达人、真实素人、产品专业人士，会影响画面“种草感”还是“专业可信感”。
-- `sceneBackgroundValuePrompt`
-  作用：决定人物和商品落在哪类环境中。
-  例：真实场景、摄影棚、舞台T台、商业空间，对背景复杂度和内容感影响很大。
-- `layoutStyleValuePrompt`
-  作用：决定构图组织方式。
-  例：人物全貌展示、突出产品主体、多场景拼接，会直接影响主体占比和信息分配。
-- `skinToneValuePrompt`
-  作用：只补充市场化外观语境。
-  限制：只能作为自然外观建议，不能扩成刻板印象、歧视性、夸张化描述。
-- `genderStyleValuePrompt`
-  作用：只补充人物气质、穿着和动作方向。
-  限制：不能扩成低俗化、过度性感化或不适用品类表达。
-- `ageTraitValuePrompt`
-  作用：决定年龄层语义和适用品类边界。
-  限制：儿童/婴幼儿场景必须自动带安全、自然、不成人化约束。
-- `displayFocusValuePrompt`
-  作用：决定人物和商品谁是视觉中心。
-  说明：这是代言图最关键的约束之一，优先级应高于一般风格字段。
-- `targetMarketValuePrompt`
-  作用：补充市场偏好的审美和阅读语境。
-  说明：只影响表达方式，不改变平台和品类硬约束。
-
-字段为空时的处理规则：
-
-- 若某字段没有值，整行删除，不输出空标签。
-- 若 `skinTone / genderStyle / ageTrait` 为空，不允许自动脑补人物身份。
-- 若只有部分字段命中，保留已有顺序，只拼命中的几项。
-- 若最终只命中 1~2 项，也仍建议保留 `选项扩展约束：` 这一段，避免模板结构不稳定。
-
-推荐开发拼接结果示例：
-
-```text
-选项扩展约束：
-[互动方式] 人物手持商品，商品标签、包装或主体结构需清晰可见，避免手部遮挡核心信息。
-[人物特点] 强调内容感、分享感和社交传播气质，画面可更轻快，但商品仍需是核心信息。
-[场景背景] 人物与商品置于真实可理解的使用场景中，场景必须服务商品用途，不做无关大片式摆拍。
-[排版方式] 商品应成为第一视觉焦点，人物作为辅助情绪和信任表达存在。
-[展示重点] 商品是绝对视觉重心，人物服务于商品卖点和信任背书。
-[目标市场] 表达偏明快直观、高识别和轻内容感，避免过于冷淡的高级大片。
-```
-
-如果不希望在最终 prompt 中输出 `[互动方式]` 这类标签，也可以在实现层做无标签拼接，但开发阶段建议先保留标签，便于排查每段约束来自哪个字段。
-
-#### 5.1.2 通用负向约束与通用质量要求（建议固定加入）
-
-结论：
-
-- 有必要添加。
-- 代言图相较买家秀，多了“人物出镜、人物与商品关系、人物身份暗示、审美风格过冲”的风险。
-- 平台规则、品类规则、选项扩展提示词主要解决“场景适配”和“表达方向”，但不能完全兜底所有生成风险。
-- 因此建议把这两段作为固定模板，放在 `optionValuePrompts` 后、`quality` 前。
-
-推荐固定文本如下：
-
-```text
 通用负向约束：
 1. 严禁改变商品主体外观、结构、颜色、包装信息和SKU含义，不得把商品替换成其他款式或虚构新版本。
 2. 严禁生成虚假代言关系，不得出现真实明星、品牌代言人、名人或可识别公众人物的侵权暗示，也不得制造“官方推荐”“权威背书”等虚假身份表达。
@@ -789,7 +453,8 @@ function normalizeCategory(keyword: string, categoryRules: CategoryRule[]) {
 8. 严禁出现人物面部畸形、肢体错误、手指异常、穿帮反射、佩戴错误、商品比例失真、结构漂移或多图不一致问题。
 ```
 
-```text
+### <font style="color:rgb(26, 28, 31);">通用质量说明</font>
+```json
 通用质量要求：
 1. 人物与商品关系自然可信，人物动作、视线、手持/穿戴/使用方式必须服务商品表达，而不是仅仅“画面里站着一个人”。
 2. 商品主体始终清晰可辨，关键卖点、包装信息、结构细节和与人体接触关系必须真实、稳定、易识别。
@@ -801,148 +466,77 @@ function normalizeCategory(keyword: string, categoryRules: CategoryRule[]) {
 8. 最终结果应达到“人物增强信任与代入感、商品承担核心转化职责”的平衡。
 ```
 
-### 5.2 推荐组装顺序（必须固定）
 
-1. `task`（任务目标）
-2. `platform`（平台约束）
-3. `category`（品类约束）
-4. `params`（高级设置参数行）
-5. `optionValuePrompts`（选项扩展约束）
-6. `universalNegative`（通用负向约束）
-7. `universalQuality`（通用质量要求）
-8. `quality`（质量要求）
-9. `outputSpec`（输出规格）
-10. `supplement`（补充要求，可选）
 
-### 5.3 开发伪代码（可直接改成 builder）
+### 拼装模板
+```json
+生成一张以人物代言商品为核心的电商营销附图/场景图，强化商品信任感、品牌感和使用代入感。
+平台约束：{platformPrompt}{platformRequiredJoined}{platformForbiddenJoined}
+品类约束：当前商品品类为「{productCategory}」，{categoryPrompt}{categoryFocusPointsJoined}
+高级设置：产品类型={productType}；互动方式={interactionType}；人物特点={characterTrait}；场景背景={sceneBackground}；排版方式={layoutStyle}；人种肤色={skinTone}；性别风格={genderStyle}；年龄特点={ageTrait}；展示重点={displayFocus}；目标市场={targetMarket}。
+选项扩展约束：
+[产品类型] {productType>ValuePrompt}
+[互动方式] {interactionType>ValuePrompt}
+[人物特点] {characterTrait>ValuePrompt}
+[场景背景] {sceneBackground>ValuePrompt}
+[排版方式] {layoutStyle>ValuePrompt}
+[人种肤色] {skinTone>ValuePrompt}
+[性别风格] {genderStyle>ValuePrompt}
+[年龄特点] {ageTrait>ValuePrompt}
+[展示重点] {displayFocus>ValuePrompt}
+[目标市场] {targetMarket>ValuePrompt}
+通用负向约束：
+1. 严禁改变商品主体外观、结构、颜色、包装信息和SKU含义，不得把商品替换成其他款式或虚构新版本。
+2. 严禁生成虚假代言关系，不得出现真实明星、品牌代言人、名人或可识别公众人物的侵权暗示，也不得制造“官方推荐”“权威背书”等虚假身份表达。
+3. 严禁夸大功效、虚构效果对比、医美级立竿见影、保健疗效、绝对化承诺等误导性内容。
+4. 严禁让人物过度抢焦导致商品主体沦为附属道具，商品关键结构、标签、包装或使用关系不得被手部、头发、服饰或构图严重遮挡。
+5. 严禁出现低俗擦边、性暗示、不当暴露、危险姿态、未成年人成人化表达、歧视性人物刻画或明显不合市场文化语境的着装/动作。
+6. 严禁生成侵权Logo、水印、二维码、联系方式、平台禁用标识、虚构认证徽章或与商品无关的品牌露出。
+7. 严禁背景、道具、动作和人物设定脱离商品用途，避免无关大片感、过强剧情化、夸张摆拍和失真广告感。
+8. 严禁出现人物面部畸形、肢体错误、手指异常、穿帮反射、佩戴错误、商品比例失真、结构漂移或多图不一致问题。
+通用质量要求：
+1. 人物与商品关系自然可信，人物动作、视线、手持/穿戴/使用方式必须服务商品表达，而不是仅仅“画面里站着一个人”。
+2. 商品主体始终清晰可辨，关键卖点、包装信息、结构细节和与人体接触关系必须真实、稳定、易识别。
+3. 人物气质、场景语义、构图方式和目标市场表达要统一，不要出现人物风格、背景风格和商品品类互相割裂的情况。
+4. 光线、阴影、透视、接触关系、边缘质量和材质表现要真实，人物与商品必须处于同一物理空间语义中，避免漂浮感和拼贴感。
+5. 人物肤质、五官、发丝、手部、服饰和姿态应自然，不做过度磨皮、过度液化、过强滤镜或明显AI痕迹。
+6. 代言表达可以有广告感和审美感，但不能牺牲商品真实性、平台适配性和转化识别效率。
+7. 若是跨市场输出，需兼顾当地审美习惯、阅读节奏和文化语境，保持人物表达克制、真实、可投放。
+8. 最终结果应达到“人物增强信任与代入感、商品承担核心转化职责”的平衡。
 
-```ts
-function buildGoodsSpokePrompt(input: {
-  platformLabel?: string;
-  productCategory?: string;
-  productType?: string;
-  interactionType?: string;
-  characterTrait?: string;
-  sceneBackground?: string;
-  layoutStyle?: string;
-  skinTone?: string;
-  genderStyle?: string;
-  ageTrait?: string;
-  displayFocus?: string;
-  targetMarket?: string;
-  ratio?: string;
-  resolution?: string;
-  count?: string;
-  supplement?: string;
-}) {
-  const platformLabel = input.platformLabel || "全平台通用（16平台）";
-  const normalizedCategory =
-    input.productCategory || normalizeCategoryByProductType(input.productType) || "通用品类";
-
-  const platformRule = platformRulesByTool[platformLabel] ?? platformRulesByTool["全平台通用（16平台）"];
-  const categoryRule = categoryRulesByTool[normalizedCategory] ?? categoryRulesByTool["通用品类"];
-
-  const optionValuePrompts = [
-    getValuePrompt("productType", input.productType),
-    getValuePrompt("interactionType", input.interactionType),
-    getValuePrompt("characterTrait", input.characterTrait),
-    getValuePrompt("sceneBackground", input.sceneBackground),
-    getValuePrompt("layoutStyle", input.layoutStyle),
-    getValuePrompt("skinTone", input.skinTone),
-    getValuePrompt("genderStyle", input.genderStyle),
-    getValuePrompt("ageTrait", input.ageTrait),
-    getValuePrompt("displayFocus", input.displayFocus),
-    getValuePrompt("targetMarket", input.targetMarket)
-  ].filter(Boolean);
-
-  const outputSpec = input.resolution
-    ? `输出比例=${input.ratio}；输出分辨率=${input.resolution}；输出数量=${input.count}。`
-    : `输出比例=${input.ratio}；输出数量=${input.count}。`;
-
-  return [
-    "生成一张以人物代言商品为核心的电商营销附图/场景图，强化商品信任感、品牌感和使用代入感。",
-    [
-      `平台约束：${platformRule.prompt}`,
-      platformRule.required?.length ? `必须满足：${platformRule.required.join("，")}。` : "",
-      platformRule.forbidden?.length ? `禁止：${platformRule.forbidden.join("，")}。` : ""
-    ].filter(Boolean).join(" "),
-    [
-      `品类约束：当前商品品类为「${normalizedCategory}」，${categoryRule.prompt}`,
-      categoryRule.focusPoints?.length ? `重点关注：${categoryRule.focusPoints.join("，")}。` : ""
-    ].filter(Boolean).join(" "),
-    `高级设置：产品类型=${input.productType}；互动方式=${input.interactionType}；人物特点=${input.characterTrait}；场景背景=${input.sceneBackground}；排版方式=${input.layoutStyle}；人种肤色=${input.skinTone}；性别风格=${input.genderStyle}；年龄特点=${input.ageTrait}；展示重点=${input.displayFocus}；目标市场=${input.targetMarket}。`,
-    optionValuePrompts.length ? `选项扩展约束：${optionValuePrompts.join(" ")}` : "",
-    UNIVERSAL_NEGATIVE_PROMPT,
-    UNIVERSAL_QUALITY_PROMPT,
-    "质量要求：人物与商品关系必须自然可信，商品主体清晰可辨，不得让人物过度抢焦，不得制造虚假代言、虚假功效或侵权名人形象。",
-    outputSpec,
-    input.supplement?.trim() ? `补充要求：${input.supplement.trim()}` : ""
-  ].filter(Boolean).join("\n\n");
-}
+质量要求：人物与商品关系必须自然可信，商品主体清晰可辨，不得让人物过度抢焦，不得制造虚假代言、虚假功效或侵权名人形象。
+输出比例={ratio}；输出分辨率={resolution}；输出数量={count}。
+补充要求：{supplement}
 ```
 
-## 6. 拼装规则（后端/中台）
-
-1. 先确定平台与品类：
-- 平台来源优先级：`platformLabel`（平台标识，上游商品环境/父页面注入） > `全平台通用（16平台）`。
-- 品类来源优先级：`productCategory`（商品品类，图片识别或上游商品信息回填） > 用 `productType`（产品类型）命中 `categoryRulesByTool[*].aliases`（品类别名映射）归一 > `通用品类` 并加入人工确认。
-2. 读取平台规则：`platformRulesByTool[platformLabel]`（平台规则配置[平台标识]），拼接 `prompt + required + forbidden`（规则正文 + 必须满足 + 禁止事项）。
-3. 读取品类规则：`categoryRulesByTool[normalizedCategory]`（品类规则配置[归一后的商品品类]），拼接 `prompt + focusPoints`（品类正文 + 重点关注项）。
-4. 读取高级字段值扩展：按 `productType`（产品类型）/ `interactionType`（互动方式）/ `characterTrait`（人物特点）/ `sceneBackground`（场景背景）/ `layoutStyle`（排版方式）/ `skinTone`（人种肤色）/ `genderStyle`（性别风格）/ `ageTrait`（年龄特点）/ `displayFocus`（展示重点）/ `targetMarket`（目标市场） 的命中值，依次追加 `valuePrompt`（选项扩展提示词）。
-5. 代言图字段分层必须固定：
-- `productCategory`（商品品类）决定商品结构、材质、使用逻辑等主约束。
-- `productType`（产品类型）负责细分商品语义。
-- `interactionType`（互动方式） + `layoutStyle`（排版方式） + `displayFocus`（展示重点）共同决定“人物与商品的视觉主次”。
-- `characterTrait`（人物特点） + `skinTone`（人种肤色） + `genderStyle`（性别风格） + `ageTrait`（年龄特点）只允许作为风格建议，不得上升为违规人物设定。
-6. 约束优先级必须固定：`platform forbidden`（平台禁止事项） > `category hard prompt`（品类硬约束正文） > `platform required`（平台必须满足项） > `displayFocus`（展示重点） / `interactionType`（互动方式） / `layoutStyle`（排版方式） > 其他 `option valuePrompts`（选项扩展提示词） > `supplement`（补充说明）。
-7. 平台若存在“首图强白底/高识别”规则，代言图一律降级为“附图/内容图/场景图”，禁止在最终提示词中暗示其可直接替代主图。
-8. 当 `displayFocus=人物突出`（展示重点=人物突出）、`layoutStyle=人物全貌展示`（排版方式=人物全貌展示）等容易弱化商品的组合命中时，必须补充“商品主体仍清晰可辨、核心结构不被遮挡”的兜底约束。
-9. `skinTone`（人种肤色）/ `genderStyle`（性别风格）/ `ageTrait`（年龄特点）没有可靠输入时不要强猜；这些字段可为空，但为空时不拼对应 `valuePrompt`（选项扩展提示词），也不能自动脑补具体人物身份。
-10. `resolution`（分辨率）仅在高级模式稳定传入；普通模式没有分辨率时，`outputSpec`（输出规格）自动降级为 `输出比例={ratio}；输出数量={count}。`
-11. `supplement`（补充说明）为空时整段删除，不保留“补充要求：”；若补充内容与平台/品类硬规则冲突，按高优先级规则裁掉冲突语义。
-12. 安全兜底：最终串必须包含“人物与商品关系自然可信、商品主体清晰、不得虚假代言/夸大功效/侵权名人形象”语义。
-
-### 6.1 字段与规则源映射（必须按此读取）
-
-| 拼装变量 | 来源字段 | 规则文件/章节 | 说明 |
-| --- | --- | --- | --- |
-| `platformLabel`（平台标识） | 上游注入或父页面传入 | 本文第 2 章 `platformRulesByTool`（平台规则配置） | 当前 `goods-spoke` 面板无独立平台控件，属于外部注入字段 |
-| `normalizedCategory`（归一后的商品品类） | `productCategory`（商品品类）或 `productType`（产品类型）归一 | 本文第 3 章 `categoryRulesByTool`（品类规则配置） | 先用 `productCategory`，缺失时再用 `productType` 命中 `aliases`（品类别名映射） |
-| `productTypePrompt` 等选项提示词（产品类型等选项扩展提示词） | 各高级设置字段值 | 本文第 4 章 `optionValueExpansionsByTool`（选项值扩展配置） | 用于细化人物关系、构图和市场语义 |
-| `ratio/resolution/count`（出图比例/分辨率/数量） | 创作模式参数 | 无 | 输出规格段 |
-| `supplement`（补充说明） | 补充说明（可为空） | 无 | 最后拼接，优先级最低 |
-
-## 7. 拼装 Demo（输入 + 输出）
-
-### 7.1 Demo 输入
-
+### <font style="color:rgb(26, 28, 31);">7. 拼装 Demo（输入 + 输出）</font>
+### <font style="color:rgb(26, 28, 31);">7.1 Demo 输入</font>
 ```json
 {
-  "toolKey": "goods-spoke",
-  "platformLabel": "TikTok Shop",
-  "productCategory": "美妆个护类",
-  "params": {
-    "productType": "化妆品",
-    "interactionType": "手持展示",
-    "characterTrait": "网络达人",
-    "sceneBackground": "真实场景",
-    "layoutStyle": "突出产品主体",
-    "skinTone": "亚洲",
-    "genderStyle": "女",
-    "ageTrait": "青年",
-    "displayFocus": "产品突出",
-    "targetMarket": "东南亚",
-    "ratio": "3:4",
-    "resolution": "1K",
-    "count": "1",
-    "supplement": "人物表情自然，重点突出瓶身包装、手部持握关系和清爽护肤氛围。"
-  }
+"toolKey":"goods-spoke",
+"platformLabel":"TikTok Shop",
+"productCategory":"美妆个护类",
+"params":{
+"productType":"化妆品",
+"interactionType":"手持展示",
+"characterTrait":"网络达人",
+"sceneBackground":"真实场景",
+"layoutStyle":"突出产品主体",
+"skinTone":"亚洲",
+"genderStyle":"女",
+"ageTrait":"青年",
+"displayFocus":"产品突出",
+"targetMarket":"东南亚",
+"ratio":"3:4",
+"resolution":"1K",
+"count":"1",
+"supplement":"人物表情自然，重点突出瓶身包装、手部持握关系和清爽护肤氛围。"
+}
 }
 ```
 
-### 7.2 Demo 输出（最终提示词）
-
-```text
+### <font style="color:rgb(26, 28, 31);">7.2 Demo 输出</font>
+```json
 生成一张以人物代言商品为核心的电商营销附图/场景图，强化商品信任感、品牌感和使用代入感。
 
 平台约束：TikTok Shop 主图有纯白背景强约束，因此代言图默认应用于附图、内容图或素材图，不作为主图。允许人物互动和生活方式场景，但要真实准确反映商品，不制造虚假代言和夸张功效展示。 必须满足：仅用于附图/内容图，商品真实准确，人物与商品关系自然，主体清晰。 禁止：作为白底主图替代，虚假人物背书，夸张效果图，低俗擦边。
@@ -989,60 +583,48 @@ function buildGoodsSpokePrompt(input: {
 补充要求：人物表情自然，重点突出瓶身包装、手部持握关系和清爽护肤氛围。
 ```
 
-### 7.3 Demo 说明（规则如何生效）
+## 三个关键能力的提示词配置
+### <font style="color:rgb(26, 28, 31);">图片识别获取信息</font>
+<font style="color:rgb(26, 28, 31);">用途：</font>
 
-1. `platformLabel=TikTok Shop`（平台标识=TikTok Shop）命中第 2 章平台规则，先注入“该图仅作为附图/内容图，不作为主图”的硬约束。
-2. `productCategory=美妆个护类`（商品品类=美妆个护类）命中第 3 章品类规则，约束包装真实性、使用语义和功效合规边界。
-3. `interactionType=手持展示`（互动方式=手持展示）、`layoutStyle=突出产品主体`（排版方式=突出产品主体）、`displayFocus=产品突出`（展示重点=产品突出）共同决定构图主次，要求人物服务商品，不能把商品降成道具。
-4. `characterTrait`（人物特点）/ `skinTone`（人种肤色）/ `genderStyle`（性别风格）/ `ageTrait`（年龄特点）/ `targetMarket`（目标市场）只做风格和市场语义补充，不改变平台与品类硬约束。
-5. `universalNegativePrompt`（通用负向约束）负责兜底压制“虚假代言、人物抢焦、低俗擦边、侵权人物、结构漂移”等代言图高风险问题。
-6. `universalQualityPrompt`（通用质量要求）负责统一约束人物与商品关系、空间真实性、人物自然度和跨市场可投放性。
-7. `supplement`（补充说明）只在不冲突时追加；如果用户补充“像明星代言海报”“突出医美级立竿见影效果”等内容，执行层应自动裁掉或改写为合规表达。
++ <font style="color:rgb(26, 28, 31);">识别品类与代言图相关字段线索；</font>
++ <font style="color:rgb(26, 28, 31);">输出结构化 JSON，供字段回填和后续提示词组装使用；</font>
++ <font style="color:rgb(26, 28, 31);">重点判断“什么类型的人、以什么方式、在什么场景里与商品发生关系”。</font>
 
-## 8. 三个关键能力的提示词配置（完整可用）
+<font style="color:rgb(26, 28, 31);">提示词：</font>
 
-### 8.1 图片识别获取信息（Image Understanding / Extraction）
-
-用途：
-
-- 识别品类与代言图相关字段线索；
-- 输出结构化 JSON，供字段回填和后续提示词组装使用；
-- 重点判断“什么类型的人、以什么方式、在什么场景里与商品发生关系”。
-
-推荐提示词：
-
-```text
+```json
 你是一位电商商品图理解专家。请根据输入商品图，提取“代言图生成”所需信息，并严格输出 JSON。
 
 任务要求：
 1) 识别商品所属品类（用于 productCategory）。
 2) 基于图像线索，预测代言图字段推荐值：
-   productType, interactionType, characterTrait, sceneBackground, layoutStyle, skinTone, genderStyle, ageTrait, displayFocus, targetMarket。
+ productType, interactionType, characterTrait, sceneBackground, layoutStyle, skinTone, genderStyle, ageTrait, displayFocus, targetMarket。
 3) 所有推荐值必须从给定 options 中选择；若无法判断，返回空语义值或最保守值。
 4) 对于人物属性类字段（skinTone, genderStyle, ageTrait），若图像依据不足，宁可留空，不要强猜。
 5) 不输出解释文字，不输出 Markdown，仅输出 JSON。
 
 输出 JSON Schema：
 {
-  "category": {
-    "categoryId": "string",
-    "categoryLabel": "服饰类|鞋靴类|箱包类|珠宝饰品类|美妆个护类|食品饮料类|家居百货类|家电数码类|家具大件类|母婴玩具类|宠物用品类|汽配五金类|通用品类",
-    "confidence": "number(0-1)",
-    "keywords": ["string"]
-  },
-  "recommendedFields": {
-    "productType": "string",
-    "interactionType": "string",
-    "characterTrait": "string",
-    "sceneBackground": "string",
-    "layoutStyle": "string",
-    "skinTone": "string",
-    "genderStyle": "string",
-    "ageTrait": "string",
-    "displayFocus": "string",
-    "targetMarket": "string"
-  },
-  "needsUserConfirm": ["fieldKey1", "fieldKey2"]
+ "category": {
+ "categoryId": "string",
+ "categoryLabel": "服饰类|鞋靴类|箱包类|珠宝饰品类|美妆个护类|食品饮料类|家居百货类|家电数码类|家具大件类|母婴玩具类|宠物用品类|汽配五金类|通用品类",
+ "confidence": "number(0-1)",
+ "keywords": ["string"]
+ },
+ "recommendedFields": {
+ "productType": "string",
+ "interactionType": "string",
+ "characterTrait": "string",
+ "sceneBackground": "string",
+ "layoutStyle": "string",
+ "skinTone": "string",
+ "genderStyle": "string",
+ "ageTrait": "string",
+ "displayFocus": "string",
+ "targetMarket": "string"
+ },
+ "needsUserConfirm": ["fieldKey1", "fieldKey2"]
 }
 
 判定规则：
@@ -1051,147 +633,42 @@ function buildGoodsSpokePrompt(input: {
 - 若人物属性类字段可能触发歧义、刻板印象或风险联想，优先留空并加入 needsUserConfirm。
 ```
 
-建议输入参数：
+<font style="color:rgb(26, 28, 31);">建议输入参数：</font>
 
 ```json
 {
-  "toolKey": "goods-spoke",
-  "imageUrl": "string",
-  "title": "string(optional)",
-  "options": {
-    "productType": ["智能识别", "服装", "T恤", "背包", "鞋子", "小家电", "电视", "沙发", "吊灯", "化妆品", "香水", "水果", "饮料", "汽车", "集装箱", "蓝牙耳机", "手机", "行李箱", "文具", "机械设备", "项链", "玩具", "瑜伽服", "健身器材", "笔记本电脑", "手办"],
-    "interactionType": ["穿戴展示", "手持展示", "使用状态展示", "推荐代言", "产品静置人物出现", "身体局部展示"],
-    "characterTrait": ["明星气质", "网络达人", "真实素人", "产品专业人士", "生产工作人员", "卡通人物", "运动风", "商务", "休闲", "青春", "童趣", "慈祥", "搞怪"],
-    "sceneBackground": ["无背景", "纯色背景", "简单背景", "真实场景", "居家场景", "摄影棚", "舞台T台", "户外场景", "城市街道", "商业空间"],
-    "layoutStyle": ["人物全貌展示", "突出产品主体", "多场景拼接", "产品居中，周边搭配使用场景", "同一人物不同场景", "不同人物同一场景"],
-    "skinTone": ["亚洲", "北美", "欧洲", "南美", "非洲", "东南亚", "中东"],
-    "genderStyle": ["男", "女", "中性风", "妩媚", "性冷淡"],
-    "ageTrait": ["婴幼儿", "儿童", "少年", "青年", "中年", "老年"],
-    "displayFocus": ["产品突出", "人物突出", "全貌展示", "局部特写"],
-    "targetMarket": ["大陆", "北美", "韩国", "日本", "俄罗斯", "中东阿拉伯", "港澳", "中国台湾", "土耳其", "南美", "澳洲", "东南亚", "印度", "非洲", "英国", "德国", "法国", "欧洲", "东欧"]
-  }
+"toolKey":"goods-spoke",
+"imageUrl":"string",
+"title":"string(optional)",
+"options":{
+"productType":["智能识别","服装","T恤","背包","鞋子","小家电","电视","沙发","吊灯","化妆品","香水","水果","饮料","汽车","集装箱","蓝牙耳机","手机","行李箱","文具","机械设备","项链","玩具","瑜伽服","健身器材","笔记本电脑","手办"],
+"interactionType":["穿戴展示","手持展示","使用状态展示","推荐代言","产品静置人物出现","身体局部展示"],
+"characterTrait":["明星气质","网络达人","真实素人","产品专业人士","生产工作人员","卡通人物","运动风","商务","休闲","青春","童趣","慈祥","搞怪"],
+"sceneBackground":["无背景","纯色背景","简单背景","真实场景","居家场景","摄影棚","舞台T台","户外场景","城市街道","商业空间"],
+"layoutStyle":["人物全貌展示","突出产品主体","多场景拼接","产品居中，周边搭配使用场景","同一人物不同场景","不同人物同一场景"],
+"skinTone":["亚洲","北美","欧洲","南美","非洲","东南亚","中东"],
+"genderStyle":["男","女","中性风","妩媚","性冷淡"],
+"ageTrait":["婴幼儿","儿童","少年","青年","中年","老年"],
+"displayFocus":["产品突出","人物突出","全貌展示","局部特写"],
+"targetMarket":["大陆","北美","韩国","日本","俄罗斯","中东阿拉伯","港澳","中国台湾","土耳其","南美","澳洲","东南亚","印度","非洲","英国","德国","法国","欧洲","东欧"]
+}
 }
 ```
 
-#### 8.1.1 开发调用示例（system prompt / user payload / expected output）
 
-这一段的关系建议开发按下面理解：
 
-- `system prompt`：固定任务规则，告诉模型“你是谁、要做什么、输出格式是什么、有哪些硬约束”。
-- `user payload`：本次调用的实际输入数据，告诉模型“你这次要看哪张图、有哪些候选值可以选”。
-- `expected output`：模型返回的标准结构，后端按这个结构接收并回填字段。
+就是将图+选项+提示词给大模型，然后输出选项
 
-推荐调用方式如下。
+### <font style="color:rgb(26, 28, 31);">AI帮写</font>
+<font style="color:rgb(26, 28, 31);">用途：</font>
 
-`system prompt`
++ <font style="color:rgb(26, 28, 31);">在用户点击“AI帮写”时，回填高级设置字段；</font>
++ <font style="color:rgb(26, 28, 31);">仅输出字段键值，不输出额外解释；</font>
++ <font style="color:rgb(26, 28, 31);">优先给出“有助于人物增强商品表达”的安全值，而不是极端风格值。</font>
 
-```text
-你是一位电商商品图理解专家。请根据输入商品图，提取“代言图生成”所需信息，并严格输出 JSON。
-
-任务要求：
-1) 识别商品所属品类（用于 productCategory）。
-2) 基于图像线索，预测代言图字段推荐值：
-   productType, interactionType, characterTrait, sceneBackground, layoutStyle, skinTone, genderStyle, ageTrait, displayFocus, targetMarket。
-3) 所有推荐值必须从给定 options 中选择；若无法判断，返回空语义值或最保守值。
-4) 对于人物属性类字段（skinTone, genderStyle, ageTrait），若图像依据不足，宁可留空，不要强猜。
-5) 不输出解释文字，不输出 Markdown，仅输出 JSON。
-
-输出 JSON Schema：
-{
-  "category": {
-    "categoryId": "string",
-    "categoryLabel": "服饰类|鞋靴类|箱包类|珠宝饰品类|美妆个护类|食品饮料类|家居百货类|家电数码类|家具大件类|母婴玩具类|宠物用品类|汽配五金类|通用品类",
-    "confidence": "number(0-1)",
-    "keywords": ["string"]
-  },
-  "recommendedFields": {
-    "productType": "string",
-    "interactionType": "string",
-    "characterTrait": "string",
-    "sceneBackground": "string",
-    "layoutStyle": "string",
-    "skinTone": "string",
-    "genderStyle": "string",
-    "ageTrait": "string",
-    "displayFocus": "string",
-    "targetMarket": "string"
-  },
-  "needsUserConfirm": ["fieldKey1", "fieldKey2"]
-}
-
-判定规则：
-- 若识别置信度 < 0.70，categoryLabel 输出“通用品类”，并将 "productType" 设为“智能识别”。
-- 若某字段无可靠依据，将该字段加入 needsUserConfirm。
-- 若人物属性类字段可能触发歧义、刻板印象或风险联想，优先留空并加入 needsUserConfirm。
-```
-
-`user payload`
+<font style="color:rgb(26, 28, 31);">提示词：</font>
 
 ```json
-{
-  "toolKey": "goods-spoke",
-  "imageUrl": "https://example.com/uploads/product-001.jpg",
-  "title": "维C提亮精华液 30ml 清爽不黏腻",
-  "options": {
-    "productType": ["智能识别", "服装", "T恤", "背包", "鞋子", "小家电", "电视", "沙发", "吊灯", "化妆品", "香水", "水果", "饮料", "汽车", "集装箱", "蓝牙耳机", "手机", "行李箱", "文具", "机械设备", "项链", "玩具", "瑜伽服", "健身器材", "笔记本电脑", "手办"],
-    "interactionType": ["穿戴展示", "手持展示", "使用状态展示", "推荐代言", "产品静置人物出现", "身体局部展示"],
-    "characterTrait": ["明星气质", "网络达人", "真实素人", "产品专业人士", "生产工作人员", "卡通人物", "运动风", "商务", "休闲", "青春", "童趣", "慈祥", "搞怪"],
-    "sceneBackground": ["无背景", "纯色背景", "简单背景", "真实场景", "居家场景", "摄影棚", "舞台T台", "户外场景", "城市街道", "商业空间"],
-    "layoutStyle": ["人物全貌展示", "突出产品主体", "多场景拼接", "产品居中，周边搭配使用场景", "同一人物不同场景", "不同人物同一场景"],
-    "skinTone": ["亚洲", "北美", "欧洲", "南美", "非洲", "东南亚", "中东"],
-    "genderStyle": ["男", "女", "中性风", "妩媚", "性冷淡"],
-    "ageTrait": ["婴幼儿", "儿童", "少年", "青年", "中年", "老年"],
-    "displayFocus": ["产品突出", "人物突出", "全貌展示", "局部特写"],
-    "targetMarket": ["大陆", "北美", "韩国", "日本", "俄罗斯", "中东阿拉伯", "港澳", "中国台湾", "土耳其", "南美", "澳洲", "东南亚", "印度", "非洲", "英国", "德国", "法国", "欧洲", "东欧"]
-  }
-}
-```
-
-`expected output`
-
-```json
-{
-  "category": {
-    "categoryId": "beauty-skincare",
-    "categoryLabel": "美妆个护类",
-    "confidence": 0.94,
-    "keywords": ["精华液", "滴管瓶", "护肤品包装", "瓶身标签"]
-  },
-  "recommendedFields": {
-    "productType": "化妆品",
-    "interactionType": "手持展示",
-    "characterTrait": "网络达人",
-    "sceneBackground": "真实场景",
-    "layoutStyle": "突出产品主体",
-    "skinTone": "",
-    "genderStyle": "",
-    "ageTrait": "青年",
-    "displayFocus": "产品突出",
-    "targetMarket": "东南亚"
-  },
-  "needsUserConfirm": ["skinTone", "genderStyle"]
-}
-```
-
-开发接入建议：
-
-- `imageUrl` 作为视觉输入给模型。
-- `title` 作为辅助文本上下文，不要当成强制真值。
-- `options` 必须随请求传入，否则“只能从候选项中选值”这条约束无法真正生效。
-- 后端接收 `recommendedFields` 后，不要直接覆盖全部字段，只自动写入非空字段。
-- `needsUserConfirm` 应原样透传给前端，用于标记需要人工确认的字段。
-
-### 8.2 AI帮写（Advanced Fields Auto-fill）
-
-用途：
-
-- 在用户点击“AI帮写”时，回填高级设置字段；
-- 仅输出字段键值，不输出额外解释；
-- 优先给出“有助于人物增强商品表达”的安全值，而不是极端风格值。
-
-推荐提示词：
-
-```text
 你是一位电商代言图策划师。请根据商品图识别结果与平台信息，回填 goods-spoke 的高级设置字段。
 
 必须遵守：
@@ -1201,52 +678,39 @@ function buildGoodsSpokePrompt(input: {
 4) productType 回填后，必须基于 categoryRulesByTool[*].aliases 推导并回填 productCategory；若冲突按归一结果覆盖并标记 needsUserConfirm。
 5) 对于 skinTone / genderStyle / ageTrait 这类人物属性字段，只有在图像线索充分且业务必要时才回填。
 6) 只输出 JSON，不要输出解释。
-
 输出格式：
 {
-  "fieldValues": {
-    "productCategory": "string",
-    "productType": "string",
-    "interactionType": "string",
-    "characterTrait": "string",
-    "sceneBackground": "string",
-    "layoutStyle": "string",
-    "skinTone": "string",
-    "genderStyle": "string",
-    "ageTrait": "string",
-    "displayFocus": "string",
-    "targetMarket": "string"
-  },
-  "needsUserConfirm": ["fieldKey1", "fieldKey2"]
+ "fieldValues": {
+ "productCategory": "string",
+ "productType": "string",
+ "interactionType": "string",
+ "characterTrait": "string",
+ "sceneBackground": "string",
+ "layoutStyle": "string",
+ "skinTone": "string",
+ "genderStyle": "string",
+ "ageTrait": "string",
+ "displayFocus": "string",
+ "targetMarket": "string"
+ },
+ "needsUserConfirm": ["fieldKey1", "fieldKey2"]
 }
 ```
 
-回填策略（强制）：
+### <font style="color:rgb(26, 28, 31);">文本润色</font>
+<font style="color:rgb(26, 28, 31);">用途：</font>
 
-- 先回填 `productType`，再通过 `categoryRulesByTool[*].aliases` 归一 `productCategory`，保证两者拉齐。
-- 对于强相关字段：`interactionType / sceneBackground / layoutStyle / displayFocus`，能判则尽量判，因为它们直接影响构图。
-- 对于风格类字段：`characterTrait / targetMarket`，可以根据商品品类和视觉线索做相对稳妥的推荐。
-- 对于人物属性字段：`skinTone / genderStyle / ageTrait`，识别不足时统一回填 `""`，并加入 `needsUserConfirm`。
-- 后端接收后仅自动回填“非空值”；空值字段保持待用户输入状态。
++ <font style="color:rgb(26, 28, 31);">对用户补充说明进行语义增强；</font>
++ <font style="color:rgb(26, 28, 31);">生成可执行、约束清晰、适合代言图模型的补充文本；</font>
++ <font style="color:rgb(26, 28, 31);">自动过滤“空泛审美词”和可能违规的代言表达。</font>
 
-当前代码配置（保持一致）：
+<font style="color:rgb(26, 28, 31);">提示词：</font>
 
-```text
-你是一位电商代言图策划师。请根据商品图片，回填产品类型、互动方式、人物特点、场景背景、排版方式、人种肤色、性别风格、年龄特点、展示重点、目标市场。所有字段要服务于“人物代言商品”的广告表达。
-```
+```json
+你是一位电商代言图文案润色专家。请将下方用户的补充说明优化为“可执行的图像生成约束”，并保持原意。
 
-### 8.3 文本润色（Supplement Polish）
-
-用途：
-
-- 对用户补充说明进行语义增强；
-- 生成可执行、约束清晰、适合代言图模型的补充文本；
-- 自动过滤“空泛审美词”和可能违规的代言表达。
-
-推荐提示词（对应 `goods-spoke`）：
-
-```text
-你是一位电商代言图文案润色专家。请将用户的补充说明优化为“可执行的图像生成约束”，并保持原意。
+补充说明：
+xxxxxxxxxxxx
 
 润色目标：
 1) 先强化商品主体，再强化人物与商品关系，避免人物喧宾夺主。
@@ -1261,29 +725,9 @@ function buildGoodsSpokePrompt(input: {
 - 不得包含违规词、夸张功效、虚假代言、侵权名人暗示或不当人物表达。
 ```
 
-默认润色指令（可与上面组合）：
 
-```text
-优化代言图补充说明，强调人物与产品关系、品牌感、镜头语言和视觉气质。
-```
 
-## 9. 建议补充到实现层的校验
-
-```json
-{
-  "validationRules": {
-    "ifPlatformMainImageRequiresWhiteBackground": "append platform role downgrade prompt: 该代言图仅作为附图/内容图，不作为主图",
-    "ifCategoryIsMaternalOrChild": "forbid sexy / low-cut / dangerous posture / adultized styling",
-    "ifCharacterTraitIsCelebrityLike": "forbid real celebrity identity, only allow high-end temperament wording",
-    "ifDisplayFocusIsPersonFirstAndPlatformIsHighRecognition": "require product visible area >= safe threshold in generation guidance",
-    "ifSceneBackgroundIsComplex": "append keep product readable and uncluttered",
-    "ifAgeTraitIsChildOrInfant": "forbid mature makeup, seductive pose, unsafe props"
-  }
-}
-```
-
-## 10. 结论
-
+## 结论
 一键代言图要真正可用，不能只做“人物+商品”的泛化提示词，至少要同时接入四层配置：
 
 1. 真实代码字段层：页面已经有哪些字段、哪些值、哪些 AI 回填逻辑。
@@ -1292,3 +736,4 @@ function buildGoodsSpokePrompt(input: {
 4. 选项值扩展层：每个高级选项值都要扩写为可执行的画面约束，不要只传值字符串。
 
 这样生成的代言图，才更接近“合规、正确、可投放、可转化”的真实业务需求。
+

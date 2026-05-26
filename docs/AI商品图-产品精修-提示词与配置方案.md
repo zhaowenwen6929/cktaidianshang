@@ -9,18 +9,18 @@
 ### 1.1 当前代码里的真实流程
 
 1. 上传商品图（`upload-main`，最多 24 张）。
-2. 选择创作模式（`creation-mode`：普通/高级，影响比例、分辨率、数量）。
-3. 选择模式（`mode-choice`：原图精修 / 提取主体精修）。
-4. 填写补充说明（`supplement`，可选）。
-5. 点击生成。
+2. 选择模式（`mode-choice`：原图精修 / 提取主体精修）。
+3. 选择创作模式（`creation-mode`：普通/高级，影响比例、分辨率、数量）。
+4. 配置高级设置（`advanced-settings`：平台信息、目标市场）。
+5. 填写补充说明（`supplement`，可选）。
+6. 点击生成。
 
 对应代码配置（`src/App.tsx`）：
 
 - `toolKey = "goods-retouch"`
 - `creationModeConfigKey = "retouch"`
-- `sectionOrder = ["upload-main", "mode-choice", "creation-mode", "supplement"]`
-- `advancedSettings.fields = ["platform", "region"]`
-- `advancedSettings.platformIds = ["taobao", "tmall", "jd", "pdd", "amazon", "temu", "tiktok-shop", "shopee", "other"]`
+- `sectionOrder = ["upload-main", "mode-choice", "creation-mode", "advanced-settings", "supplement"]`
+- `advancedSettings.extraSelects = ["platformInfo", "targetMarket"]`
 - `uploads.main.maxCount = 24`
 - `advancedAiAssistPromptConfigs["goods-retouch"]`
 - `supplementAiPolishConfigs["goods-retouch"]`
@@ -51,9 +51,9 @@ type GeneratePayload = {
 
 ### 1.3 当前代码的关键断点
 
-- `goods-retouch` 声明了 `platform/region`，但当前 `sectionOrder` 没有渲染 `advanced-settings`。
-- `RetouchModeSection` 只在本地 `useState` 保存 `retouchMode/extractMode/customSubject`，没有写回 `advancedSelections`。
-- 因此当前页面里这些值不会进入最终生成载荷，属于“界面有意图，数据未接通”状态。
+- `advanced-settings` 已真实渲染，且 `platformInfo/targetMarket` 会进入 `advancedSelections`。
+- `RetouchModeSection` 里的 `retouchMode/extractMode/customSubject` 仍主要保存在本地组件状态，文档层应视为“业务上有效、生成链路需显式接入”的模式变量。
+- 因此产品精修的真正 prompt builder 建议同时读取：`advancedSelections + mode-choice 状态 + supplement + creationModeSelection`。
 
 ### 1.4 建议补齐的隐形识别链路
 
@@ -70,8 +70,8 @@ type GeneratePayload = {
     "skuIntegrity": "string"
   },
   "assistOutput": {
-    "platform": "string",
-    "region": "string",
+    "platformInfo": "string",
+    "targetMarket": "string",
     "retouchMode": "original | extract",
     "extractMode": "smart | custom",
     "customSubject": "string",
@@ -85,8 +85,9 @@ type GeneratePayload = {
 ```text
 任务目标：对上传商品图进行商业级精修，提升质感与可上架性。
 商品信息：保持商品真实结构，不改变SKU关键特征。
-平台配置：电商平台={platform}；地区={region}。
+平台配置：平台信息={platformInfo}；目标市场={targetMarket}。
 品类配置：当前商品品类为「{productCategory}」。
+模式配置：精修模式={retouchMode}；提取方式={extractMode}；自定义主体={customSubject}。
 精修要求：优化边缘净度、光影层次、材质表现与整体清晰度，避免过度修图痕迹。
 输出规格：比例={ratio}；分辨率={resolution}；数量={count}。
 补充要求：{supplement}
@@ -274,8 +275,8 @@ type GeneratePayload = {
 
 | 字段 | 是否建议扩展 | 说明 |
 | --- | --- | --- |
-| `platform` | 是 | 不同平台对“主图纯净度、可识别度、真实感”权重不同。 |
-| `region` | 是 | 跨境地区会影响光感、展示习惯和合规程度。 |
+| `platformInfo` | 是 | 不同平台对“主图纯净度、可识别度、真实感”权重不同。 |
+| `targetMarket` | 是 | 目标市场会影响光感、展示习惯和表达克制程度。 |
 | `modeId` | 否 | 只影响生成强度，不改变语义。 |
 | `ratio` | 否 | 只影响画幅，不建议写成长提示词。 |
 | `resolution` | 否 | 只影响清晰度，做参数传递即可。 |
@@ -284,11 +285,11 @@ type GeneratePayload = {
 | `extractMode` | 是 | 智能提取和自定义主体的执行方式不同。 |
 | `customSubject` | 是 | 复杂构图时必须显式写入约束。 |
 
-### 5.2 平台值扩展文案
+### 5.2 平台值扩展文案（`platformInfo`）
 
 ```json
 {
-  "platformValuePrompt": {
+  "platformInfoValuePrompt": {
     "淘宝": "适合淘宝商品浏览，保持主体清晰、真实、不过度修饰。",
     "天猫": "适合天猫品牌化展示，精致但克制，强调质感与整洁。",
     "京东": "适合京东标准商品展示，结构和材质要真实可信。",
@@ -309,17 +310,16 @@ type GeneratePayload = {
 }
 ```
 
-### 5.3 地区值扩展文案
+### 5.3 市场值扩展文案（`targetMarket`）
 
 ```json
 {
-  "regionValuePrompt": {
-    "美国": "强调英语市场的清晰识别和真实展示。",
+  "targetMarketValuePrompt": {
+    "大陆": "强调主流电商审美下的清晰、可信和高转化识别。",
+    "北美": "强调真实、干净、结构可辨和标准化展示。",
+    "日本": "强调精致、规整、边缘克制和材质细节稳定。",
+    "东南亚": "强调明快、直接、易识别，不做过冷的高级化表达。",
     "欧洲": "强调中性、克制、通用的商品表达。",
-    "日本": "强调精致、干净、规整的画面控制。",
-    "东南亚": "强调明快、直接、易识别的商品呈现。",
-    "中国大陆": "强调主流电商审美下的清晰与可信。",
-    "中国台湾": "强调繁体语境下的自然和易读。",
     "英国": "强调克制、真实、标准化展示。"
   }
 }
@@ -340,74 +340,128 @@ type GeneratePayload = {
 }
 ```
 
-## 6. 不同精修方式的完整提示词
+## 6. 拼装规则（后端/中台）
 
-### 6.1 原图精修
+1. 先确定平台、市场、品类与精修模式：
+- 平台来源优先级：`platformInfo`（高级设置） > `全平台通用（16平台）`。
+- 市场来源优先级：`targetMarket` > 空值不拼。
+- 品类来源优先级：`productCategory`（识别/上游注入） > `通用品类`。
+- 模式来源：`retouchMode`（原图精修 / 提取主体精修）和 `extractMode`（智能提取 / 自定义主体）。
+2. 读取平台规则：`platformRetouchRules[platformInfo]`，拼接 `prompt + required + forbidden`。
+3. 读取品类规则：`categoryRetouchRules[productCategory]`，拼接材质、边缘、孔位、版型等保真约束。
+4. 读取高级字段值扩展：按 `platformInfo / targetMarket / retouchMode / extractMode / customSubject` 命中值追加 `valuePrompt`。
+5. 产品精修字段分层必须固定：
+- `platformInfo` 决定能否按主图级安全标准执行、是否允许背景过度修饰。
+- `productCategory` 决定材质和结构保护重点。
+- `retouchMode` 决定是保留原构图精修，还是先做主体提取再精修。
+- `extractMode + customSubject` 只在提取主体精修路径下生效。
+- `targetMarket` 仅调节审美克制程度和浏览习惯，不得改动商品事实。
+6. 约束优先级必须固定：`platform forbidden` > `category forbidden` > `platform required` > `retouchMode / extractMode` > `targetMarketPrompt` > `supplement`。
+7. `retouchMode=original` 时，必须明确“不重新构图、不新增主体、不替换视角”；只能修边缘、光影、清晰度、材质层次。
+8. `retouchMode=extract` 时，先保证主体提取准确，再做商业级精修；`extractMode=custom` 时必须显式拼接 `customSubject` 约束。
+9. `supplement` 为空时整段删除；若补充内容与平台/品类硬规则冲突，例如要求“把金属拉到镜面发光”“把面料磨皮成塑料感”，按高优先级规则裁掉。
+10. 安全兜底：最终串必须包含“保持真实结构、不改变SKU、边缘干净、材质可信、不过修、适合上架”的语义。
 
-```text
-任务目标：对上传商品图进行商业级原图精修，提升质感与可上架性。
-商品信息：保留原始构图与主体位置，不改变SKU核心结构。
-平台配置：电商平台={platform}；地区={region}。
-品类配置：当前商品品类为「{productCategory}」。
-精修要求：优化边缘净度、光影层次、材质表现与整体清晰度，避免过度修图痕迹。
-原图策略：不重新构图，不新增主体，不替换商品视角。
-输出规格：比例={ratio}；分辨率={resolution}；数量={count}。
-补充要求：{supplement}
+### 6.1 模式分支要求（必须按此处理）
+
+1. `retouchMode=original`
+- 任务目标偏“原图精修”。
+- 保留原始构图、主体位置和拍摄视角。
+- 不做主体提取语义。
+2. `retouchMode=extract` 且 `extractMode=smart`
+- 任务目标偏“自动识别主商品主体后精修”。
+- 允许移除无关背景和干扰元素，但主体结构必须完整。
+3. `retouchMode=extract` 且 `extractMode=custom`
+- 必须拼入 `customSubject`。
+- 只保留用户指定的主体范围，其余区域可移除。
+
+### 6.2 字段与规则源映射（必须按此读取）
+
+| 拼装变量 | 来源字段 | 规则文件/章节 | 说明 |
+| --- | --- | --- | --- |
+| `platformInfo` | `advanced-settings.platformInfo` | 本文第 3 章 `platformRetouchRules` | 当前真实高级字段 |
+| `targetMarket` | `advanced-settings.targetMarket` | 本文第 5.3 节 | 当前真实高级字段 |
+| `productCategory` | 图片识别或上游商品信息 | 本文第 4 章 `categoryRetouchRules` | 当前页面无显式控件 |
+| `retouchMode/extractMode/customSubject` | `mode-choice` 区块状态 | 本文第 6.1 节 | 需显式接入生成链路 |
+| `ratio/resolution/count` | 创作模式参数 | 无 | 输出规格段 |
+| `supplement` | 补充说明（可为空） | 无 | 最后拼接，优先级最低 |
+
+## 7. 拼装 Demo（输入 + 输出）
+
+### 7.1 Demo 输入
+
+```json
+{
+  "toolKey": "goods-retouch",
+  "productCategory": "家电数码类",
+  "retouchMode": "extract",
+  "extractMode": "smart",
+  "params": {
+    "platformInfo": "亚马逊",
+    "targetMarket": "北美",
+    "ratio": "1:1",
+    "resolution": "2K",
+    "count": "1",
+    "supplement": "保留黑色耳机壳体层次、金属边和触点细节，背景清理干净，不要过强镜面反射。"
+  }
+}
 ```
 
-### 6.2 提取主体精修 - 智能提取主体
+### 7.2 Demo 输出（最终提示词）
 
 ```text
 任务目标：先自动提取主商品主体，再进行商业级精修，输出更干净、更适合上架的主体图。
-商品信息：保持商品真实结构，不改变SKU关键特征。
-平台配置：电商平台={platform}；地区={region}。
-品类配置：当前商品品类为「{productCategory}」。
-主体策略：自动识别主商品主体，剔除干扰背景与无关元素。
-精修要求：优化边缘净度、光影层次、材质表现与整体清晰度，避免过度修图痕迹。
-输出规格：比例={ratio}；分辨率={resolution}；数量={count}。
-补充要求：{supplement}
+
+平台约束：适配亚马逊商品主图/附图要求，精修要严格保持商品真实外观、完整结构和纯净画面，禁止任何误导性改动。 必须满足：真实外观、完整结构、纯净画面。 禁止：文字/Logo/边框、夸张投影、结构篡改。
+
+品类约束：当前商品品类为「家电数码类」，重点保留接口、边缘、屏幕/按键/模组位置、反光逻辑和材质层次，避免把产品修得像概念图。 禁止：接口错位、材质失真、结构虚化。
+
+模式配置：精修模式=提取主体精修；提取方式=智能提取主体；平台信息=亚马逊；目标市场=北美。
+
+选项扩展约束：适合亚马逊主图标准，必须真实、干净、不可误导。强调英语市场下的清晰识别和真实展示。提取主体精修：先锁定主商品主体，再进行商业级精修，输出更干净的主体图。智能提取主体：自动识别主商品，适合标准商品图。
+
+质量要求：优化边缘净度、光影层次、材质表现与整体清晰度，避免过度修图痕迹；保持商品真实结构，不改变SKU关键特征。
+
+输出规格：比例=1:1；分辨率=2K；数量=1。
+
+补充要求：保留黑色耳机壳体层次、金属边和触点细节，背景清理干净，不要过强镜面反射。
 ```
 
-### 6.3 提取主体精修 - 自定义主体
+### 7.3 Demo 说明（规则如何生效）
+
+1. `platformInfo=亚马逊` 先命中平台硬规则，锁定“纯净画面、真实外观、不可误导”的上架安全标准。
+2. `productCategory=家电数码类` 负责保护耳机这类商品的接口、边缘、模组和反光逻辑。
+3. `retouchMode=extract + extractMode=smart` 使任务从“原图微调”切到“先提主体再精修”的模式分支。
+4. `targetMarket=北美` 只补充审美和信息克制度，不会覆盖平台和品类硬规则。
+5. `supplement` 只做低优先级补充；若用户要求“把黑色壳体变成更高级的银色”这类改变SKU的内容，执行层应自动裁掉。
+
+## 8. AI 辅助识别与补充说明润色
+
+### 8.1 当前代码里的 AI 辅助提示词
 
 ```text
-任务目标：按指定主体范围提取商品主体，再进行商业级精修，确保保留用户要求的核心区域。
-商品信息：保持商品真实结构，不改变SKU关键特征。
-平台配置：电商平台={platform}；地区={region}。
-品类配置：当前商品品类为「{productCategory}」。
-主体策略：仅保留指定主体范围「{customSubject}」，其余无关区域可移除。
-精修要求：优化边缘净度、光影层次、材质表现与整体清晰度，避免过度修图痕迹。
-输出规格：比例={ratio}；分辨率={resolution}；数量={count}。
-补充要求：{supplement}
+你是一位商品精修顾问。请根据商品图片判断更适合的平台信息与目标市场，仅回填当前高级设置中的平台信息、目标市场字段；不要补充无关内容。若判断不出则留空。
 ```
 
-## 7. AI 辅助识别与补充说明润色
-
-### 7.1 当前代码里的 AI 辅助提示词
+### 8.2 建议升级版 AI 辅助提示词
 
 ```text
-你是一位商品精修顾问。请根据商品图片判断更适合的电商平台与地区站点，仅回填当前高级设置中的平台、地区字段；不要补充无关内容。若判断不出则留空。
+你是一位商品精修顾问。请根据商品图片先识别商品品类、主体类型、材质、边缘质量、背景状态和平台适配倾向，再回填当前高级设置中的平台信息、目标市场字段；若功能已接通模式字段，也请同步判断原图精修或提取主体精修更合适。所有字段仅从当前可选项中挑选，无法确认则留空，不要补充无关内容。
 ```
 
-### 7.2 建议升级版 AI 辅助提示词
-
-```text
-你是一位商品精修顾问。请根据商品图片先识别商品品类、主体类型、材质、边缘质量、背景状态和平台适配倾向，再回填当前高级设置中的平台、地区字段；若功能已接通模式字段，也请同步判断原图精修或提取主体精修更合适。所有字段仅从当前可选项中挑选，无法确认则留空，不要补充无关内容。
-```
-
-### 7.3 当前代码里的补充说明润色
+### 8.3 当前代码里的补充说明润色
 
 ```text
 优化产品精修补充说明，强调材质、边缘、光感、质感和商业修图效果。
 ```
 
-### 7.4 建议升级版补充说明润色
+### 8.4 建议升级版补充说明润色
 
 ```text
 优化产品精修补充说明，使其更可执行，并优先覆盖边缘净度、材质层次、真实光影、清晰度、背景净化和是否允许轻微重构构图。
 ```
 
-## 8. 最终配置样板
+## 9. 最终配置样板
 
 ```json
 {
@@ -416,17 +470,17 @@ type GeneratePayload = {
   "sectionOrder": ["upload-main", "mode-choice", "creation-mode", "supplement"],
   "advancedSettings": {
     "title": "高级设置",
-    "fields": ["platform", "region"],
-    "platformIds": ["taobao", "tmall", "jd", "pdd", "amazon", "temu", "tiktok-shop", "shopee", "other"]
+    "fields": ["platformInfo", "targetMarket"],
+    "platformIds": []
   },
   "recognition": {
-    "infer": ["productCategory", "productMaterial", "platform", "region", "retouchMode", "extractMode"],
-    "fallback": ["productCategory=通用品类", "platform=全平台通用（16平台）"]
+    "infer": ["productCategory", "productMaterial", "platformInfo", "targetMarket", "retouchMode", "extractMode"],
+    "fallback": ["productCategory=通用品类", "platformInfo=全平台通用（16平台）"]
   },
   "promptOrder": [
     "task",
     "category",
-    "platform",
+    "platformInfo",
     "mode",
     "quality",
     "supplement"
@@ -434,8 +488,8 @@ type GeneratePayload = {
 }
 ```
 
-## 9. 结论
+## 10. 结论
 
 - `goods-retouch` 的正确目标不是“把图修得更好看”，而是“把图修成可上架、可审核、可跨平台复用”。
-- 当前代码的核心缺口是：`platform/region` 和 `mode-choice` 没有真正进入生成载荷。
+- 当前代码的核心缺口是：`mode-choice` 相关的 `retouchMode/extractMode/customSubject` 还没有像 `platformInfo/targetMarket` 一样稳定进入最终生成载荷。
 - 如果要真正对齐买家秀级别的配置能力，建议先把“隐形识别 -> 字段回填 -> prompt 拼接”链路接通，再补品类和平台扩展。

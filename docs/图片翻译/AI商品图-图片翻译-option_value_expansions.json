@@ -4,6 +4,7 @@
   "goodsTranslateOptionValueExpansions": {
     "targetLanguage": {
       "fieldKey": "targetLanguage",
+      "fieldRole": "business-input",
       "values": {
         "简体中文": { "valuePrompt": "输出自然简体中文电商表达，短句清晰，避免机翻腔。" },
         "英语": { "valuePrompt": "输出自然英文电商表达，短句优先，避免中式直译和冗长从句。" },
@@ -20,26 +21,47 @@
     },
     "platformInfo": {
       "fieldKey": "platformInfo",
+      "fieldRole": "business-input",
       "values": {
+        "无平台信息": { "valuePrompt": "按跨平台保守翻译方式处理，不额外追加平台专属营销语气。" },
         "全平台通用（16平台）": { "valuePrompt": "采用跨平台保守表达，不绑定单平台术语和夸张营销口吻。" },
+        "淘宝": { "valuePrompt": "信息直给、层级清楚，避免堆字和过长句，适配高密度浏览。" },
+        "天猫": { "valuePrompt": "语气整洁克制，兼顾品牌感与信息秩序，避免低质促销感。" },
+        "京东": { "valuePrompt": "优先参数和功能术语准确，语义理性清楚，避免口语化误导。" },
+        "拼多多": { "valuePrompt": "采用短句和重点前置表达，确保核心利益点一眼可读。" },
+        "1688": { "valuePrompt": "强化规格、材质、起订量等商采信息表达，语义直接稳妥。" },
+        "抖音电商": { "valuePrompt": "保证阅读节奏快、重点集中，避免视觉花字干扰正文识别。" },
+        "快手电商": { "valuePrompt": "文案保持真实直给，少修饰，优先让重点信息快速看懂。" },
+        "小红书电商": { "valuePrompt": "兼顾审美与清晰度，避免硬广腔，标题和卖点保持自然种草感。" },
         "亚马逊": { "valuePrompt": "强调客观中性描述，避免绝对化、保证性承诺。" },
+        "Temu": { "valuePrompt": "采用短句高效表达，重点信息对比清晰，避免冗长句。" },
         "TikTok Shop": { "valuePrompt": "保持短句和高扫读效率，避免信息堆叠。" },
-        "阿里国际站": { "valuePrompt": "强化B2B规格与交付信息表达，减少情绪化修饰。" }
+        "阿里国际站": { "valuePrompt": "强化B2B规格与交付信息表达，减少情绪化修饰。" },
+        "速卖通": { "valuePrompt": "表达简洁、便于跨语理解，避免生硬机翻和复杂句结构。" },
+        "Shopee": { "valuePrompt": "重点前置、层级清楚，适配东南亚快读浏览习惯。" },
+        "OZON": { "valuePrompt": "保持信息完整和版式干净，不做无依据扩写或杂乱装饰。" },
+        "SHEIN": { "valuePrompt": "兼顾时尚语气与尺码面料等关键信息可读性，避免压坏版型展示。" }
       }
     },
     "languageTone": {
       "fieldKey": "languageTone",
+      "fieldRole": "internal-inferred",
+      "source": "infer from platformInfo + productCategory + targetLanguage",
+      "usage": "append to inferredFieldPrompts only when useLanguageToneInPrompt=true",
       "values": {
-        "简洁促转化": { "valuePrompt": "语句压缩，重点前置，保留必要信息密度。" },
-        "品牌克制": { "valuePrompt": "语气克制、整洁有序，避免强刺激促销词。" },
-        "理性参数化": { "valuePrompt": "优先参数、规格、结构信息表达，语义精确。" }
+        "简洁促转化": { "valuePrompt": "采用简洁促转化表达，短句优先，重点前置，适配快读和转化场景。" },
+        "品牌克制": { "valuePrompt": "采用品牌克制表达，语气整洁有序，避免强刺激促销词和低质叫卖感。" },
+        "理性参数化": { "valuePrompt": "采用理性参数化表达，优先参数、规格、结构信息，减少情绪化修饰。" }
       }
     },
     "textDirection": {
       "fieldKey": "textDirection",
+      "fieldRole": "internal-inferred",
+      "source": "infer from OCR layout + targetLanguage + script direction",
+      "usage": "append to inferredFieldPrompts only when useTextDirectionInPrompt=true",
       "values": {
-        "LTR": { "valuePrompt": "按从左到右阅读顺序组织文本块，保持原层级对齐关系。" },
-        "RTL": { "valuePrompt": "按从右到左阅读顺序重排文本块，避免断词与标点方向错误。" }
+        "LTR": { "valuePrompt": "按从左到右阅读顺序组织文本块，保持原层级和对齐关系稳定。" },
+        "RTL": { "valuePrompt": "按从右到左阅读顺序组织文本块，修正对齐、断词和标点方向，避免阅读断裂。" }
       }
     }
   }

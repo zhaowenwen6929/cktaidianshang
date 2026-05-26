@@ -41,5 +41,127 @@
         }
       }
     }
+  },
+  "technicalHintExpansions": {
+    "lightDirection": {
+      "fieldKey": "lightDirection",
+      "name": "主体受光方向",
+      "values": {
+        "none": {
+          "valuePrompt": ""
+        },
+        "left": {
+          "valuePrompt": "保持主体左侧受光逻辑一致，背景主光方向和阴影落向与主体左侧受光关系匹配。"
+        },
+        "right": {
+          "valuePrompt": "保持主体右侧受光逻辑一致，背景主光方向和阴影落向与主体右侧受光关系匹配。"
+        },
+        "front": {
+          "valuePrompt": "保持主体正面受光逻辑一致，避免背景出现明显侧逆光造成受光冲突。"
+        },
+        "back": {
+          "valuePrompt": "保持主体逆光或背光关系一致，避免前景补光过强破坏原始轮廓层次。"
+        },
+        "top": {
+          "valuePrompt": "保持主体顶部受光逻辑一致，亮面和阴影衰减方向符合顶光关系。"
+        },
+        "front-left": {
+          "valuePrompt": "保持主体前左侧受光逻辑一致，亮面朝向、投影方向和环境补光关系自然统一。"
+        },
+        "front-right": {
+          "valuePrompt": "保持主体前右侧受光逻辑一致，亮面朝向、投影方向和环境补光关系自然统一。"
+        }
+      }
+    },
+    "materialHints": {
+      "fieldKey": "materialHints",
+      "name": "主体材质线索",
+      "values": {
+        "metal": {
+          "valuePrompt": "保留金属材质应有的硬朗高光和体积反射，避免出现塑料感表面。"
+        },
+        "glass": {
+          "valuePrompt": "保留玻璃材质的通透感和边缘反射，避免错误折射与脏污雾化。"
+        },
+        "plastic": {
+          "valuePrompt": "保持塑料表面干净均匀，反光不过强，不过度做成金属质感。"
+        },
+        "glossy-plastic": {
+          "valuePrompt": "保持亮面塑料的清晰高光和光滑表面，避免出现杂乱环境反射。"
+        },
+        "matte-plastic": {
+          "valuePrompt": "保持哑光塑料的柔和漫反射，避免出现镜面高光。"
+        },
+        "fabric": {
+          "valuePrompt": "保留织物纹理和柔和明暗层次，避免边缘过硬或材质塑料化。"
+        },
+        "wood": {
+          "valuePrompt": "保留木纹、色差和自然表面质感，避免过度磨皮和假反光。"
+        },
+        "paper": {
+          "valuePrompt": "保持纸质表面的平整与细微纹理，避免厚重反光和塑封质感。"
+        },
+        "ceramic": {
+          "valuePrompt": "保留陶瓷表面的洁净釉面和柔和反光，避免粗糙颗粒感。"
+        },
+        "rubber": {
+          "valuePrompt": "保持橡胶材质的低反光和弹性质感，避免表面过亮。"
+        },
+        "leather": {
+          "valuePrompt": "保留皮革纹理、柔和油润感和自然折痕，避免塑料感高光。"
+        }
+      }
+    },
+    "reflectionRisk": {
+      "fieldKey": "reflectionRisk",
+      "name": "反光风险",
+      "values": {
+        "low": {
+          "valuePrompt": "反射控制保持克制即可，不额外制造复杂环境映射。"
+        },
+        "medium": {
+          "valuePrompt": "注意控制高光和环境映射，避免出现与背景不一致的假反光。"
+        },
+        "high": {
+          "valuePrompt": "重点控制镜面高光、边缘反射和环境映射，避免出现错误镜像反光和穿帮倒影。"
+        }
+      }
+    },
+    "shadowNeed": {
+      "fieldKey": "shadowNeed",
+      "name": "阴影需求",
+      "values": {
+        "none": {
+          "valuePrompt": ""
+        },
+        "soft-contact": {
+          "valuePrompt": "保留轻微接触阴影，让主体与台面或地面有自然落地感。"
+        },
+        "contact-shadow": {
+          "valuePrompt": "必须保留明确接触阴影，确保主体不漂浮。"
+        },
+        "soft-ground-shadow": {
+          "valuePrompt": "补充柔和地面阴影，增强空间关系但不要喧宾夺主。"
+        },
+        "clear-ground-shadow": {
+          "valuePrompt": "补充清晰可辨的地面阴影，明确主体与地面的接触和方向关系。"
+        }
+      }
+    },
+    "edgeRisk": {
+      "fieldKey": "edgeRisk",
+      "name": "边缘风险",
+      "values": {
+        "low": {
+          "valuePrompt": "边缘保持自然干净即可，避免过度锐化。"
+        },
+        "medium": {
+          "valuePrompt": "重点控制毛边、白边和轻微吞边，保持主体轮廓干净完整。"
+        },
+        "high": {
+          "valuePrompt": "严格控制抠图边缘质量，避免毛边、白边、吞边、透明边缘丢失和主体断裂。"
+        }
+      }
+    }
   }
 }
