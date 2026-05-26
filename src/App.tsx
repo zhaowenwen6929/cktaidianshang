@@ -6745,7 +6745,36 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "set-replica": {
     creationModeConfigKey: "spoke",
-    sectionOrder: ["upload-reference", "upload-main", "generation-rule-notice", "creation-mode", "supplement"],
+    sectionOrder: ["upload-reference", "upload-main", "generation-rule-notice", "creation-mode", "advanced-settings", "supplement"],
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "platformInfo",
+          label: "使用平台",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        },
+        {
+          key: "replicaStrength",
+          label: "复刻强度",
+          options: ["低保真复刻", "平衡复刻", "高保真复刻"]
+        },
+        {
+          key: "subjectConsistency",
+          label: "主体一致性",
+          options: ["标准一致", "严格一致"]
+        },
+        {
+          key: "backgroundComplexity",
+          label: "背景复杂度",
+          options: ["低复杂", "中等复杂", "高复杂"]
+        }
+      ]
+    },
     uploads: {
       main: {
         label: "上传商品图",
@@ -6764,8 +6793,22 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "set-fashion": {
     creationModeConfigKey: "default",
-    sectionOrder: ["upload-main", "baseline-model-setup"],
+    sectionOrder: ["upload-main", "baseline-model-setup", "advanced-settings"],
     modelGenerateTypes,
+    advancedSettings: {
+      title: "高级设置",
+      showAiAssist: false,
+      fields: [],
+      platformIds: [],
+      extraSelects: [
+        {
+          key: "platformInfo",
+          label: "使用平台",
+          mode: "input-select",
+          options: platformInfoInputOptions
+        }
+      ]
+    },
     uploads: {
       main: {
         label: "上传服装图片",
