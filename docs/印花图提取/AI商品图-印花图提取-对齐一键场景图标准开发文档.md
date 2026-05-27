@@ -6,6 +6,7 @@
 > 配套规则文件：
 > - [AI商品图-印花图提取-mode_rules.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/印花图提取/AI商品图-印花图提取-mode_rules.json)
 > - [AI商品图-印花图提取-option_value_expansions.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/印花图提取/AI商品图-印花图提取-option_value_expansions.json)
+> - [AI商品图-印花图提取-category_rules.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/印花图提取/AI商品图-印花图提取-category_rules.json)
 > - [AI商品图-印花图提取-scene_recognition_and_ratio_rules.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/印花图提取/AI商品图-印花图提取-scene_recognition_and_ratio_rules.json)
 
 ## 1. 真实功能与字段（Source of Truth）
@@ -62,6 +63,18 @@
 - `podExtractScene`
 - `podExtractRatio`
 - `podExtractTransparentBackground`
+
+### 2.2.1 产品场景作为品类特殊配置
+
+- 来源：`category_rules.json`
+- 作用：把 `podExtractScene` 从纯标签扩展为真实“品类/载体类型”规则
+- 字段：
+- `recommendedMode`
+- `prompt`
+- `required`
+- `forbidden`
+- `recommendedRatios`
+- `modeAdaptations`
 
 ### 2.3 通用固定段
 

@@ -1,0 +1,13 @@
+{
+  "subject_clear": "商品主体必须清晰、完整、可辨认。",
+  "preserve_real_color": "保持商品原始颜色和材质观感，不要偏色。",
+  "preserve_real_structure": "保持商品真实结构和比例，不要改形。",
+  "copy_area_reserved": "预留明确文案区，避免标题和主体冲突。",
+  "platform_compliant": "整体画面需符合目标平台常见展示规范。",
+  "scene_supports_subject": "场景应服务于商品展示，不可喧宾夺主。",
+  "spec_readable": "参数和结构标注需要清晰易读。",
+  "interaction_natural": "人物或手部交互必须自然、符合真实使用方式。",
+  "detail_emphasis": "细节图需要突出局部质感和工艺信息。",
+  "conversion_legible": "卖点图需要让利益点一眼可读。",
+  "lifestyle_authentic": "生活方式图需要真实自然，不要空泛摆拍感。"
+}

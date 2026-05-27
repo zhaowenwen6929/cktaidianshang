@@ -1,0 +1,82 @@
+[
+  {
+    "option_key": "ratio",
+    "label": "比例",
+    "type": "enum",
+    "default_value": "1:1",
+    "preset_values": ["1:1", "4:5", "3:4", "16:9"],
+    "description": "单张图片输出比例。"
+  },
+  {
+    "option_key": "resolution",
+    "label": "分辨率",
+    "type": "enum",
+    "default_value": "1024x1024",
+    "preset_values": ["1024x1024", "1536x1536", "2048x2048"],
+    "description": "单张图片输出清晰度。"
+  },
+  {
+    "option_key": "count",
+    "label": "每类张数",
+    "type": "number",
+    "default_value": 1,
+    "preset_values": [1, 2, 3],
+    "description": "每个图型生成的张数。"
+  },
+  {
+    "option_key": "layoutMode",
+    "label": "版式模式",
+    "type": "enum",
+    "default_value": "single_focus",
+    "preset_values": ["single_focus", "overall_plus_zoom", "comparison_split", "step_flow", "spec_grid"],
+    "description": "图型内部版式和布局方式。"
+  },
+  {
+    "option_key": "textDensity",
+    "label": "文案密度",
+    "type": "enum",
+    "default_value": "low",
+    "preset_values": ["none", "low", "medium", "high"],
+    "description": "画面中可允许的文案量。"
+  },
+  {
+    "option_key": "backgroundMode",
+    "label": "背景模式",
+    "type": "enum",
+    "default_value": "clean",
+    "preset_values": ["white_bg", "clean", "soft_texture", "light_shadow", "real_scene"],
+    "description": "图型背景和氛围模式。"
+  },
+  {
+    "option_key": "subjectScale",
+    "label": "主体占比",
+    "type": "enum",
+    "default_value": "large",
+    "preset_values": ["large", "medium", "full_frame"],
+    "description": "主体在画面中的占比。"
+  },
+  {
+    "option_key": "copyPosition",
+    "label": "文案位置",
+    "type": "enum",
+    "default_value": "overlay",
+    "preset_values": ["top", "left", "right", "bottom", "overlay"],
+    "description": "文案区在画面中的位置。"
+  },
+  {
+    "option_key": "stylePreset",
+    "label": "风格预置",
+    "type": "enum",
+    "default_value": "conversion_clean",
+    "preset_values": ["conversion_clean", "warm_lifestyle", "minimal_premium", "editorial_soft", "promo_bright", "practical_clean"],
+    "description": "图型内可直接选择的风格预置。"
+  },
+  {
+    "option_key": "customPromptPatch",
+    "label": "补充说明",
+    "type": "text",
+    "default_value": "",
+    "preset_values": [],
+    "description": "单类型自定义补充说明。"
+  }
+]

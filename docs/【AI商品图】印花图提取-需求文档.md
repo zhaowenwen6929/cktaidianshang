@@ -184,6 +184,82 @@
 + `podExtractTransparentBackground` 虽然是开关字段，但仍需要固定 `valuePrompt`
 + 透明底图开启时，优先级高于“非透明预览友好”的默认输出习惯
 
+## 3.1 产品场景作为品类的特殊配置
+说明：
+
++ 在印花图提取功能中，`podExtractScene` 的实际业务含义更接近“品类/载体类型”，而不是纯场景氛围。
++ 因此除了 `valuePrompt` 外，还需要单独维护 `categoryRules`，补充每个品类的提取重点、硬约束、建议模式、推荐比例与模式适配。
++ 该配置建议独立存放为：`AI商品图-印花图提取-category_rules.json`。
+
+```json
+{
+  "categoryRules": {
+    "通用": {
+      "recommendedMode": "专项提取",
+      "prompt": "按通用品类执行印花提取，优先保证图案主体完整、边缘干净、颜色稳定和后续复用友好。",
+      "required": ["主体图案完整可识别", "边缘闭合干净", "颜色与层次尽量还原"],
+      "forbidden": ["保留无关商品底材", "误删主体关键元素"],
+      "recommendedRatios": ["自动检测比例", "1:1", "3:4", "4:3"]
+    },
+    "手机壳": {
+      "recommendedMode": "专项提取",
+      "prompt": "按手机壳类印花提取执行，重点识别壳体可印刷区域，去除开孔、边框、高光与弧面透视干扰。",
+      "required": ["主体图案落在可印刷区域内完整保留", "开孔与边框干扰被正确规避", "线条与局部细节保持清晰"],
+      "forbidden": ["把摄像头开孔或边框当作图案内容保留", "残留壳体反光与塑料高光", "因弧面透视导致主体明显变形"],
+      "recommendedRatios": ["1:2", "2:1", "3:4", "4:3"]
+    },
+    "家纺": {
+      "recommendedMode": "专项提取",
+      "prompt": "按家纺类印花提取执行，重点处理布料褶皱、纤维噪点、织物阴影和纹样连续性。",
+      "required": ["纹样连续自然", "织物干扰被有效剥离", "图案纹理和色阶层次可辨"],
+      "forbidden": ["把布料褶皱阴影当作图案内容保留", "出现纹样断裂或重复贴补痕迹"],
+      "recommendedRatios": ["3:4", "4:3", "2:3", "3:2"]
+    },
+    "桌布": {
+      "recommendedMode": "专项提取",
+      "prompt": "按桌布类印花提取执行，重点修正大面积折痕、拉伸和边缘变形，保证平铺后的连续自然。",
+      "required": ["大面积纹样连续稳定", "折痕导致的形变被修正", "边缘与角部关系自然"],
+      "forbidden": ["保留明显折痕投影", "平铺后边缘断裂或重复关系错位"],
+      "recommendedRatios": ["4:3", "3:2", "16:9", "1:1"]
+    },
+    "全能": {
+      "recommendedMode": "全能提取",
+      "prompt": "按复杂基底与高遮挡印花提取执行，优先恢复图案连续性、主体可读性和后续编辑可用性。",
+      "required": ["被遮挡区域的图案关系尽量恢复", "透视扭曲与拉伸得到修正", "风格与主色稳定"],
+      "forbidden": ["重建后主体漂移成另一种图案", "出现大面积复制粘贴感"],
+      "recommendedRatios": ["1:1", "3:4", "4:3", "2:3"]
+    },
+    "全幅印": {
+      "recommendedMode": "全能提取",
+      "prompt": "按全幅印类满版图案提取执行，重点保持满幅构图关系、边缘完整性和大面积连续性。",
+      "required": ["满版覆盖关系完整", "边缘与角部图案衔接自然", "大面积色块和纹样稳定"],
+      "forbidden": ["边缘截断导致构图残缺", "满幅区域出现明显拼接线"],
+      "recommendedRatios": ["4:3", "3:2", "16:9", "1:1"]
+    },
+    "凤玲": {
+      "recommendedMode": "全能提取",
+      "prompt": "按装饰纹样类复杂图案提取执行，重点保持线条节奏、装饰细节、色阶层次和对称/重复关系。",
+      "required": ["装饰线条清晰可辨", "局部复杂花纹不糊不塌", "色阶层次与装饰节奏稳定"],
+      "forbidden": ["细线与装饰节点丢失", "复杂纹样被抹平成大色块"],
+      "recommendedRatios": ["1:1", "3:4", "4:5", "5:4"]
+    },
+    "挂钟": {
+      "recommendedMode": "全能提取",
+      "prompt": "按挂钟类圆形盘面图案提取执行，重点保证圆形边界、中心对齐、外圈完整和盘面构图稳定。",
+      "required": ["圆心与主图案关系稳定", "圆形边界完整自然", "外圈与中心元素不偏移"],
+      "forbidden": ["圆周被硬切或厚薄不均", "盘面中心明显偏移", "时钟轮廓干扰残留"],
+      "recommendedRatios": ["1:1", "4:5", "5:4", "3:4"]
+    }
+  }
+}
+```
+
+开发要求：
+
++ `podExtractScene` 既要参与 `optionValueExpansions.podExtractScene.values[podExtractScene].valuePrompt`，也要命中 `categoryRules[podExtractScene]`。
++ `recommendedRatios` 用于内部推荐与联动兜底，不直接替代用户选择。
++ `recommendedMode` 只作为建议，不直接覆盖用户当前选择的 `podExtractMode`。
+
 ## 4. 场景识别与比例回填规则（内部增强链路）
 说明：
 
@@ -246,22 +322,94 @@
 2. 若该比例不在当前模式允许列表中，则按推荐顺序找到第一个可用比例。
 3. 若仍未命中，回退默认：`专项提取=自动检测比例`，`全能提取=1:1`。
 
+## 4.4 模式、产品场景、出图比例联动配置（可直接开发）
+说明：
+
++ 该配置用于前端切换 `podExtractMode` 时，联动刷新 `podExtractScene` 和 `podExtractRatio` 的可选项，并在场景切换后给出推荐比例。
++ 联动优先级为：`模式限制 > 场景推荐 > 默认回退`。
++ 用户显式选择的比例若仍在当前模式允许列表内，应保留；若不合法，则按规则自动纠正。
+
+```json
+{
+  "podExtractModeSceneRatioLinkage": {
+    "modeOptions": ["专项提取", "全能提取"],
+    "sceneOptionsByMode": {
+      "专项提取": ["通用", "手机壳", "家纺", "桌布"],
+      "全能提取": ["全能", "全幅印", "桌布", "手机壳", "凤玲", "挂钟"]
+    },
+    "ratioOptionsByMode": {
+      "专项提取": ["自动检测比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
+      "全能提取": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"]
+    },
+    "recommendedRatiosByScene": {
+      "通用": ["自动检测比例", "1:1", "3:4", "4:3"],
+      "手机壳": ["1:2", "2:1", "3:4", "4:3"],
+      "家纺": ["3:4", "4:3", "2:3", "3:2"],
+      "桌布": ["4:3", "3:2", "16:9", "1:1"],
+      "全能": ["1:1", "3:4", "4:3", "2:3"],
+      "全幅印": ["4:3", "3:2", "16:9", "1:1"],
+      "凤玲": ["1:1", "3:4", "4:5", "5:4"],
+      "挂钟": ["1:1", "4:5", "5:4", "3:4"]
+    },
+    "defaultSceneByMode": {
+      "专项提取": "通用",
+      "全能提取": "全能"
+    },
+    "defaultRatioByMode": {
+      "专项提取": "自动检测比例",
+      "全能提取": "1:1"
+    },
+    "sceneRatioStrategy": {
+      "onModeChange": [
+        "读取 sceneOptionsByMode[podExtractMode] 作为当前场景可选列表",
+        "读取 ratioOptionsByMode[podExtractMode] 作为当前比例可选列表",
+        "若当前 podExtractScene 不在新列表中，则重置为 defaultSceneByMode[podExtractMode]",
+        "若当前 podExtractRatio 不在新列表中，则重置为 resolveRecommendedRatio(podExtractMode, podExtractScene)"
+      ],
+      "onSceneChange": [
+        "保持当前模式不变",
+        "根据 recommendedRatiosByScene[podExtractScene] 获取场景推荐比例列表",
+        "从推荐比例列表中找到第一个属于 ratioOptionsByMode[podExtractMode] 的比例",
+        "若当前 podExtractRatio 不在推荐结果中且产品要求强联动，则自动切换为该推荐比例；否则仅作为推荐值展示"
+      ],
+      "ratioResolutionRule": [
+        "先取 recommendedRatiosByScene[podExtractScene][0] 作为目标比例",
+        "若目标比例不在 ratioOptionsByMode[podExtractMode] 中，则按推荐顺序取第一个可用比例",
+        "若仍无可用项，则回退 defaultRatioByMode[podExtractMode]"
+      ]
+    }
+  }
+}
+```
+
+开发约定：
+
++ `专项提取` 下不可出现 `全能 / 全幅印 / 凤玲 / 挂钟`。
++ `全能提取` 下不可出现 `通用 / 家纺`。
++ `专项提取` 才允许 `自动检测比例 / 1:2 / 2:1 / 18:23`。
++ `全能提取` 才允许 `4:5 / 5:4`。
++ 若模式切换导致当前 `产品场景 / 出图比例` 失效，必须自动重置，不允许保留非法值。
++ 若场景推荐比例与当前模式允许比例冲突，必须按模式允许列表做降级，不能输出不可选比例。
+
 ## 拼装规则
 ### 拼装顺序
 1. `taskGoal`（任务目标）
 2. `modeRulePrompt`（模式规则正文）
-3. `parameterLine`（参数行）
-4. `optionValuePrompts`（设置值扩展约束）
-5. `requiredRule`（必须满足）
-6. `forbiddenRule`（禁止事项）
-7. `universalNegative`（通用负向约束）
-8. `universalQuality`（通用质量要求）
-9. `supplement`（补充说明，可选，当前页面无该字段）
+3. `categoryRulePrompt`（品类规则正文）
+4. `parameterLine`（参数行）
+5. `optionValuePrompts`（设置值扩展约束）
+6. `categoryRequiredRule`（品类必须满足）
+7. `categoryForbiddenRule`（品类禁止事项）
+8. `requiredRule`（模式必须满足）
+9. `forbiddenRule`（模式禁止事项）
+10. `universalNegative`（通用负向约束）
+11. `universalQuality`（通用质量要求）
+12. `supplement`（补充说明，可选，当前页面无该字段）
 
 组装要求：
 
-+ `requiredRule / forbiddenRule / universalNegative / universalQuality` 属于不可裁剪段
-+ token 超限时，仅允许按 `supplement -> optionValuePrompts -> modeRulePrompt` 顺序裁剪
++ `categoryRequiredRule / categoryForbiddenRule / requiredRule / forbiddenRule / universalNegative / universalQuality` 属于不可裁剪段
++ token 超限时，仅允许按 `supplement -> optionValuePrompts -> categoryRulePrompt -> modeRulePrompt` 顺序裁剪
 + 当前页面无 `supplement` 时整段删除，不保留占位
 + `podExtractTransparentBackground=1` 时，对应的 `valuePrompt` 不可被省略
 
@@ -288,16 +436,19 @@
 ### 拼装模板
 ```json
 任务目标：从上传商品图中提取可复用的印花图案，输出可直接用于POD后续链路（裂变/连续图/尺寸延展）的高质量图案。
-模式规则：{modePrompt}
+模式规则：{modeRulesByTool[podExtractMode].prompt}
+品类规则：{categoryRules[podExtractScene].prompt}
 提取参数：模式={podExtractMode}；产品场景={podExtractScene}；出图比例={podExtractRatio}；透明底图={podExtractTransparentBackground}。
 设置值扩展约束：
 [产品场景] {podExtractSceneValuePrompt}
 [出图比例] {podExtractRatioValuePrompt}
 [透明底图] {podExtractTransparentBackgroundValuePrompt}
-必须满足：{modeRequiredJoined}
-禁止：{modeForbiddenJoined}
-{universalNegativePrompt}
-{universalQualityPrompt}
+必须满足（品类）：{categoryRules[podExtractScene].required.join("、")}
+禁止（品类）：{categoryRules[podExtractScene].forbidden.join("、")}
+必须满足：{modeRulesByTool[podExtractMode].required.join("、")}
+禁止：{modeRulesByTool[podExtractMode].forbidden.join("、")}
+{modeRulesByTool.universalNegativePrompt}
+{modeRulesByTool.universalQualityPrompt}
 补充说明：{supplementText}
 ```
 

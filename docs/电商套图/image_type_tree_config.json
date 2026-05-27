@@ -1,0 +1,626 @@
+{
+  "version": "2026-05-26",
+  "description": "电商套图图型树形配置，按一级分组 -> 图型 -> 扩展参数组织，便于前端抽屉、默认值和 Prompt 拼装统一读取。",
+  "groups": [
+    {
+      "group_key": "product_main_image",
+      "group_name": "商品主图",
+      "group_level": 3,
+      "types": [
+        {
+          "type_key": "product_white_bg",
+          "type_name": "产品白底图",
+          "type_level": 4,
+          "sort_order": 10,
+          "intro": "生成产品电商白底主图，纯白背景，突出商品本体。",
+          "default_ext": {
+            "desc": "纯白背景，突出商品本体",
+            "ratio": "1:1",
+            "norefimg": "1",
+            "isdefault": "true"
+          },
+          "option_groups": [
+            {
+              "group_key": "placement_state",
+              "group_name": "摆放状态",
+              "options": ["摆正", "斜放", "使用状态", "半使用状态"]
+            },
+            {
+              "group_key": "shooting_angle",
+              "group_name": "拍摄角度",
+              "options": ["正面", "左侧", "右侧", "俯视", "微距", "鸟瞰"]
+            },
+            {
+              "group_key": "model_presence",
+              "group_name": "有无模特",
+              "options": ["有模特试穿试戴展示", "无模特平铺展示", "头戴局部展示", "腿脚试穿展示", "产品手持展示"]
+            },
+            {
+              "group_key": "auxiliary_info",
+              "group_name": "辅助信息",
+              "options": ["尺寸比例信息", "认证标志", "产品标题", "配件展示", "色卡辅助展示", "材质辅助展示"]
+            },
+            {
+              "group_key": "platform_rules",
+              "group_name": "平台规范",
+              "options": ["纯白背景", "没有任何额外信息", "禁止模特出现", "无标注无logo无文字"]
+            }
+          ]
+        },
+        {
+          "type_key": "amazon_main",
+          "type_name": "亚马逊主图",
+          "type_level": 4,
+          "sort_order": 20,
+          "intro": "生成符合亚马逊规范的主图，纯白背景，主体占比高，禁止文字与促销信息。",
+          "default_ext": {
+            "desc": "符合平台规范的主图",
+            "ratio": "1:1",
+            "norefimg": "1"
+          },
+          "option_groups": [
+            {
+              "group_key": "shooting_angle",
+              "group_name": "拍摄角度",
+              "options": ["正面", "45度俯角", "侧面", "顶部俯视"]
+            },
+            {
+              "group_key": "accessory_relation",
+              "group_name": "配件关联",
+              "options": ["仅产品主体", "带必要配件", "带包装"]
+            },
+            {
+              "group_key": "light_shadow",
+              "group_name": "产品光影",
+              "options": ["自然柔光", "轻微高光", "侧光勾勒"]
+            },
+            {
+              "group_key": "product_state",
+              "group_name": "产品状态",
+              "options": ["闭合未使用", "打开", "使用状态", "内部展示"]
+            },
+            {
+              "group_key": "color_restore",
+              "group_name": "颜色还原",
+              "options": ["标准色", "轻微提亮", "精准色号"]
+            }
+          ]
+        },
+        {
+          "type_key": "detail_closeup",
+          "type_name": "细节特写",
+          "type_level": 4,
+          "sort_order": 30,
+          "intro": "聚焦产品局部核心细节，放大查看质感和工艺。",
+          "default_ext": {
+            "desc": "放大细节，展示质感工艺",
+            "ratio": "1:1",
+            "norefimg": "1"
+          },
+          "option_groups": [
+            {
+              "group_key": "detail_part",
+              "group_name": "特写部位",
+              "options": ["面料纹理", "接口按键", "膏体质地", "缝线工艺", "核心部件", "印刷标识", "边角细节", "容量刻度", "边缘锐化"]
+            },
+            {
+              "group_key": "shoot_distance",
+              "group_name": "拍摄距离",
+              "options": ["微距拍摄", "近距离拍摄", "常规特写", "局部放大"]
+            },
+            {
+              "group_key": "focus_mode",
+              "group_name": "对焦方式",
+              "options": ["单点对焦", "局部虚化", "全焦清晰", "边缘锐化"]
+            },
+            {
+              "group_key": "presentation",
+              "group_name": "展示形式",
+              "options": ["单细节展示", "多细节拼接展示", "细节 + 功能关联", "细节 + 材质对比", "细节 + 使用痕迹"]
+            }
+          ]
+        },
+        {
+          "type_key": "multi_angle",
+          "type_name": "产品多角度",
+          "type_level": 4,
+          "sort_order": 40,
+          "intro": "多视角展示商品结构，保持外观一致性。",
+          "default_ext": {
+            "desc": "多视角展示外观结构",
+            "ratio": "1:1",
+            "norefimg": "1"
+          },
+          "option_groups": [
+            {
+              "group_key": "display_angle",
+              "group_name": "展示角度",
+              "options": ["正面", "多角度拼接", "背面", "左侧面", "右侧面", "45度角", "顶部", "底部", "斜上方", "俯角", "斜下方", "仰角"]
+            },
+            {
+              "group_key": "angle_count",
+              "group_name": "角度数量",
+              "options": ["单一角度（聚焦单个面）", "两个角度（互补展示）", "三个角度（全面覆盖）", "四个及以上角度（完整呈现）"]
+            },
+            {
+              "group_key": "background",
+              "group_name": "背景场景",
+              "options": ["纯白色", "浅色系", "纯色简约", "纹理背景", "渐变背景", "透明背景", "场景化展示"]
+            },
+            {
+              "group_key": "detail_strength",
+              "group_name": "细节强化",
+              "options": ["纯形态展示", "突出轮廓线条", "强化材质光泽", "轻微突出功能区"]
+            }
+          ]
+        },
+        {
+          "type_key": "scene_image",
+          "type_name": "场景图",
+          "type_level": 4,
+          "sort_order": 50,
+          "intro": "聚焦产品与真实使用场景的自然融合，适配电商展示。",
+          "default_ext": {
+            "desc": "真实使用场景带入感",
+            "isdefault": "true"
+          },
+          "option_groups": [
+            {
+              "group_key": "scene_type",
+              "group_name": "场景类型",
+              "options": ["电商标准展台", "小型静物布景", "悬浮式展示", "产品阵列展示", "功能化造景", "简单背景展示", "居家空间", "办公空间", "学习空间", "母婴专属空间", "露营场景", "野餐场景", "车载场景", "徒步场景", "户外场景", "公共空间", "人物互动展示", "产品明星代言"]
+            },
+            {
+              "group_key": "product_display",
+              "group_name": "产品展示",
+              "options": ["主体清晰突出", "真实使用场景", "细节质感呈现", "多角度展示", "尺寸比例参考", "组合使用呈现"]
+            },
+            {
+              "group_key": "layout",
+              "group_name": "排版呈现",
+              "options": ["单场景聚焦", "多场景拼接", "四宫格场景拼接", "主场景配辅场景", "产品主体+多场景", "主场景搭配细节特写", "产品主体+单一场景", "产品不同状态场景拼接", "不同时间季节场景展示"]
+            },
+            {
+              "group_key": "atmosphere",
+              "group_name": "氛围营造",
+              "options": ["简约高级风", "生活化温馨风", "专业科技感", "自然清新风", "便捷高效风", "精致质感风", "真实无美化风"]
+            },
+            {
+              "group_key": "value_direction",
+              "group_name": "价值导向",
+              "options": ["产品外观审美", "使用幸福感", "凸显使用效果", "核心功能展现", "辅助功能凸显", "痛点解决效果", "效率提升呈现", "安全防护展示", "品质耐用性呈现"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group_key": "detail_page",
+      "group_name": "详情页",
+      "group_level": 3,
+      "types": [
+        {
+          "type_key": "hero_banner",
+          "type_name": "首屏视觉图",
+          "type_level": 4,
+          "sort_order": 60,
+          "intro": "传递产品核心价值与整体质感，主视觉冲击力强，适配详情页顶部。",
+          "default_ext": {
+            "desc": "首屏吸睛，提升点击转化",
+            "isdefault": "true"
+          },
+          "option_groups": [
+            {
+              "group_key": "value_focus",
+              "group_name": "价值聚焦",
+              "options": ["功能核心", "颜值核心", "体验核心", "场景核心", "性价比核心"]
+            },
+            {
+              "group_key": "visual_boost",
+              "group_name": "视觉强化",
+              "options": ["焦点突出", "轮廓强化", "质感放大", "色彩对比", "动态暗示"]
+            },
+            {
+              "group_key": "product_presentation",
+              "group_name": "产品呈现",
+              "options": ["整体形态", "核心部件", "使用状态", "场景融合", "细节特写 + 全景延伸"]
+            },
+            {
+              "group_key": "atmosphere_density",
+              "group_name": "氛围浓度",
+              "options": ["极简克制", "轻度氛围", "中度沉浸", "重点烘托", "场景化浓氛围"]
+            },
+            {
+              "group_key": "value_hint",
+              "group_name": "价值暗示",
+              "options": ["氛围元素", "搭配物品", "使用痕迹", "场景符号", "品质细节"]
+            }
+          ]
+        },
+        {
+          "type_key": "core_selling_point",
+          "type_name": "核心卖点图",
+          "type_level": 4,
+          "sort_order": 70,
+          "intro": "展示产品卖点文案，快速传递核心价值。",
+          "default_ext": {
+            "desc": "一句话卖点+图形强化",
+            "isdefault": "true"
+          },
+          "option_groups": [
+            {
+              "group_key": "headline",
+              "group_name": "主标题",
+              "options": ["无标题", "自动生成主标题"]
+            },
+            {
+              "group_key": "subtitle",
+              "group_name": "副标题",
+              "options": ["无副标题", "自动生成标题"]
+            },
+            {
+              "group_key": "copy",
+              "group_name": "卖点文案",
+              "options": ["自动生成单一核心卖点文案展示", "生成两个核心卖点文案对称展示", "生成主卖点搭配2~3个辅卖点", "生成多个核心卖点文案展示"]
+            },
+            {
+              "group_key": "layout",
+              "group_name": "表现形式",
+              "options": ["产品居中展示卖点两侧分布", "产品场景化展示", "卖点分散排版", "产品展示在上卖点相关在下", "产品展示在下卖点相关在上", "左侧展示产品右侧展示卖点", "左侧展示卖点右侧展示产品", "产品微缩展示卖点环绕展示", "版式紧凑式节奏，元素密集布局", "版式递进式节奏，卖点层层深入布局", "通过大面积留白分隔卖点"]
+            },
+            {
+              "group_key": "selling_focus",
+              "group_name": "卖点重心",
+              "options": ["材质优势", "工艺精度", "功能特性", "性能表现", "设计亮点"]
+            },
+            {
+              "group_key": "font_style",
+              "group_name": "字体风格",
+              "options": ["粗体", "黑体", "手写体", "标题黑体内容宋体", "卡通风", "科技风", "3d立体", "艺术字体"]
+            },
+            {
+              "group_key": "aux_element",
+              "group_name": "元素辅助",
+              "options": ["箭头辅助", "图标辅助", "强调框辅助", "数据辅助", "线条辅助", "色块辅助"]
+            }
+          ]
+        },
+        {
+          "type_key": "pain_point_solution",
+          "type_name": "客户痛点图",
+          "type_level": 4,
+          "sort_order": 80,
+          "intro": "可以无产品，场景化呈现用户核心痛点，直观传递解决逻辑。",
+          "default_ext": {
+            "desc": "指出痛点并给出解决点"
+          },
+          "option_groups": [
+            {
+              "group_key": "pain_point",
+              "group_name": "痛点方向",
+              "options": ["产品功能倒推", "日常高频困扰", "功能缺失痛点", "品质短板痛点", "体验不佳痛点", "场景适配痛点"]
+            },
+            {
+              "group_key": "structure",
+              "group_name": "呈现结构",
+              "options": ["多痛点场景组合展示", "呈现逻辑结构", "痛点场景 + 解决方案", "痛点 vs 解决效果", "痛点暗示 + 产品介入", "解决后理想状态", "痛点递进 + 分步解决"]
+            },
+            {
+              "group_key": "comparison",
+              "group_name": "对比方式",
+              "options": ["状态对比", "场景对比", "明暗对比", "效果对比", "使用前后对比", "痛点场景，无产品", "多痛点拼接，无产品", "使用该产品和其他产品前后对比", "该产品和同类型产品效果对比"]
+            },
+            {
+              "group_key": "solution_path",
+              "group_name": "解决路径",
+              "options": ["产品直接作用", "功能针对性破解", "场景改善呈现", "体验升级对比", "问题根源解决"]
+            },
+            {
+              "group_key": "empathy_scene",
+              "group_name": "共鸣场景",
+              "options": ["情绪价值满足", "使用便利提升", "设计适配需求", "严重问题破解", "品质保障诉求", "效率优化需求"]
+            }
+          ]
+        },
+        {
+          "type_key": "scene_image_non_fashion",
+          "type_name": "场景图（非服饰）",
+          "type_level": 4,
+          "sort_order": 90,
+          "intro": "聚焦产品与真实使用场景的自然融合，符合产品类型与风格调性。",
+          "default_ext": {
+            "desc": "真实使用场景带入感",
+            "isdefault": "true"
+          },
+          "option_groups": [
+            {
+              "group_key": "scene_type",
+              "group_name": "场景类型",
+              "options": ["电商标准展台", "小型静物布景", "悬浮式展示", "产品阵列展示", "功能化造景", "简单背景展示", "居家空间", "办公空间", "学习空间", "母婴专属空间", "露营场景", "野餐场景", "车载场景", "徒步场景", "户外场景", "公共空间", "人物互动展示", "产品明星代言"]
+            },
+            {
+              "group_key": "product_display",
+              "group_name": "产品展示",
+              "options": ["主体清晰突出", "真实使用场景", "细节质感呈现", "多角度展示", "尺寸比例参考", "组合使用呈现"]
+            },
+            {
+              "group_key": "layout",
+              "group_name": "排版呈现",
+              "options": ["单场景聚焦", "多场景拼接", "四宫格场景拼接", "主场景配辅场景", "产品主体+多场景", "主场景搭配细节特写", "产品主体+单一场景", "产品不同状态场景拼接", "不同时间季节场景展示"]
+            },
+            {
+              "group_key": "atmosphere",
+              "group_name": "氛围营造",
+              "options": ["简约高级风", "生活化温馨风", "专业科技感", "自然清新风", "便捷高效风", "精致质感风", "真实无美化风"]
+            },
+            {
+              "group_key": "value_direction",
+              "group_name": "价值导向",
+              "options": ["产品外观审美", "使用幸福感", "凸显使用效果", "核心功能展现", "辅助功能凸显", "痛点解决效果", "效率提升呈现", "安全防护展示", "品质耐用性呈现"]
+            }
+          ]
+        },
+        {
+          "type_key": "specification_chart",
+          "type_name": "规格参数图",
+          "type_level": 4,
+          "sort_order": 100,
+          "intro": "规格参数可视化图，帮助用户快速精准获取产品信息。",
+          "default_ext": {
+            "desc": "尺寸参数一图看懂"
+          },
+          "option_groups": [
+            {
+              "group_key": "parameter_type",
+              "group_name": "参数类型",
+              "options": ["核心性能参数", "尺寸重量参数", "材质工艺参数", "功能配置参数", "电源续航参数", "适配兼容参数", "运行规格参数", "安全标准参数", "环保认证参数", "售后保障参数"]
+            },
+            {
+              "group_key": "presentation",
+              "group_name": "呈现形式",
+              "options": ["尺寸示意图 含比例参考", "性能雷达图", "参数对比表格", "数据可视化图表", "图标 + 数值组合", "分层拆解示意图", "规格达标标识", "颜色款式分类图", "配件清单明细图", "认证标准展示图"]
+            },
+            {
+              "group_key": "category",
+              "group_name": "产品品类",
+              "options": ["数码电子产品", "家用电器产品", "家居家具产品", "户外装备产品", "母婴用品产品", "美妆护肤产品", "厨具餐具产品", "宠物用品产品", "运动健身产品", "办公文具产品", "服饰穿戴产品"]
+            },
+            {
+              "group_key": "value",
+              "group_name": "价值传递",
+              "options": ["信息清晰易懂", "参数直观明了", "对比快速高效", "决策辅助有力", "标准规范呈现", "细节精准传递", "认知门槛降低", "疑虑有效打消", "选择更加明确"]
+            },
+            {
+              "group_key": "scenario",
+              "group_name": "场景适配",
+              "options": ["详情页参数专区", "产品卖点关联展示", "用户决策关键环节", "对比选购场景", "规格适配查询场景", "售后使用参考场景", "活动促销辅助展示", "品牌标准传递场景", "跨品类对比场景", "精准需求匹配场景"]
+            }
+          ]
+        },
+        {
+          "type_key": "packaging_display",
+          "type_name": "包装展示图",
+          "type_level": 4,
+          "sort_order": 110,
+          "intro": "聚焦产品外包装设计，强化包装品质与使用体验认知。",
+          "default_ext": {
+            "desc": "包装展示图"
+          },
+          "option_groups": [
+            {
+              "group_key": "packaging_type",
+              "group_name": "包装类型分类",
+              "options": ["运输防护包装", "销售展示包装", "礼品定制包装", "便携收纳包装", "环保可降解包装", "防潮防尘包装", "防震防摔包装", "密封保鲜包装", "组合套装包装", "独立单品包装"]
+            },
+            {
+              "group_key": "core_function",
+              "group_name": "包装核心功能",
+              "options": ["产品安全防护", "便捷开箱体验", "收纳存储复用", "礼品颜值提升", "环保材质保障", "空间优化利用", "配件分类收纳", "防潮防损保护", "运输抗压防摔", "品牌调性传递"]
+            },
+            {
+              "group_key": "accessory_list",
+              "group_name": "配件清单展示",
+              "options": ["主产品展示", "核心配件陈列", "辅助工具明细", "说明书保修卡", "替换部件展示", "赠品搭配呈现", "收纳袋盒配套", "安装配件分类", "防护填充材料", "品牌周边附属"]
+            },
+            {
+              "group_key": "usage_scene",
+              "group_name": "使用场景适配",
+              "options": ["运输配送场景", "开箱使用场景", "礼品赠送场景", "收纳存储场景", "二次利用场景", "户外便携场景", "潮湿环境存储", "长期闲置保管", "搬家搬运场景", "节日包装场景"]
+            },
+            {
+              "group_key": "visual_form",
+              "group_name": "视觉呈现形式",
+              "options": ["包装整体外观图", "开箱流程拆解图", "包装结构剖面图", "配件陈列平铺图", "包装细节放大图", "使用场景融入图", "包装尺寸参考图", "环保材质展示图", "礼品包装效果图", "多角度包装展示"]
+            }
+          ]
+        },
+        {
+          "type_key": "try_on_or_demo",
+          "type_name": "试穿试戴场景",
+          "type_level": 4,
+          "sort_order": 120,
+          "intro": "模特试穿试戴或上手场景图，清晰展示穿搭效果和购买决策辅助。",
+          "default_ext": {
+            "desc": "上身/上手效果展示"
+          },
+          "option_groups": [
+            {
+              "group_key": "human_race",
+              "group_name": "人种肤色",
+              "options": ["亚洲人种", "欧洲人种", "非洲人种", "混血人种", "宠物", "动漫卡通人物", "卡通形象"]
+            },
+            {
+              "group_key": "gender",
+              "group_name": "性别物种",
+              "options": ["男性", "女性", "中性风", "宠物类"]
+            },
+            {
+              "group_key": "age",
+              "group_name": "年龄维度",
+              "options": ["婴幼儿（2岁以内）", "儿童（5~12岁）", "青少年（12-18岁）", "青年（19-35岁）", "中年（36-55岁）", "中老年（56岁+）"]
+            },
+            {
+              "group_key": "body_shape",
+              "group_name": "身型身材",
+              "options": ["标准身形模特", "微胖友好模特", "娇小身形模特", "高挑身形模特", "健硕身形模特"]
+            },
+            {
+              "group_key": "layout",
+              "group_name": "展示排版",
+              "options": ["全身穿搭全景", "半身重点展示", "局部细节特写", "多角度拼接排版", "搭配组合排版", "多场景拼接展示", "单场景切图拼接", "单场景展示", "多场景组合", "人物手持代言", "人物互动展示"]
+            },
+            {
+              "group_key": "scene",
+              "group_name": "场景类型",
+              "options": ["纯白背景", "简单背景", "纯色背景", "日常通勤场景", "休闲逛街场景", "户外出行场景", "正式办公场景", "社交聚会场景", "运动健身场景", "居家放松场景", "节日氛围场景", "校园场景", "商务应酬场景", "康养休闲场景", "宠物居家", "宠物户外"]
+            },
+            {
+              "group_key": "display_focus",
+              "group_name": "展示重点",
+              "options": ["版型剪裁呈现", "显瘦修饰效果", "显高拉长效果", "面料质感凸显", "搭配包容性", "舒适度暗示", "风格辨识度", "肤色契合度", "年龄适配度", "性别适配度"]
+            },
+            {
+              "group_key": "atmosphere",
+              "group_name": "氛围营造",
+              "options": ["明星代言感", "生活化真实感", "杂志感精致呈现", "松弛感日常氛围", "活力运动氛围", "精致仪式感", "复古怀旧氛围", "潮流个性氛围", "极简高级氛围", "校园青春感", "成熟稳重感", "舒适从容感", "童趣感", "婴幼儿呵护", "可爱宠物"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group_key": "promotion_poster",
+      "group_name": "活动海报",
+      "group_level": 3,
+      "types": [
+        {
+          "type_key": "holiday_campaign",
+          "type_name": "活动海报",
+          "type_level": 4,
+          "sort_order": 200,
+          "intro": "促销信息海报，用于投放。",
+          "default_ext": {
+            "desc": "促销信息海报，用于投放"
+          },
+          "option_groups": [
+            {
+              "group_key": "theme",
+              "group_name": "主题定位",
+              "options": ["双11大促主题", "618促主题", "黑色星期五大促主题", "国庆促销主题", "中秋品宣主题", "春节问候主题", "日常节气问候主题", "新品上市促销主题"]
+            },
+            {
+              "group_key": "layout",
+              "group_name": "版式布局",
+              "options": ["居中对称布局", "上下分层布局", "左右分栏布局", "主次聚焦布局", "满版沉浸布局", "多模块拼接布局", "倒计时突出布局", "产品阵列布局"]
+            },
+            {
+              "group_key": "visual_element",
+              "group_name": "视觉元素",
+              "options": ["双11狂欢符号元素", "618潮流标识元素", "黑五潮酷撞色元素", "国庆灯笼元素", "中秋月亮玉兔元素", "春节红包生肖元素", "3D立体数字元素", "促销折扣标签元素", "几何渐变元素", "品牌标识固定元素"]
+            },
+            {
+              "group_key": "copy",
+              "group_name": "文案呈现",
+              "options": ["满减优惠文案", "限时折扣文案", "大额让利文案", "节日/日常问候文案", "行动引导抢购文案", "品牌slogan固定文案"]
+            },
+            {
+              "group_key": "tone",
+              "group_name": "氛围基调",
+              "options": ["热闹狂欢基调", "全民疯抢基调", "潮酷活力基调", "国庆庄重喜庆基调", "中秋温馨团圆基调", "春节红火吉祥基调", "日常清新治愈基调", "简约清晰基调"]
+            },
+            {
+              "group_key": "channel",
+              "group_name": "展示渠道",
+              "options": ["朋友圈海报", "网页Banner", "小红书封面", "淘宝京东拼多多主图", "亚马逊主图", "公众号主图", "TikTok短视频封面", "线下宣传单页"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group_key": "common_options",
+      "group_name": "共用选项",
+      "group_level": 3,
+      "types": [
+        {
+          "type_key": "copy_language",
+          "type_name": "文案语种",
+          "type_level": 4,
+          "sort_order": 10,
+          "option_groups": [
+            {
+              "group_key": "language",
+              "group_name": "文案语种",
+              "options": ["简体中文", "英语", "无需文案", "繁体中文", "中英文混合", "俄语", "西班牙语", "法语", "德语", "意大利语", "葡萄牙语", "阿拉伯语", "日语", "韩语", "印尼语", "越南语", "泰语", "荷兰语", "马来语", "印地语", "土耳其语"]
+            }
+          ]
+        },
+        {
+          "type_key": "target_market",
+          "type_name": "目标市场",
+          "type_level": 4,
+          "sort_order": 20,
+          "option_groups": [
+            {
+              "group_key": "market",
+              "group_name": "目标市场",
+              "options": ["大陆", "北美", "韩国", "日本", "俄罗斯", "中东阿拉伯", "港澳", "中国台湾", "土耳其", "南美", "澳洲", "东南亚", "印度", "非洲", "英国", "德国", "法国", "欧洲", "东欧"]
+            }
+          ]
+        },
+        {
+          "type_key": "platform",
+          "type_name": "电商平台",
+          "type_level": 4,
+          "sort_order": 30,
+          "option_groups": [
+            {
+              "group_key": "platform",
+              "group_name": "电商平台",
+              "options": ["大陆电商", "亚马逊", "Tiktok", "Temu", "淘宝", "天猫", "京东", "拼多多", "唯品会", "得物", "1688", "抖音电商", "快手电商", "小红书", "美团", "全球速卖通", "阿里巴巴国际站", "Shopee", "Lazada", "美客多", "Shein", "Etsy", "乐天", "Coupang", "Ozon", "Jumia", "Souq", "Noon"]
+            }
+          ]
+        },
+        {
+          "type_key": "visual_style",
+          "type_name": "视觉风格",
+          "type_level": 4,
+          "sort_order": 40,
+          "option_groups": [
+            {
+              "group_key": "style",
+              "group_name": "视觉风格",
+              "options": ["简约清新风", "高级质感风", "活泼吸睛风", "复古怀旧风", "场景写实风", "科技未来风", "国风古韵风"]
+            }
+          ]
+        },
+        {
+          "type_key": "copy_need",
+          "type_name": "文案需求",
+          "type_level": 4,
+          "sort_order": 50,
+          "option_groups": [
+            {
+              "group_key": "copy_need",
+              "group_name": "文案需求",
+              "options": ["无文案", "少量文案", "价值导向文案", "细致文案", "商品名称/型号标注", "核心卖点文案", "促销活动文案", "场景种草文案", "功能说明文案", "套装/组合内容文案"]
+            }
+          ]
+        },
+        {
+          "type_key": "color_tone",
+          "type_name": "色调倾向",
+          "type_level": 4,
+          "sort_order": 60,
+          "option_groups": [
+            {
+              "group_key": "tone",
+              "group_name": "色调倾向",
+              "options": ["冷色调（蓝/灰/青）", "暖色调（橙/黄/红）", "中性色调（白/黑/灰）", "高饱和色调", "低饱和色调", "莫兰迪色调", "复古色调", "国风色调（红/金/墨黑）", "科技色调（银/蓝/深灰）", "自然色调（绿/米/原木色）"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

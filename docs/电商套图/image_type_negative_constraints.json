@@ -1,0 +1,15 @@
+{
+  "no_fake_details": "不要添加不存在的细节。",
+  "no_wrong_material": "不要把普通材质生成成完全不同的高端材质。",
+  "no_scene_over_subject": "不要让背景或场景压过商品主体。",
+  "no_text_overload": "不要让文案过多过满，影响主体识别。",
+  "no_fake_specs": "不要虚构参数、型号、尺寸或认证。",
+  "no_wrong_interaction": "不要出现错误使用方式、错误手势或错误穿着逻辑。",
+  "no_platform_violation": "不要出现明显与平台规范冲突的元素。",
+  "no_promo_cheap_feel": "不要出现廉价促销感或低质感设计。",
+  "no_exaggerated_effect": "不要夸大不存在的功能效果或使用结果。",
+  "no_brand_invention": "不要虚构品牌标识、联名或授权信息。",
+  "no_inconsistent_angles": "不要出现多个角度之间结构、颜色、比例不一致。",
+  "no_false_compatibility": "不要虚构适配范围、兼容机型或使用对象。",
+  "no_medical_claim": "不要出现医疗化、治疗化、药效化表述。"
+}

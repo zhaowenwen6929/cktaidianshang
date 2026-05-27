@@ -1,0 +1,137 @@
+[
+  {
+    "type_key": "product_white_bg",
+    "sections": [
+      {
+        "section_key": "basic",
+        "section_name": "基础设置",
+        "fields": ["ratio", "resolution", "count"]
+      },
+      {
+        "section_key": "subject",
+        "section_name": "主体设置",
+        "fields": ["subjectScale", "customPromptPatch"]
+      }
+    ]
+  },
+  {
+    "type_key": "detail_closeup",
+    "sections": [
+      {
+        "section_key": "basic",
+        "section_name": "基础设置",
+        "fields": ["ratio", "resolution", "count"]
+      },
+      {
+        "section_key": "layout",
+        "section_name": "版式设置",
+        "fields": ["layoutMode", "backgroundMode"]
+      },
+      {
+        "section_key": "custom",
+        "section_name": "补充说明",
+        "fields": ["customPromptPatch"]
+      }
+    ]
+  },
+  {
+    "type_key": "specification_chart",
+    "sections": [
+      {
+        "section_key": "basic",
+        "section_name": "基础设置",
+        "fields": ["ratio", "resolution", "count"]
+      },
+      {
+        "section_key": "layout",
+        "section_name": "版式设置",
+        "fields": ["layoutMode", "textDensity", "copyPosition"]
+      },
+      {
+        "section_key": "custom",
+        "section_name": "补充说明",
+        "fields": ["customPromptPatch"]
+      }
+    ]
+  },
+  {
+    "type_key": "core_selling_point",
+    "sections": [
+      {
+        "section_key": "basic",
+        "section_name": "基础设置",
+        "fields": ["ratio", "resolution", "count"]
+      },
+      {
+        "section_key": "layout",
+        "section_name": "版式设置",
+        "fields": ["layoutMode", "textDensity", "copyPosition", "stylePreset"]
+      },
+      {
+        "section_key": "custom",
+        "section_name": "补充说明",
+        "fields": ["customPromptPatch"]
+      }
+    ]
+  },
+  {
+    "type_key": "scene_image",
+    "sections": [
+      {
+        "section_key": "basic",
+        "section_name": "基础设置",
+        "fields": ["ratio", "resolution", "count"]
+      },
+      {
+        "section_key": "style",
+        "section_name": "氛围设置",
+        "fields": ["backgroundMode", "stylePreset"]
+      },
+      {
+        "section_key": "custom",
+        "section_name": "补充说明",
+        "fields": ["customPromptPatch"]
+      }
+    ]
+  },
+  {
+    "type_key": "amazon_main",
+    "sections": [
+      {
+        "section_key": "basic",
+        "section_name": "基础设置",
+        "fields": ["ratio", "resolution", "count"]
+      },
+      {
+        "section_key": "subject",
+        "section_name": "主体设置",
+        "fields": ["subjectScale"]
+      },
+      {
+        "section_key": "custom",
+        "section_name": "补充说明",
+        "fields": ["customPromptPatch"]
+      }
+    ]
+  },
+  {
+    "type_key": "short_video_cover",
+    "sections": [
+      {
+        "section_key": "basic",
+        "section_name": "基础设置",
+        "fields": ["ratio", "resolution", "count"]
+      },
+      {
+        "section_key": "cover",
+        "section_name": "封面设置",
+        "fields": ["textDensity", "copyPosition", "stylePreset", "subjectScale"]
+      },
+      {
+        "section_key": "custom",
+        "section_name": "补充说明",
+        "fields": ["customPromptPatch"]
+      }
+    ]
+  }
+]

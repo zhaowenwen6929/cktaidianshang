@@ -1,0 +1,136 @@
+[
+  {
+    "type_key": "packaging_display",
+    "type_name": "包装展示图",
+    "extended_parameters": [
+      {
+        "param_key": "packaging_type_category",
+        "label": "包装类型分类",
+        "type": "enum",
+        "default_value": "通用包装",
+        "preset_values": ["通用包装", "礼盒包装", "袋装包装", "外盒包装", "套装包装"],
+        "description": "用于描述当前包装属于哪种展示分类。"
+      },
+      {
+        "param_key": "packaging_core_function",
+        "label": "包装核心功能",
+        "type": "enum",
+        "default_value": "保护运输",
+        "preset_values": ["保护运输", "礼赠呈现", "零售陈列", "组合收纳", "便携携带"],
+        "description": "用于说明包装在业务上的核心作用。"
+      },
+      {
+        "param_key": "accessory_list_display",
+        "label": "配件清单展示",
+        "type": "enum",
+        "default_value": "简洁展示",
+        "preset_values": ["简洁展示", "详细展示", "仅主件", "主件+配件", "主件+赠品"],
+        "description": "用于控制是否展示配件清单及其详细程度。"
+      },
+      {
+        "param_key": "usage_scenario_adaptation",
+        "label": "使用场景适配",
+        "type": "enum",
+        "default_value": "通用场景",
+        "preset_values": ["通用场景", "礼赠场景", "电商发货", "线下陈列", "收纳整理"],
+        "description": "用于控制包装展示时适配的使用场景。"
+      },
+      {
+        "param_key": "visual_presentation_mode",
+        "label": "视觉呈现形式",
+        "type": "enum",
+        "default_value": "完整展示",
+        "preset_values": ["完整展示", "开盒展示", "平铺展示", "组合展示", "局部细节展示"],
+        "description": "用于控制包装在画面中的呈现形式。"
+      }
+    ]
+  },
+  {
+    "type_key": "compatibility_info",
+    "type_name": "适配说明图",
+    "extended_parameters": [
+      {
+        "param_key": "compatibility_scope",
+        "label": "适配范围",
+        "type": "enum",
+        "default_value": "通用适配",
+        "preset_values": ["通用适配", "机型适配", "空间适配", "场景适配", "对象适配"],
+        "description": "用于控制适配说明的范围。"
+      },
+      {
+        "param_key": "compatibility_confidence",
+        "label": "适配确定度",
+        "type": "enum",
+        "default_value": "明确",
+        "preset_values": ["明确", "建议", "待确认", "高可信", "保守表达"],
+        "description": "用于控制适配关系表达的强弱。"
+      }
+    ]
+  },
+  {
+    "type_key": "specification_chart",
+    "type_name": "规格参数图",
+    "extended_parameters": [
+      {
+        "param_key": "spec_layout_mode",
+        "label": "参数版式",
+        "type": "enum",
+        "default_value": "表格式",
+        "preset_values": ["表格式", "卡片式", "标注式", "分区式"],
+        "description": "用于控制参数图的排版方式。"
+      },
+      {
+        "param_key": "spec_density",
+        "label": "参数密度",
+        "type": "enum",
+        "default_value": "中",
+        "preset_values": ["低", "中", "高"],
+        "description": "用于控制参数展示密度。"
+      }
+    ]
+  },
+  {
+    "type_key": "core_selling_point",
+    "type_name": "核心卖点图",
+    "extended_parameters": [
+      {
+        "param_key": "selling_point_count",
+        "label": "卖点数量",
+        "type": "enum",
+        "default_value": "1个",
+        "preset_values": ["1个", "2个", "3个"],
+        "description": "用于控制单图强化几个卖点。"
+      },
+      {
+        "param_key": "selling_point_focus",
+        "label": "卖点侧重",
+        "type": "enum",
+        "default_value": "主卖点",
+        "preset_values": ["主卖点", "次卖点", "利益点", "情绪价值", "功能价值"],
+        "description": "用于控制卖点图表达侧重。"
+      }
+    ]
+  },
+  {
+    "type_key": "scene_image",
+    "type_name": "场景图",
+    "extended_parameters": [
+      {
+        "param_key": "scene_type",
+        "label": "场景类型",
+        "type": "enum",
+        "default_value": "通用场景",
+        "preset_values": ["通用场景", "生活场景", "办公场景", "家居场景", "户外场景", "礼赠场景"],
+        "description": "用于控制场景图的场景类别。"
+      },
+      {
+        "param_key": "scene_intensity",
+        "label": "场景强度",
+        "type": "enum",
+        "default_value": "中",
+        "preset_values": ["低", "中", "高"],
+        "description": "用于控制场景感在画面中的强弱。"
+      }
+    ]
+  }
+]

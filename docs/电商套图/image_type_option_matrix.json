@@ -1,0 +1,130 @@
+[
+  {
+    "type_key": "product_white_bg",
+    "editable_options": ["ratio", "resolution", "count", "subjectScale", "customPromptPatch"]
+  },
+  {
+    "type_key": "multi_angle",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "detail_closeup",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "backgroundMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "detail_feature",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "backgroundMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "specification_chart",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "customPromptPatch"]
+  },
+  {
+    "type_key": "packaging_display",
+    "editable_options": ["ratio", "resolution", "count", "subjectScale", "backgroundMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "parts_accessories",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "size_reference",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "customPromptPatch"]
+  },
+  {
+    "type_key": "fit_explanation",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "core_selling_point",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "stylePreset", "customPromptPatch"]
+  },
+  {
+    "type_key": "pain_point_solution",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "customPromptPatch"]
+  },
+  {
+    "type_key": "usage_comparison",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "customPromptPatch"]
+  },
+  {
+    "type_key": "material_craft",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "backgroundMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "function_explain",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "customPromptPatch"]
+  },
+  {
+    "type_key": "advantage_summary",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "customPromptPatch"]
+  },
+  {
+    "type_key": "ingredient_highlight",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "customPromptPatch"]
+  },
+  {
+    "type_key": "usage_step",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "customPromptPatch"]
+  },
+  {
+    "type_key": "audience_match",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "customPromptPatch"]
+  },
+  {
+    "type_key": "compatibility_info",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "customPromptPatch"]
+  },
+  {
+    "type_key": "scene_image",
+    "editable_options": ["ratio", "resolution", "count", "backgroundMode", "stylePreset", "customPromptPatch"]
+  },
+  {
+    "type_key": "try_on_or_demo",
+    "editable_options": ["ratio", "resolution", "count", "backgroundMode", "stylePreset", "customPromptPatch"]
+  },
+  {
+    "type_key": "human_interaction",
+    "editable_options": ["ratio", "resolution", "count", "backgroundMode", "stylePreset", "customPromptPatch"]
+  },
+  {
+    "type_key": "hero_banner",
+    "editable_options": ["ratio", "resolution", "count", "subjectScale", "textDensity", "copyPosition", "stylePreset", "customPromptPatch"]
+  },
+  {
+    "type_key": "lifestyle_image",
+    "editable_options": ["ratio", "resolution", "count", "backgroundMode", "stylePreset", "textDensity", "customPromptPatch"]
+  },
+  {
+    "type_key": "holiday_campaign",
+    "editable_options": ["ratio", "resolution", "count", "textDensity", "copyPosition", "stylePreset", "customPromptPatch"]
+  },
+  {
+    "type_key": "styling_scene",
+    "editable_options": ["ratio", "resolution", "count", "backgroundMode", "stylePreset", "textDensity", "customPromptPatch"]
+  },
+  {
+    "type_key": "handheld_demo",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "customPromptPatch"]
+  },
+  {
+    "type_key": "space_fit",
+    "editable_options": ["ratio", "resolution", "count", "backgroundMode", "stylePreset", "customPromptPatch"]
+  },
+  {
+    "type_key": "amazon_main",
+    "editable_options": ["ratio", "resolution", "count", "subjectScale", "customPromptPatch"]
+  },
+  {
+    "type_key": "amazon_sub",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "customPromptPatch"]
+  },
+  {
+    "type_key": "short_video_cover",
+    "editable_options": ["ratio", "resolution", "count", "textDensity", "copyPosition", "stylePreset", "subjectScale", "customPromptPatch"]
+  },
+  {
+    "type_key": "b2b_industrial_sheet",
+    "editable_options": ["ratio", "resolution", "count", "layoutMode", "textDensity", "copyPosition", "customPromptPatch"]
+  }
+]

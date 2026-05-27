@@ -3897,7 +3897,7 @@ a {
 .ck-video-scene-grid-variation-chip.active {
   border-color: #ff8c42;
   background: #fff7f1;
-  color: #ff8c42;
+  color: #ff7a2f;
   font-weight: 600;
 }
 
@@ -3940,6 +3940,21 @@ a {
   color: #5d4c41;
   font-size: 12px;
   line-height: 18px;
+}
+
+.ck-video-scene-grid-footer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.ck-video-scene-grid-inline-field {
+  align-items: center;
+}
+
+.ck-video-scene-grid-select-field {
+  margin-bottom: 0;
 }
 
 .ck-video-scene-grid-credit {
@@ -4096,6 +4111,54 @@ a {
   width: 256px;
 }
 
+.ck-video-print-extend-panel {
+  gap: 14px;
+}
+
+.ck-video-print-extend-choice-panel {
+  padding: 12px;
+  border: 1px solid #f5ddcb;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffaf6 0%, #fffdfb 100%);
+}
+
+.ck-video-print-extend-footer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.ck-video-print-extend-summary-card {
+  display: grid;
+  gap: 4px;
+  min-height: 78px;
+  padding: 12px 14px;
+  border: 1px solid #f3ddcd;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.ck-video-print-extend-summary-card strong {
+  color: #111827;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.ck-video-print-extend-summary-card span,
+.ck-video-print-extend-summary-card em {
+  color: #7c8598;
+  font-size: 10px;
+  line-height: 14px;
+  font-style: normal;
+}
+
+.ck-video-print-extend-summary-card em {
+  color: #ff7a2f;
+  font-weight: 600;
+}
+
 .ck-inline-static-value {
   width: 256px;
   min-height: 32px;
@@ -4115,10 +4178,19 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .ck-pattern-repeat-type-row,
+  .ck-pattern-repeat-generate-row,
+  .ck-video-scene-grid-variation-row,
+  .ck-video-scene-grid-footer-row,
+  .ck-video-print-extend-footer-row {
+    grid-template-columns: 1fr;
+  }
+
   .ck-video-scene-grid-credit {
     width: 100%;
   }
 
+  .ck-pattern-repeat-ratio-row,
   .ck-video-print-extend-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -4134,17 +4206,41 @@ a {
   margin-bottom: 16px;
 }
 
+.ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field .ck-field-title {
+  display: block;
+  height: auto;
+  margin-bottom: 0;
+  white-space: normal;
+}
+
 .ck-partial-edit-helper-text {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #f7f9fc;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
   color: #5d667d;
   font-size: 12px;
   line-height: 18px;
 }
 
+.ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field > .ck-field-title,
+.ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field > .ck-structured-inline-input,
+.ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field > .ck-structured-color-field,
+.ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field > .ck-partial-edit-dynamic-list,
+.ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field > .ck-select {
+  width: 100%;
+}
+
 .ck-structured-inline-input {
-  width: 256px;
+  width: 100%;
+  max-width: 256px;
   height: 32px;
   border: 0;
   border-radius: 8px;
@@ -4157,6 +4253,67 @@ a {
 
 .ck-structured-inline-input.color-text {
   width: 176px;
+}
+
+.ck-partial-edit-dynamic-list-field {
+  align-items: flex-start;
+}
+
+.ck-partial-edit-dynamic-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.ck-partial-edit-dynamic-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ck-partial-edit-dynamic-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ck-partial-edit-dynamic-list-index {
+  min-width: 20px;
+  color: #7f8796;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-partial-edit-add-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d5dbeb;
+  border-radius: 8px;
+  background: #fff;
+  color: #6a63ff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ck-partial-edit-add-button:hover {
+  border-color: #6a63ff;
+  background: #f6f4ff;
+}
+
+.ck-pod-variation-content-status {
+  margin: 0;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #f5f7fd;
+  color: #8693ab;
+  font-size: 12px;
+  line-height: 32px;
 }
 
 .ck-structured-color-field {
@@ -4577,6 +4734,7 @@ a {
 .ck-pod-fusion-simple-library {
   max-width: 920px;
 }
+
 
 .ck-generation-rule-card {
   border: 1px solid #dbe1ec;

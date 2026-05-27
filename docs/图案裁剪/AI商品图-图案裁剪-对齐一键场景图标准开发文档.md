@@ -7,6 +7,7 @@
 > - [AI商品图-图案裁剪-mode_rules.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图案裁剪/AI商品图-图案裁剪-mode_rules.json)
 > - [AI商品图-图案裁剪-option_value_expansions.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图案裁剪/AI商品图-图案裁剪-option_value_expansions.json)
 > - [AI商品图-图案裁剪-category_dimension_direction_rules.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图案裁剪/AI商品图-图案裁剪-category_dimension_direction_rules.json)
+> - [AI商品图-图案裁剪-category_mode_adaptations.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图案裁剪/AI商品图-图案裁剪-category_mode_adaptations.json)
 
 ## 1. 真实功能与字段（Source of Truth）
 
@@ -41,11 +42,13 @@
 扩展预留（便于后续统一到多维规则）：
 
 - 品类规则（category）
+- 品类与模式适配规则（category-mode-adaptation）
 - 维度规则（dimension/ratio）
 - 方向规则（direction）
 
 以上预留已写入：
-[AI商品图-图案裁剪-category_dimension_direction_rules.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图案裁剪/AI商品图-图案裁剪-category_dimension_direction_rules.json)
+- [AI商品图-图案裁剪-category_dimension_direction_rules.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图案裁剪/AI商品图-图案裁剪-category_dimension_direction_rules.json)
+- [AI商品图-图案裁剪-category_mode_adaptations.json](/Users/zhaowenwen/CODEX/CKTAI电商/docs/图案裁剪/AI商品图-图案裁剪-category_mode_adaptations.json)
 
 ## 3. 最终提示词拼装顺序（严格）
 

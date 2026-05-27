@@ -567,7 +567,7 @@ type PlatformMock = {
   regions: PlatformRegionMock[];
 };
 
-type PartialEditFieldType = "text" | "input" | "image" | "select" | "color";
+type PartialEditFieldType = "text" | "input" | "image" | "select" | "color" | "dynamic-list" | "dynamic-color-list";
 
 type PartialEditFieldConfig = {
   key: string;
@@ -577,6 +577,7 @@ type PartialEditFieldConfig = {
   placeholder?: string;
   defaultValue?: string;
   options?: string[];
+  maxItems?: number;
 };
 
 type PartialEditTemplateConfig = {
@@ -2402,7 +2403,7 @@ const podPartialEditRequirementOptions = [
   "替换“文字”和元素",
   "去除商品印花",
   "商品换色",
-  "服饰做纹理",
+  "服饰贴纹理",
   "自定义提示词"
 ] as const;
 const podPartialEditCategoryOptions = ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"] as const;
@@ -2413,37 +2414,32 @@ const podPartialEditTemplates: Record<string, PartialEditTemplateConfig> = {
     label: "替换“文字”和元素",
     fields: [
       { key: "note", label: "说明", type: "text", defaultValue: "适用于海报、挂画、包装等需要替换局部文案和装饰元素的素材。" },
-      { key: "targetText", label: "目标文案", type: "input", placeholder: "请输入需要替换的新文案", defaultValue: "" },
-      { key: "elementDescription", label: "元素描述", type: "input", placeholder: "请输入需要替换或新增的元素说明", defaultValue: "" },
-      { key: "referenceImage", label: "参考图片", type: "image", placeholder: "请输入参考图片链接或说明", defaultValue: "" }
+      { key: "sourceContent", label: "需要替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
+      { key: "replacementContents", label: "替换后的内容", type: "dynamic-list", placeholder: "输入替换后的内容", defaultValue: JSON.stringify([""]), maxItems: 10 }
     ]
   },
   "去除商品印花": {
     key: "remove-print",
     label: "去除商品印花",
     fields: [
-      { key: "note", label: "说明", type: "text", defaultValue: "用于删除服饰、杯子、家居等商品表面的原始印花或图案。" },
-      { key: "removeArea", label: "去除区域", type: "select", options: ["胸前区域", "整面图案", "袖口区域", "局部小图", "自定义区域"], defaultValue: "整面图案" },
-      { key: "retainTexture", label: "保留材质", type: "select", options: ["是", "否"], defaultValue: "是" }
+      { key: "sourceContent", label: "需要替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
+      { key: "removeHint", label: "提示", type: "text", defaultValue: "将要替换的内容改为白底图" }
     ]
   },
   "商品换色": {
     key: "recolor-product",
     label: "商品换色",
     fields: [
-      { key: "note", label: "说明", type: "text", defaultValue: "适用于保持结构不变，仅替换商品主体或局部颜色。" },
-      { key: "targetPart", label: "目标部位", type: "select", options: ["主体", "边框", "背景", "局部细节", "自定义部位"], defaultValue: "主体" },
-      { key: "targetColor", label: "目标颜色", type: "color", defaultValue: "#111111" }
+      { key: "sourceContent", label: "需要替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
+      { key: "replacementColors", label: "替换后的颜色", type: "dynamic-color-list", defaultValue: JSON.stringify(["#111111"]), maxItems: 10 }
     ]
   },
-  "服饰做纹理": {
+  "服饰贴纹理": {
     key: "garment-texture",
-    label: "服饰做纹理",
+    label: "服饰贴纹理",
     fields: [
-      { key: "note", label: "说明", type: "text", defaultValue: "适用于服饰、布料类商品增加或替换纹理、材质与肌理效果。" },
-      { key: "textureType", label: "纹理类型", type: "select", options: ["牛仔纹理", "针织纹理", "皮革纹理", "做旧纹理", "自定义纹理"], defaultValue: "牛仔纹理" },
-      { key: "textureReference", label: "纹理参考图", type: "image", placeholder: "请输入纹理参考图链接或说明", defaultValue: "" },
-      { key: "textureDirection", label: "纹理方向", type: "input", placeholder: "例如：横向铺满、局部覆盖、沿轮廓分布", defaultValue: "" }
+      { key: "textureUpload", label: "上传纹理图", type: "image", defaultValue: "" },
+      { key: "textureHint", label: "提示", type: "text", defaultValue: "将上传的纹理贴到画面中的服饰" }
     ]
   },
   "自定义提示词": {
@@ -6930,6 +6926,13 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
         maxCount: 24,
         singleUploadMeta: "（单次最多上传{count}张）",
         hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "上传纹理图",
+        optional: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传1张）",
+        hintTemplate: "最多1张，支持JPG/PNG/WebP"
       }
     }
   },
@@ -9427,7 +9430,10 @@ function buildPartialEditTemplatePayload(requirement: string, fieldValues: Recor
         key: field.key,
         label: field.label,
         type: field.type,
-        value: fieldValues[field.key] ?? field.defaultValue ?? ""
+        value:
+          field.type === "dynamic-list"
+            ? (safeParseJson<string[]>(fieldValues[field.key], [""]) ?? [""]).filter((item) => item.trim())
+            : fieldValues[field.key] ?? field.defaultValue ?? ""
       }))
     },
     null,
@@ -9442,6 +9448,53 @@ function buildDefaultPartialEditFieldValues(requirement: string) {
     accumulator[field.key] = field.defaultValue ?? "";
     return accumulator;
   }, {});
+}
+
+function normalizePodPartialEditRequirement(value?: string) {
+  if (value === "服饰做纹理") return "服饰贴纹理";
+  return value;
+}
+
+function normalizePartialEditFieldValues(requirement: string, rawValues?: Record<string, string>) {
+  const defaults = buildDefaultPartialEditFieldValues(requirement);
+  const nextValues = { ...defaults, ...(rawValues ?? {}) };
+
+  if (requirement === "替换“文字”和元素") {
+    const legacySourceContent = nextValues.sourceContent || nextValues.targetText || "";
+    const legacyReplacementContents = nextValues.replacementContents
+      ? safeParseJson<string[]>(nextValues.replacementContents, [""]) ?? [""]
+      : [nextValues.elementDescription || ""].filter(Boolean);
+    nextValues.sourceContent = legacySourceContent;
+    nextValues.replacementContents = JSON.stringify(legacyReplacementContents.length ? legacyReplacementContents : [""]);
+    delete nextValues.targetText;
+    delete nextValues.elementDescription;
+    delete nextValues.referenceImage;
+  }
+
+  if (requirement === "去除商品印花") {
+    nextValues.sourceContent = nextValues.sourceContent || nextValues.removeArea || "";
+    delete nextValues.removeArea;
+    delete nextValues.retainTexture;
+  }
+
+  if (requirement === "商品换色") {
+    nextValues.sourceContent = nextValues.sourceContent || nextValues.targetPart || "";
+    const legacyColors = nextValues.replacementColors
+      ? safeParseJson<string[]>(nextValues.replacementColors, ["#111111"]) ?? ["#111111"]
+      : [nextValues.targetColor || "#111111"];
+    nextValues.replacementColors = JSON.stringify(legacyColors.length ? legacyColors : ["#111111"]);
+    delete nextValues.targetPart;
+    delete nextValues.targetColor;
+  }
+
+  if (requirement === "服饰贴纹理") {
+    nextValues.textureUpload = nextValues.textureUpload || nextValues.textureReference || "";
+    delete nextValues.textureType;
+    delete nextValues.textureReference;
+    delete nextValues.textureDirection;
+  }
+
+  return nextValues;
 }
 
 function getPodFusionPairGroups(selectionMap?: AdvancedSelectionMap) {
@@ -9501,22 +9554,39 @@ function PodPartialEditSetupSection({
   selectedValues,
   onSelectionChange,
   onSelectionMapChange,
-  onCreationModeChange
+  onCreationModeChange,
+  onOpenLibrary,
+  onAddUpload,
+  onRemoveUpload,
+  remainingStorageMb,
+  referenceUploads,
+  referenceFieldKey
 }: {
   uploads: UploadItem[];
   selectedValues?: AdvancedSelectionMap;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
+  onOpenLibrary?: (fieldKey: string) => void;
+  onAddUpload?: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemoveUpload?: (fieldKey: string, index: number) => void;
+  remainingStorageMb: number;
+  referenceUploads: UploadItem[];
+  referenceFieldKey: string;
 }) {
+  const parseDynamicListFieldValue = (value?: string) => safeParseJson<string[]>(value, [""]) ?? [""];
+  const normalizedSelectedRequirement = normalizePodPartialEditRequirement(selectedValues?.podPartialEditRequirement);
   const defaultRequirement =
-    selectedValues?.podPartialEditRequirement &&
-    podPartialEditRequirementOptions.includes(selectedValues.podPartialEditRequirement as (typeof podPartialEditRequirementOptions)[number])
-      ? selectedValues.podPartialEditRequirement
+    normalizedSelectedRequirement &&
+    podPartialEditRequirementOptions.includes(normalizedSelectedRequirement as (typeof podPartialEditRequirementOptions)[number])
+      ? normalizedSelectedRequirement
       : podPartialEditRequirementOptions[0];
   const defaultFieldValues =
-    safeParseJson<Record<string, string>>(selectedValues?.podPartialEditFieldValues, buildDefaultPartialEditFieldValues(defaultRequirement)) ??
-    buildDefaultPartialEditFieldValues(defaultRequirement);
+    normalizePartialEditFieldValues(
+      defaultRequirement,
+      safeParseJson<Record<string, string>>(selectedValues?.podPartialEditFieldValues, buildDefaultPartialEditFieldValues(defaultRequirement)) ??
+        buildDefaultPartialEditFieldValues(defaultRequirement)
+    );
   const [category, setCategory] = useState<string>(selectedValues?.podPartialEditCategory ?? inferPodPartialEditCategory(uploads));
   const [requirement, setRequirement] = useState<string>(defaultRequirement);
   const [outputCount, setOutputCount] = useState<string>(selectedValues?.podPartialEditOutputCount ?? podPartialEditOutputCountOptions[0]);
@@ -9525,18 +9595,11 @@ function PodPartialEditSetupSection({
     selectedValues?.podPartialEditInstructionText ?? buildPartialEditTemplatePayload(defaultRequirement, defaultFieldValues)
   );
 
-  useEffect(() => {
-    const inferred = inferPodPartialEditCategory(uploads);
-    if (inferred !== category) {
-      setCategory(inferred);
-    }
-  }, [category, uploads]);
-
   const template = podPartialEditTemplates[requirement];
 
   const handleRequirementChange = (nextRequirement: string) => {
     setRequirement(nextRequirement);
-    const nextFieldValues = buildDefaultPartialEditFieldValues(nextRequirement);
+    const nextFieldValues = normalizePartialEditFieldValues(nextRequirement, buildDefaultPartialEditFieldValues(nextRequirement));
     setFieldValues(nextFieldValues);
     setInstructionText(buildPartialEditTemplatePayload(nextRequirement, nextFieldValues));
   };
@@ -9547,6 +9610,30 @@ function PodPartialEditSetupSection({
       setInstructionText(buildPartialEditTemplatePayload(requirement, nextValues));
       return nextValues;
     });
+  };
+
+  const handleDynamicListItemChange = (key: string, index: number, value: string) => {
+    const items = parseDynamicListFieldValue(fieldValues[key]);
+    items[index] = value;
+    handleFieldValueChange(key, JSON.stringify(items));
+  };
+
+  const handleDynamicListAdd = (key: string, maxItems = 10) => {
+    const items = parseDynamicListFieldValue(fieldValues[key]);
+    if (items.length >= maxItems) return;
+    handleFieldValueChange(key, JSON.stringify([...items, ""]));
+  };
+
+  const handleDynamicColorListItemChange = (key: string, index: number, value: string) => {
+    const items = parseDynamicListFieldValue(fieldValues[key]);
+    items[index] = value;
+    handleFieldValueChange(key, JSON.stringify(items));
+  };
+
+  const handleDynamicColorListAdd = (key: string, maxItems = 10) => {
+    const items = parseDynamicListFieldValue(fieldValues[key]);
+    if (items.length >= maxItems) return;
+    handleFieldValueChange(key, JSON.stringify([...items, "#111111"]));
   };
 
   const handleInstructionTextChange = (value: string) => {
@@ -9614,6 +9701,32 @@ function PodPartialEditSetupSection({
             }
 
             if (field.type === "input" || field.type === "image") {
+              if (field.key === "textureUpload") {
+                return (
+                  <div className="ck-partial-edit-upload-field" key={field.key}>
+                    <ReferenceUploadSection
+                      config={{ label: field.label, optional: false }}
+                      fieldKey={referenceFieldKey}
+                      hint="最多1张，支持JPG/PNG/WebP"
+                      maxCount={1}
+                      onAdd={(fieldKey, nextValues) => {
+                        onAddUpload?.(fieldKey, nextValues);
+                        handleFieldValueChange(field.key, nextValues[0]?.name ?? "");
+                      }}
+                      onAtLimit={() => undefined}
+                      onOpenLibrary={(fieldKey) => onOpenLibrary?.(fieldKey)}
+                      onRejectedUpload={() => undefined}
+                      onRemove={(fieldKey, index) => {
+                        onRemoveUpload?.(fieldKey, index);
+                        handleFieldValueChange(field.key, "");
+                      }}
+                      remainingStorageMb={remainingStorageMb}
+                      values={referenceUploads}
+                    />
+                  </div>
+                );
+              }
+
               return (
                 <div className="ck-inline-field" key={field.key}>
                   <FieldTitle label={field.label} required />
@@ -9624,6 +9737,73 @@ function PodPartialEditSetupSection({
                     type="text"
                     value={fieldValues[field.key] ?? ""}
                   />
+                </div>
+              );
+            }
+
+            if (field.type === "dynamic-color-list") {
+              const items = parseDynamicListFieldValue(fieldValues[field.key]);
+              const maxItems = field.maxItems ?? 10;
+              const canAddMore = items.length < maxItems;
+
+              return (
+                <div className="ck-inline-field ck-partial-edit-dynamic-list-field" key={field.key}>
+                  <FieldTitle label={`${field.label}1`} required />
+                  <div className="ck-partial-edit-dynamic-list">
+                    {items.map((item, index) => (
+                      <div className="ck-partial-edit-dynamic-color-row" key={`${field.key}-${index}`}>
+                        <input
+                          className="ck-structured-color-picker"
+                          onChange={(event) => handleDynamicColorListItemChange(field.key, index, event.target.value)}
+                          type="color"
+                          value={item || "#111111"}
+                        />
+                        <input
+                          className="ck-structured-inline-input color-text"
+                          onChange={(event) => handleDynamicColorListItemChange(field.key, index, event.target.value)}
+                          type="text"
+                          value={item}
+                        />
+                        <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
+                      </div>
+                    ))}
+                    {canAddMore ? (
+                      <button className="ck-partial-edit-add-button" onClick={() => handleDynamicColorListAdd(field.key, maxItems)} type="button">
+                        +
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            }
+
+            if (field.type === "dynamic-list") {
+              const items = parseDynamicListFieldValue(fieldValues[field.key]);
+              const maxItems = field.maxItems ?? 10;
+              const canAddMore = items.length < maxItems;
+
+              return (
+                <div className="ck-inline-field ck-partial-edit-dynamic-list-field" key={field.key}>
+                  <FieldTitle label={`${field.label}1`} required />
+                  <div className="ck-partial-edit-dynamic-list">
+                    {items.map((item, index) => (
+                      <div className="ck-partial-edit-dynamic-list-row" key={`${field.key}-${index}`}>
+                        <input
+                          className="ck-structured-inline-input"
+                          onChange={(event) => handleDynamicListItemChange(field.key, index, event.target.value)}
+                          placeholder={field.placeholder}
+                          type="text"
+                          value={item}
+                        />
+                        <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
+                      </div>
+                    ))}
+                    {canAddMore ? (
+                      <button className="ck-partial-edit-add-button" onClick={() => handleDynamicListAdd(field.key, maxItems)} type="button">
+                        +
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               );
             }
@@ -10007,7 +10187,7 @@ function PodFusionSetupSection({
   };
 
   return (
-    <div className="ck-form-block">
+    <div className="ck-form-block ck-pod-fusion-panel">
       <div className="ck-form-block">
         <FieldTitle label="选择方式" required />
         <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 180 }}>
@@ -10445,31 +10625,39 @@ function PodVariationSetupSection({
           />
         </div>
       ) : (
-        <div className="ck-inline-field ck-pod-variation-inline-field">
-          <FieldTitle label="裂变内容" required />
-          <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 120 }}>
-            <button
-              className={!contentEnabled ? "active" : ""}
-              onClick={() => {
-                skipSelectedValuesSyncRef.current = true;
-                setContentEnabled(false);
-              }}
-              type="button"
-            >
-              未开启
-            </button>
-            <button
-              className={contentEnabled ? "active" : ""}
-              onClick={() => {
-                skipSelectedValuesSyncRef.current = true;
-                setContentEnabled(true);
-              }}
-              type="button"
-            >
-              开启
-            </button>
+        <>
+          <div className="ck-inline-field ck-pod-variation-inline-field">
+            <FieldTitle label="裂变内容" required />
+            <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 120 }}>
+              <button
+                className={!contentEnabled ? "active" : ""}
+                onClick={() => {
+                  skipSelectedValuesSyncRef.current = true;
+                  setContentEnabled(false);
+                }}
+                type="button"
+              >
+                未开启
+              </button>
+              <button
+                className={contentEnabled ? "active" : ""}
+                onClick={() => {
+                  skipSelectedValuesSyncRef.current = true;
+                  setContentEnabled(true);
+                }}
+                type="button"
+              >
+                开启
+              </button>
+            </div>
           </div>
-        </div>
+          {contentEnabled ? (
+            <div className="ck-inline-field ck-pod-variation-inline-field">
+              <FieldTitle label="裂变内容结果" required />
+              <div className="ck-pod-variation-content-status">仅裂变素材中的图片部分</div>
+            </div>
+          ) : null}
+        </>
       )}
 
       {mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? (
@@ -10912,7 +11100,7 @@ function VideoSceneGridSetupSection({
   }, [detailDimensions, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, ratio, totalCredits, variation]);
 
   return (
-    <div className="ck-form-block">
+    <div className="ck-form-block ck-video-scene-grid-panel">
       <div className="ck-form-block">
         <FieldTitle label="变化维度" required />
         <div className="ck-video-scene-grid-mode-row">
@@ -10969,12 +11157,23 @@ function VideoSceneGridSetupSection({
         </div>
       </div>
 
-      <div className="ck-inline-field ck-aligned-inline-field">
-        <FieldTitle label="出图比例" required />
-        <SelectField hideLabel label="出图比例" onChange={setRatio} options={[...videoSceneGridRatioOptions]} required value={ratio} />
-      </div>
+      <div className="ck-video-scene-grid-footer-row">
+        <div className="ck-inline-field ck-aligned-inline-field ck-video-scene-grid-inline-field">
+          <FieldTitle label="出图比例" required />
+          <SelectField
+            className="ck-video-scene-grid-select-field"
+            hideLabel
+            label="出图比例"
+            onChange={setRatio}
+            options={[...videoSceneGridRatioOptions]}
+            required
+            value={ratio}
+            width={120}
+          />
+        </div>
 
-      <NumberStepperField label="生图数量" max={10} min={2} onChange={setOutputCount} required value={outputCount} />
+        <NumberStepperField label="生图数量" max={10} min={2} onChange={setOutputCount} required value={outputCount} />
+      </div>
     </div>
   );
 }
@@ -16552,7 +16751,10 @@ function ConfigPanel({
     if (section === "pod-partial-edit-setup" && tool.key === "pod-partial-edit") {
       return (
         <PodPartialEditSetupSection
+          onAddUpload={onAddUpload}
           onCreationModeChange={setCreationModeSelection}
+          onOpenLibrary={onOpenLibrary}
+          onRemoveUpload={onRemoveUpload}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
             const sectionKeys = [
@@ -16570,6 +16772,9 @@ function ConfigPanel({
               return { ...nextSelections, ...values };
             });
           }}
+          referenceFieldKey={refUploadKey}
+          referenceUploads={uploads[refUploadKey] ?? []}
+          remainingStorageMb={remainingStorageMb}
           selectedValues={advancedSettingSelections}
           uploads={uploads[mainUploadKey] ?? []}
         />
@@ -16987,6 +17192,9 @@ function ConfigPanel({
     }
 
     if (section === "upload-reference" && refUploadConfig) {
+      if (tool.key === "pod-partial-edit" && normalizePodPartialEditRequirement(advancedSettingSelections.podPartialEditRequirement) !== "服饰贴纹理") {
+        return null;
+      }
       return (
         <ReferenceUploadSection
           config={refUploadConfig}
