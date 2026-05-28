@@ -42,7 +42,7 @@
     "podVariationBackgroundColor": ["随机", "黑色", "白色"],
     "podVariationBurstContent": ["改主体", "改姿势", "改背景", "✨爆改✨"],
     "podVariationContentEnabled": ["true", "false"],
-    "podVariationContent": ["仅裂变素材中的图片部分", "未开启"],
+    "podVariationContent": ["仅裂变素材的图案部分", "裂变商品"],
     "podVariationShape": ["默认", "圆形"],
     "podVariationOutputCount": ["1", "2", "3", "4", "5", "6", "7", "8"]
   }
@@ -63,8 +63,7 @@
 + `podVariationMode=爆款二创` 时显示：`podVariationBurstContent / podVariationOutputCount`
 + `podVariationMode=通用` 时显示：`podVariationReferenceStrength / podVariationContentEnabled / podVariationShape / podVariationOutputCount`
 + 非 `爆款二创` 模式下：
-  - `podVariationContentEnabled=true` -> `podVariationContent=仅裂变素材中的图片部分`
-  - `podVariationContentEnabled=false` -> `podVariationContent=未开启`
+  - 非 `爆款二创` 模式下，`podVariationContent` 由用户直接选择：`裂变商品 / 仅裂变素材的图案部分`
 + `爆款二创` 模式下：
   - `podVariationContent=podVariationBurstContent`
 
@@ -296,8 +295,8 @@
       "fieldKey": "podVariationContent",
       "name": "裂变内容开关结果",
       "values": {
-        "仅裂变素材中的图片部分": { "valuePrompt": "仅对素材中的图片主体进行裂变，不改动无关信息层。" },
-        "未开启": { "valuePrompt": "未开启额外裂变内容约束，按模式与品类规则执行。" }
+        "裂变商品": { "valuePrompt": "围绕整件商品效果做裂变，允许商品整体风格、构图和表现方式参与变化。" },
+        "仅裂变素材的图案部分": { "valuePrompt": "仅对素材中的图案主体进行裂变，不改动无关商品结构与信息层。" }
       }
     },
     "podVariationShape": {
@@ -413,7 +412,7 @@
   "podVariationDivergenceLevel": "中",
   "podVariationBackgroundColor": "黑色",
   "podVariationContentEnabled": "true",
-  "podVariationContent": "仅裂变素材中的图片部分",
+  "podVariationContent": "仅裂变素材的图案部分",
   "podVariationShape": "圆形",
   "podVariationOutputCount": "4"
 }

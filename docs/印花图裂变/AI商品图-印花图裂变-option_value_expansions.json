@@ -55,8 +55,8 @@
     "podVariationContent": {
       "fieldKey": "podVariationContent",
       "values": {
-        "仅裂变素材中的图片部分": { "valuePrompt": "仅对素材中的图片主体进行裂变，不改动无关信息层。" },
-        "未开启": { "valuePrompt": "未开启额外裂变内容约束，按模式与品类规则执行。" }
+        "裂变商品": { "valuePrompt": "围绕整件商品效果做裂变，允许商品整体风格、构图和表现方式参与变化。" },
+        "仅裂变素材的图案部分": { "valuePrompt": "仅对素材中的图案主体进行裂变，不改动无关商品结构与信息层。" }
       }
     },
     "podVariationShape": {

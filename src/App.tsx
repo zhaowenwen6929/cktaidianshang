@@ -2395,6 +2395,7 @@ const podCropModeOptions = [
 const podVariationCategoryOptions = ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"] as const;
 const podVariationModeOptions = ["艺术设计", "文字强化", "爆款二创", "通用"] as const;
 const podVariationBurstOptions = ["改主体", "改姿势", "改背景", "✨爆改✨"] as const;
+const podVariationContentOptions = ["裂变商品", "仅裂变素材中的图案部分"] as const;
 const podVariationShapeOptions = ["默认", "圆形"] as const;
 const podVariationReferenceStyleLevels = ["低", "中", "高"] as const;
 const podVariationDivergenceLevels = ["低", "中", "高"] as const;
@@ -2414,7 +2415,7 @@ const podPartialEditTemplates: Record<string, PartialEditTemplateConfig> = {
     label: "替换“文字”和元素",
     fields: [
       { key: "note", label: "说明", type: "text", defaultValue: "适用于海报、挂画、包装等需要替换局部文案和装饰元素的素材。" },
-      { key: "sourceContent", label: "需要替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
+      { key: "sourceContent", label: "需替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
       { key: "replacementContents", label: "替换后的内容", type: "dynamic-list", placeholder: "输入替换后的内容", defaultValue: JSON.stringify([""]), maxItems: 10 }
     ]
   },
@@ -2422,7 +2423,7 @@ const podPartialEditTemplates: Record<string, PartialEditTemplateConfig> = {
     key: "remove-print",
     label: "去除商品印花",
     fields: [
-      { key: "sourceContent", label: "需要替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
+      { key: "sourceContent", label: "需替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
       { key: "removeHint", label: "提示", type: "text", defaultValue: "将要替换的内容改为白底图" }
     ]
   },
@@ -2430,7 +2431,7 @@ const podPartialEditTemplates: Record<string, PartialEditTemplateConfig> = {
     key: "recolor-product",
     label: "商品换色",
     fields: [
-      { key: "sourceContent", label: "需要替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
+      { key: "sourceContent", label: "需替换的内容", type: "input", placeholder: "输入画面中需要替换的内容", defaultValue: "" },
       { key: "replacementColors", label: "替换后的颜色", type: "dynamic-color-list", defaultValue: JSON.stringify(["#111111"]), maxItems: 10 }
     ]
   },
@@ -9748,10 +9749,11 @@ function PodPartialEditSetupSection({
 
               return (
                 <div className="ck-inline-field ck-partial-edit-dynamic-list-field" key={field.key}>
-                  <FieldTitle label={`${field.label}1`} required />
+                  <FieldTitle label={field.label} required />
                   <div className="ck-partial-edit-dynamic-list">
                     {items.map((item, index) => (
                       <div className="ck-partial-edit-dynamic-color-row" key={`${field.key}-${index}`}>
+                        <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
                         <input
                           className="ck-structured-color-picker"
                           onChange={(event) => handleDynamicColorListItemChange(field.key, index, event.target.value)}
@@ -9764,7 +9766,6 @@ function PodPartialEditSetupSection({
                           type="text"
                           value={item}
                         />
-                        <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
                       </div>
                     ))}
                     {canAddMore ? (
@@ -9784,10 +9785,11 @@ function PodPartialEditSetupSection({
 
               return (
                 <div className="ck-inline-field ck-partial-edit-dynamic-list-field" key={field.key}>
-                  <FieldTitle label={`${field.label}1`} required />
+                  <FieldTitle label={field.label} required />
                   <div className="ck-partial-edit-dynamic-list">
                     {items.map((item, index) => (
                       <div className="ck-partial-edit-dynamic-list-row" key={`${field.key}-${index}`}>
+                        <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
                         <input
                           className="ck-structured-inline-input"
                           onChange={(event) => handleDynamicListItemChange(field.key, index, event.target.value)}
@@ -9795,7 +9797,6 @@ function PodPartialEditSetupSection({
                           type="text"
                           value={item}
                         />
-                        <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
                       </div>
                     ))}
                     {canAddMore ? (
@@ -10346,7 +10347,11 @@ function PodVariationSetupSection({
       ? selectedValues.podVariationBurstContent
       : podVariationBurstOptions[0]
   );
-  const [contentEnabled, setContentEnabled] = useState(selectedValues?.podVariationContentEnabled === "true");
+  const [content, setContent] = useState(
+    selectedValues?.podVariationContent && podVariationContentOptions.includes(selectedValues.podVariationContent as typeof podVariationContentOptions[number])
+      ? selectedValues.podVariationContent
+      : podVariationContentOptions[0]
+  );
   const [shape, setShape] = useState(selectedValues?.podVariationShape ?? "默认");
   const [outputCount, setOutputCount] = useState(Number(selectedValues?.podVariationOutputCount ?? "1") || 1);
 
@@ -10382,7 +10387,10 @@ function PodVariationSetupSection({
       divergenceLevel: selectedValues.podVariationDivergenceLevel ?? podVariationDivergenceLevels[0],
       backgroundColor: selectedValues.podVariationBackgroundColor ?? "随机",
       burstContent: selectedValues.podVariationBurstContent ?? podVariationBurstOptions[0],
-      contentEnabled: selectedValues.podVariationContentEnabled ?? "false",
+      content:
+        selectedValues.podVariationContent && podVariationContentOptions.includes(selectedValues.podVariationContent as typeof podVariationContentOptions[number])
+          ? selectedValues.podVariationContent
+          : podVariationContentOptions[0],
       shape: selectedValues.podVariationShape ?? "默认",
       outputCount: selectedValues.podVariationOutputCount ?? "1"
     });
@@ -10423,11 +10431,12 @@ function PodVariationSetupSection({
     if (selectedValues?.podVariationBurstContent && selectedValues.podVariationBurstContent !== burstContent) {
       setBurstContent(selectedValues.podVariationBurstContent);
     }
-    if (selectedValues?.podVariationContentEnabled) {
-      const nextContentEnabled = selectedValues.podVariationContentEnabled === "true";
-      if (nextContentEnabled !== contentEnabled) {
-        setContentEnabled(nextContentEnabled);
-      }
+    if (
+      selectedValues?.podVariationContent &&
+      podVariationContentOptions.includes(selectedValues.podVariationContent as typeof podVariationContentOptions[number]) &&
+      selectedValues.podVariationContent !== content
+    ) {
+      setContent(selectedValues.podVariationContent);
     }
     if (selectedValues?.podVariationShape && selectedValues.podVariationShape !== shape) {
       setShape(selectedValues.podVariationShape);
@@ -10440,7 +10449,7 @@ function PodVariationSetupSection({
     backgroundColor,
     burstContent,
     category,
-    contentEnabled,
+    content,
     divergenceLevel,
     mode,
     outputCount,
@@ -10451,7 +10460,6 @@ function PodVariationSetupSection({
   ]);
 
   useEffect(() => {
-    const commonContent = "仅裂变素材中的图片部分";
     const nextSelectionMap = {
       podVariationCategory: category,
       podVariationMode: mode,
@@ -10460,8 +10468,8 @@ function PodVariationSetupSection({
       podVariationDivergenceLevel: divergenceLevel,
       podVariationBackgroundColor: backgroundColor,
       podVariationBurstContent: burstContent,
-      podVariationContentEnabled: String(contentEnabled),
-      podVariationContent: mode === "爆款二创" ? burstContent : contentEnabled ? commonContent : "未开启",
+      podVariationContentEnabled: mode === "爆款二创" ? "false" : "true",
+      podVariationContent: mode === "爆款二创" ? burstContent : content,
       podVariationShape: shape,
       podVariationOutputCount: String(outputCount)
     };
@@ -10474,7 +10482,7 @@ function PodVariationSetupSection({
       divergenceLevel: nextSelectionMap.podVariationDivergenceLevel,
       backgroundColor: nextSelectionMap.podVariationBackgroundColor,
       burstContent: nextSelectionMap.podVariationBurstContent,
-      contentEnabled: nextSelectionMap.podVariationContentEnabled,
+      content: nextSelectionMap.podVariationContent,
       shape: nextSelectionMap.podVariationShape,
       outputCount: nextSelectionMap.podVariationOutputCount
     });
@@ -10487,7 +10495,7 @@ function PodVariationSetupSection({
         mode === "文字强化" || mode === "通用" ? `原图参考强度 ${referenceStrength.toFixed(2)}` : "",
         mode === "文字强化" ? `创意发散强度 ${divergenceLevel}` : "",
         mode === "文字强化" ? `指定背景色 ${backgroundColor}` : "",
-        `裂变内容 ${mode === "爆款二创" ? burstContent : contentEnabled ? commonContent : "未开启"}`,
+        `裂变内容 ${mode === "爆款二创" ? burstContent : content}`,
         mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? `形状 ${shape}` : "",
         `出图数量 ${outputCount}`
       ].filter(Boolean)
@@ -10496,7 +10504,7 @@ function PodVariationSetupSection({
     backgroundColor,
     burstContent,
     category,
-    contentEnabled,
+    content,
     divergenceLevel,
     mode,
     onSelectionChange,
@@ -10509,22 +10517,17 @@ function PodVariationSetupSection({
 
   return (
     <div className="ck-form-block">
-      <div className="ck-inline-field ck-pod-variation-inline-field">
-        <FieldTitle label="品类" required />
-        <SelectField
-          className="ck-pod-variation-inline-field"
-          hideLabel
-          label="品类"
-          onChange={(value) => {
-            skipSelectedValuesSyncRef.current = true;
-            hasManualCategoryRef.current = true;
-            setCategory(value);
-          }}
-          options={[...podVariationCategoryOptions]}
-          required
-          value={category}
-        />
-      </div>
+      <AdaptiveChoiceField
+        label="品类"
+        onChange={(value) => {
+          skipSelectedValuesSyncRef.current = true;
+          hasManualCategoryRef.current = true;
+          setCategory(value);
+        }}
+        options={podVariationCategoryOptions.map((option) => ({ key: option, label: option }))}
+        required
+        value={category}
+      />
 
       <div className="ck-form-block">
         <FieldTitle label="选择模式" required />
@@ -10625,39 +10628,20 @@ function PodVariationSetupSection({
           />
         </div>
       ) : (
-        <>
-          <div className="ck-inline-field ck-pod-variation-inline-field">
-            <FieldTitle label="裂变内容" required />
-            <div className="ck-mini-switch" style={{ gridTemplateColumns: "repeat(2, 1fr)", width: 120 }}>
-              <button
-                className={!contentEnabled ? "active" : ""}
-                onClick={() => {
-                  skipSelectedValuesSyncRef.current = true;
-                  setContentEnabled(false);
-                }}
-                type="button"
-              >
-                未开启
-              </button>
-              <button
-                className={contentEnabled ? "active" : ""}
-                onClick={() => {
-                  skipSelectedValuesSyncRef.current = true;
-                  setContentEnabled(true);
-                }}
-                type="button"
-              >
-                开启
-              </button>
-            </div>
-          </div>
-          {contentEnabled ? (
-            <div className="ck-inline-field ck-pod-variation-inline-field">
-              <FieldTitle label="裂变内容结果" required />
-              <div className="ck-pod-variation-content-status">仅裂变素材中的图片部分</div>
-            </div>
-          ) : null}
-        </>
+        <div className="ck-inline-field ck-pod-variation-inline-field">
+          <FieldTitle label="裂变内容" required />
+          <SelectField
+            hideLabel
+            label="裂变内容"
+            onChange={(value) => {
+              skipSelectedValuesSyncRef.current = true;
+              setContent(value);
+            }}
+            options={[...podVariationContentOptions]}
+            required
+            value={content}
+          />
+        </div>
       )}
 
       {mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? (

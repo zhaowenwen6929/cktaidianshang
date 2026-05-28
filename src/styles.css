@@ -3656,12 +3656,25 @@ a {
 
 .ck-pod-variation-inline-field .ck-field-title {
   white-space: nowrap;
+  flex: 0 0 auto;
+  margin-right: 12px;
 }
 
 .ck-pod-variation-inline-field .ck-select,
 .ck-pod-variation-inline-field .ck-select-dropdown,
 .ck-pod-variation-inline-field .ck-mini-switch {
-  width: 256px !important;
+  width: auto !important;
+  min-width: 160px;
+  flex: 1 1 auto;
+}
+
+.ck-pod-variation-inline-field .ck-select-dropdown {
+  max-width: 100%;
+}
+
+.ck-pod-variation-inline-field .ck-select {
+  width: 100% !important;
+  white-space: nowrap;
 }
 
 .ck-pod-variation-inline-field > .ck-form-block {
@@ -4282,10 +4295,18 @@ a {
 }
 
 .ck-partial-edit-dynamic-list-index {
-  min-width: 20px;
-  color: #7f8796;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #eef1ff;
+  color: #5f5ae6;
   font-size: 12px;
-  line-height: 18px;
+  line-height: 1;
+  font-weight: 600;
+  flex: 0 0 24px;
 }
 
 .ck-partial-edit-add-button {
