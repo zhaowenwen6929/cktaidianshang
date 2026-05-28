@@ -11,10 +11,10 @@
 2. 系统基于上传文件名关键词自动推断默认 `podVariationCategory`，用户也可手动改写。
 3. 用户选择裂变模式：`艺术设计 / 文字强化 / 爆款二创 / 通用`。
 4. 系统根据当前模式动态展示对应参数：
-   - `艺术设计`：`参考样式`、`裂变内容开关`、`形状`
-   - `文字强化`：`原图参考强度`、`创意发散强度`、`指定背景色`、`裂变内容开关`、`形状`
+   - `艺术设计`：`参考样式`、`裂变内容`、`形状`
+   - `文字强化`：`原图参考强度`、`创意发散强度`、`指定背景色`、`裂变内容`、`形状`
    - `爆款二创`：`裂变内容`
-   - `通用`：`原图参考强度`、`裂变内容开关`、`形状`
+   - `通用`：`原图参考强度`、`裂变内容`、`形状`
 5. 用户选择 `出图数量`。
 6. 系统按 `模式规则 + 品类规则 + 设置值扩展 + 通用硬约束` 组装最终提示词并提交。
 7. 输出可直接用于 POD 裂变、连续图、上版等后续链路的印花变体结果。
@@ -41,8 +41,7 @@
     "podVariationDivergenceLevel": ["低", "中", "高"],
     "podVariationBackgroundColor": ["随机", "黑色", "白色"],
     "podVariationBurstContent": ["改主体", "改姿势", "改背景", "✨爆改✨"],
-    "podVariationContentEnabled": ["true", "false"],
-    "podVariationContent": ["仅裂变素材的图案部分", "裂变商品"],
+    "podVariationContent": ["裂变商品", "仅裂变素材中的图案部分"],
     "podVariationShape": ["默认", "圆形"],
     "podVariationOutputCount": ["1", "2", "3", "4", "5", "6", "7", "8"]
   }
@@ -54,18 +53,20 @@
 + 当前页面无 `supplement`
 + 当前页面无显式 `AI assist`
 + 当前页面未单独调用 `onCreationModeChange`，`podVariationOutputCount` 是 setup 内部字段，不是独立创作模式面板字段
-+ `podVariationContent` 不是用户直接填写字段，而是由 `podVariationMode + podVariationContentEnabled + podVariationBurstContent` 派生出的内部字段
++ 当前前端展示的 `裂变内容` 会根据模式映射到不同真实字段：非 `爆款二创` 使用 `podVariationContent`，`爆款二创` 使用 `podVariationBurstContent`
++ `podVariationContentEnabled` 仍存在于内部 selection map 中，但已不是当前页面对用户暴露的功能参数，不应作为文档主链路字段对外描述
 + `podVariationCategory` 默认通过上传文件名关键词推断，不是大模型图片识别结果
 
 ### 真实联动规则
-+ `podVariationMode=艺术设计` 时显示：`podVariationReferenceStyleLevel / podVariationContentEnabled / podVariationShape / podVariationOutputCount`
-+ `podVariationMode=文字强化` 时显示：`podVariationReferenceStrength / podVariationDivergenceLevel / podVariationBackgroundColor / podVariationContentEnabled / podVariationShape / podVariationOutputCount`
++ `podVariationMode=艺术设计` 时显示：`podVariationReferenceStyleLevel / podVariationContent / podVariationShape / podVariationOutputCount`
++ `podVariationMode=文字强化` 时显示：`podVariationReferenceStrength / podVariationDivergenceLevel / podVariationBackgroundColor / podVariationContent / podVariationShape / podVariationOutputCount`
 + `podVariationMode=爆款二创` 时显示：`podVariationBurstContent / podVariationOutputCount`
-+ `podVariationMode=通用` 时显示：`podVariationReferenceStrength / podVariationContentEnabled / podVariationShape / podVariationOutputCount`
++ `podVariationMode=通用` 时显示：`podVariationReferenceStrength / podVariationContent / podVariationShape / podVariationOutputCount`
 + 非 `爆款二创` 模式下：
-  - 非 `爆款二创` 模式下，`podVariationContent` 由用户直接选择：`裂变商品 / 仅裂变素材的图案部分`
+  - `podVariationContent` 由用户直接选择：`裂变商品 / 仅裂变素材中的图案部分`
 + `爆款二创` 模式下：
-  - `podVariationContent=podVariationBurstContent`
+  - 页面展示文案仍叫 `裂变内容`，但真实字段为 `podVariationBurstContent`
+  - 提示词拼装时应注入 `podVariationBurstContentValuePrompt`
 
 ## 1.1 计费与出图数量
 ```json
@@ -293,10 +294,10 @@
     },
     "podVariationContent": {
       "fieldKey": "podVariationContent",
-      "name": "裂变内容开关结果",
+      "name": "裂变内容",
       "values": {
         "裂变商品": { "valuePrompt": "围绕整件商品效果做裂变，允许商品整体风格、构图和表现方式参与变化。" },
-        "仅裂变素材的图案部分": { "valuePrompt": "仅对素材中的图案主体进行裂变，不改动无关商品结构与信息层。" }
+        "仅裂变素材中的图案部分": { "valuePrompt": "仅对素材中的图案主体进行裂变，不改动无关商品结构与信息层。" }
       }
     },
     "podVariationShape": {
@@ -367,6 +368,7 @@
 + `requiredRule / forbiddenRule / universalNegative / universalQuality` 属于不可裁剪段
 + token 超限时，仅允许按 `supplement -> optionValuePrompts -> categoryRulePrompt -> modeRulePrompt` 顺序裁剪
 + 拼装时只注入当前模式真实生效的字段，不要把所有字段都拼进去
++ `裂变内容` 相关字段必须按当前模式二选一注入：`爆款二创` 注入 `podVariationBurstContentValuePrompt`，其余模式注入 `podVariationContentValuePrompt`
 + `podVariationOutputCount` 不直接转为提示词语义约束，但需作为任务参数保留给执行层
 
 ### 通用负向约束
@@ -391,8 +393,7 @@
 [原图参考强度] {podVariationReferenceStrengthValuePrompt}
 [创意发散强度] {podVariationDivergenceLevelValuePrompt}
 [指定背景色] {podVariationBackgroundColorValuePrompt}
-[裂变内容] {podVariationBurstContentValuePrompt}
-[裂变内容开关结果] {podVariationContentValuePrompt}
+[裂变内容] {activeVariationContentValuePrompt}
 [形状] {podVariationShapeValuePrompt}
 必须满足：{requiredJoined}
 禁止：{forbiddenJoined}
@@ -400,6 +401,13 @@
 {universalQualityPrompt}
 补充说明：{supplementText}
 ```
+
+其中：
+
++ `activeVariationContentValuePrompt` 的取值规则为：
+  - `podVariationMode=爆款二创` -> `podVariationBurstContentValuePrompt`
+  - 其他模式 -> `podVariationContentValuePrompt`
++ 未生效字段整段不拼接。例如 `文字强化` 不应拼接 `参考样式`，`爆款二创` 不应拼接 `形状`
 
 ## 7. 拼装 Demo（输入 + 输出）
 ### 7.1 Demo 输入
@@ -411,8 +419,7 @@
   "podVariationReferenceStrength": "0.65",
   "podVariationDivergenceLevel": "中",
   "podVariationBackgroundColor": "黑色",
-  "podVariationContentEnabled": "true",
-  "podVariationContent": "仅裂变素材的图案部分",
+  "podVariationContent": "仅裂变素材中的图案部分",
   "podVariationShape": "圆形",
   "podVariationOutputCount": "4"
 }
@@ -433,12 +440,46 @@
 [原图参考强度] 原图参考强度中等，在保真和创新之间保持平衡。
 [创意发散强度] 创意变化适中，在稳定性和新鲜感间平衡。
 [指定背景色] 使用黑色背景策略，强化高亮主体和色彩对比。
-[裂变内容开关结果] 仅对素材中的图片主体进行裂变，不改动无关信息层。
+[裂变内容] 仅对素材中的图案主体进行裂变，不改动无关商品结构与信息层。
 [形状] 按圆形适配构图，确保中心聚焦与边缘闭合完整。
 
 必须满足：文字信息清晰可读且与主题一致、图文层级明确，不互相遮挡、可在指定背景色下保持对比度、输出具备电商传播与印花生产可用性、中心视觉明确、高对比可读、缩略图下仍清晰。
 
 禁止：乱码、错拼、不可读文字、文字过小或被装饰吞没、背景喧宾夺主导致主体失焦、低清晰度或压缩伪影明显、边缘断裂、细节过密不可读、主体被孔位破坏。
+
+通用负向约束：1. 严禁改变图案核心主题、符号语义与品牌可识别元素。2. 严禁输出低清晰度、重影、锯齿、白边、脏边、断边、马赛克、涂抹感。3. 严禁新增文字水印、Logo、二维码、联系方式或侵权风险元素。4. 严禁出现主体结构错误、比例畸形、关键细节缺失。5. 严禁因过强特效导致商品化可用性下降。
+
+通用质量要求：1. 保真：核心图案、主色关系、关键元素稳定。2. 清晰：线条和纹理可辨，边缘闭合干净。3. 可用：可直接用于印花裂变、连续图和后续上版。4. 一致：同批次风格、清晰度、完成度统一。5. 合规：不含侵权、误导或违规传播元素。
+```
+
+### 7.3 Demo 输入（爆款二创）
+```json
+{
+  "toolKey": "pod-variation",
+  "podVariationCategory": "服装/纺织",
+  "podVariationMode": "爆款二创",
+  "podVariationBurstContent": "改背景",
+  "podVariationOutputCount": "3"
+}
+```
+
+### 7.4 Demo 输出（爆款二创）
+```json
+任务目标：基于上传参考图执行印花图裂变，输出可直接用于POD后续链路的多张高质量裂变结果。
+
+模式规则：基于参考图进行高转化导向的二次创作，在主体、姿势或背景维度做强差异裂变，保持核心卖点不丢失。
+
+品类规则：当前品类为「服装/纺织」，适配服装与纺织印花，强调大面积铺陈后的连续性、层次和耐看度，避免细碎噪点。
+
+裂变参数：模式=爆款二创；品类=服装/纺织；出图数量=3。
+
+选项扩展约束：
+[模式] 执行强差异裂变，保持核心卖点同时强化新鲜感。
+[裂变内容] 裂变重点放在场景背景变化，主体本体尽量稳定。
+
+必须满足：二创方向与所选裂变内容严格一致、保留原图核心卖点和识别资产、构图完整，适配批量裂变出图、结果具备明显新鲜感且不失真、远看识别强、近看纹理清晰、重复拼接自然。
+
+禁止：改动维度与用户选择不一致、过度重绘导致与原图脱钩、主体结构崩坏、比例异常、虚假功能表达或误导性元素、大面积脏污、拼缝突兀、过度锐化。
 
 通用负向约束：1. 严禁改变图案核心主题、符号语义与品牌可识别元素。2. 严禁输出低清晰度、重影、锯齿、白边、脏边、断边、马赛克、涂抹感。3. 严禁新增文字水印、Logo、二维码、联系方式或侵权风险元素。4. 严禁出现主体结构错误、比例畸形、关键细节缺失。5. 严禁因过强特效导致商品化可用性下降。
 

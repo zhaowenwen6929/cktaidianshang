@@ -3650,6 +3650,312 @@ a {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.ck-pod-variation-graphic-style-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 12px;
+}
+
+.ck-pod-variation-graphic-style-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #3a3a42;
+  border-radius: 18px;
+  padding: 14px;
+  background: #17171b;
+  color: #f6f7fb;
+  text-align: left;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.ck-pod-variation-graphic-style-card:hover {
+  border-color: #585865;
+  transform: translateY(-1px);
+}
+
+.ck-pod-variation-graphic-style-card.active {
+  border-color: #ff8a4c;
+  box-shadow: 0 0 0 1px rgba(255, 138, 76, 0.28) inset;
+}
+
+.ck-pod-variation-graphic-style-title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.ck-pod-variation-graphic-style-card.active .ck-pod-variation-graphic-style-title {
+  color: #ff8a4c;
+}
+
+.ck-pod-variation-graphic-style-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 116px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f6f8 100%);
+  color: #17171b;
+  overflow: hidden;
+}
+
+.ck-pod-variation-graphic-style-preview svg {
+  width: 88px;
+  height: 88px;
+}
+
+.ck-pod-variation-clock-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ck-pod-variation-clock-mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 92px;
+  padding: 16px 18px;
+  border: 1px solid #3a3a42;
+  border-radius: 16px;
+  background: #17171b;
+  color: #f6f7fb;
+  text-align: left;
+}
+
+.ck-pod-variation-clock-mode-card.active {
+  border-color: #ff8a4c;
+  background: rgba(255, 138, 76, 0.08);
+}
+
+.ck-pod-variation-clock-mode-title {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.ck-pod-variation-clock-mode-card.active .ck-pod-variation-clock-mode-title,
+.ck-pod-variation-clock-mode-card.active .ck-pod-variation-clock-mode-description {
+  color: #ff8a4c;
+}
+
+.ck-pod-variation-clock-mode-description {
+  color: #c1c4cf;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ck-pod-variation-clock-dial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 12px;
+}
+
+.ck-pod-variation-clock-dial-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #3a3a42;
+  border-radius: 16px;
+  background: #17171b;
+  color: #f6f7fb;
+  text-align: left;
+}
+
+.ck-pod-variation-clock-dial-card.active {
+  border-color: #ff8a4c;
+  box-shadow: 0 0 0 1px rgba(255, 138, 76, 0.28) inset;
+}
+
+.ck-pod-variation-clock-dial-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 108px;
+  border-radius: 12px;
+  background: #f4f5f8;
+}
+
+.ck-pod-variation-clock-dial-preview svg {
+  width: 88px;
+  height: 88px;
+}
+
+.ck-pod-variation-clock-dial-label {
+  color: #d0d3dd;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+.ck-pod-variation-effect-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.ck-pod-variation-effect-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.ck-pod-variation-effect-badge-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: #d97a48;
+  color: #fff;
+  font-size: 14px;
+}
+
+.ck-pod-variation-effect-panel {
+  padding: 16px;
+  border-radius: 16px;
+  background: #17171b;
+}
+
+.ck-pod-variation-effect-source-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ck-pod-variation-effect-source-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #f2f3f7;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.ck-pod-variation-effect-source-dot {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #454853;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.ck-pod-variation-effect-source-pill.active .ck-pod-variation-effect-source-dot {
+  border-color: #ff8a4c;
+  box-shadow: inset 0 0 0 4px #17171b, 0 0 0 5px #ff8a4c;
+}
+
+.ck-pod-variation-effect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 16px;
+}
+
+.ck-pod-variation-effect-card {
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.ck-pod-variation-effect-card.active {
+  border-color: #ff8a4c;
+  box-shadow: 0 0 0 1px rgba(255, 138, 76, 0.32);
+}
+
+.ck-pod-variation-effect-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background-color: #4d4d4d;
+}
+
+.ck-pod-variation-effect-preview.effect-1 {
+  background-image:
+    radial-gradient(circle at 12% 14%, rgba(204, 111, 48, 0.75) 0 1.5%, transparent 2.6%),
+    radial-gradient(circle at 86% 11%, rgba(204, 111, 48, 0.58) 0 2.2%, transparent 3.8%),
+    linear-gradient(180deg, rgba(255, 144, 74, 0.5), transparent 11%, transparent 88%, rgba(255, 144, 74, 0.48)),
+    linear-gradient(90deg, rgba(255, 144, 74, 0.42), transparent 10%, transparent 90%, rgba(255, 144, 74, 0.42)),
+    linear-gradient(180deg, #555 0%, #4a4a4a 100%);
+}
+
+.ck-pod-variation-effect-preview.effect-2 {
+  background-image:
+    radial-gradient(circle at 10% 11%, rgba(180, 113, 53, 0.55) 0 5%, transparent 11%),
+    radial-gradient(circle at 88% 85%, rgba(170, 105, 50, 0.5) 0 7%, transparent 15%),
+    linear-gradient(135deg, rgba(177, 114, 52, 0.5) 0%, transparent 22%, transparent 78%, rgba(177, 114, 52, 0.45) 100%),
+    linear-gradient(180deg, #5a5856 0%, #494846 100%);
+}
+
+.ck-pod-variation-effect-preview.effect-3 {
+  background-image:
+    radial-gradient(circle at 9% 9%, rgba(197, 129, 61, 0.74) 0 1.8%, transparent 3.2%),
+    radial-gradient(circle at 19% 22%, rgba(197, 129, 61, 0.42) 0 1.2%, transparent 2.6%),
+    radial-gradient(circle at 82% 16%, rgba(197, 129, 61, 0.42) 0 1.2%, transparent 2.8%),
+    radial-gradient(circle at 84% 88%, rgba(197, 129, 61, 0.74) 0 1.8%, transparent 3.2%),
+    linear-gradient(180deg, #585858 0%, #4a4a4a 100%);
+}
+
+.ck-pod-variation-effect-preview.effect-4 {
+  background-image:
+    radial-gradient(circle at 9% 87%, rgba(204, 111, 48, 0.76) 0 2%, transparent 3.2%),
+    radial-gradient(circle at 91% 8%, rgba(204, 111, 48, 0.7) 0 2%, transparent 3.2%),
+    linear-gradient(180deg, rgba(255, 144, 74, 0.4), transparent 13%, transparent 87%, rgba(255, 144, 74, 0.35)),
+    linear-gradient(90deg, rgba(255, 144, 74, 0.35), transparent 15%, transparent 85%, rgba(255, 144, 74, 0.35)),
+    linear-gradient(180deg, #575757 0%, #4b4b4b 100%);
+}
+
+.ck-pod-variation-effect-preview.effect-5 {
+  background-image:
+    radial-gradient(circle at 16% 15%, rgba(255, 193, 106, 0.25) 0 28%, transparent 44%),
+    radial-gradient(circle at 84% 84%, rgba(255, 193, 106, 0.3) 0 24%, transparent 42%),
+    linear-gradient(180deg, rgba(255, 193, 106, 0.45), transparent 10%, transparent 90%, rgba(255, 193, 106, 0.45)),
+    linear-gradient(90deg, rgba(255, 193, 106, 0.4), transparent 10%, transparent 90%, rgba(255, 193, 106, 0.4)),
+    linear-gradient(180deg, #565656 0%, #494949 100%);
+}
+
+.ck-pod-variation-effect-preview.effect-6 {
+  background-image:
+    radial-gradient(circle at 13% 12%, rgba(201, 117, 54, 0.72) 0 2.2%, transparent 3.8%),
+    radial-gradient(circle at 82% 18%, rgba(201, 117, 54, 0.4) 0 1.2%, transparent 2.8%),
+    radial-gradient(circle at 18% 84%, rgba(201, 117, 54, 0.38) 0 1.2%, transparent 2.8%),
+    radial-gradient(circle at 86% 86%, rgba(201, 117, 54, 0.74) 0 2%, transparent 3.6%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.04), transparent 58%),
+    linear-gradient(180deg, #555 0%, #474747 100%);
+}
+
+.ck-pod-variation-effect-preview.effect-7 {
+  background-image:
+    radial-gradient(circle at 8% 8%, rgba(184, 112, 53, 0.7) 0 6%, transparent 13%),
+    radial-gradient(circle at 92% 9%, rgba(184, 112, 53, 0.58) 0 5%, transparent 12%),
+    radial-gradient(circle at 9% 91%, rgba(184, 112, 53, 0.58) 0 5%, transparent 12%),
+    radial-gradient(circle at 91% 92%, rgba(184, 112, 53, 0.75) 0 6%, transparent 13%),
+    linear-gradient(180deg, rgba(255, 181, 96, 0.16), transparent 16%, transparent 84%, rgba(255, 181, 96, 0.16)),
+    linear-gradient(180deg, #585858 0%, #4c4c4c 100%);
+}
+
+.ck-pod-variation-effect-upload-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 168px;
+  border: 1px dashed #4b4f5c;
+  border-radius: 14px;
+  color: #b9bdc9;
+  font-size: 14px;
+  line-height: 20px;
+}
+
 .ck-pod-variation-inline-field {
   align-items: center;
 }
@@ -3675,6 +3981,13 @@ a {
 .ck-pod-variation-inline-field .ck-select {
   width: 100% !important;
   white-space: nowrap;
+}
+
+.ck-pod-variation-inline-hint {
+  margin-top: -8px;
+  color: #7d8190;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .ck-pod-variation-inline-field > .ck-form-block {
@@ -4241,6 +4554,21 @@ a {
   color: #5d667d;
   font-size: 12px;
   line-height: 18px;
+}
+
+.ck-panel-tool-pod-partial-edit .ck-pod-variation-category-row {
+  width: 100%;
+  grid-template-columns: none !important;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(92px, max-content);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ck-panel-tool-pod-partial-edit .ck-pod-variation-category-row .ck-adaptive-choice-item {
+  min-height: 42px;
+  padding: 10px 16px;
+  white-space: nowrap;
 }
 
 .ck-panel-tool-pod-partial-edit .ck-partial-edit-structured-panel .ck-inline-field > .ck-field-title,

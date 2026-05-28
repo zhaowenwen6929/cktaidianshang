@@ -885,9 +885,9 @@ const navGroups: Array<{
       { key: "pod-extract", label: "印花图提取", panelTitle: "印花图提取", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-variation", label: "印花图裂变", panelTitle: "印花图裂变", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-partial-edit", label: "局部改图", panelTitle: "局部改图", resultCount: 5, ratioLabel: "1:1" },
-      { key: "pod-fusion", label: "元素融合", panelTitle: "元素融合", resultCount: 5, ratioLabel: "1:1" },
-      { key: "video-scene-grid", label: "多联画", panelTitle: "多联画", resultCount: 4, ratioLabel: "16:9" },
-      { key: "video-pattern-repeat", label: "四方连续图", panelTitle: "四方连续图", resultCount: 4, ratioLabel: "1:1" },
+      { key: "pod-fusion", label: "元素融合（待完善）", panelTitle: "元素融合", resultCount: 5, ratioLabel: "1:1" },
+      { key: "video-scene-grid", label: "多联画（待完善）", panelTitle: "多联画", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-pattern-repeat", label: "四方连续图（待完善）", panelTitle: "四方连续图", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-pod-mockup", label: "POD样机套图（待完善）", panelTitle: "POD样机套图（待完善）", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-print-extend", label: "印花尺寸延展", panelTitle: "印花尺寸延展", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-2d3d", label: "2D转3D（待完善）", panelTitle: "2D转3D（待完善）", resultCount: 4, ratioLabel: "1:1" },
@@ -2395,11 +2395,69 @@ const podCropModeOptions = [
 const podVariationCategoryOptions = ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"] as const;
 const podVariationModeOptions = ["艺术设计", "文字强化", "爆款二创", "通用"] as const;
 const podVariationBurstOptions = ["改主体", "改姿势", "改背景", "✨爆改✨"] as const;
-const podVariationContentOptions = ["裂变商品", "仅裂变素材中的图案部分"] as const;
+const podVariationContentOptions = ["裂变整个商品", "仅裂变素材图案部分"] as const;
 const podVariationShapeOptions = ["默认", "圆形"] as const;
 const podVariationReferenceStyleLevels = ["低", "中", "高"] as const;
 const podVariationDivergenceLevels = ["低", "中", "高"] as const;
 type PodVariationModeKey = (typeof podVariationModeOptions)[number];
+const podVariationGraphicStyleOptions = [
+  { key: "曼陀罗填充", label: "曼陀罗填充" },
+  { key: "低多边形", label: "低多边形" },
+  { key: "极简线条", label: "极简线条" },
+  { key: "负空间", label: "负空间" },
+  { key: "炫彩珐琅", label: "炫彩珐琅" }
+] as const;
+const podVariationDimensionOptions = ["参考主体", "裂变主体"] as const;
+const podVariationClockModeOptions = [
+  { key: "3D立体增强V2", label: "3D立体增强V2", description: "生成效果更立体" },
+  { key: "通用", label: "通用", description: "表盘种类更丰富" }
+] as const;
+const podVariationClockDialStyleOptions = [
+  "经典阿拉伯数字",
+  "斜切线刻度",
+  "现代数字分布",
+  "粗体方正数字",
+  "罗马数字",
+  "轻量短线刻度",
+  "细边圆盘",
+  "复古粗刻度"
+] as const;
+const podVariationClockGenerateMethodOptions = ["随机组合生成", "全部生成"] as const;
+const podVariationRatioOptions = ["1:1", "2:3", "3:4", "4:5", "9:16", "16:9"] as const;
+const podVariationTinEffectSourceOptions = ["锈斑", "自定义上传"] as const;
+const podVariationTinEffectPresetOptions = [
+  "锈斑样式1",
+  "锈斑样式2",
+  "锈斑样式3",
+  "锈斑样式4",
+  "锈斑样式5",
+  "锈斑样式6",
+  "锈斑样式7"
+] as const;
+function parsePodVariationClockDialStyles(value?: string) {
+  if (!value) return [podVariationClockDialStyleOptions[0]];
+  const values = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item): item is (typeof podVariationClockDialStyleOptions)[number] =>
+      podVariationClockDialStyleOptions.includes(item as (typeof podVariationClockDialStyleOptions)[number])
+    );
+  return values.length ? values : [podVariationClockDialStyleOptions[0]];
+}
+function normalizePodVariationContentValue(value?: string) {
+  if (value === "裂变商品") return "裂变整个商品";
+  if (value === "仅裂变素材中的图案部分") return "仅裂变素材图案部分";
+  if (value && podVariationContentOptions.includes(value as (typeof podVariationContentOptions)[number])) {
+    return value as (typeof podVariationContentOptions)[number];
+  }
+  return podVariationContentOptions[0];
+}
+const podVariationCategoryHiddenModes: Partial<Record<(typeof podVariationCategoryOptions)[number], PodVariationModeKey[]>> = {
+  "服装/纺织": ["爆款二创"],
+  "手机壳": ["爆款二创"],
+  "装饰画": ["爆款二创"],
+  "铁皮画": ["爆款二创", "通用"]
+};
 const podPartialEditRequirementOptions = [
   "替换“文字”和元素",
   "去除商品印花",
@@ -10348,12 +10406,38 @@ function PodVariationSetupSection({
       : podVariationBurstOptions[0]
   );
   const [content, setContent] = useState(
-    selectedValues?.podVariationContent && podVariationContentOptions.includes(selectedValues.podVariationContent as typeof podVariationContentOptions[number])
-      ? selectedValues.podVariationContent
-      : podVariationContentOptions[0]
+    normalizePodVariationContentValue(selectedValues?.podVariationContent)
   );
   const [shape, setShape] = useState(selectedValues?.podVariationShape ?? "默认");
   const [outputCount, setOutputCount] = useState(Number(selectedValues?.podVariationOutputCount ?? "1") || 1);
+  const [graphicStyle, setGraphicStyle] = useState(selectedValues?.podVariationGraphicStyle ?? podVariationGraphicStyleOptions[0].key);
+  const [variationDimension, setVariationDimension] = useState(selectedValues?.podVariationVariationDimension ?? podVariationDimensionOptions[0]);
+  const [clockMode, setClockMode] = useState(selectedValues?.podVariationClockMode ?? podVariationClockModeOptions[0].key);
+  const [clockDialStyles, setClockDialStyles] = useState<string[]>(parsePodVariationClockDialStyles(selectedValues?.podVariationClockDialStyle));
+  const [clockGenerateMethod, setClockGenerateMethod] = useState(
+    selectedValues?.podVariationClockGenerateMethod ?? podVariationClockGenerateMethodOptions[0]
+  );
+  const [ratio, setRatio] = useState(
+    selectedValues?.podVariationRatio && podVariationRatioOptions.includes(selectedValues.podVariationRatio as (typeof podVariationRatioOptions)[number])
+      ? selectedValues.podVariationRatio
+      : podVariationRatioOptions[0]
+  );
+  const isMetalGraphicCategory = category === "铁艺图形";
+  const isClockCategory = category === "挂钟";
+  const [tinEffectSource, setTinEffectSource] = useState(selectedValues?.podVariationTinEffectSource ?? podVariationTinEffectSourceOptions[0]);
+  const [tinEffectPreset, setTinEffectPreset] = useState(selectedValues?.podVariationTinEffectPreset ?? podVariationTinEffectPresetOptions[0]);
+  const isTinPlateCategory = category === "铁皮画";
+  const visibleModeOptions = podVariationModeOptions.filter(
+    (option) => !(podVariationCategoryHiddenModes[category as (typeof podVariationCategoryOptions)[number]] ?? []).includes(option)
+  );
+
+  useEffect(() => {
+    if (visibleModeOptions.includes(mode)) {
+      return;
+    }
+    skipSelectedValuesSyncRef.current = true;
+    setMode(visibleModeOptions[0] ?? podVariationModeOptions[0]);
+  }, [mode, visibleModeOptions]);
 
   useEffect(() => {
     if (hasManualCategoryRef.current || selectedValues?.podVariationCategory) {
@@ -10387,12 +10471,20 @@ function PodVariationSetupSection({
       divergenceLevel: selectedValues.podVariationDivergenceLevel ?? podVariationDivergenceLevels[0],
       backgroundColor: selectedValues.podVariationBackgroundColor ?? "随机",
       burstContent: selectedValues.podVariationBurstContent ?? podVariationBurstOptions[0],
-      content:
-        selectedValues.podVariationContent && podVariationContentOptions.includes(selectedValues.podVariationContent as typeof podVariationContentOptions[number])
-          ? selectedValues.podVariationContent
-          : podVariationContentOptions[0],
+      content: normalizePodVariationContentValue(selectedValues.podVariationContent),
       shape: selectedValues.podVariationShape ?? "默认",
-      outputCount: selectedValues.podVariationOutputCount ?? "1"
+      outputCount: selectedValues.podVariationOutputCount ?? "1",
+      graphicStyle: selectedValues.podVariationGraphicStyle ?? podVariationGraphicStyleOptions[0].key,
+      variationDimension: selectedValues.podVariationVariationDimension ?? podVariationDimensionOptions[0],
+      clockMode: selectedValues.podVariationClockMode ?? podVariationClockModeOptions[0].key,
+      clockDialStyles: parsePodVariationClockDialStyles(selectedValues.podVariationClockDialStyle),
+      clockGenerateMethod: selectedValues.podVariationClockGenerateMethod ?? podVariationClockGenerateMethodOptions[0],
+      ratio:
+        selectedValues.podVariationRatio && podVariationRatioOptions.includes(selectedValues.podVariationRatio as (typeof podVariationRatioOptions)[number])
+          ? selectedValues.podVariationRatio
+          : podVariationRatioOptions[0],
+      tinEffectSource: selectedValues.podVariationTinEffectSource ?? podVariationTinEffectSourceOptions[0],
+      tinEffectPreset: selectedValues.podVariationTinEffectPreset ?? podVariationTinEffectPresetOptions[0]
     });
 
     if (nextSignature === lastSelectedValuesSignatureRef.current) {
@@ -10431,15 +10523,41 @@ function PodVariationSetupSection({
     if (selectedValues?.podVariationBurstContent && selectedValues.podVariationBurstContent !== burstContent) {
       setBurstContent(selectedValues.podVariationBurstContent);
     }
-    if (
-      selectedValues?.podVariationContent &&
-      podVariationContentOptions.includes(selectedValues.podVariationContent as typeof podVariationContentOptions[number]) &&
-      selectedValues.podVariationContent !== content
-    ) {
-      setContent(selectedValues.podVariationContent);
+    const nextContent = normalizePodVariationContentValue(selectedValues?.podVariationContent);
+    if (nextContent !== content) {
+      setContent(nextContent);
     }
     if (selectedValues?.podVariationShape && selectedValues.podVariationShape !== shape) {
       setShape(selectedValues.podVariationShape);
+    }
+    if (selectedValues?.podVariationGraphicStyle && selectedValues.podVariationGraphicStyle !== graphicStyle) {
+      setGraphicStyle(selectedValues.podVariationGraphicStyle);
+    }
+    if (selectedValues?.podVariationVariationDimension && selectedValues.podVariationVariationDimension !== variationDimension) {
+      setVariationDimension(selectedValues.podVariationVariationDimension);
+    }
+    if (selectedValues?.podVariationClockMode && selectedValues.podVariationClockMode !== clockMode) {
+      setClockMode(selectedValues.podVariationClockMode);
+    }
+    const nextClockDialStyles = parsePodVariationClockDialStyles(selectedValues?.podVariationClockDialStyle);
+    if (JSON.stringify(nextClockDialStyles) !== JSON.stringify(clockDialStyles)) {
+      setClockDialStyles(nextClockDialStyles);
+    }
+    if (selectedValues?.podVariationClockGenerateMethod && selectedValues.podVariationClockGenerateMethod !== clockGenerateMethod) {
+      setClockGenerateMethod(selectedValues.podVariationClockGenerateMethod);
+    }
+    if (
+      selectedValues?.podVariationRatio &&
+      podVariationRatioOptions.includes(selectedValues.podVariationRatio as (typeof podVariationRatioOptions)[number]) &&
+      selectedValues.podVariationRatio !== ratio
+    ) {
+      setRatio(selectedValues.podVariationRatio);
+    }
+    if (selectedValues?.podVariationTinEffectSource && selectedValues.podVariationTinEffectSource !== tinEffectSource) {
+      setTinEffectSource(selectedValues.podVariationTinEffectSource);
+    }
+    if (selectedValues?.podVariationTinEffectPreset && selectedValues.podVariationTinEffectPreset !== tinEffectPreset) {
+      setTinEffectPreset(selectedValues.podVariationTinEffectPreset);
     }
     const nextOutputCount = Number(selectedValues?.podVariationOutputCount ?? outputCount);
     if (Number.isFinite(nextOutputCount) && nextOutputCount !== outputCount) {
@@ -10450,12 +10568,20 @@ function PodVariationSetupSection({
     burstContent,
     category,
     content,
+    clockDialStyles,
+    clockGenerateMethod,
+    clockMode,
     divergenceLevel,
+    graphicStyle,
     mode,
     outputCount,
+    ratio,
     referenceStyleLevel,
     selectedValues,
     shape,
+    tinEffectPreset,
+    tinEffectSource,
+    variationDimension,
     uploads
   ]);
 
@@ -10471,7 +10597,15 @@ function PodVariationSetupSection({
       podVariationContentEnabled: mode === "爆款二创" ? "false" : "true",
       podVariationContent: mode === "爆款二创" ? burstContent : content,
       podVariationShape: shape,
-      podVariationOutputCount: String(outputCount)
+      podVariationOutputCount: String(outputCount),
+      podVariationGraphicStyle: graphicStyle,
+      podVariationVariationDimension: variationDimension,
+      podVariationClockMode: clockMode,
+      podVariationClockDialStyle: clockDialStyles.join(","),
+      podVariationClockGenerateMethod: clockGenerateMethod,
+      podVariationRatio: ratio,
+      podVariationTinEffectSource: tinEffectSource,
+      podVariationTinEffectPreset: tinEffectPreset
     };
     skipSelectedValuesSyncRef.current = true;
     lastSelectedValuesSignatureRef.current = JSON.stringify({
@@ -10483,36 +10617,64 @@ function PodVariationSetupSection({
       backgroundColor: nextSelectionMap.podVariationBackgroundColor,
       burstContent: nextSelectionMap.podVariationBurstContent,
       content: nextSelectionMap.podVariationContent,
+      clockDialStyles: nextSelectionMap.podVariationClockDialStyle,
+      clockGenerateMethod: nextSelectionMap.podVariationClockGenerateMethod,
+      clockMode: nextSelectionMap.podVariationClockMode,
+      graphicStyle: nextSelectionMap.podVariationGraphicStyle,
+      ratio: nextSelectionMap.podVariationRatio,
       shape: nextSelectionMap.podVariationShape,
-      outputCount: nextSelectionMap.podVariationOutputCount
+      tinEffectPreset: nextSelectionMap.podVariationTinEffectPreset,
+      tinEffectSource: nextSelectionMap.podVariationTinEffectSource,
+      outputCount: nextSelectionMap.podVariationOutputCount,
+      variationDimension: nextSelectionMap.podVariationVariationDimension
     });
     onSelectionMapChange?.(nextSelectionMap);
     onSelectionChange?.(
-      [
-        category,
-        mode,
-        mode === "艺术设计" ? `参考样式 ${referenceStyleLevel}` : "",
-        mode === "文字强化" || mode === "通用" ? `原图参考强度 ${referenceStrength.toFixed(2)}` : "",
-        mode === "文字强化" ? `创意发散强度 ${divergenceLevel}` : "",
-        mode === "文字强化" ? `指定背景色 ${backgroundColor}` : "",
-        `裂变内容 ${mode === "爆款二创" ? burstContent : content}`,
-        mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? `形状 ${shape}` : "",
-        `出图数量 ${outputCount}`
-      ].filter(Boolean)
+      (
+        isMetalGraphicCategory
+          ? [category, `图形风格 ${graphicStyle}`, `变化维度 ${variationDimension}`, `出图数量 ${outputCount}`]
+          : isClockCategory
+            ? [category, `选择模式 ${clockMode}`, `表盘刻度样式 ${clockDialStyles.join("、")}`, `生成方式 ${clockGenerateMethod}`, `出图数量 ${outputCount}`]
+          : isTinPlateCategory
+            ? [category, mode, `裂变内容 ${content}`, `效果 ${tinEffectSource}`, `效果预设 ${tinEffectPreset}`, `出图数量 ${outputCount}`, `比例 ${ratio}`]
+          : [
+              category,
+              mode,
+              mode === "艺术设计" ? `参考样式 ${referenceStyleLevel}` : "",
+              mode === "文字强化" || mode === "通用" ? `原图参考强度 ${referenceStrength.toFixed(2)}` : "",
+              mode === "文字强化" ? `创意发散强度 ${divergenceLevel}` : "",
+              mode === "文字强化" ? `指定背景色 ${backgroundColor}` : "",
+              `裂变内容 ${mode === "爆款二创" ? burstContent : content}`,
+              mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? `形状 ${shape}` : "",
+              `出图数量 ${outputCount}`,
+              `比例 ${ratio}`
+            ]
+      ).filter(Boolean)
     );
   }, [
     backgroundColor,
     burstContent,
     category,
     content,
+    clockDialStyles,
+    clockGenerateMethod,
+    clockMode,
     divergenceLevel,
+    graphicStyle,
+    isClockCategory,
+    isMetalGraphicCategory,
+    isTinPlateCategory,
     mode,
     onSelectionChange,
     onSelectionMapChange,
     outputCount,
+    ratio,
     referenceStrength,
     referenceStyleLevel,
-    shape
+    shape,
+    tinEffectPreset,
+    tinEffectSource,
+    variationDimension
   ]);
 
   return (
@@ -10529,29 +10691,188 @@ function PodVariationSetupSection({
         value={category}
       />
 
-      <div className="ck-form-block">
-        <FieldTitle label="选择模式" required />
-        <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary ck-pod-variation-mode-row">
-          {podVariationModeOptions.map((option) => (
-            <button
-              className={`ck-mode-card ck-mode-card-primary ck-mode-card-title-only${mode === option ? " active" : ""}`}
-              key={option}
-              onClick={() => {
-                skipSelectedValuesSyncRef.current = true;
-                setMode(option);
-              }}
-              type="button"
-            >
-              <div className="ck-mode-card-head">
-                <strong>{option}</strong>
-                <span className={`ck-check${mode === option ? " active" : ""}`} />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+      {isMetalGraphicCategory ? (
+        <>
+          <div className="ck-form-block">
+            <FieldTitle label="图形风格" required />
+            <div className="ck-pod-variation-graphic-style-grid">
+              {podVariationGraphicStyleOptions.map((option) => (
+                <button
+                  className={`ck-pod-variation-graphic-style-card${graphicStyle === option.key ? " active" : ""}`}
+                  key={option.key}
+                  onClick={() => {
+                    skipSelectedValuesSyncRef.current = true;
+                    setGraphicStyle(option.key);
+                  }}
+                  type="button"
+                >
+                  <div className="ck-pod-variation-graphic-style-title">{option.label}</div>
+                  <div className="ck-pod-variation-graphic-style-preview">
+                    {option.key === "曼陀罗填充" ? (
+                      <svg fill="none" viewBox="0 0 120 84" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="42" r="18" stroke="currentColor" strokeWidth="2" />
+                        <circle cx="60" cy="42" r="29" stroke="currentColor" strokeDasharray="2 4" strokeWidth="2" />
+                        <circle cx="60" cy="42" r="39" stroke="currentColor" strokeWidth="2" />
+                        <path d="M60 3V81M21 42H99M33 15L87 69M87 15L33 69" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                    ) : null}
+                    {option.key === "低多边形" ? (
+                      <svg fill="none" viewBox="0 0 120 84" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 64L36 18L70 11L97 34L85 69L47 73L21 64Z" stroke="currentColor" strokeWidth="2" />
+                        <path d="M36 18L47 73M70 11L85 69M21 64L97 34M47 30L70 48M36 18L70 48M47 73L97 34" stroke="currentColor" strokeWidth="1.5" />
+                      </svg>
+                    ) : null}
+                    {option.key === "极简线条" ? (
+                      <svg fill="none" viewBox="0 0 120 84" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M60 12C50 12 43 18 43 27C43 36 48 40 53 44C58 48 60 52 60 60" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                        <path d="M60 12C70 12 77 18 77 27C77 36 72 40 67 44C62 48 60 52 60 60" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                        <path d="M60 60V72M42 72H78" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                      </svg>
+                    ) : null}
+                    {option.key === "负空间" ? (
+                      <svg fill="currentColor" viewBox="0 0 120 84" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M33 60C33 47 44 36 57 36H60C76 36 87 47 87 60C87 68 81 73 73 73H47C39 73 33 68 33 60Z" />
+                        <circle cx="51" cy="45" fill="#fff" r="5" />
+                        <circle cx="69" cy="45" fill="#fff" r="5" />
+                        <path d="M57 52C59 55 61 56 63 56C65 56 67 55 69 52" fill="none" stroke="#fff" strokeLinecap="round" strokeWidth="2" />
+                      </svg>
+                    ) : null}
+                    {option.key === "炫彩珐琅" ? (
+                      <svg fill="none" viewBox="0 0 120 84" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="42" fill="#FFCC4D" r="30" stroke="currentColor" strokeWidth="2" />
+                        <path d="M60 12V72M30 42H90M39 21L81 63M81 21L39 63" stroke="currentColor" strokeWidth="2" />
+                        <path d="M60 18C53 24 48 30 48 37C48 44 53 49 60 49C67 49 72 44 72 37C72 30 67 24 60 18Z" fill="#FF8A5B" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                    ) : null}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {mode === "艺术设计" ? (
+          <div className="ck-inline-field ck-pod-variation-inline-field">
+            <FieldTitle label="变化维度" required />
+            <SelectField
+              hideLabel
+              label="变化维度"
+              onChange={(value) => {
+                skipSelectedValuesSyncRef.current = true;
+                setVariationDimension(value);
+              }}
+              options={[...podVariationDimensionOptions]}
+              required
+              value={variationDimension}
+            />
+          </div>
+          <div className="ck-pod-variation-inline-hint">裂变主体：样式参考裂变内容</div>
+        </>
+      ) : isClockCategory ? (
+        <>
+          <div className="ck-form-block">
+            <FieldTitle label="选择模式" required />
+            <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary ck-pod-variation-mode-row">
+              {podVariationClockModeOptions.map((option) => (
+                <button
+                  className={`ck-mode-card ck-mode-card-primary${clockMode === option.key ? " active" : ""}`}
+                  key={option.key}
+                  onClick={() => {
+                    skipSelectedValuesSyncRef.current = true;
+                    setClockMode(option.key);
+                  }}
+                  type="button"
+                >
+                  <div className="ck-mode-card-head">
+                    <strong>{option.label}</strong>
+                    <span className={`ck-check${clockMode === option.key ? " active" : ""}`} />
+                  </div>
+                  <p>{option.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="ck-form-block">
+            <FieldTitle label="选择表盘刻度样式" required />
+            <div className="ck-pod-variation-clock-dial-grid">
+              {podVariationClockDialStyleOptions.map((option, index) => (
+                <button
+                  className={`ck-pod-variation-clock-dial-card${clockDialStyles.includes(option) ? " active" : ""}`}
+                  key={option}
+                  onClick={() => {
+                    skipSelectedValuesSyncRef.current = true;
+                    setClockDialStyles((current) => {
+                      if (current.includes(option)) {
+                        return current.length > 1 ? current.filter((item) => item !== option) : current;
+                      }
+                      return [...current, option];
+                    });
+                  }}
+                  type="button"
+                >
+                  <div className="ck-pod-variation-clock-dial-preview">
+                    <svg fill="none" viewBox="0 0 92 92" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="46" cy="46" fill="#fff" r="42" stroke={index === 6 ? "#1f2024" : "#d5d7de"} strokeWidth={index === 6 ? "2.5" : "1.5"} />
+                      {index === 0 ? <path d="M46 11V18M46 74V81M11 46H18M74 46H81M20.5 20.5L25.5 25.5M66.5 66.5L71.5 71.5M20.5 71.5L25.5 66.5M66.5 25.5L71.5 20.5" stroke="#1f2024" strokeLinecap="round" strokeWidth="2" /> : null}
+                      {index === 1 ? <path d="M16 24L22 28M70 64L76 68M24 76L28 70M64 22L68 16M46 11V18M46 74V81" stroke="#1f2024" strokeLinecap="round" strokeWidth="2" /> : null}
+                      {index === 2 ? <path d="M46 13V22M46 70V79M14 46H23M69 46H78M24 24L30 30M62 62L68 68" stroke="#1f2024" strokeLinecap="round" strokeWidth="2.3" /> : null}
+                      {index === 3 ? <path d="M46 10V22M46 70V82M10 46H22M70 46H82M22 22L29 29M63 63L70 70M22 70L29 63M63 29L70 22" stroke="#1f2024" strokeLinecap="round" strokeWidth="3" /> : null}
+                      {index === 4 ? <path d="M46 13V20M46 72V79M13 46H20M72 46H79M22 22L27 27M65 65L70 70M22 70L27 65M65 27L70 22" stroke="#1f2024" strokeLinecap="round" strokeWidth="1.7" /> : null}
+                      {index === 5 ? <path d="M46 14V18M46 74V78M14 46H18M74 46H78M23 23L26 26M66 66L69 69M23 69L26 66M66 26L69 23" stroke="#1f2024" strokeLinecap="round" strokeWidth="1.6" /> : null}
+                      {index === 6 ? <path d="M46 12V17M46 75V80M12 46H17M75 46H80M24 24L28 28M64 64L68 68M24 68L28 64M64 28L68 24" stroke="#1f2024" strokeLinecap="round" strokeWidth="1.6" /> : null}
+                      {index === 7 ? <path d="M46 10V20M46 72V82M10 46H20M72 46H82M22 22L30 30M62 62L70 70" stroke="#1f2024" strokeLinecap="round" strokeWidth="2.8" /> : null}
+                    </svg>
+                  </div>
+                  <div className="ck-pod-variation-clock-dial-label">{option}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="ck-inline-field ck-pod-variation-inline-field">
+            <FieldTitle label="生成方式" required />
+            <SelectField
+              hideLabel
+              label="生成方式"
+              onChange={(value) => {
+                skipSelectedValuesSyncRef.current = true;
+                setClockGenerateMethod(value);
+              }}
+              options={[...podVariationClockGenerateMethodOptions]}
+              required
+              value={clockGenerateMethod}
+            />
+          </div>
+          <div className="ck-pod-variation-inline-hint">
+            {clockGenerateMethod === "随机组合生成"
+              ? "上传的背景素材和选择的表盘，进行随机组合生成"
+              : "上传的背景素材和选择的表盘，进行逐一生成。例，1个背景，选择3个表盘，会生成3个任务。"}
+          </div>
+        </>
+      ) : (
+        <div className="ck-form-block">
+          <FieldTitle label="选择模式" required />
+          <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary ck-pod-variation-mode-row">
+            {visibleModeOptions.map((option) => (
+              <button
+                className={`ck-mode-card ck-mode-card-primary ck-mode-card-title-only${mode === option ? " active" : ""}`}
+                key={option}
+                onClick={() => {
+                  skipSelectedValuesSyncRef.current = true;
+                  setMode(option);
+                }}
+                type="button"
+              >
+                <div className="ck-mode-card-head">
+                  <strong>{option}</strong>
+                  <span className={`ck-check${mode === option ? " active" : ""}`} />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isMetalGraphicCategory && !isClockCategory && mode === "艺术设计" ? (
         <InlineSliderField
           label="参考样式"
           max={2}
@@ -10566,7 +10887,7 @@ function PodVariationSetupSection({
         />
       ) : null}
 
-      {mode === "文字强化" || mode === "通用" ? (
+      {!isMetalGraphicCategory && !isClockCategory && (mode === "文字强化" || mode === "通用") ? (
         <InlineSliderField
           label="原图参考强度"
           max={1}
@@ -10581,7 +10902,7 @@ function PodVariationSetupSection({
         />
       ) : null}
 
-      {mode === "文字强化" ? (
+      {!isMetalGraphicCategory && !isClockCategory && mode === "文字强化" ? (
         <>
           <InlineSliderField
             label="创意发散强度"
@@ -10612,7 +10933,7 @@ function PodVariationSetupSection({
         </>
       ) : null}
 
-      {mode === "爆款二创" ? (
+      {!isMetalGraphicCategory && !isClockCategory && !isTinPlateCategory && mode === "爆款二创" ? (
         <div className="ck-inline-field ck-pod-variation-inline-field">
           <FieldTitle label="裂变内容" required />
           <SelectField
@@ -10627,7 +10948,7 @@ function PodVariationSetupSection({
             value={burstContent}
           />
         </div>
-      ) : (
+      ) : !isMetalGraphicCategory && !isClockCategory ? (
         <div className="ck-inline-field ck-pod-variation-inline-field">
           <FieldTitle label="裂变内容" required />
           <SelectField
@@ -10635,16 +10956,68 @@ function PodVariationSetupSection({
             label="裂变内容"
             onChange={(value) => {
               skipSelectedValuesSyncRef.current = true;
-              setContent(value);
+              setContent(normalizePodVariationContentValue(value));
             }}
             options={[...podVariationContentOptions]}
             required
             value={content}
           />
         </div>
-      )}
+      ) : null}
 
-      {mode === "艺术设计" || mode === "文字强化" || mode === "通用" ? (
+      {isTinPlateCategory ? (
+        <div className="ck-form-block">
+          <div className="ck-pod-variation-effect-header">
+            <FieldTitle label="效果" required />
+            <div className="ck-pod-variation-effect-badge">
+              <span className="ck-pod-variation-effect-badge-check">✓</span>
+              <span>贴合样式</span>
+            </div>
+          </div>
+          <div className="ck-pod-variation-effect-panel">
+            <div className="ck-pod-variation-effect-source-row">
+              {podVariationTinEffectSourceOptions.map((option) => (
+                <button
+                  className={`ck-pod-variation-effect-source-pill${tinEffectSource === option ? " active" : ""}`}
+                  key={option}
+                  onClick={() => {
+                    skipSelectedValuesSyncRef.current = true;
+                    setTinEffectSource(option);
+                  }}
+                  type="button"
+                >
+                  <span className="ck-pod-variation-effect-source-dot" />
+                  <span>{option}</span>
+                </button>
+              ))}
+            </div>
+
+            {tinEffectSource === "锈斑" ? (
+              <div className="ck-pod-variation-effect-grid">
+                {podVariationTinEffectPresetOptions.map((option, index) => (
+                  <button
+                    className={`ck-pod-variation-effect-card${tinEffectPreset === option ? " active" : ""}`}
+                    key={option}
+                    onClick={() => {
+                      skipSelectedValuesSyncRef.current = true;
+                      setTinEffectPreset(option);
+                    }}
+                    type="button"
+                  >
+                    <div className={`ck-pod-variation-effect-preview effect-${index + 1}`} />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="ck-pod-variation-effect-upload-placeholder">
+                点击上传自定义铁皮画效果图
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {!isMetalGraphicCategory && !isClockCategory && !isTinPlateCategory && (mode === "艺术设计" || mode === "文字强化" || mode === "通用") ? (
         <div className="ck-inline-field ck-pod-variation-inline-field">
           <FieldTitle label="形状" required />
           <SelectField
@@ -10657,6 +11030,23 @@ function PodVariationSetupSection({
             options={[...podVariationShapeOptions]}
             required
             value={shape}
+          />
+        </div>
+      ) : null}
+
+      {!isMetalGraphicCategory && !isClockCategory ? (
+        <div className="ck-inline-field ck-pod-variation-inline-field">
+          <FieldTitle label="出图比例" required />
+          <SelectField
+            hideLabel
+            label="出图比例"
+            onChange={(value) => {
+              skipSelectedValuesSyncRef.current = true;
+              setRatio(value);
+            }}
+            options={[...podVariationRatioOptions]}
+            required
+            value={ratio}
           />
         </div>
       ) : null}
@@ -16841,6 +17231,14 @@ function ConfigPanel({
               "podVariationBackgroundColor",
               "podVariationBurstContent",
               "podVariationContent",
+              "podVariationGraphicStyle",
+              "podVariationVariationDimension",
+              "podVariationClockMode",
+              "podVariationClockDialStyle",
+              "podVariationClockGenerateMethod",
+              "podVariationRatio",
+              "podVariationTinEffectSource",
+              "podVariationTinEffectPreset",
               "podVariationShape",
               "podVariationOutputCount"
             ];
