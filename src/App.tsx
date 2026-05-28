@@ -9724,22 +9724,6 @@ function PodPartialEditSetupSection({
 
   return (
     <div className="ck-form-block">
-      <div className="ck-form-block">
-        <FieldTitle label="品类" required />
-        <div className="ck-adaptive-choice-grid ck-adaptive-choice-grid-row ck-pod-variation-category-row">
-          {podPartialEditCategoryOptions.map((option) => (
-            <button
-              className={`ck-adaptive-choice-item${option === category ? " active" : ""}`}
-              key={option}
-              onClick={() => setCategory(option)}
-              type="button"
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <AdaptiveChoiceField
         label="改图要求"
         onChange={handleRequirementChange}
@@ -10967,31 +10951,40 @@ function PodVariationSetupSection({
 
       {isTinPlateCategory ? (
         <div className="ck-form-block">
-          <div className="ck-pod-variation-effect-header">
-            <FieldTitle label="效果" required />
-            <div className="ck-pod-variation-effect-badge">
-              <span className="ck-pod-variation-effect-badge-check">✓</span>
-              <span>贴合样式</span>
+          <div className="ck-inline-field ck-aligned-inline-field">
+            <FieldTitle label="贴合样式" />
+            <button
+              aria-pressed={tinEffectSource === "锈斑"}
+              className={`ck-pod-extract-toggle${tinEffectSource === "锈斑" ? " active" : ""}`}
+              onClick={() => {
+                skipSelectedValuesSyncRef.current = true;
+                setTinEffectSource((value) => (value === "锈斑" ? "自定义上传" : "锈斑"));
+              }}
+              type="button"
+            >
+              <span />
+            </button>
+          </div>
+          {tinEffectSource === "锈斑" ? (
+            <div className="ck-pod-variation-clock-dial-grid">
+              {podVariationTinEffectPresetOptions.map((option, index) => (
+                <button
+                  className={`ck-pod-variation-clock-dial-card${tinEffectPreset === option ? " active" : ""}`}
+                  key={option}
+                  onClick={() => {
+                    skipSelectedValuesSyncRef.current = true;
+                    setTinEffectSource("锈斑");
+                    setTinEffectPreset(option);
+                  }}
+                  type="button"
+                >
+                  <div className="ck-pod-variation-clock-dial-preview ck-pod-variation-effect-card-preview">
+                    <div className={`ck-pod-variation-effect-preview effect-${index + 1}`} />
+                  </div>
+                </button>
+              ))}
             </div>
-          </div>
-          <div className="ck-pod-variation-clock-dial-grid">
-            {podVariationTinEffectPresetOptions.map((option, index) => (
-              <button
-                className={`ck-pod-variation-clock-dial-card${tinEffectPreset === option ? " active" : ""}`}
-                key={option}
-                onClick={() => {
-                  skipSelectedValuesSyncRef.current = true;
-                  setTinEffectSource("锈斑");
-                  setTinEffectPreset(option);
-                }}
-                type="button"
-              >
-                <div className="ck-pod-variation-clock-dial-preview ck-pod-variation-effect-card-preview">
-                  <div className={`ck-pod-variation-effect-preview effect-${index + 1}`} />
-                </div>
-              </button>
-            ))}
-          </div>
+          ) : null}
         </div>
       ) : null}
 
