@@ -2565,6 +2565,45 @@ type VideoReplicaModeKey = (typeof videoReplicaModeOptions)[number];
 const videoReplicaDurationOptions = ["4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s"];
 const videoReplicaRatioOptions = ["自适应尺寸", "横16:9", "横4:3", "正1:1", "竖3:4", "竖9:16", "横21:9"];
 const videoReplicaResolutionOptions = ["480p", "720p"];
+const videoReplicaSoundOptions = ["无声", "参考原视频声音", "智能匹配声音"] as const;
+const videoReplaceSoundOptions = ["无声", "使用原视频声音", "智能匹配声音"] as const;
+type VideoReplicaSoundOption = (typeof videoReplicaSoundOptions)[number];
+type VideoReplaceSoundOption = (typeof videoReplaceSoundOptions)[number];
+
+function normalizeVideoReplicaSoundOption(value?: string): VideoReplicaSoundOption {
+  switch (value) {
+    case "无声音":
+      return "无声";
+    case "参考原视频":
+    case "保留原视频音频":
+    case "使用原视频声音":
+      return "参考原视频声音";
+    case "智能匹配声音":
+    case "无声":
+    case "参考原视频声音":
+      return value;
+    default:
+      return "无声";
+  }
+}
+
+function normalizeVideoReplaceSoundOption(value?: string): VideoReplaceSoundOption {
+  switch (value) {
+    case "无声音":
+      return "无声";
+    case "参考原视频":
+    case "保留原视频音频":
+    case "参考原视频声音":
+      return "使用原视频声音";
+    case "智能匹配声音":
+    case "无声":
+    case "使用原视频声音":
+      return value;
+    default:
+      return "无声";
+  }
+}
+
 const videoPricingConfigs: Partial<Record<string, VideoPricingConfig>> = {
   "video-replica": {
     selectionKeys: {
@@ -2611,7 +2650,8 @@ const videoPricingConfigs: Partial<Record<string, VideoPricingConfig>> = {
       },
       hasSound: {
         "无声": 0,
-        "有声": 15
+        "参考原视频声音": 15,
+        "智能匹配声音": 15
       }
     }
   }
@@ -3720,31 +3760,27 @@ function buildFashionSceneTypes(modules: AplusPlanModule[]) {
 }
 
 function buildVideoReplicaPrompt(context: VideoReplacePromptContext) {
+  const buildAudioStrategyForPrompt = (selectedSound: VideoReplicaSoundOption) => {
+    switch (selectedSound) {
+      case "参考原视频声音":
+        return "最终声音策略：参考原视频声音。优先保留原视频的环境声组织、BGM 情绪方向、口播或字幕节奏，以及声音与镜头动作的配合关系；仅迁移声音表达方法，不复制原视频具体品牌词、字幕原文或侵权音频内容。";
+      case "智能匹配声音":
+        return "最终声音策略：智能匹配声音。可参考原视频的节奏组织，但不复用原视频具体声音方案；需根据商品品类、镜头结构、节奏强弱和卖点推进，自动匹配更合适的 BGM、环境声和字幕或口播节奏。";
+      case "无声":
+      default:
+        return "最终声音策略：无声。仅参考原视频的视觉节奏组织，不生成口播、人声、环境声、拟音或背景音乐内容。";
+    }
+  };
+
   const sourceCount = context.sourceUploads.length;
   const videoName = context.videoUploads?.[0]?.name || "参考视频";
-  const modeId = context.creationModeSelection?.modeId ?? "normal";
   const modeLabel = context.creationModeSelection?.modeLabel ?? "普通模式";
   const ratio = context.creationModeSelection?.ratio ?? "竖9:16";
   const resolution = context.creationModeSelection?.resolution ?? "480p";
   const duration = context.advancedSelections.videoReplicaDuration ?? "10s";
-  const sound = context.advancedSelections.videoReplicaHasSound ?? "无声";
+  const sound = normalizeVideoReplicaSoundOption(context.advancedSelections.videoReplicaHasSound);
+  const audioStrategyForPrompt = buildAudioStrategyForPrompt(sound);
   const userDescription = context.supplementValue.trim();
-  const modeSpecificLines =
-    modeId === "advanced"
-      ? [
-          "高级模式附加要求：",
-          "1. 在复刻参考视频爆款感的前提下，进一步强化商业成片质感、镜头衔接稳定性和平台可投放感。",
-          "2. 更严格约束商品在跨镜头中的颜色、结构、材质、品牌元素和局部细节一致性，避免忽大忽小、忽清忽糊或结构漂移。",
-          "3. 更严格控制人物动作、手部接触、遮挡恢复、反光高光、阴影透视和环境反射，让商品与场景关系更可信。",
-          "4. 更强调对参考视频节奏、转场逻辑、情绪氛围、景别变化和卖点推进顺序的高保真复刻。",
-          "5. 输出结果需兼顾爆款氛围、真实商品表达和后续广告投放可用性。"
-        ]
-      : [
-          "普通模式执行重点：",
-          "1. 优先复刻参考视频的镜头结构、运镜节奏、主体动作和爆款表达路径。",
-          "2. 优先保证上传商品在主要镜头中的结构、颜色、材质和核心卖点表达稳定一致。",
-          "3. 在生成稳定的前提下，尽量还原原视频的情绪氛围、场景关系和成交感。"
-        ];
 
   const promptLines = [
     "你是一位电商爆款视频复刻导演、镜头拆解策划师与商品一致性审核专家。",
@@ -3771,7 +3807,12 @@ function buildVideoReplicaPrompt(context: VideoReplacePromptContext) {
     "1. 输出应保持真实商业广告片观感，避免闪烁、结构漂移、局部变形、边缘融化、贴图跳动、帧间不一致和明显 AI 感。",
     "2. 商品主体必须清晰可辨，卖点镜头需要服务转化，不要只做空泛炫技镜头或脱离商品本身的无效视觉包装。",
     "3. 若参考视频有字幕、贴纸、屏幕字或包装字样，复刻时仅保留其信息组织方式，不直接沿用原文字内容。",
-    ...modeSpecificLines,
+    "4. 在复刻参考视频爆款感的前提下，进一步强化商业成片质感、镜头衔接稳定性和平台可投放感。",
+    "5. 更严格约束商品在跨镜头中的颜色、结构、材质、品牌元素和局部细节一致性，避免忽大忽小、忽清忽糊或结构漂移。",
+    "6. 更严格控制人物动作、手部接触、遮挡恢复、反光高光、阴影透视和环境反射，让商品与场景关系更可信。",
+    "7. 更强调对参考视频节奏、转场逻辑、情绪氛围、景别变化和卖点推进顺序的高保真复刻。",
+    "8. 输出结果需兼顾爆款氛围、真实商品表达和后续广告投放可用性。",
+    audioStrategyForPrompt,
     `生成模式：${modeLabel}；视频时长：${duration}；目标比例：${ratio}；目标分辨率：${resolution}；音频要求：${sound}。`,
     userDescription
       ? `用户补充创作要求：${userDescription}。请将其吸收到最终复刻方案中，但不得破坏“参考视频逻辑可迁移、用户商品真实一致、成片稳定可用”这三条硬约束。`
@@ -3797,31 +3838,27 @@ function buildVideoReplicaPromptSummary(context: VideoReplacePromptContext) {
 }
 
 function buildVideoReplacePrompt(context: VideoReplacePromptContext) {
+  const buildAudioStrategyForPrompt = (selectedSound: VideoReplaceSoundOption) => {
+    switch (selectedSound) {
+      case "使用原视频声音":
+        return "最终声音策略：使用原视频声音。优先保留原视频的环境声组织、BGM 情绪方向、口播或字幕节奏，以及声音与镜头动作的配合关系；仅保留声音表达方法，不复制原视频具体品牌词、字幕原文或侵权音频内容。";
+      case "智能匹配声音":
+        return "最终声音策略：智能匹配声音。可不复用原视频具体声音方案，而是根据替换后商品的品类、镜头结构、动作节奏和卖点推进，自动匹配更合适的 BGM、环境声和字幕或口播节奏。";
+      case "无声":
+      default:
+        return "最终声音策略：无声。不输出口播、人声、环境声、拟音或背景音乐，仅保留原视频在视觉层面的动作节奏和镜头推进关系。";
+    }
+  };
+
   const sourceCount = context.sourceUploads.length;
   const videoName = context.videoUploads?.[0]?.name || "参考视频";
-  const modeId = context.creationModeSelection?.modeId ?? "normal";
   const modeLabel = context.creationModeSelection?.modeLabel ?? "普通模式";
   const ratio = context.creationModeSelection?.ratio ?? "竖9:16";
   const resolution = context.creationModeSelection?.resolution ?? "480p";
   const duration = context.advancedSelections.videoReplicaDuration ?? "10s";
-  const sound = context.advancedSelections.videoReplicaHasSound ?? "保留原视频音频";
+  const sound = normalizeVideoReplaceSoundOption(context.advancedSelections.videoReplicaHasSound);
+  const audioStrategyForPrompt = buildAudioStrategyForPrompt(sound);
   const userDescription = context.supplementValue.trim();
-  const modeSpecificLines =
-    modeId === "advanced"
-      ? [
-          "高级模式附加要求：",
-          "1. 强化跨镜头商品一致性，尤其是近景、特写、转场和遮挡恢复后的细节连续性。",
-          "2. 强化商品边缘融合、透明材质、金属反光、高光过渡、阴影衔接和环境反射的真实性。",
-          "3. 强化人与商品、商品与道具、商品与台面的接触可信度，避免悬浮感、穿插错误和受力异常。",
-          "4. 强化整片稳定性，重点抑制帧间闪烁、结构漂移、局部变形、贴图跳动和颜色忽明忽暗。",
-          "5. 在保证原视频节奏不变的前提下，让最终成片达到更强的商业广告质感与可投放质量。"
-        ]
-      : [
-          "普通模式执行重点：",
-          "1. 优先保证商品替换成功，动作不变、运镜不变、主体不跑偏。",
-          "2. 优先保证主要镜头中的商品结构、颜色和大轮廓稳定一致。",
-          "3. 在保证生成稳定的前提下，尽量还原原视频中的场景接触关系与真实观感。"
-        ];
 
   const promptLines = [
     "你是一位商品替换视频生成导演与电商商品一致性审核专家。",
@@ -3837,7 +3874,12 @@ function buildVideoReplacePrompt(context: VideoReplacePromptContext) {
     "1. 输出应保持商业级真实感，避免闪烁、抖动、漂移、穿帮、边缘融化、贴图错位、结构重影和帧间不一致。",
     "2. 人手持握、人物穿戴、桌面摆放、液体接触、开合按压等交互场景，需要保证商品与人物/环境接触自然。",
     "3. 若参考视频存在文字、Logo、包装、标签或屏幕内容，替换时需尽量与新商品信息协调，避免明显冲突。",
-    ...modeSpecificLines,
+    "4. 更严格约束跨镜头商品一致性，尤其是近景、特写、转场和遮挡恢复后的细节连续性。",
+    "5. 更严格控制商品边缘融合、透明材质、金属反光、高光过渡、阴影衔接和环境反射的真实性。",
+    "6. 更严格控制人与商品、商品与道具、商品与台面的接触可信度，避免悬浮感、穿插错误和受力异常。",
+    "7. 更严格抑制帧间闪烁、结构漂移、局部变形、贴图跳动和颜色忽明忽暗。",
+    "8. 在保证原视频节奏不变的前提下，让最终成片达到更强的商业广告质感与可投放质量。",
+    audioStrategyForPrompt,
     `生成模式：${modeLabel}；视频时长：${duration}；目标比例：${ratio}；目标分辨率：${resolution}；音频要求：${sound}。`,
     userDescription
       ? `用户补充创作要求：${userDescription}。在不破坏“动作和运镜不变、商品真实一致”的前提下，优先满足这些补充要求。`
@@ -11693,11 +11735,13 @@ function VideoPrintExtendSetupSection({
 }
 
 function VideoReplicaSetupSection({
+  toolKey,
   selectedValues,
   onSelectionChange,
   onSelectionMapChange,
   onCreationModeChange
 }: {
+  toolKey: string;
   selectedValues?: AdvancedSelectionMap;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
@@ -11709,6 +11753,9 @@ function VideoReplicaSetupSection({
   const [duration, setDuration] = useState(selectedValues?.videoReplicaDuration ?? "10s");
   const [ratio, setRatio] = useState(selectedValues?.videoReplicaRatio ?? "竖9:16");
   const [resolution, setResolution] = useState(selectedValues?.videoReplicaResolution ?? "480p");
+  const soundOptions = toolKey === "video-replace" ? [...videoReplaceSoundOptions] : [...videoReplicaSoundOptions];
+  const normalizeSoundOption = toolKey === "video-replace" ? normalizeVideoReplaceSoundOption : normalizeVideoReplicaSoundOption;
+  const [sound, setSound] = useState<string>(normalizeSoundOption(selectedValues?.videoReplicaHasSound));
   const lastSyncedValuesRef = useRef("");
   const lastEmitRef = useRef("");
 
@@ -11717,7 +11764,8 @@ function VideoReplicaSetupSection({
       mode: selectedValues?.videoReplicaMode ?? "普通模式",
       duration: selectedValues?.videoReplicaDuration ?? "10s",
       ratio: selectedValues?.videoReplicaRatio ?? "竖9:16",
-      resolution: selectedValues?.videoReplicaResolution ?? "480p"
+      resolution: selectedValues?.videoReplicaResolution ?? "480p",
+      sound: normalizeSoundOption(selectedValues?.videoReplicaHasSound)
     });
 
     if (nextSyncKey === lastSyncedValuesRef.current) {
@@ -11729,16 +11777,18 @@ function VideoReplicaSetupSection({
     setDuration(selectedValues?.videoReplicaDuration ?? "10s");
     setRatio(selectedValues?.videoReplicaRatio ?? "竖9:16");
     setResolution(selectedValues?.videoReplicaResolution ?? "480p");
-  }, [defaultMode, selectedValues]);
+    setSound(normalizeSoundOption(selectedValues?.videoReplicaHasSound));
+  }, [defaultMode, normalizeSoundOption, selectedValues]);
 
   useEffect(() => {
     const nextMap: AdvancedSelectionMap = {
       videoReplicaMode: mode,
       videoReplicaDuration: duration,
       videoReplicaRatio: ratio,
-      videoReplicaResolution: resolution
+      videoReplicaResolution: resolution,
+      videoReplicaHasSound: sound
     };
-    const nextSelectionValues = [mode, duration, ratio, resolution];
+    const nextSelectionValues = [mode, duration, ratio, resolution, sound];
     const nextCreationModeSelection: CreationModeSelection = {
       modeId: mode === "高级模式" ? "video-replica-advanced" : "video-replica-normal",
       modeLabel: mode,
@@ -11753,7 +11803,7 @@ function VideoReplicaSetupSection({
     onSelectionMapChange?.(nextMap);
     onSelectionChange?.(nextSelectionValues);
     onCreationModeChange?.(nextCreationModeSelection);
-  }, [duration, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution]);
+  }, [duration, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution, sound]);
 
   return (
     <div className="ck-creation-mode">
@@ -11770,6 +11820,14 @@ function VideoReplicaSetupSection({
       <SelectField label="视频比例" onChange={setRatio} options={videoReplicaRatioOptions} required value={ratio} />
 
       <CountField label="视频分辨率" onChange={setResolution} options={videoReplicaResolutionOptions} required value={resolution} />
+
+      <SelectField
+        label="视频声音"
+        onChange={(value) => setSound(normalizeSoundOption(value))}
+        options={soundOptions}
+        required
+        value={sound}
+      />
     </div>
   );
 }
@@ -17290,6 +17348,7 @@ function ConfigPanel({
     if (section === "video-replica-setup" && (tool.key === "video-main" || tool.key === "video-replica" || tool.key === "video-replace")) {
       return (
         <VideoReplicaSetupSection
+          toolKey={tool.key}
           onCreationModeChange={setCreationModeSelection}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
