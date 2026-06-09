@@ -2337,7 +2337,7 @@ function getPatternRepeatMetrics(selectionMap?: AdvancedSelectionMap) {
     createMode,
     promptItems,
     promptCount,
-    requiresMainUploads: type === "二方连续" || createMode === "图生图",
+    requiresMainUploads: type === "二方连续" || type === "扩大画幅" || createMode === "图生图",
     isTextReady: type === "四方连续" && createMode === "文生图" && promptCount > 0
   };
 }
@@ -2620,7 +2620,7 @@ const podFusionStyleOptions = ["默认", "3D", "皮克斯", "水彩", "像素", 
 const podFusionBackgroundOptions = ["默认", "简洁", "丰富"] as const;
 const podFusionRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
 const podFusionOutputCountOptions = ["1", "2", "3", "4"] as const;
-const patternRepeatTypeOptions = ["四方连续", "二方连续"] as const;
+const patternRepeatTypeOptions = ["四方连续", "二方连续", "扩大画幅"] as const;
 const patternRepeatCreateModeOptions = ["图生图", "文生图"] as const;
 const patternRepeatGenerateModeOptions = ["相似", "原图连续"] as const;
 const patternRepeatRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
@@ -11315,11 +11315,11 @@ function PatternRepeatSetupSection({
   useEffect(() => {
     const nextSelectionMap: AdvancedSelectionMap = {
       patternRepeatType: repeatType,
-      patternRepeatCreateMode: createMode,
+      patternRepeatCreateMode: repeatType === "四方连续" ? createMode : "",
       patternRepeatRatio: repeatType === "四方连续" ? "1:1" : ratio,
       patternRepeatOutputCount: outputCount,
-      patternRepeatDensityLevel: repeatType === "二方连续" ? densityLevel : "",
-      patternRepeatPrompts: JSON.stringify(promptItems)
+      patternRepeatDensityLevel: repeatType === "扩大画幅" ? densityLevel : "",
+      patternRepeatPrompts: repeatType === "四方连续" && createMode === "文生图" ? JSON.stringify(promptItems) : ""
     };
 
     if (repeatType === "四方连续") {
@@ -11342,7 +11342,7 @@ function PatternRepeatSetupSection({
         repeatType,
         repeatType === "四方连续" ? createMode : "",
         repeatType === "四方连续" && createMode === "图生图" ? `生成模式 ${generateMode}` : "",
-        repeatType === "二方连续" ? `元素密度 ${densityLevel}` : "",
+        repeatType === "扩大画幅" ? `元素密度 ${densityLevel}` : "",
         `尺寸比例 ${repeatType === "四方连续" ? "1:1" : ratio}`,
         `出图数量 ${outputCount}`,
         repeatType === "四方连续" && createMode === "文生图"
@@ -11351,7 +11351,7 @@ function PatternRepeatSetupSection({
       ].filter(Boolean)
     );
     onCreationModeChange?.({
-      modeId: `video-pattern-repeat-${repeatType}-${repeatType === "四方连续" ? createMode : "image"}`,
+      modeId: `video-pattern-repeat-${repeatType}-${repeatType === "四方连续" ? createMode : repeatType}`,
       modeLabel: repeatType === "四方连续" ? `${repeatType}·${createMode}` : repeatType,
       ratio: repeatType === "四方连续" ? "1:1" : ratio,
       count: Math.min(4, Math.max(1, Number(outputCount) || 1)),
@@ -11439,7 +11439,7 @@ function PatternRepeatSetupSection({
             value={outputCount}
           />
         </>
-      ) : (
+      ) : repeatType === "二方连续" ? (
         <>
           <UploadField
             fieldKey={mainUploadKey}
@@ -11457,10 +11457,35 @@ function PatternRepeatSetupSection({
             values={uploads[mainUploadKey] ?? []}
           />
 
+          <div className="ck-inline-field ck-aligned-inline-field">
+            <FieldTitle label="出图比例" required />
+            <SelectField
+              hideLabel
+              label="出图比例"
+              onChange={(value) => {
+                skipSelectedValuesSyncRef.current = true;
+                setRatio(value);
+              }}
+              options={[...patternRepeatRatioOptions]}
+              required
+              value={ratio}
+            />
+          </div>
+
+          <CountField
+            label="出图数量"
+            onChange={setOutputCount}
+            options={[...patternRepeatOutputCountOptions]}
+            required
+            value={outputCount}
+          />
+        </>
+      ) : (
+        <>
           <UploadField
             fieldKey={expandUploadKey}
             hint="最多24张，支持JPG/PNG/WebP"
-            label="扩大画幅"
+            label="添加素材"
             maxCount={24}
             meta="（单次最多上传24张）"
             onAdd={onAddUpload}
@@ -11469,6 +11494,7 @@ function PatternRepeatSetupSection({
             onRejectedUpload={onRejectedUpload}
             onRemove={onRemoveUpload}
             remainingStorageMb={remainingStorageMb}
+            required
             values={uploads[expandUploadKey] ?? []}
           />
 
@@ -17947,8 +17973,8 @@ function ConfigPanel({
           ? podFusionMetrics.payloadUploads
           : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "四方连续" && patternRepeatMetrics.createMode === "文生图"
             ? patternRepeatMetrics.promptItems.flatMap((item) => (item.reverseImage ? [item.reverseImage] : []))
-            : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "二方连续"
-              ? [...(uploads[mainUploadKey] ?? []), ...(uploads[patternRepeatExpandUploadKey] ?? [])]
+            : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "扩大画幅"
+              ? uploads[patternRepeatExpandUploadKey] ?? []
             : uploads[mainUploadKey] ?? [],
       referenceUploads: uploads[refUploadKey] ?? [],
       videoUploads: uploads[videoUploadKey] ?? [],
