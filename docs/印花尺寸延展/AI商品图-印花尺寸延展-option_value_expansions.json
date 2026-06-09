@@ -1,0 +1,31 @@
+{
+  "toolKey": "video-print-extend",
+  "version": "2026-06-09",
+  "optionValueExpansions": {
+    "videoPrintExtendSelectedRatios": {
+      "fieldKey": "videoPrintExtendSelectedRatios",
+      "name": "延展比例",
+      "values": {
+        "1:1": { "valuePrompt": "延展为标准方图，强调主体居中稳定、四边关系均衡，适合通用POD方形版型。" },
+        "1:2": { "valuePrompt": "延展为长竖比例，重点补足上下空间并保持纵向节奏自然，避免主体被拉长。" },
+        "2:1": { "valuePrompt": "延展为长横比例，重点补足左右空间并保持横向节奏自然，避免主体被摊平。" },
+        "2:3": { "valuePrompt": "延展为经典竖版比例，兼顾主体展示与边缘留白层次。" },
+        "3:2": { "valuePrompt": "延展为经典横版比例，兼顾主体完整度和横向排版适配性。" },
+        "3:4": { "valuePrompt": "延展为电商常用竖图比例，保证主体重心稳定和上下信息承载自然。" },
+        "4:3": { "valuePrompt": "延展为横向稳定比例，适合横向版型和并列信息展示。" },
+        "9:16": { "valuePrompt": "延展为竖屏长画幅，重点控制上下连续性、细节闭合和首屏识别。" },
+        "16:9": { "valuePrompt": "延展为横屏长画幅，重点控制左右连续性、节奏和视觉平衡。" }
+      }
+    },
+    "videoPrintExtendOutputCount": {
+      "fieldKey": "videoPrintExtendOutputCount",
+      "name": "每比例出图数量",
+      "values": {
+        "1": { "valuePrompt": "每个目标比例输出1张稳定结果，优先保证单张完成度。" },
+        "2": { "valuePrompt": "每个目标比例输出2张方案，允许在延展边界和留白关系上做小幅变化。" },
+        "3": { "valuePrompt": "每个目标比例输出3张方案，保持同源风格下的多版本可选空间。" },
+        "4": { "valuePrompt": "每个目标比例输出4张方案，保证风格一致前提下提供更充分的版式变化。" }
+      }
+    }
+  }
+}

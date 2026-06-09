@@ -1,0 +1,62 @@
+{
+  "toolKey": "video-print-extend",
+  "version": "2026-06-09",
+  "builderByTool": {
+    "video-print-extend": {
+      "requiredFields": [
+        "toolKey",
+        "videoPrintExtendSelectedRatios",
+        "videoPrintExtendOutputCount"
+      ],
+      "optionalFields": [
+        "videoPrintExtendRatioCount",
+        "videoPrintExtendTotalResultCount",
+        "videoPrintExtendUnitCreditCost",
+        "videoPrintExtendTotalCreditCost",
+        "supplement"
+      ],
+      "promptTemplates": {
+        "task": "基于上传印花图执行尺寸延展，在不破坏主体和图案可用性的前提下，生成适配多个版型比例的高质量结果。",
+        "mode": "{modePrompt}",
+        "params": "延展比例={selectedRatiosJoined}；每比例出图数量={videoPrintExtendOutputCount}；比例数={videoPrintExtendRatioCount}；总结果数={videoPrintExtendTotalResultCount}。",
+        "ratioPrompts": "{ratioValuePromptsJoined}",
+        "countPrompt": "{outputCountValuePrompt}",
+        "required": "必须满足：{modeRequiredJoined}",
+        "forbidden": "禁止：{modeForbiddenJoined}",
+        "supplement": "补充说明：{supplement}"
+      },
+      "segmentOrder": [
+        "task",
+        "mode",
+        "params",
+        "ratioPrompts",
+        "countPrompt",
+        "required",
+        "forbidden",
+        "universalNegativePrompt",
+        "universalQualityPrompt",
+        "supplement"
+      ],
+      "strictMode": {
+        "enabled": true,
+        "onMissingModeRule": "error",
+        "onMissingRequiredField": "error",
+        "onUnknownRatio": "error",
+        "onUnknownOutputCount": "error"
+      },
+      "trimPolicy": {
+        "cannotTrim": [
+          "required",
+          "forbidden",
+          "universalNegativePrompt",
+          "universalQualityPrompt"
+        ],
+        "canTrimPriority": [
+          "countPrompt",
+          "ratioPrompts",
+          "mode"
+        ]
+      }
+    }
+  }
+}

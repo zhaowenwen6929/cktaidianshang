@@ -11412,7 +11412,6 @@ function PatternRepeatPromptList({
               <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
               <UnifiedTextareaField
                 formBlockClassName="ck-form-block ck-set-pack-selling-points ck-pattern-repeat-textarea-item"
-                hideCount
                 maxLength={2000}
                 onChange={(value) => updatePromptItem(item.id, (current) => ({ ...current, text: value }))}
                 placeholder="描述你想要生成的图片"
@@ -11668,6 +11667,7 @@ function PatternRepeatSetupSection({
           <div className="ck-inline-field ck-aligned-inline-field">
             <FieldTitle label="出图比例" required />
             <SelectField
+              className="ck-pattern-repeat-inline-select"
               hideLabel
               label="出图比例"
               onChange={(value) => {
@@ -11722,6 +11722,7 @@ function PatternRepeatSetupSection({
           <div className="ck-inline-field ck-aligned-inline-field">
             <FieldTitle label="出图比例" required />
             <SelectField
+              className="ck-pattern-repeat-inline-select"
               hideLabel
               label="出图比例"
               onChange={(value) => {
@@ -11889,6 +11890,7 @@ function VideoStylePrintSetupSection({
       <div className="ck-inline-field ck-aligned-inline-field">
         <FieldTitle label="出图比例" required />
         <SelectField
+          className="ck-video-2d3d-inline-select"
           hideLabel
           label="出图比例"
           onChange={(value) => {

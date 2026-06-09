@@ -1,0 +1,68 @@
+{
+  "toolKey": "video-2d3d",
+  "version": "2026-06-09",
+  "builderByTool": {
+    "video-2d3d": {
+      "requiredFields": [
+        "toolKey",
+        "video2d3dStyleCategory",
+        "video2d3dStyle",
+        "video2d3dRatio",
+        "video2d3dOutputCount"
+      ],
+      "optionalFields": [
+        "supplement"
+      ],
+      "promptTemplates": {
+        "task": "基于上传素材执行风格转绘，在保持原图主体结构和识别特征稳定的前提下，输出命中指定风格的高质量结果。",
+        "category": "{styleCategoryPrompt}",
+        "params": "风格分类={video2d3dStyleCategory}；具体风格={video2d3dStyle}；出图比例={video2d3dRatio}；出图数量={video2d3dOutputCount}。",
+        "categoryValue": "{styleCategoryValuePrompt}",
+        "styleValue": "{styleValuePrompt}",
+        "ratioValue": "{ratioValuePrompt}",
+        "countValue": "{outputCountValuePrompt}",
+        "required": "必须满足：{requiredJoined}",
+        "forbidden": "禁止：{forbiddenJoined}",
+        "supplement": "补充说明：{supplement}"
+      },
+      "segmentOrder": [
+        "task",
+        "category",
+        "params",
+        "categoryValue",
+        "styleValue",
+        "ratioValue",
+        "countValue",
+        "required",
+        "forbidden",
+        "universalNegativePrompt",
+        "universalQualityPrompt",
+        "supplement"
+      ],
+      "strictMode": {
+        "enabled": true,
+        "onMissingCategoryRule": "error",
+        "onMissingRequiredField": "error",
+        "onUnknownStyleCategory": "error",
+        "onUnknownStyle": "error",
+        "onUnknownRatio": "error",
+        "onUnknownOutputCount": "error"
+      },
+      "trimPolicy": {
+        "cannotTrim": [
+          "required",
+          "forbidden",
+          "universalNegativePrompt",
+          "universalQualityPrompt"
+        ],
+        "canTrimPriority": [
+          "countValue",
+          "ratioValue",
+          "styleValue",
+          "categoryValue",
+          "category"
+        ]
+      }
+    }
+  }
+}
