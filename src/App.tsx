@@ -2305,11 +2305,25 @@ function getImageGenerationUnitCreditCost(
 }
 
 function getPatternRepeatPromptItems(selectionMap?: AdvancedSelectionMap) {
-  return (
-    safeParseJson<PatternRepeatPromptItem[]>(selectionMap?.patternRepeatPrompts, [
-      { id: generateRandomTenDigitId(), text: "" }
-    ]) ?? [{ id: generateRandomTenDigitId(), text: "" }]
-  );
+  const rawPromptItems = safeParseJson<PatternRepeatPromptItem[] | string[]>(selectionMap?.patternRepeatPrompts, []);
+  if (Array.isArray(rawPromptItems) && rawPromptItems.length > 0) {
+    const normalizedItems = rawPromptItems
+      .map((item) =>
+        typeof item === "string"
+          ? { id: generateRandomTenDigitId(), text: item }
+          : {
+              id: item.id || generateRandomTenDigitId(),
+              text: item.text ?? "",
+              reverseImage: item.reverseImage
+            }
+      )
+      .filter((item) => item.text.trim() || item.reverseImage);
+    if (normalizedItems.length) {
+      return normalizedItems;
+    }
+  }
+
+  return [{ id: generateRandomTenDigitId(), text: "" }];
 }
 
 function getPatternRepeatMetrics(selectionMap?: AdvancedSelectionMap) {
@@ -2520,10 +2534,10 @@ const podExtractRatioOptions: Record<PodExtractModeKey, string[]> = {
   "专项提取": ["自动检测比例", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "18:23"],
   "全能提取": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"]
 };
-const videoSceneGridModeCards: Array<{ key: "系列图案" | "主副图案" | "情侣图案"; label: string; badge?: string }> = [
-  { key: "系列图案", label: "系列图案" },
-  { key: "主副图案", label: "主副图案" },
-  { key: "情侣图案", label: "情侣图案", badge: "NEW" }
+const videoSceneGridModeCards: Array<{ key: "系列图案" | "主副图案" | "情侣图案"; label: string; description: string; badge?: string }> = [
+  { key: "系列图案", label: "系列图案", description: "适用装饰画、抱枕、帆布画、穿戴甲等连幅图案场景" },
+  { key: "主副图案", label: "主副图案", description: "适用服饰、杯子、保温瓶等双面图案场景" },
+  { key: "情侣图案", label: "情侣/亲子图案", description: "适用服饰、项链吊坠、纹身贴、杯子等情侣图案场景", badge: "NEW" }
 ];
 type VideoSceneGridModeKey = (typeof videoSceneGridModeCards)[number]["key"];
 const videoSceneGridVariationOptions: Record<VideoSceneGridModeKey, string[]> = {
@@ -2550,6 +2564,56 @@ const videoSceneGridDetailDimensionMap: Record<VideoSceneGridModeKey, Record<str
     "智能参考": ["双人关系识别", "服装元素呼应", "互动姿态统一"]
   }
 };
+const videoSceneGridSeriesVariationTips: Record<string, { title: string; description: string }> = {
+  "智能参考": {
+    title: "智能参考",
+    description: "智能识别系列关系，保留原始风格线索，自动补齐系列一致性。"
+  },
+  "裂变主体": {
+    title: "裂变主体",
+    description: "仅裂变主体内容，排版不变。"
+  },
+  "裂变主体/文本": {
+    title: "裂变主体/文本",
+    description: "裂变主体和文本，排版不变。"
+  },
+  "裂变主题": {
+    title: "裂变主题",
+    description: "裂变主题，主体不变。"
+  },
+  "系列衍生": {
+    title: "系列衍生",
+    description: "强风格一致性，裂变主体元素，生成创意具备连续性。"
+  }
+};
+const videoSceneGridPrimarySecondaryVariationTips: Record<string, { title: string; description: string }> = {
+  "智能参考": {
+    title: "智能参考",
+    description: "智能分析原素材，选取最佳创意进行裂变。"
+  },
+  "简洁": {
+    title: "简洁",
+    description: "简化元素和构图，仍然保持一致性表达。"
+  },
+  "丰富": {
+    title: "丰富",
+    description: "丰富元素和构图，仍然保持一致性表达。"
+  },
+  "反转": {
+    title: "反转",
+    description: "与原素材内容的相对立反转。"
+  },
+  "叙事性": {
+    title: "叙事性",
+    description: "与原素材在主题上强关联，且带有趣味性。"
+  }
+};
+const videoSceneGridCoupleVariationTips: Record<string, { title: string; description: string }> = {
+  "智能参考": {
+    title: "智能参考",
+    description: "智能分析原素材，选取最佳创意进行裂变。"
+  }
+};
 const videoSceneGridRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
 const podFusionModeOptions = ["两两融合", "一对多融合"] as const;
 const podFusionStyleOptions = ["默认", "3D", "皮克斯", "水彩", "像素", "矢量", "复古", "科幻", "赛博朋克"] as const;
@@ -2560,6 +2624,8 @@ const patternRepeatTypeOptions = ["四方连续", "二方连续"] as const;
 const patternRepeatCreateModeOptions = ["图生图", "文生图"] as const;
 const patternRepeatGenerateModeOptions = ["相似", "原图连续"] as const;
 const patternRepeatRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
+const patternRepeatOutputCountOptions = ["1", "2", "3", "4"] as const;
+const patternRepeatDensityLevels = ["稀疏", "均衡", "密集"] as const;
 const videoReplicaModeOptions = ["普通模式", "高级模式"] as const;
 type VideoReplicaModeKey = (typeof videoReplicaModeOptions)[number];
 const videoReplicaDurationOptions = ["4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s"];
@@ -11124,8 +11190,6 @@ function PatternRepeatPromptList({
   promptItems: PatternRepeatPromptItem[];
   onChange: (items: PatternRepeatPromptItem[]) => void;
 }) {
-  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
   const updatePromptItem = (id: string, updater: (item: PatternRepeatPromptItem) => PatternRepeatPromptItem) => {
     onChange(promptItems.map((item) => (item.id === id ? updater(item) : item)));
   };
@@ -11143,63 +11207,37 @@ function PatternRepeatPromptList({
   };
 
   return (
-    <div className="ck-pattern-repeat-prompt-list">
-      <div className="ck-pattern-repeat-prompt-list-head">
-        <FieldTitle label="提示词列表" required />
-      </div>
-      <div className="ck-pattern-repeat-prompt-list-body">
-        {promptItems.map((item) => (
-          <div className="ck-pattern-repeat-prompt-card" key={item.id}>
-            <UnifiedTextareaField
-              actions={
-                <>
-                  <button
-                    className="ck-pattern-repeat-prompt-upload"
-                    onClick={() => inputRefs.current[item.id]?.click()}
-                    type="button"
-                  >
-                    导入图片反推
-                  </button>
-                  {item.reverseImage ? (
-                    <div className="ck-pattern-repeat-prompt-preview">
-                      <img alt={item.reverseImage.name ?? "参考图"} src={item.reverseImage.previewSrc ?? item.reverseImage.src} />
-                      <span>{item.reverseImage.name ?? "已导入参考图"}</span>
-                    </div>
-                  ) : null}
-                  <button className="ck-pattern-repeat-prompt-delete" onClick={() => removePromptItem(item.id)} type="button">
-                    删除
-                  </button>
-                </>
-              }
-              footerClassName="ck-pattern-repeat-prompt-card-footer"
-              formBlockClassName=""
+    <div className="ck-inline-field ck-partial-edit-dynamic-list-field">
+      <FieldTitle label="替换后的内容" required />
+      <div className="ck-partial-edit-dynamic-list">
+        {promptItems.map((item, index) => (
+          <div className="ck-partial-edit-dynamic-list-row" key={item.id}>
+            <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
+            <input
+              className="ck-structured-inline-input"
               maxLength={2000}
-              onChange={(value) => updatePromptItem(item.id, (current) => ({ ...current, text: value }))}
-              placeholder="描述想要生成的图片"
+              onChange={(event) => updatePromptItem(item.id, (current) => ({ ...current, text: event.target.value }))}
+              placeholder="输入替换后的内容"
+              type="text"
               value={item.text}
             />
-            <input
-              accept="image/*"
-              className="ck-upload-input"
-              onChange={(event) => {
-                const files = event.target.files;
-                if (!files?.length) return;
-                const nextImage = buildUploadItemsFromFiles(files)[0];
-                if (nextImage) {
-                  updatePromptItem(item.id, (current) => ({ ...current, reverseImage: nextImage }));
-                }
-                event.target.value = "";
-              }}
-              ref={(node) => {
-                inputRefs.current[item.id] = node;
-              }}
-              type="file"
-            />
+            {promptItems.length > 1 && index > 0 ? (
+              <button
+                aria-label={`删除第${index + 1}个替换内容`}
+                className="ck-partial-edit-remove-button"
+                onClick={() => removePromptItem(item.id)}
+                type="button"
+              >
+                ×
+              </button>
+            ) : null}
           </div>
         ))}
-        <button className="ck-pattern-repeat-prompt-add" onClick={addPromptItem} type="button">
-          +
-        </button>
+        {promptItems.length < 10 ? (
+          <button className="ck-partial-edit-add-button" onClick={addPromptItem} type="button">
+            +
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -11232,11 +11270,16 @@ function PatternRepeatSetupSection({
   onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
   const mainUploadKey = "video-pattern-repeat:main";
+  const expandUploadKey = "video-pattern-repeat:expand";
   const skipSelectedValuesSyncRef = useRef(false);
   const [repeatType, setRepeatType] = useState<string>(selectedValues?.patternRepeatType ?? patternRepeatTypeOptions[0]);
   const [createMode, setCreateMode] = useState<string>(selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0]);
   const [generateMode, setGenerateMode] = useState<string>(selectedValues?.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0]);
   const [ratio, setRatio] = useState<string>(selectedValues?.patternRepeatRatio ?? patternRepeatRatioOptions[0]);
+  const [outputCount, setOutputCount] = useState<string>(selectedValues?.patternRepeatOutputCount ?? patternRepeatOutputCountOptions[0]);
+  const [densityLevel, setDensityLevel] = useState<(typeof patternRepeatDensityLevels)[number]>(
+    (selectedValues?.patternRepeatDensityLevel as (typeof patternRepeatDensityLevels)[number]) ?? patternRepeatDensityLevels[1]
+  );
   const [promptItems, setPromptItems] = useState<PatternRepeatPromptItem[]>(() => getPatternRepeatPromptItems(selectedValues));
   const lastSyncedValuesRef = useRef("");
 
@@ -11250,6 +11293,8 @@ function PatternRepeatSetupSection({
       patternRepeatCreateMode: selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0],
       patternRepeatGenerateMode: selectedValues?.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0],
       patternRepeatRatio: selectedValues?.patternRepeatRatio ?? patternRepeatRatioOptions[0],
+      patternRepeatOutputCount: selectedValues?.patternRepeatOutputCount ?? patternRepeatOutputCountOptions[0],
+      patternRepeatDensityLevel: selectedValues?.patternRepeatDensityLevel ?? patternRepeatDensityLevels[1],
       patternRepeatPrompts: selectedValues?.patternRepeatPrompts ?? ""
     });
 
@@ -11262,6 +11307,8 @@ function PatternRepeatSetupSection({
     setCreateMode(selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0]);
     setGenerateMode(selectedValues?.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0]);
     setRatio(selectedValues?.patternRepeatRatio ?? patternRepeatRatioOptions[0]);
+    setOutputCount(selectedValues?.patternRepeatOutputCount ?? patternRepeatOutputCountOptions[0]);
+    setDensityLevel((selectedValues?.patternRepeatDensityLevel as (typeof patternRepeatDensityLevels)[number]) ?? patternRepeatDensityLevels[1]);
     setPromptItems(getPatternRepeatPromptItems(selectedValues));
   }, [selectedValues]);
 
@@ -11269,14 +11316,14 @@ function PatternRepeatSetupSection({
     const nextSelectionMap: AdvancedSelectionMap = {
       patternRepeatType: repeatType,
       patternRepeatCreateMode: createMode,
+      patternRepeatRatio: repeatType === "四方连续" ? "1:1" : ratio,
+      patternRepeatOutputCount: outputCount,
+      patternRepeatDensityLevel: repeatType === "二方连续" ? densityLevel : "",
       patternRepeatPrompts: JSON.stringify(promptItems)
     };
 
     if (repeatType === "四方连续") {
       nextSelectionMap.patternRepeatGenerateMode = generateMode;
-    }
-    if (repeatType === "二方连续") {
-      nextSelectionMap.patternRepeatRatio = ratio;
     }
 
     skipSelectedValuesSyncRef.current = true;
@@ -11285,6 +11332,8 @@ function PatternRepeatSetupSection({
       patternRepeatCreateMode: nextSelectionMap.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0],
       patternRepeatGenerateMode: nextSelectionMap.patternRepeatGenerateMode ?? patternRepeatGenerateModeOptions[0],
       patternRepeatRatio: nextSelectionMap.patternRepeatRatio ?? patternRepeatRatioOptions[0],
+      patternRepeatOutputCount: nextSelectionMap.patternRepeatOutputCount ?? patternRepeatOutputCountOptions[0],
+      patternRepeatDensityLevel: nextSelectionMap.patternRepeatDensityLevel ?? patternRepeatDensityLevels[1],
       patternRepeatPrompts: nextSelectionMap.patternRepeatPrompts ?? ""
     });
     onSelectionMapChange?.(nextSelectionMap);
@@ -11293,7 +11342,9 @@ function PatternRepeatSetupSection({
         repeatType,
         repeatType === "四方连续" ? createMode : "",
         repeatType === "四方连续" && createMode === "图生图" ? `生成模式 ${generateMode}` : "",
-        repeatType === "二方连续" ? `尺寸比例 ${ratio}` : "",
+        repeatType === "二方连续" ? `元素密度 ${densityLevel}` : "",
+        `尺寸比例 ${repeatType === "四方连续" ? "1:1" : ratio}`,
+        `出图数量 ${outputCount}`,
         repeatType === "四方连续" && createMode === "文生图"
           ? `提示词 ${promptItems.filter((item) => item.text.trim() || item.reverseImage).length} 条`
           : ""
@@ -11302,11 +11353,11 @@ function PatternRepeatSetupSection({
     onCreationModeChange?.({
       modeId: `video-pattern-repeat-${repeatType}-${repeatType === "四方连续" ? createMode : "image"}`,
       modeLabel: repeatType === "四方连续" ? `${repeatType}·${createMode}` : repeatType,
-      ratio: repeatType === "二方连续" ? ratio : "1:1",
-      count: 1,
+      ratio: repeatType === "四方连续" ? "1:1" : ratio,
+      count: Math.min(4, Math.max(1, Number(outputCount) || 1)),
       unitCreditCost: 5
     });
-  }, [createMode, generateMode, onCreationModeChange, onSelectionChange, onSelectionMapChange, promptItems, ratio, repeatType]);
+  }, [createMode, densityLevel, generateMode, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, promptItems, ratio, repeatType]);
 
   return (
     <div className="ck-form-block">
@@ -11374,6 +11425,19 @@ function PatternRepeatSetupSection({
               promptItems={promptItems}
             />
           )}
+
+          <div className="ck-inline-field ck-aligned-inline-field">
+            <FieldTitle label="出图比例" required />
+            <SelectField hideLabel label="出图比例" options={["1:1"]} required value="1:1" />
+          </div>
+
+          <CountField
+            label="出图数量"
+            onChange={setOutputCount}
+            options={[...patternRepeatOutputCountOptions]}
+            required
+            value={outputCount}
+          />
         </>
       ) : (
         <>
@@ -11393,11 +11457,39 @@ function PatternRepeatSetupSection({
             values={uploads[mainUploadKey] ?? []}
           />
 
+          <UploadField
+            fieldKey={expandUploadKey}
+            hint="最多24张，支持JPG/PNG/WebP"
+            label="扩大画幅"
+            maxCount={24}
+            meta="（单次最多上传24张）"
+            onAdd={onAddUpload}
+            onAtLimit={onAtLimit}
+            onOpenLibrary={onOpenLibrary}
+            onRejectedUpload={onRejectedUpload}
+            onRemove={onRemoveUpload}
+            remainingStorageMb={remainingStorageMb}
+            values={uploads[expandUploadKey] ?? []}
+          />
+
+          <InlineSliderField
+            label="元素密度"
+            max={2}
+            min={0}
+            onChange={(next) => {
+              skipSelectedValuesSyncRef.current = true;
+              setDensityLevel(patternRepeatDensityLevels[Math.round(next)] ?? patternRepeatDensityLevels[1]);
+            }}
+            step={1}
+            value={patternRepeatDensityLevels.indexOf(densityLevel)}
+            valueFormatter={(current) => patternRepeatDensityLevels[Math.round(current)] ?? patternRepeatDensityLevels[1]}
+          />
+
           <div className="ck-inline-field ck-aligned-inline-field">
-            <FieldTitle label="尺寸比例" required />
+            <FieldTitle label="出图比例" required />
             <SelectField
               hideLabel
-              label="尺寸比例"
+              label="出图比例"
               onChange={(value) => {
                 skipSelectedValuesSyncRef.current = true;
                 setRatio(value);
@@ -11407,6 +11499,14 @@ function PatternRepeatSetupSection({
               value={ratio}
             />
           </div>
+
+          <CountField
+            label="出图数量"
+            onChange={setOutputCount}
+            options={[...patternRepeatOutputCountOptions]}
+            required
+            value={outputCount}
+          />
         </>
       )}
     </div>
@@ -11491,6 +11591,14 @@ function VideoSceneGridSetupSection({
   }, [mode, outputCount, ratio, selectedValues]);
 
   const detailDimensions = videoSceneGridDetailDimensionMap[mode][variation] ?? [];
+  const variationTip =
+    mode === "系列图案"
+      ? videoSceneGridSeriesVariationTips[variation]
+      : mode === "主副图案"
+        ? videoSceneGridPrimarySecondaryVariationTips[variation]
+        : mode === "情侣图案"
+          ? videoSceneGridCoupleVariationTips[variation]
+          : null;
   const totalCredits = uploadCount * outputCount * 5;
 
   useEffect(() => {
@@ -11542,11 +11650,19 @@ function VideoSceneGridSetupSection({
               }}
               type="button"
             >
-              <div className="ck-video-scene-grid-mode-card-head">
-                <strong>{option.label}</strong>
-                {option.badge ? <span className="ck-video-scene-grid-badge">{option.badge}</span> : null}
+              <div className="ck-video-scene-grid-mode-card-layout">
+                <div className="ck-video-scene-grid-mode-card-copy">
+                  <div className="ck-video-scene-grid-mode-card-head">
+                    <strong>{option.label}</strong>
+                    <span className={`ck-video-scene-grid-check${mode === option.key ? " active" : ""}`} aria-hidden="true">
+                      {mode === option.key ? "✓" : ""}
+                    </span>
+                  </div>
+                  <span className="ck-video-scene-grid-mode-card-subtitle">{option.description}</span>
+                  {option.badge ? <span className="ck-video-scene-grid-badge">{option.badge}</span> : null}
+                </div>
+                <VideoSceneGridPreview mode={option.key} />
               </div>
-              <VideoSceneGridPreview mode={option.key} />
             </button>
           ))}
         </div>
@@ -11566,24 +11682,21 @@ function VideoSceneGridSetupSection({
             </button>
           ))}
         </div>
+        {variationTip ? (
+          <div className="ck-video-scene-grid-tip-card">
+            <div className="ck-video-scene-grid-tip-title">
+              <span className="ck-video-scene-grid-tip-icon" aria-hidden="true">
+                ?
+              </span>
+              <strong>{variationTip.title}</strong>
+            </div>
+            <p>{variationTip.description}</p>
+          </div>
+        ) : null}
       </div>
 
-      <div className="ck-form-block ck-video-scene-grid-detail-panel">
-        <div className="ck-video-scene-grid-detail-head">
-          <FieldTitle label="详细维度" required />
-          <span>{variation}</span>
-        </div>
-        <div className="ck-video-scene-grid-detail-tags">
-          {detailDimensions.map((item) => (
-            <span className="ck-video-scene-grid-detail-tag" key={item}>
-              {item}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="ck-video-scene-grid-footer-row">
-        <div className="ck-inline-field ck-aligned-inline-field ck-video-scene-grid-inline-field">
+      <div className="ck-video-scene-grid-footer-group">
+        <div className="ck-inline-field ck-pod-variation-inline-field ck-video-scene-grid-inline-field">
           <FieldTitle label="出图比例" required />
           <SelectField
             className="ck-video-scene-grid-select-field"
@@ -11597,7 +11710,9 @@ function VideoSceneGridSetupSection({
           />
         </div>
 
-        <NumberStepperField label="生图数量" max={10} min={2} onChange={setOutputCount} required value={outputCount} />
+        <div className="ck-video-scene-grid-inline-field ck-video-scene-grid-stepper-field">
+          <NumberStepperField label="生图数量" max={10} min={2} onChange={setOutputCount} required value={outputCount} />
+        </div>
       </div>
     </div>
   );
@@ -16609,6 +16724,7 @@ function ConfigPanel({
   const mainUploadKey = `${tool.key}:main`;
   const refUploadKey = `${tool.key}:reference`;
   const videoUploadKey = `${tool.key}:video`;
+  const patternRepeatExpandUploadKey = `${tool.key}:expand`;
   const toolModuleConfig = toolModuleConfigs[tool.key] ?? toolModuleConfigs["more-title"];
   const mainUploadConfig = toolModuleConfig.uploads.main;
   const refUploadConfig = toolModuleConfig.uploads.reference;
@@ -17267,6 +17383,8 @@ function ConfigPanel({
               "patternRepeatCreateMode",
               "patternRepeatGenerateMode",
               "patternRepeatRatio",
+              "patternRepeatOutputCount",
+              "patternRepeatDensityLevel",
               "patternRepeatPrompts"
             ];
             setAdvancedSettingSelections((current) => {
@@ -17829,6 +17947,8 @@ function ConfigPanel({
           ? podFusionMetrics.payloadUploads
           : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "四方连续" && patternRepeatMetrics.createMode === "文生图"
             ? patternRepeatMetrics.promptItems.flatMap((item) => (item.reverseImage ? [item.reverseImage] : []))
+            : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "二方连续"
+              ? [...(uploads[mainUploadKey] ?? []), ...(uploads[patternRepeatExpandUploadKey] ?? [])]
             : uploads[mainUploadKey] ?? [],
       referenceUploads: uploads[refUploadKey] ?? [],
       videoUploads: uploads[videoUploadKey] ?? [],
