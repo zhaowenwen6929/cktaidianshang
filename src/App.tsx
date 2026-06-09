@@ -2761,6 +2761,24 @@ const video2d3dStyleCategoryMap = {
     "木刻版画",
     "铅笔素描"
   ],
+  原始3D风格: [
+    "罗纹编织纹理",
+    "提花编织纹理",
+    "UV 浮雕",
+    "粗线全幅绣",
+    "粗线局部绣",
+    "细线全幅绣",
+    "细线局部绣",
+    "细线图形绣",
+    "粗线图形绣",
+    "立体发泡",
+    "木质浮雕",
+    "铜面浮雕",
+    "银面浮雕",
+    "金面浮雕",
+    "雕塑绘画",
+    "立体纸雕"
+  ],
   线描手稿: ["写实素描", "现代速写", "撞色线稿", "麻胶版画", "连笔肖像", "蜡笔线线", "极简粗铅", "瓷蓝速写", "炭笔素描", "简易线稿", "黑白简笔", "速写", "速写线稿", "铅笔素描"],
   插画卡通: ["裂纹彩绘", "漆红刻画", "夸张手绘", "平面插画", "平涂插画", "童趣水彩", "儿童绘本", "经典皮克斯", "美式夸张漫画", "美式漫画", "2D迪士尼", "卡通手绘", "夸张肖像", "数字卡通", "吉卜力"],
   水彩油画: ["炭粉水彩", "矢量水彩", "糙彩肖像", "水彩", "水彩泼墨", "厚涂油画", "色块油画", "印象油画", "厚涂水彩", "彩铅", "马克笔"],
@@ -11386,18 +11404,17 @@ function PatternRepeatPromptList({
   };
 
   return (
-    <div className="ck-inline-field ck-partial-edit-dynamic-list-field">
-      <FieldTitle label="替换后的内容" required />
+    <div className="ck-form-block ck-partial-edit-dynamic-list-field">
       <div className="ck-partial-edit-dynamic-list">
         {promptItems.map((item, index) => (
           <div className="ck-partial-edit-dynamic-list-row" key={item.id}>
             <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
-            <input
-              className="ck-structured-inline-input"
+            <UnifiedTextareaField
+              formBlockClassName="ck-form-block ck-set-pack-selling-points ck-pattern-repeat-textarea-item"
+              hideCount
               maxLength={2000}
-              onChange={(event) => updatePromptItem(item.id, (current) => ({ ...current, text: event.target.value }))}
-              placeholder="输入替换后的内容"
-              type="text"
+              onChange={(value) => updatePromptItem(item.id, (current) => ({ ...current, text: value }))}
+              placeholder="描述你想要生成的图片"
               value={item.text}
             />
             {promptItems.length > 1 && index > 0 ? (
@@ -12233,11 +12250,6 @@ function VideoPrintExtendSetupSection({
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
-  const customPopoverRef = useRef<HTMLDivElement | null>(null);
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customWidth, setCustomWidth] = useState("");
-  const [customHeight, setCustomHeight] = useState("");
-  const [customRatios, setCustomRatios] = useState<string[]>(() => parseVideoPrintExtendRatioList(selectedValues?.videoPrintExtendCustomRatios));
   const [selectedRatios, setSelectedRatios] = useState<string[]>(() => {
     const restored = getVideoPrintExtendSelectedRatios(selectedValues);
     return restored.length ? restored : ["1:1"];
@@ -12247,19 +12259,13 @@ function VideoPrintExtendSetupSection({
     return Math.min(4, Math.max(1, Number.isFinite(nextValue) ? nextValue : 1));
   });
   const lastSyncedValuesRef = useRef("");
-
-  const ratioOptions = useMemo(
-    () =>
-      [...videoPrintExtendBaseRatioOptions, ...customRatios.filter((item) => !videoPrintExtendBaseRatioOptions.includes(item as (typeof videoPrintExtendBaseRatioOptions)[number]))] as string[],
-    [customRatios]
-  );
+  const ratioOptions = [...videoPrintExtendBaseRatioOptions] as string[];
   const ratioCount = selectedRatios.length;
   const totalResultCount = uploadCount * ratioCount * outputCount;
   const totalCredits = totalResultCount * VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST;
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
-      customRatios: parseVideoPrintExtendRatioList(selectedValues?.videoPrintExtendCustomRatios),
       selectedRatios: getVideoPrintExtendSelectedRatios(selectedValues),
       outputCount: selectedValues?.videoPrintExtendOutputCount ?? "1"
     });
@@ -12269,35 +12275,16 @@ function VideoPrintExtendSetupSection({
     }
 
     lastSyncedValuesRef.current = nextSyncKey;
-    const nextCustomRatios = parseVideoPrintExtendRatioList(selectedValues?.videoPrintExtendCustomRatios);
     const nextSelectedRatios = getVideoPrintExtendSelectedRatios(selectedValues);
     const nextOutputCount = Number(selectedValues?.videoPrintExtendOutputCount ?? 1);
 
-    setCustomRatios(nextCustomRatios);
     setSelectedRatios(nextSelectedRatios.length ? nextSelectedRatios : ["1:1"]);
     setOutputCount(Math.min(4, Math.max(1, Number.isFinite(nextOutputCount) ? nextOutputCount : 1)));
-    setCustomOpen(false);
-    setCustomWidth("");
-    setCustomHeight("");
   }, [selectedValues]);
-
-  useEffect(() => {
-    if (!customOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!customPopoverRef.current?.contains(event.target as Node)) {
-        setCustomOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [customOpen]);
 
   useEffect(() => {
     onSelectionMapChange?.({
       videoPrintExtendSelectedRatios: JSON.stringify(selectedRatios),
-      videoPrintExtendCustomRatios: JSON.stringify(customRatios),
       videoPrintExtendOutputCount: String(outputCount),
       videoPrintExtendRatioCount: String(ratioCount),
       videoPrintExtendTotalResultCount: String(totalResultCount),
@@ -12316,22 +12303,10 @@ function VideoPrintExtendSetupSection({
       count: outputCount,
       unitCreditCost: VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST
     });
-  }, [customRatios, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, ratioCount, selectedRatios, totalCredits, totalResultCount]);
+  }, [onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, ratioCount, selectedRatios, totalCredits, totalResultCount]);
 
   const toggleRatio = (ratio: string) => {
     setSelectedRatios((current) => (current.includes(ratio) ? current.filter((item) => item !== ratio) : [...current, ratio]));
-  };
-
-  const handleSaveCustomRatio = () => {
-    const normalizedRatio = normalizeVideoPrintExtendRatio(customWidth, customHeight);
-    if (!normalizedRatio) {
-      return;
-    }
-    setCustomRatios((current) => (current.includes(normalizedRatio) ? current : [...current, normalizedRatio]));
-    setSelectedRatios((current) => (current.includes(normalizedRatio) ? current : [...current, normalizedRatio]));
-    setCustomOpen(false);
-    setCustomWidth("");
-    setCustomHeight("");
   };
 
   return (
@@ -12342,26 +12317,6 @@ function VideoPrintExtendSetupSection({
           <span>已选择 {ratioCount} 个比例</span>
         </div>
         <div className="ck-video-print-extend-grid">
-          <div className="ck-video-print-extend-custom-wrap" ref={customPopoverRef}>
-            {customOpen ? (
-              <div className="ck-video-print-extend-custom-popover">
-                <input inputMode="numeric" onChange={(event) => setCustomWidth(event.target.value.replace(/[^\d]/g, ""))} placeholder="宽" value={customWidth} />
-                <span>:</span>
-                <input inputMode="numeric" onChange={(event) => setCustomHeight(event.target.value.replace(/[^\d]/g, ""))} placeholder="高" value={customHeight} />
-                <button className="ghost" onClick={() => setCustomOpen(false)} type="button">
-                  ×
-                </button>
-                <button className="confirm" disabled={!normalizeVideoPrintExtendRatio(customWidth, customHeight)} onClick={handleSaveCustomRatio} type="button">
-                  ✓
-                </button>
-              </div>
-            ) : null}
-            <button className={`ck-video-print-extend-card ck-video-print-extend-custom-card${customOpen ? " active" : ""}`} onClick={() => setCustomOpen((current) => !current)} type="button">
-              <span className="ck-video-print-extend-plus">+</span>
-              <strong>自定义</strong>
-            </button>
-          </div>
-
           {ratioOptions.map((ratio) => {
             const [widthText, heightText] = ratio.split(":");
             const width = Number(widthText) || 1;
@@ -17987,7 +17942,6 @@ function ConfigPanel({
           onSelectionMapChange={(values) => {
             const sectionKeys = [
               "videoPrintExtendSelectedRatios",
-              "videoPrintExtendCustomRatios",
               "videoPrintExtendOutputCount",
               "videoPrintExtendRatioCount",
               "videoPrintExtendTotalResultCount",
