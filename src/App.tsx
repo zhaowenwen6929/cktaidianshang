@@ -743,6 +743,8 @@ type ToolModuleSectionKey =
   | "video-pattern-repeat-setup"
   | "video-scene-grid-setup"
   | "video-print-extend-setup"
+  | "video-style-print-setup"
+  | "video-2d3d-setup"
   | "creation-mode"
   | "supplement"
   | "mode-choice"
@@ -890,8 +892,8 @@ const navGroups: Array<{
       { key: "video-pattern-repeat", label: "四方连续图", panelTitle: "四方连续图", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-pod-mockup", label: "POD样机套图（待完善）", panelTitle: "POD样机套图（待完善）", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-print-extend", label: "印花尺寸延展", panelTitle: "印花尺寸延展", resultCount: 4, ratioLabel: "1:1" },
-      { key: "video-2d3d", label: "2D转3D（待完善）", panelTitle: "2D转3D（待完善）", resultCount: 4, ratioLabel: "1:1" },
-      { key: "video-style-print", label: "风格参考印花（待完善）", panelTitle: "风格参考印花（待完善）", resultCount: 4, ratioLabel: "1:1" }
+      { key: "video-2d3d", label: "风格转绘", panelTitle: "风格转绘", resultCount: 4, ratioLabel: "1:1" },
+      { key: "video-style-print", label: "POD风格参考", panelTitle: "POD风格参考", resultCount: 4, ratioLabel: "1:1" }
     ]
   },
   {
@@ -2342,6 +2344,50 @@ function getPatternRepeatMetrics(selectionMap?: AdvancedSelectionMap) {
   };
 }
 
+function getVideoStylePrintPromptItems(selectionMap?: AdvancedSelectionMap) {
+  const rawPromptItems = safeParseJson<PatternRepeatPromptItem[] | string[]>(selectionMap?.videoStylePrintPrompts, []);
+  if (Array.isArray(rawPromptItems) && rawPromptItems.length > 0) {
+    const normalizedItems = rawPromptItems
+      .map((item) =>
+        typeof item === "string"
+          ? { id: generateRandomTenDigitId(), text: item }
+          : {
+              id: item.id || generateRandomTenDigitId(),
+              text: item.text ?? "",
+              reverseImage: item.reverseImage
+            }
+      )
+      .filter((item) => item.text.trim() || item.reverseImage);
+    if (normalizedItems.length) {
+      return normalizedItems;
+    }
+  }
+
+  return [{ id: generateRandomTenDigitId(), text: "" }];
+}
+
+function getVideoStylePrintMetrics(selectionMap?: AdvancedSelectionMap) {
+  const createMode = selectionMap?.videoStylePrintCreateMode ?? "图生图";
+  const promptItems = getVideoStylePrintPromptItems(selectionMap);
+  const promptCount = promptItems.filter((item) => item.text.trim() || item.reverseImage).length;
+
+  return {
+    createMode,
+    promptItems,
+    promptCount,
+    requiresMainUploads: createMode === "图生图",
+    isTextReady: createMode === "文生图" && promptCount > 0
+  };
+}
+
+function getVideo2d3dMetrics(selectionMap?: AdvancedSelectionMap) {
+  const style = selectionMap?.video2d3dStyle ?? video2d3dStyleOptions[0];
+  return {
+    style,
+    isReady: Boolean(style)
+  };
+}
+
 function getResolvedToolUnitCreditCost(
   toolKey: string,
   creationModeSelection: CreationModeSelection | null,
@@ -2626,6 +2672,106 @@ const patternRepeatGenerateModeOptions = ["相似", "原图连续"] as const;
 const patternRepeatRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
 const patternRepeatOutputCountOptions = ["1", "2", "3", "4"] as const;
 const patternRepeatDensityLevels = ["稀疏", "均衡", "密集"] as const;
+const videoStylePrintCreateModeOptions = ["图生图", "文生图"] as const;
+const videoStylePrintRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
+const videoStylePrintOutputCountOptions = ["1", "2", "3", "4"] as const;
+const video2d3dStyleCategoryMap = {
+  全部: [
+    "裂纹彩绘",
+    "罗纹编织纹理",
+    "提花编织纹理",
+    "立体软胶",
+    "写实素描",
+    "漆红刻画",
+    "现代速写",
+    "闪粉剪影",
+    "UV 浮雕",
+    "夸张手绘",
+    "撞色线稿",
+    "炭粉水彩",
+    "麻胶版画",
+    "连笔肖像",
+    "矢量水彩",
+    "蜡笔线线",
+    "哥特肖像",
+    "童趣水彩",
+    "极简粗铅",
+    "糙彩肖像",
+    "瓷蓝速写",
+    "平面插画",
+    "立体果冻",
+    "平涂插画",
+    "玻璃画",
+    "3D凹印",
+    "3D皮质",
+    "羊羔绒",
+    "宠物牛仔贴布",
+    "立体植绒",
+    "贴布绣",
+    "粗线全幅绣",
+    "粗线局部绣",
+    "细线全幅绣",
+    "细线局部绣",
+    "细线图形绣",
+    "粗线图形绣",
+    "立体发泡",
+    "木质浮雕",
+    "铜面浮雕",
+    "银面浮雕",
+    "金面浮雕",
+    "雕塑绘画",
+    "立体纸雕",
+    "刺绣",
+    "宠物矢量头像",
+    "宠物肖像",
+    "宠物青花",
+    "炭笔素描",
+    "水彩",
+    "折纸",
+    "儿童绘本",
+    "经典皮克斯",
+    "水彩泼墨",
+    "美式夸张漫画",
+    "美式漫画",
+    "粘土",
+    "街头涂鸦",
+    "新海诚",
+    "辛普森",
+    "荧光",
+    "厚涂油画",
+    "2D迪士尼",
+    "色块油画",
+    "简易线稿",
+    "印象油画",
+    "立体刺绣",
+    "黑白简笔",
+    "卡通手绘",
+    "夸张肖像",
+    "无脸矢量肖像",
+    "马克笔",
+    "速写",
+    "厚涂水彩",
+    "数字卡通",
+    "吉卜力",
+    "针织",
+    "速写线稿",
+    "复古海报",
+    "线稿色块",
+    "彩铅",
+    "木刻版画",
+    "铅笔素描"
+  ],
+  线描手稿: ["写实素描", "现代速写", "撞色线稿", "麻胶版画", "连笔肖像", "蜡笔线线", "极简粗铅", "瓷蓝速写", "炭笔素描", "简易线稿", "黑白简笔", "速写", "速写线稿", "铅笔素描"],
+  插画卡通: ["裂纹彩绘", "漆红刻画", "夸张手绘", "平面插画", "平涂插画", "童趣水彩", "儿童绘本", "经典皮克斯", "美式夸张漫画", "美式漫画", "2D迪士尼", "卡通手绘", "夸张肖像", "数字卡通", "吉卜力"],
+  水彩油画: ["炭粉水彩", "矢量水彩", "糙彩肖像", "水彩", "水彩泼墨", "厚涂油画", "色块油画", "印象油画", "厚涂水彩", "彩铅", "马克笔"],
+  工艺材质: ["罗纹编织纹理", "提花编织纹理", "UV 浮雕", "玻璃画", "3D凹印", "3D皮质", "羊羔绒", "宠物牛仔贴布", "立体植绒", "贴布绣", "粗线全幅绣", "粗线局部绣", "细线全幅绣", "细线局部绣", "细线图形绣", "粗线图形绣", "立体发泡", "木质浮雕", "铜面浮雕", "银面浮雕", "金面浮雕", "雕塑绘画", "立体纸雕", "刺绣", "立体刺绣", "针织"],
+  设计风格: ["闪粉剪影", "哥特肖像", "立体软胶", "立体果冻", "折纸", "街头涂鸦", "新海诚", "辛普森", "荧光", "复古海报", "线稿色块", "木刻版画"],
+  人像宠物: ["宠物矢量头像", "宠物肖像", "宠物青花", "无脸矢量肖像"]
+} as const;
+const video2d3dStyleCategories = Object.keys(video2d3dStyleCategoryMap) as Array<keyof typeof video2d3dStyleCategoryMap>;
+const video2d3dStyleOptions = video2d3dStyleCategoryMap.全部;
+const video2d3dRatioOptions = [...podExtractRatioOptions["专项提取"]] as const;
+const video2d3dOutputCountOptions = ["1", "2", "3", "4"] as const;
 const videoReplicaModeOptions = ["普通模式", "高级模式"] as const;
 type VideoReplicaModeKey = (typeof videoReplicaModeOptions)[number];
 const videoReplicaDurationOptions = ["4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s"];
@@ -7168,6 +7314,39 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       }
     }
   },
+  "video-style-print": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["video-style-print-setup"],
+    uploads: {
+      main: {
+        label: "添加素材",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      },
+      reference: {
+        label: "添加风格",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "video-2d3d": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main", "video-2d3d-setup"],
+    uploads: {
+      main: {
+        label: "添加素材",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
   "model-try": {
     creationModeConfigKey: "spoke",
     sectionOrder: ["model-try-setup", "creation-mode", "advanced-settings", "supplement", "upload-reference"],
@@ -11535,6 +11714,303 @@ function PatternRepeatSetupSection({
           />
         </>
       )}
+    </div>
+  );
+}
+
+function VideoStylePrintSetupSection({
+  uploads,
+  remainingStorageMb,
+  onAddUpload,
+  onRemoveUpload,
+  onOpenLibrary,
+  onRejectedUpload,
+  onAtLimit,
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  uploads: Record<string, UploadItem[]>;
+  remainingStorageMb: number;
+  onAddUpload: (fieldKey: string, nextValues: UploadItem[]) => void;
+  onRemoveUpload: (fieldKey: string, index: number) => void;
+  onOpenLibrary: (fieldKey: string) => void;
+  onRejectedUpload: (message: string) => void;
+  onAtLimit: () => void;
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const mainUploadKey = "video-style-print:main";
+  const styleUploadKey = "video-style-print:style";
+  const skipSelectedValuesSyncRef = useRef(false);
+  const [createMode, setCreateMode] = useState<string>(selectedValues?.videoStylePrintCreateMode ?? videoStylePrintCreateModeOptions[0]);
+  const [ratio, setRatio] = useState<string>(selectedValues?.videoStylePrintRatio ?? videoStylePrintRatioOptions[0]);
+  const [outputCount, setOutputCount] = useState<string>(selectedValues?.videoStylePrintOutputCount ?? videoStylePrintOutputCountOptions[0]);
+  const [promptItems, setPromptItems] = useState<PatternRepeatPromptItem[]>(() => getVideoStylePrintPromptItems(selectedValues));
+  const lastSyncedValuesRef = useRef("");
+
+  useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+    const nextSyncKey = JSON.stringify({
+      videoStylePrintCreateMode: selectedValues?.videoStylePrintCreateMode ?? videoStylePrintCreateModeOptions[0],
+      videoStylePrintRatio: selectedValues?.videoStylePrintRatio ?? videoStylePrintRatioOptions[0],
+      videoStylePrintOutputCount: selectedValues?.videoStylePrintOutputCount ?? videoStylePrintOutputCountOptions[0],
+      videoStylePrintPrompts: selectedValues?.videoStylePrintPrompts ?? ""
+    });
+
+    if (nextSyncKey === lastSyncedValuesRef.current) return;
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setCreateMode(selectedValues?.videoStylePrintCreateMode ?? videoStylePrintCreateModeOptions[0]);
+    setRatio(selectedValues?.videoStylePrintRatio ?? videoStylePrintRatioOptions[0]);
+    setOutputCount(selectedValues?.videoStylePrintOutputCount ?? videoStylePrintOutputCountOptions[0]);
+    setPromptItems(getVideoStylePrintPromptItems(selectedValues));
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const nextSelectionMap: AdvancedSelectionMap = {
+      videoStylePrintCreateMode: createMode,
+      videoStylePrintRatio: ratio,
+      videoStylePrintOutputCount: outputCount,
+      videoStylePrintPrompts: createMode === "文生图" ? JSON.stringify(promptItems) : ""
+    };
+
+    skipSelectedValuesSyncRef.current = true;
+    lastSyncedValuesRef.current = JSON.stringify(nextSelectionMap);
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(
+      [
+        `生成方式 ${createMode}`,
+        `出图比例 ${ratio}`,
+        `出图数量 ${outputCount}`,
+        createMode === "文生图" ? `提示词 ${promptItems.filter((item) => item.text.trim() || item.reverseImage).length} 条` : ""
+      ].filter(Boolean)
+    );
+    onCreationModeChange?.({
+      modeId: `video-style-print-${createMode}`,
+      modeLabel: `POD风格参考·${createMode}`,
+      ratio,
+      count: Math.min(4, Math.max(1, Number(outputCount) || 1)),
+      unitCreditCost: 5
+    });
+  }, [createMode, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, promptItems, ratio]);
+
+  return (
+    <div className="ck-form-block">
+      <UploadField
+        fieldKey={styleUploadKey}
+        hint="最多24张，支持JPG/PNG/WebP"
+        label="添加风格"
+        maxCount={24}
+        meta="（单次最多上传24张）"
+        onAdd={onAddUpload}
+        onAtLimit={onAtLimit}
+        onOpenLibrary={onOpenLibrary}
+        onRejectedUpload={onRejectedUpload}
+        onRemove={onRemoveUpload}
+        remainingStorageMb={remainingStorageMb}
+        required
+        values={uploads[styleUploadKey] ?? []}
+      />
+
+      <AdaptiveSegmentedField
+        fullWidth
+        label=""
+        onChange={(value) => {
+          skipSelectedValuesSyncRef.current = true;
+          setCreateMode(value);
+        }}
+        options={[...videoStylePrintCreateModeOptions]}
+        required
+        value={createMode}
+      />
+
+      {createMode === "图生图" ? (
+        <UploadField
+          fieldKey={mainUploadKey}
+          hint="最多24张，支持JPG/PNG/WebP"
+          label="添加素材"
+          maxCount={24}
+          meta="（单次最多上传24张）"
+          onAdd={onAddUpload}
+          onAtLimit={onAtLimit}
+          onOpenLibrary={onOpenLibrary}
+          onRejectedUpload={onRejectedUpload}
+          onRemove={onRemoveUpload}
+          remainingStorageMb={remainingStorageMb}
+          required
+          values={uploads[mainUploadKey] ?? []}
+        />
+      ) : (
+        <PatternRepeatPromptList
+          onChange={(items) => {
+            skipSelectedValuesSyncRef.current = true;
+            setPromptItems(items);
+          }}
+          promptItems={promptItems}
+        />
+      )}
+
+      <div className="ck-inline-field ck-aligned-inline-field">
+        <FieldTitle label="出图比例" required />
+        <SelectField
+          hideLabel
+          label="出图比例"
+          onChange={(value) => {
+            skipSelectedValuesSyncRef.current = true;
+            setRatio(value);
+          }}
+          options={[...videoStylePrintRatioOptions]}
+          required
+          value={ratio}
+        />
+      </div>
+
+      <CountField
+        label="出图数量"
+        onChange={setOutputCount}
+        options={[...videoStylePrintOutputCountOptions]}
+        required
+        value={outputCount}
+      />
+    </div>
+  );
+}
+
+function Video2d3dSetupSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const [category, setCategory] = useState<string>(selectedValues?.video2d3dStyleCategory ?? video2d3dStyleCategories[0]);
+  const [style, setStyle] = useState<string>(selectedValues?.video2d3dStyle ?? video2d3dStyleOptions[0]);
+  const [ratio, setRatio] = useState<string>(selectedValues?.video2d3dRatio ?? video2d3dRatioOptions[0]);
+  const [outputCount, setOutputCount] = useState<string>(selectedValues?.video2d3dOutputCount ?? video2d3dOutputCountOptions[0]);
+  const lastSyncedValuesRef = useRef("");
+  const visibleStyleOptions = (video2d3dStyleCategoryMap[category as keyof typeof video2d3dStyleCategoryMap] ?? video2d3dStyleOptions) as readonly string[];
+
+  useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+    const nextSyncKey = JSON.stringify({
+      video2d3dStyleCategory: selectedValues?.video2d3dStyleCategory ?? video2d3dStyleCategories[0],
+      video2d3dStyle: selectedValues?.video2d3dStyle ?? video2d3dStyleOptions[0],
+      video2d3dRatio: selectedValues?.video2d3dRatio ?? video2d3dRatioOptions[0],
+      video2d3dOutputCount: selectedValues?.video2d3dOutputCount ?? video2d3dOutputCountOptions[0]
+    });
+    if (nextSyncKey === lastSyncedValuesRef.current) return;
+    lastSyncedValuesRef.current = nextSyncKey;
+    setCategory(selectedValues?.video2d3dStyleCategory ?? video2d3dStyleCategories[0]);
+    setStyle(selectedValues?.video2d3dStyle ?? video2d3dStyleOptions[0]);
+    setRatio(selectedValues?.video2d3dRatio ?? video2d3dRatioOptions[0]);
+    setOutputCount(selectedValues?.video2d3dOutputCount ?? video2d3dOutputCountOptions[0]);
+  }, [selectedValues]);
+
+  useEffect(() => {
+    if (visibleStyleOptions.includes(style)) return;
+    skipSelectedValuesSyncRef.current = true;
+    setStyle(visibleStyleOptions[0] ?? video2d3dStyleOptions[0]);
+  }, [category, style, visibleStyleOptions]);
+
+  useEffect(() => {
+    const nextSelectionMap: AdvancedSelectionMap = {
+      video2d3dStyleCategory: category,
+      video2d3dStyle: style,
+      video2d3dRatio: ratio,
+      video2d3dOutputCount: outputCount
+    };
+    skipSelectedValuesSyncRef.current = true;
+    lastSyncedValuesRef.current = JSON.stringify(nextSelectionMap);
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.([`风格分类 ${category}`, `选择风格 ${style}`, `出图比例 ${ratio}`, `出图数量 ${outputCount}`]);
+    onCreationModeChange?.({
+      modeId: `video-2d3d-${style}`,
+      modeLabel: `风格转绘·${style}`,
+      ratio,
+      count: Math.min(4, Math.max(1, Number(outputCount) || 1)),
+      unitCreditCost: 5
+    });
+  }, [category, onCreationModeChange, onSelectionChange, onSelectionMapChange, outputCount, ratio, style]);
+
+  return (
+    <div className="ck-form-block">
+      <div className="ck-form-block">
+        <FieldTitle label="选择风格" required />
+        <div className="ck-task-rail-mode-switch ck-baseline-model-tabs">
+          {video2d3dStyleCategories.map((option) => (
+            <button
+              className={category === option ? "active" : ""}
+              key={option}
+              onClick={() => {
+                skipSelectedValuesSyncRef.current = true;
+                setCategory(option);
+              }}
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        <div className="ck-pod-variation-clock-dial-grid">
+          {visibleStyleOptions.map((option, index) => (
+            <button
+              className={`ck-pod-variation-clock-dial-card${style === option ? " active" : ""}`}
+              key={option}
+              onClick={() => {
+                skipSelectedValuesSyncRef.current = true;
+                setStyle(option);
+              }}
+              type="button"
+            >
+              <div className="ck-pod-variation-clock-dial-preview ck-pod-variation-effect-card-preview">
+                <div className={`ck-video-2d3d-style-preview style-${(index % 8) + 1}`}>
+                  <span />
+                  <i />
+                </div>
+              </div>
+              <div className="ck-pod-variation-clock-dial-label">{option}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ck-inline-field ck-aligned-inline-field">
+        <FieldTitle label="出图比例" required />
+        <SelectField
+          hideLabel
+          label="出图比例"
+          onChange={(value) => {
+            skipSelectedValuesSyncRef.current = true;
+            setRatio(value);
+          }}
+          options={[...video2d3dRatioOptions]}
+          required
+          value={ratio}
+        />
+      </div>
+
+      <CountField
+        label="出图数量"
+        onChange={setOutputCount}
+        options={[...video2d3dOutputCountOptions]}
+        required
+        value={outputCount}
+      />
     </div>
   );
 }
@@ -16780,6 +17256,7 @@ function ConfigPanel({
   const videoUploadCount = uploads[videoUploadKey]?.length ?? 0;
   const podFusionMetrics = useMemo(() => getPodFusionMetrics(advancedSettingSelections), [advancedSettingSelections]);
   const patternRepeatMetrics = useMemo(() => getPatternRepeatMetrics(advancedSettingSelections), [advancedSettingSelections]);
+  const videoStylePrintMetrics = useMemo(() => getVideoStylePrintMetrics(advancedSettingSelections), [advancedSettingSelections]);
   const videoPrintExtendRatioCount = getVideoPrintExtendSelectedRatios(advancedSettingSelections).length;
   const setPackSelectedTypes = useMemo(() => getSetPackSelectedTypes(advancedSettingSelections), [advancedSettingSelections]);
   const setPackTypeCount = Math.max(1, setPackSelectedTypes.length);
@@ -16808,6 +17285,8 @@ function ConfigPanel({
       ? podFusionMetrics.sourceCount
       : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "四方连续" && patternRepeatMetrics.createMode === "文生图"
         ? patternRepeatMetrics.promptCount
+        : tool.key === "video-style-print" && videoStylePrintMetrics.createMode === "文生图"
+          ? videoStylePrintMetrics.promptCount
         : uploadImageCount;
   const effectiveReferenceCount = tool.key === "video-print-extend" ? videoPrintExtendRatioCount : referenceUploadCount;
   const generateCost =
@@ -16827,6 +17306,8 @@ function ConfigPanel({
         ? patternRepeatMetrics.requiresMainUploads
           ? uploadImageCount > 0
           : patternRepeatMetrics.isTextReady
+        : tool.key === "video-style-print"
+          ? referenceUploadCount > 0 && (videoStylePrintMetrics.requiresMainUploads ? uploadImageCount > 0 : videoStylePrintMetrics.isTextReady)
       : uploadImageCount > 0 &&
         (tool.key === "video-print-extend" ? effectiveReferenceCount > 0 : true) &&
         (tool.key === "set-replica" ? referenceUploadCount > 0 : true) &&
@@ -17527,6 +18008,58 @@ function ConfigPanel({
       );
     }
 
+    if (section === "video-style-print-setup" && tool.key === "video-style-print") {
+      return (
+        <VideoStylePrintSetupSection
+          onAddUpload={onAddUpload}
+          onAtLimit={onAtLimit}
+          onCreationModeChange={setCreationModeSelection}
+          onOpenLibrary={onOpenLibrary}
+          onRejectedUpload={onRejectedUpload}
+          onRemoveUpload={onRemoveUpload}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = [
+              "videoStylePrintCreateMode",
+              "videoStylePrintRatio",
+              "videoStylePrintOutputCount",
+              "videoStylePrintPrompts"
+            ];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          remainingStorageMb={remainingStorageMb}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads}
+        />
+      );
+    }
+
+    if (section === "video-2d3d-setup" && tool.key === "video-2d3d") {
+      return (
+        <Video2d3dSetupSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["video2d3dStyleCategory", "video2d3dStyle", "video2d3dRatio", "video2d3dOutputCount"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
     if (section === "video-replica-setup" && (tool.key === "video-main" || tool.key === "video-replica" || tool.key === "video-replace")) {
       return (
         <VideoReplicaSetupSection
@@ -17941,7 +18474,24 @@ function ConfigPanel({
       return;
     }
 
-    if (!uploadImageCount && tool.key !== "pod-fusion" && !(tool.key === "video-pattern-repeat" && !patternRepeatMetrics.requiresMainUploads)) {
+    if (tool.key === "video-style-print" && !hasRequiredInputs) {
+      onToast(
+        referenceUploadCount <= 0
+          ? "请先添加风格后再生成"
+          : videoStylePrintMetrics.requiresMainUploads
+            ? "请先添加素材后再生成"
+            : "请至少填写一条提示词后再生成",
+        "warning"
+      );
+      return;
+    }
+
+    if (
+      !uploadImageCount &&
+      tool.key !== "pod-fusion" &&
+      !(tool.key === "video-pattern-repeat" && !patternRepeatMetrics.requiresMainUploads) &&
+      !(tool.key === "video-style-print" && !videoStylePrintMetrics.requiresMainUploads)
+    ) {
       onToast("请先上传商品图后再生成", "warning");
       return;
     }
@@ -17975,6 +18525,8 @@ function ConfigPanel({
             ? patternRepeatMetrics.promptItems.flatMap((item) => (item.reverseImage ? [item.reverseImage] : []))
             : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "扩大画幅"
               ? uploads[patternRepeatExpandUploadKey] ?? []
+            : tool.key === "video-style-print" && videoStylePrintMetrics.createMode === "文生图"
+              ? []
             : uploads[mainUploadKey] ?? [],
       referenceUploads: uploads[refUploadKey] ?? [],
       videoUploads: uploads[videoUploadKey] ?? [],
