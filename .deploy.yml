@@ -1,0 +1,27 @@
+# 按环境名称配置目标分支和 tag 模板。
+# 顶层 key 为环境名，alias 中可配置常用别名。
+# tag 支持变量：
+#   $userflag   用户标识，优先用明确提供的值；未提供时可退化为 git 用户名或邮箱前缀的安全格式
+#   $timestamp  当前时间戳，格式建议为 yyyyMMddHHmm
+
+moni:
+  alias:
+    - moni
+    - 模拟
+  branch: moni
+  tag: tencent-moni-$userflag$timestamp
+
+# prod:
+#   alias:
+#     - prod
+#     - 正式
+#     - 生产
+#   branch: master
+#   tag: tencent-prod-$userflag$timestamp
+
+# beta:
+#   alias:
+#     - beta
+#     - 贝塔
+#   branch: beta
+#   tag: tencent-beta-$userflag$timestamp

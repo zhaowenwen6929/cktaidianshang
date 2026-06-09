@@ -6092,7 +6092,7 @@ const creationModeConfigByToolKey: Record<string, string> = {
   ...defaultCreationModeConfigByToolKey,
   "goods-white": "white",
   "goods-retouch": "retouch",
-  "goods-translate": "translate",
+  "goods-translate": "scene",
   "goods-view": "three-view",
   "goods-bg": "background",
   "goods-marketing": "marketing",
@@ -6308,7 +6308,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
     }
   },
   "goods-translate": {
-    creationModeConfigKey: "translate",
+    creationModeConfigKey: "scene",
     sectionOrder: ["upload-main", "target-language", "creation-mode", "advanced-settings"],
     advancedSettings: {
       title: "高级设置",
@@ -9725,6 +9725,15 @@ function PodPartialEditSetupSection({
     handleFieldValueChange(key, JSON.stringify([...items, ""]));
   };
 
+  const handleDynamicListRemove = (key: string, index: number) => {
+    const items = parseDynamicListFieldValue(fieldValues[key]);
+    if (items.length <= 1 || index <= 0 || index >= items.length) return;
+    handleFieldValueChange(
+      key,
+      JSON.stringify(items.filter((_, itemIndex) => itemIndex !== index))
+    );
+  };
+
   const handleDynamicColorListItemChange = (key: string, index: number, value: string) => {
     const items = parseDynamicListFieldValue(fieldValues[key]);
     items[index] = value;
@@ -9735,6 +9744,15 @@ function PodPartialEditSetupSection({
     const items = parseDynamicListFieldValue(fieldValues[key]);
     if (items.length >= maxItems) return;
     handleFieldValueChange(key, JSON.stringify([...items, "#111111"]));
+  };
+
+  const handleDynamicColorListRemove = (key: string, index: number) => {
+    const items = parseDynamicListFieldValue(fieldValues[key]);
+    if (items.length <= 1 || index <= 0 || index >= items.length) return;
+    handleFieldValueChange(
+      key,
+      JSON.stringify(items.filter((_, itemIndex) => itemIndex !== index))
+    );
   };
 
   const handleInstructionTextChange = (value: string) => {
@@ -9850,6 +9868,16 @@ function PodPartialEditSetupSection({
                           type="text"
                           value={item}
                         />
+                        {items.length > 1 && index > 0 ? (
+                          <button
+                            aria-label={`删除第${index + 1}个替换颜色`}
+                            className="ck-partial-edit-remove-button"
+                            onClick={() => handleDynamicColorListRemove(field.key, index)}
+                            type="button"
+                          >
+                            ×
+                          </button>
+                        ) : null}
                       </div>
                     ))}
                     {canAddMore ? (
@@ -9881,6 +9909,16 @@ function PodPartialEditSetupSection({
                           type="text"
                           value={item}
                         />
+                        {items.length > 1 && index > 0 ? (
+                          <button
+                            aria-label={`删除第${index + 1}个替换内容`}
+                            className="ck-partial-edit-remove-button"
+                            onClick={() => handleDynamicListRemove(field.key, index)}
+                            type="button"
+                          >
+                            ×
+                          </button>
+                        ) : null}
                       </div>
                     ))}
                     {canAddMore ? (

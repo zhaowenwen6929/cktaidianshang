@@ -1,6 +1,6 @@
 ## 使用流程
 1. 上传参考图（`upload-main`）
-2. 选择品类（`podVariationCategory`）
+2. 选择品类（`productCategory`）
 3. 根据品类进入对应参数面板
 4. 选择出图比例（部分品类）
 5. 选择出图数量（`podVariationOutputCount`）
@@ -8,7 +8,7 @@
 
 ## 端到端使用流程
 1. 用户上传参考图。
-2. 系统基于上传文件名关键词自动推断默认 `podVariationCategory`，用户也可手动改写。
+2. 系统基于上传图片内容识别默认 `productCategory`，用于帮助用户自动定位最匹配的 POD 品类；若识别失败，则回退到 `默认`。
 3. 系统根据品类切换到对应配置：
    - `默认 / 服装/纺织 / 手机壳 / 装饰画`：使用通用裂变面板
    - `铁艺图形`：使用图形风格专用面板
@@ -34,7 +34,7 @@
     }
   },
   "currentFields": {
-    "podVariationCategory": ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"],
+    "productCategory": ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"],
     "podVariationMode": ["艺术设计", "文字强化", "爆款二创", "通用"],
     "podVariationReferenceStyleLevel": ["低", "中", "高"],
     "podVariationReferenceStrength": "0.10 ~ 1.00，步长 0.05",
@@ -63,7 +63,7 @@
 + 当前页面未单独调用 `onCreationModeChange`，`podVariationOutputCount` 是 setup 内部字段，不是独立创作模式面板字段
 + 当前前端展示的 `裂变内容` 会根据模式映射到不同真实字段：非 `爆款二创` 使用 `podVariationContent`，`爆款二创` 使用 `podVariationBurstContent`
 + `podVariationContentEnabled` 仍存在于内部 selection map 中，但已不是当前页面对用户暴露的功能参数，不应作为文档主链路字段对外描述
-+ `podVariationCategory` 默认通过上传文件名关键词推断，不是大模型图片识别结果
++ `productCategory` 应通过上传图片内容识别后自动回填；若识别失败，则回退为 `默认`
 + `podVariationContent` 已兼容旧值映射：`裂变商品 -> 裂变整个商品`，`仅裂变素材中的图案部分 -> 仅裂变素材图案部分`
 + `podVariationClockDialStyle` 当前为多选字段，前端保存为逗号拼接字符串
 + `podVariationRatio` 当前显示文案为 `出图比例`，展示位置在 `出图数量` 上方
@@ -309,7 +309,7 @@
 ## 3. 品类提示词配置
 说明：
 
-+ `podVariationCategory` 是当前页面真实字段
++ `productCategory` 是当前页面真实字段
 + 品类规则优先描述不同 POD 落地载体对裂变结果的可读性、构图和生产可用性要求
 + 默认值不是“没有品类”，而是“按通用品类执行”
 
@@ -527,33 +527,101 @@
 + `podVariationTinEffectPreset`：仅 `铁皮画` 生效
 + `podVariationRatio`：除 `铁艺图形 / 挂钟` 外生效
 
-## 5. 品类自动推断规则
+## 5. 品类自动定位与自动推断规则
 说明：
 
-+ 当前功能存在自动默认品类逻辑，但不是大模型识别
-+ 该逻辑来自上传文件名关键词推断，用于预填 `podVariationCategory`
++ 推荐补充“图片识别自动定位品类”能力，用于基于用户上传参考图自动回填 `productCategory`
++ 该识别的目标不是识别电商大商品类，而是识别这张图更适合命中哪一套 POD 裂变品类规则
++ 自动定位结果只用于预填默认值和命中默认面板，不应覆盖用户手动改写
++ 若图片识别不可用或置信度过低，则回退到 `默认`
 
 ```json
 {
-  "inferPodVariationCategory": {
-    "source": "上传文件名关键词",
-    "rules": [
-      "匹配 fabric|textile|cloth|服装|纺织|布料|面料|服饰 -> 服装/纺织",
-      "匹配 phone|case|手机壳|壳 -> 手机壳",
-      "匹配 iron|metal|铁艺|图形 -> 铁艺图形",
-      "匹配 clock|挂钟 -> 挂钟",
-      "匹配 decor|frame|装饰画 -> 装饰画",
-      "匹配 tin|plate|铁皮画 -> 铁皮画",
-      "都不命中 -> 默认"
-    ]
+  "recognizePodVariationCategory": {
+    "source": "上传图片内容",
+    "purpose": "自动定位最匹配的 POD 裂变品类，回填 productCategory",
+    "allowedCategories": ["默认", "服装/纺织", "手机壳", "铁艺图形", "挂钟", "装饰画", "铁皮画"],
+    "fallbackCategory": "默认",
+    "lowConfidenceThreshold": 0.7,
+    "manualOverrideRule": "用户手动选择的品类优先级高于自动识别结果"
   }
 }
 ```
 
 开发要求：
 
-+ 文件名推断只用于默认值，不应覆盖用户手动改写结果
++ 图片识别结果优先用于默认值，不应覆盖用户手动改写结果
++ 当识别置信度 `< 0.70` 时，默认按 `默认` 品类回填
 + 一旦用户手动选择品类，应锁定为人工输入优先
++ 若识别结果命中 `挂钟 / 铁艺图形 / 铁皮画` 这类专用面板品类，前端应直接切换到对应品类面板
+
+### 5.1 图片品类识别提示词
+用途：
+
++ 用于在用户上传参考图后，自动识别最适合的 `productCategory`
++ 识别结果用于帮助用户快速定位品类，并命中对应的裂变参数面板和品类规则
++ 该识别任务服务于“POD 裂变品类自动定位”，不是营销卖点理解，也不是电商标准品类识别
+
+可直接使用的提示词：
+
+```text
+你是 POD 印花图裂变的品类识别助手。请根据用户上传的参考图，判断这张图在后续裂变时最适合命中哪一种 POD 品类规则，并严格输出 JSON。
+
+你的任务不是判断电商商品大类，也不是生成营销描述，而是帮助系统自动定位最适合的裂变品类，以便切换正确的参数面板和提示词约束。
+
+识别目标：
+1. 识别最合适的 `productCategory`。
+2. 提取支撑判断的可见依据。
+3. 判断当前识别是否需要用户二次确认。
+
+`productCategory` 只允许从以下枚举中选择 1 个：
+- 默认
+- 服装/纺织
+- 手机壳
+- 铁艺图形
+- 挂钟
+- 装饰画
+- 铁皮画
+
+判定原则：
+1. 如果图像明显是连续纹样、布料花型、纺织印花、服饰面料纹样，优先判断为 `服装/纺织`。
+2. 如果图像明显包含手机壳外轮廓、开孔、边框、壳体弧面等特征，优先判断为 `手机壳`。
+3. 如果图像强调铁艺轮廓、几何镂空、金属图形、线条结构感，优先判断为 `铁艺图形`。
+4. 如果图像呈现圆形中心构图、表盘刻度、挂钟外轮廓或明显钟面语义，优先判断为 `挂钟`。
+5. 如果图像强调装饰性画面、完整叙事、远观冲击和近观细节，优先判断为 `装饰画`。
+6. 如果图像带有明显复古铁皮海报、磨损金属牌、旧化边框、怀旧标题等语义，优先判断为 `铁皮画`。
+7. 如果没有足够强的专用品类特征，再回退到 `默认`。
+
+输出要求：
+1. 只输出一个 JSON 对象，不要输出任何额外解释。
+2. 所有字段必须存在。
+3. `confidence` 取 0 到 1 之间的小数。
+4. `needsUserConfirm` 在识别不够确定、或多个品类都可能成立时设为 true。
+5. `evidence` 提供 2 到 4 条简短依据，只描述可见特征，不要写空话。
+6. `reason` 用 1 到 2 句话概括为什么命中该品类。
+7. 若无法稳定判断，`productCategory` 必须输出 `默认`，且 `confidence` 不高于 0.55。
+
+请严格按以下 JSON 结构输出：
+{
+  "productCategory": "默认|服装/纺织|手机壳|铁艺图形|挂钟|装饰画|铁皮画",
+  "confidence": 0.0,
+  "needsUserConfirm": false,
+  "reason": "简要说明判断原因",
+  "evidence": ["依据1", "依据2"]
+}
+```
+
+### 5.2 品类结果回填规则
+```json
+{
+  "categoryFillRule": {
+    "hitRecognizedCategory": "若识别结果命中允许枚举，直接作为 productCategory 默认值。",
+    "lowConfidenceFallback": "若 confidence < 0.70，则回填 默认。",
+    "invalidValueFallback": "若识别值不在允许枚举中，则强制回退 默认。",
+    "manualOverrideRule": "若用户后续手动切换品类，则前端必须以用户结果为准，不再被自动识别覆盖。"
+  }
+}
+```
 
 ## 拼装规则
 ### 拼装顺序
@@ -591,8 +659,8 @@
 ```json
 任务目标：基于上传参考图执行印花图裂变，输出可直接用于POD后续链路的多张高质量裂变结果。
 模式规则：{modePrompt}
-品类规则：当前品类为「{podVariationCategory}」，{categoryPrompt}
-裂变参数：模式={podVariationMode}；品类={podVariationCategory}；出图比例={podVariationRatio}；出图数量={podVariationOutputCount}。
+品类规则：当前品类为「{productCategory}」，{categoryPrompt}
+裂变参数：模式={podVariationMode}；品类={productCategory}；出图比例={podVariationRatio}；出图数量={podVariationOutputCount}。
 选项扩展约束：
 [模式] {podVariationModeValuePrompt}
 [参考样式] {podVariationReferenceStyleLevelValuePrompt}
@@ -628,7 +696,7 @@
 ```json
 {
   "toolKey": "pod-variation",
-  "podVariationCategory": "手机壳",
+  "productCategory": "手机壳",
   "podVariationMode": "文字强化",
   "podVariationReferenceStrength": "0.65",
   "podVariationDivergenceLevel": "中",
@@ -672,7 +740,7 @@
 ```json
 {
   "toolKey": "pod-variation",
-  "podVariationCategory": "服装/纺织",
+  "productCategory": "服装/纺织",
   "podVariationMode": "爆款二创",
   "podVariationBurstContent": "改背景",
   "podVariationRatio": "3:4",
@@ -708,7 +776,7 @@
 ```json
 {
   "toolKey": "pod-variation",
-  "podVariationCategory": "铁艺图形",
+  "productCategory": "铁艺图形",
   "podVariationGraphicStyle": "负空间",
   "podVariationVariationDimension": "裂变主体",
   "podVariationOutputCount": "4"
@@ -719,7 +787,7 @@
 ```json
 {
   "toolKey": "pod-variation",
-  "podVariationCategory": "挂钟",
+  "productCategory": "挂钟",
   "podVariationClockMode": "通用",
   "podVariationClockDialStyle": "经典阿拉伯数字,罗马数字,细边圆盘",
   "podVariationClockGenerateMethod": "随机组合生成",
@@ -731,7 +799,7 @@
 ```json
 {
   "toolKey": "pod-variation",
-  "podVariationCategory": "铁皮画",
+  "productCategory": "铁皮画",
   "podVariationMode": "艺术设计",
   "podVariationContent": "裂变整个商品",
   "podVariationTinEffectPreset": "锈斑样式4",
@@ -742,21 +810,19 @@
 
 ## 三个关键能力的提示词配置
 ### 图片识别获取信息
-当前功能没有显式大模型识别入口。
+建议新增“图片识别自动定位品类”能力。
 
-当前已有的自动能力是：
+最值得优先识别的是：
 
-+ `podVariationCategory` 通过上传文件名关键词自动推断默认值
++ `productCategory`：用于自动命中 `默认 / 服装/纺织 / 手机壳 / 铁艺图形 / 挂钟 / 装饰画 / 铁皮画`
 
-因此当前不建议把这一段写成“大模型图片识别回填主链路”，否则会和现状不一致。
+这部分识别结果应作为默认值来源，帮助用户自动进入对应面板和品类规则。
 
-若后续要接识别链路，最值得识别的是：
+可后续增强但非首批必做的识别项包括：
 
-+ 参考图所属品类倾向
 + 更适合的裂变模式倾向
 + 文字占比和主体占比
-
-但这些都属于后续增强，不属于当前主流程必做项。
++ 是否更适合“仅裂变素材图案部分”
 
 ### AI帮写
 当前功能没有显式 `AI assist` 入口，可不接该模块。
