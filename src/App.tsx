@@ -11408,25 +11408,27 @@ function PatternRepeatPromptList({
       <div className="ck-partial-edit-dynamic-list">
         {promptItems.map((item, index) => (
           <div className="ck-partial-edit-dynamic-list-row" key={item.id}>
-            <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
-            <UnifiedTextareaField
-              formBlockClassName="ck-form-block ck-set-pack-selling-points ck-pattern-repeat-textarea-item"
-              hideCount
-              maxLength={2000}
-              onChange={(value) => updatePromptItem(item.id, (current) => ({ ...current, text: value }))}
-              placeholder="描述你想要生成的图片"
-              value={item.text}
-            />
-            {promptItems.length > 1 && index > 0 ? (
-              <button
-                aria-label={`删除第${index + 1}个替换内容`}
-                className="ck-partial-edit-remove-button"
-                onClick={() => removePromptItem(item.id)}
-                type="button"
-              >
-                ×
-              </button>
-            ) : null}
+            <div className="ck-pattern-repeat-textarea-shell">
+              <span className="ck-partial-edit-dynamic-list-index">{index + 1}</span>
+              <UnifiedTextareaField
+                formBlockClassName="ck-form-block ck-set-pack-selling-points ck-pattern-repeat-textarea-item"
+                hideCount
+                maxLength={2000}
+                onChange={(value) => updatePromptItem(item.id, (current) => ({ ...current, text: value }))}
+                placeholder="描述你想要生成的图片"
+                value={item.text}
+              />
+              {promptItems.length > 1 ? (
+                <button
+                  aria-label={`删除第${index + 1}个替换内容`}
+                  className="ck-partial-edit-remove-button"
+                  onClick={() => removePromptItem(item.id)}
+                  type="button"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
           </div>
         ))}
         {promptItems.length < 10 ? (
@@ -11467,6 +11469,7 @@ function PatternRepeatSetupSection({
 }) {
   const mainUploadKey = "video-pattern-repeat:main";
   const expandUploadKey = "video-pattern-repeat:expand";
+  const fixedRatioDropdownRef = useRef<HTMLDivElement | null>(null);
   const skipSelectedValuesSyncRef = useRef(false);
   const [repeatType, setRepeatType] = useState<string>(selectedValues?.patternRepeatType ?? patternRepeatTypeOptions[0]);
   const [createMode, setCreateMode] = useState<string>(selectedValues?.patternRepeatCreateMode ?? patternRepeatCreateModeOptions[0]);
@@ -11601,16 +11604,20 @@ function PatternRepeatSetupSection({
                 values={uploads[mainUploadKey] ?? []}
               />
 
-              <AdaptiveChoiceField
-                label="生成模式"
-                onChange={(value) => {
-                  skipSelectedValuesSyncRef.current = true;
-                  setGenerateMode(value);
-                }}
-                options={patternRepeatGenerateModeOptions.map((option) => ({ key: option, label: option }))}
-                required
-                value={generateMode}
-              />
+              <div className="ck-inline-field ck-pod-variation-inline-field">
+                <FieldTitle label="生成模式" required />
+                <SelectField
+                  hideLabel
+                  label="生成模式"
+                  onChange={(value) => {
+                    skipSelectedValuesSyncRef.current = true;
+                    setGenerateMode(value);
+                  }}
+                  options={[...patternRepeatGenerateModeOptions]}
+                  required
+                  value={generateMode}
+                />
+              </div>
             </>
           ) : (
             <PatternRepeatPromptList
@@ -11624,7 +11631,12 @@ function PatternRepeatSetupSection({
 
           <div className="ck-inline-field ck-aligned-inline-field">
             <FieldTitle label="出图比例" required />
-            <SelectField hideLabel label="出图比例" options={["1:1"]} required value="1:1" />
+            <div className="ck-select-dropdown" ref={fixedRatioDropdownRef}>
+              <button className="ck-select" type="button">
+                1:1
+                <span>⌄</span>
+              </button>
+            </div>
           </div>
 
           <CountField
