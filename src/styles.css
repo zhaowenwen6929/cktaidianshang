@@ -13765,7 +13765,6 @@ textarea {
 }
 
 .ck-more-title-header,
-.ck-more-title-workbench-head,
 .ck-more-title-row-head,
 .ck-more-title-result-head,
 .ck-more-title-candidate-top,
@@ -13774,6 +13773,12 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.ck-more-title-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: flex-start;
 }
 
 .ck-more-title-header p,
@@ -13788,7 +13793,11 @@ textarea {
 .ck-more-title-add-row,
 .ck-more-title-workbench-actions > button,
 .ck-more-title-row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 36px;
+  min-width: 96px;
   border-radius: 10px;
   border: 1px solid rgba(99, 95, 242, 0.18);
   background: #f5f4ff;
@@ -13796,6 +13805,8 @@ textarea {
   font-size: 13px;
   font-weight: 600;
   padding: 0 14px;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .ck-more-title-row-delete:disabled {
@@ -13836,7 +13847,7 @@ textarea {
 }
 
 .ck-more-title-row-fields.two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .ck-more-title-row-fields.textareas .ck-textarea-wrap textarea,
@@ -13885,7 +13896,7 @@ textarea {
 
 .ck-more-title-candidate-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-top: 14px;
 }
@@ -13932,15 +13943,11 @@ textarea {
   margin-top: 14px;
 }
 
-@media (max-width: 1180px) {
-  .ck-more-title-row-fields.two,
-  .ck-more-title-candidate-grid {
-    grid-template-columns: 1fr;
-  }
+.ck-panel-tool-more-title .ck-more-title-workbench-head {
+  align-items: flex-start;
+  flex-direction: column;
+}
 
-  .ck-more-title-header,
-  .ck-more-title-workbench-head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+.ck-panel-tool-more-title .ck-more-title-workbench-actions {
+  flex-wrap: wrap;
 }
