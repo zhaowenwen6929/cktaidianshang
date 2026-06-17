@@ -13951,3 +13951,43 @@ textarea {
 .ck-panel-tool-more-title .ck-more-title-workbench-actions {
   flex-wrap: wrap;
 }
+
+.ck-panel-tool-more-title .ck-panel-scroll {
+  overflow-x: hidden;
+}
+
+.ck-panel-tool-more-title .ck-more-title-setup,
+.ck-panel-tool-more-title .ck-more-title-header,
+.ck-panel-tool-more-title .ck-more-title-grid,
+.ck-panel-tool-more-title .ck-more-title-row-card,
+.ck-panel-tool-more-title .ck-more-title-row-head,
+.ck-panel-tool-more-title .ck-more-title-row-fields,
+.ck-panel-tool-more-title .ck-more-title-workbench,
+.ck-panel-tool-more-title .ck-more-title-result-list,
+.ck-panel-tool-more-title .ck-more-title-result-card,
+.ck-panel-tool-more-title .ck-more-title-candidate-grid,
+.ck-panel-tool-more-title .ck-more-title-candidate,
+.ck-panel-tool-more-title .ck-form-block,
+.ck-panel-tool-more-title .ck-inline-field,
+.ck-panel-tool-more-title .ck-select-dropdown,
+.ck-panel-tool-more-title .ck-select,
+.ck-panel-tool-more-title .ck-input-select,
+.ck-panel-tool-more-title .ck-textarea-wrap,
+.ck-panel-tool-more-title .ck-textarea-wrap textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.ck-panel-tool-more-title .ck-more-title-row-head,
+.ck-panel-tool-more-title .ck-more-title-result-head,
+.ck-panel-tool-more-title .ck-more-title-candidate-top,
+.ck-panel-tool-more-title .ck-more-title-candidate-foot {
+  flex-wrap: wrap;
+}
+
+.ck-panel-tool-more-title .ck-more-title-add-row,
+.ck-panel-tool-more-title .ck-more-title-workbench-actions > button {
+  width: 100%;
+}
