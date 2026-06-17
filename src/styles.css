@@ -13813,19 +13813,144 @@ textarea {
   opacity: 0.45;
 }
 
+.ck-more-title-preview-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.ck-more-title-preview-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+}
+
+.ck-more-title-preview-card.active {
+  border-color: rgba(99, 95, 242, 0.42);
+  box-shadow: 0 0 0 2px rgba(99, 95, 242, 0.06);
+  background: #faf9ff;
+}
+
+.ck-more-title-preview-thumb,
+.ck-more-title-editor-thumb {
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f3f5fb 0%, #eceff8 100%);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.ck-more-title-preview-thumb {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ck-more-title-preview-thumb img,
+.ck-more-title-editor-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.ck-more-title-preview-thumb span,
+.ck-more-title-editor-thumb span {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ck-more-title-preview-body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.ck-more-title-preview-top {
+  display: grid;
+  gap: 2px;
+}
+
+.ck-more-title-preview-top strong {
+  color: #1b2337;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.ck-more-title-preview-top span,
+.ck-more-title-preview-body p {
+  margin: 0;
+  color: #6b7285;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ck-more-title-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ck-more-title-preview-actions button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(99, 95, 242, 0.16);
+  background: #f7f6ff;
+  color: #5d5bf1;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ck-more-title-preview-actions button.danger {
+  border-color: rgba(239, 68, 68, 0.14);
+  background: #fff7f7;
+  color: #e15555;
+}
+
 .ck-more-title-grid,
 .ck-more-title-result-list {
   display: grid;
   gap: 10px;
 }
 
-.ck-more-title-row-card,
+.ck-more-title-editor-card,
 .ck-more-title-result-card {
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
   padding: 12px;
   box-shadow: 0 8px 20px rgba(20, 27, 45, 0.05);
+}
+
+.ck-more-title-editor-card {
+  display: grid;
+  gap: 10px;
+}
+
+.ck-more-title-editor-layout {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.ck-more-title-editor-thumb {
+  width: 92px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ck-more-title-editor-fields {
+  min-width: 0;
 }
 
 .ck-more-title-row-head > strong,
@@ -13923,6 +14048,21 @@ textarea {
   line-height: 17px;
 }
 
+.ck-more-title-result-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ck-more-title-result-head > div {
+  min-width: 0;
+}
+
+.ck-more-title-result-head > div > span {
+  display: block;
+  color: #8b95a7;
+  font-size: 11px;
+  line-height: 16px;
+}
+
 .ck-more-title-candidate-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -14014,9 +14154,13 @@ textarea {
 .ck-panel-tool-more-title .ck-more-title-setup,
 .ck-panel-tool-more-title .ck-more-title-header,
 .ck-panel-tool-more-title .ck-more-title-grid,
-.ck-panel-tool-more-title .ck-more-title-row-card,
+.ck-panel-tool-more-title .ck-more-title-preview-grid,
+.ck-panel-tool-more-title .ck-more-title-preview-card,
+.ck-panel-tool-more-title .ck-more-title-editor-card,
 .ck-panel-tool-more-title .ck-more-title-row-head,
 .ck-panel-tool-more-title .ck-more-title-row-fields,
+.ck-panel-tool-more-title .ck-more-title-editor-layout,
+.ck-panel-tool-more-title .ck-more-title-editor-fields,
 .ck-panel-tool-more-title .ck-more-title-workbench,
 .ck-panel-tool-more-title .ck-more-title-result-list,
 .ck-panel-tool-more-title .ck-more-title-result-card,
@@ -14045,4 +14189,30 @@ textarea {
 .ck-panel-tool-more-title .ck-more-title-add-row,
 .ck-panel-tool-more-title .ck-more-title-workbench-actions > button {
   width: 100%;
+}
+
+@media (max-width: 1480px) {
+  .ck-more-title-result-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .ck-more-title-result-list,
+  .ck-more-title-editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ck-more-title-editor-thumb {
+    width: 100%;
+    height: 120px;
+  }
+
+  .ck-more-title-preview-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .ck-more-title-preview-actions {
+    grid-column: 1 / -1;
+  }
 }
