@@ -1,0 +1,88 @@
+{
+  "platform": "taobao",
+  "keywords": [
+    "手机壳"
+  ],
+  "searchUrlTemplate": "https://s.taobao.com/search?q={keywordEncoded}",
+  "outputDir": "tools/material_collector/output/taobao-phone-case",
+  "storageStatePath": "tools/material_collector/.auth/taobao.json",
+  "loginSuccessSelector": "a[href*='item.taobao.com'], a[href*='detail.tmall.com']",
+  "pacing": {
+    "defaultDelayMs": [1200, 2800],
+    "pageLoadDelayMs": [2000, 4000],
+    "itemDelayMs": [1500, 3500],
+    "beforeDetailDelayMs": [1800, 4200],
+    "detailLoadDelayMs": [2500, 5000],
+    "downloadDelayMs": [1000, 2500],
+    "paginationDelayMs": [3000, 6000]
+  },
+  "listPage": {
+    "readySelector": "a[href*='item.taobao.com'], a[href*='detail.tmall.com']",
+    "waitState": "attached",
+    "itemSelector": "a[href*='item.taobao.com'], a[href*='detail.tmall.com']",
+    "waitMs": 30000,
+    "maxPages": 3,
+    "nextPageSelector": "button.next-btn-next, .next-pagination-item.next-next, a.next-next",
+    "fields": {
+      "id": {
+        "type": "attr",
+        "selector": [
+          "[data-item-id]"
+        ],
+        "name": [
+          "data-item-id",
+          "href"
+        ]
+      },
+      "title": {
+        "type": "text",
+        "selector": [
+          "img[alt]",
+          "[class*='title']",
+          null
+        ]
+      },
+      "detailUrl": {
+        "type": "attr",
+        "selector": null,
+        "name": "href"
+      },
+      "imageUrl": {
+        "type": "attr",
+        "selector": [
+          "img",
+          "source"
+        ],
+        "name": [
+          "src",
+          "data-src",
+          "data-lazy-src",
+          "srcset"
+        ]
+      }
+    }
+  },
+  "detailPage": {
+    "enabled": true,
+    "waitForSelector": "img",
+    "imageSelector": [
+      "img[src*='alicdn.com']",
+      "img[data-src*='alicdn.com']",
+      "img"
+    ],
+    "imageAttribute": [
+      "src",
+      "data-src",
+      "data-lazy-src"
+    ],
+    "descriptionSelector": "title",
+    "maxImagesPerItem": 10
+  },
+  "download": {
+    "enabled": true
+  },
+  "outputs": {
+    "manifest": true,
+    "evalCases": false
+  }
+}

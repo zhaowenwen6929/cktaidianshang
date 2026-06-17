@@ -1,90 +1,116 @@
 {
   "toolKey": "video-2d3d",
   "version": "2026-06-09",
-  "description": "用于风格转绘的品类差异化策略，重点约束风格适配性、风险点和推荐风格分类。",
-  "categoryRules": {
+  "sharedConstraintPolicy": {
+    "useToolLevelUniversalPrompts": true,
+    "reason": "全局通用质量要求和负向约束已经在 mode_rules.json 中定义，品类规则只补充适配性与结构风险，不重复维护一套全局硬约束。"
+  },
+  "categoryRulesByTool": {
     "服装/纺织": {
       "prompt": "适配服装与纺织图案转绘，强调面料纹理、布面褶皱和印花结构稳定，避免风格化后把织物转成塑料、金属或失真厚涂材质。",
+      "required": ["面料语义保留", "印花结构稳定", "风格化后仍适合布面呈现"],
+      "forbidden": ["塑料感", "金属感误植", "厚重3D材质破坏布面逻辑"],
       "recommendedStyleCategories": ["工艺材质", "插画卡通", "水彩油画", "线描手稿"],
       "avoidStyleCategories": ["原始3D风格"],
       "warnings": [
-        "服装/纺织场景下过强浮雕或厚重 3D 风格容易破坏面料语义"
+        "服装/纺织场景下过强浮雕或厚重 3D 风格容易破坏面料语义。"
       ]
     },
     "手机壳": {
       "prompt": "适配手机壳图案和壳面预览转绘，强调中心主体聚焦、缩略图识别和边缘干净，避免过密风格效果淹没小尺寸可读性。",
+      "required": ["中心主体稳定", "缩略图识别清楚", "边缘干净"],
+      "forbidden": ["过密纹理发脏", "小尺寸不可读", "边缘糊化"],
       "recommendedStyleCategories": ["设计风格", "插画卡通", "线描手稿"],
       "avoidStyleCategories": [],
       "warnings": [
-        "不建议默认使用过多细碎工艺纹理，小图下容易发脏"
+        "不建议默认使用过多细碎工艺纹理，小图下容易发脏。"
       ]
     },
     "家电数码类": {
       "prompt": "适配数码和结构型商品转绘，强调接口、边缘、按键、模组和体积结构保持准确，避免风格化后变形或失去工业感。",
+      "required": ["结构准确", "接口按键可辨识", "工业感不丢失"],
+      "forbidden": ["接口变形", "边缘塌陷", "幼态化卡通削弱结构"],
       "recommendedStyleCategories": ["原始3D风格", "线描手稿", "设计风格"],
       "avoidStyleCategories": ["人像宠物"],
       "warnings": [
-        "数码类商品不建议默认使用过强卡通幼态化风格",
-        "结构件必须保持可辨识"
+        "数码类商品不建议默认使用过强卡通幼态化风格。"
       ]
     },
     "装饰画": {
       "prompt": "适配装饰画和画面型主体转绘，强调主题叙事、层次和观赏完成度，允许更强氛围化风格但不能破坏主视觉识别。",
+      "required": ["主题叙事完整", "氛围强化但主视觉稳定", "观赏完成度高"],
+      "forbidden": ["主体辨识度下降", "色层发脏", "风格化后画面塌陷"],
       "recommendedStyleCategories": ["水彩油画", "设计风格", "插画卡通", "原始3D风格"],
       "avoidStyleCategories": [],
       "warnings": [
-        "高氛围化风格仍需控制主体辨识度"
+        "高氛围化风格仍需控制主体辨识度。"
       ]
     },
     "挂钟": {
       "prompt": "适配挂钟盘面与中心对齐语义的风格转绘，强调中心区域稳定、径向平衡和圆形边界秩序，不让风格特效破坏钟面主阅读逻辑。",
+      "required": ["中心区域稳定", "圆形边界秩序清楚", "径向关系平衡"],
+      "forbidden": ["中心失衡", "边界秩序被特效冲散", "无中心方向的混乱泼墨"],
       "recommendedStyleCategories": ["原始3D风格", "设计风格", "工艺材质"],
       "avoidStyleCategories": [],
       "warnings": [
-        "过强泼墨或无中心方向的风格需谨慎使用"
+        "过强泼墨或无中心方向的风格需谨慎使用。"
       ]
     },
     "人像/宠物": {
       "prompt": "适配人像或宠物主题转绘，强调身份特征、轮廓、毛发/五官/表情和气质的一致性，避免风格化后身份漂移。",
+      "required": ["身份特征稳定", "五官或毛发识别清楚", "神态气质一致"],
+      "forbidden": ["身份漂移", "五官错位", "表情结构崩坏"],
       "recommendedStyleCategories": ["人像宠物", "线描手稿", "插画卡通", "水彩油画"],
       "avoidStyleCategories": ["原始3D风格"],
       "warnings": [
-        "人像/宠物场景下要重点检查脸部与关键识别特征"
+        "人像/宠物场景下要重点检查脸部与关键识别特征。"
       ]
     },
     "铁艺图形/五金": {
       "prompt": "适配铁艺图形和五金结构型主体转绘，强调几何秩序、金属边缘和结构稳定，不应使用过软或过糯的材质风格掩盖结构。",
+      "required": ["几何秩序稳定", "金属边缘清楚", "结构硬度保留"],
+      "forbidden": ["过软材质感", "水彩晕染弱化结构", "金属边缘融化"],
       "recommendedStyleCategories": ["原始3D风格", "线描手稿", "设计风格"],
       "avoidStyleCategories": ["水彩油画"],
       "warnings": [
-        "五金结构不建议默认采用过强水彩晕染类风格"
+        "五金结构不建议默认采用过强水彩晕染类风格。"
       ]
     },
     "通用": {
       "prompt": "按通用风格转绘标准执行，优先保证主体保真、风格明确和可用性稳定。",
+      "required": ["主体保真", "风格命中明确", "输出可直接使用"],
+      "forbidden": ["主体漂移", "风格混乱", "输出不稳定"],
       "recommendedStyleCategories": ["设计风格", "插画卡通", "线描手稿"],
       "avoidStyleCategories": [],
       "warnings": [
-        "未识别品类时优先使用结构风险较低的分类"
+        "未识别品类时优先使用结构风险较低的分类。"
       ]
     }
   },
   "validationRules": [
     {
       "when": {
-        "category": "家电数码类",
-        "styleCategory": "人像宠物"
+        "productCategory": "家电数码类",
+        "video2d3dStyleCategory": "人像宠物"
       },
       "level": "warn",
       "message": "家电数码类默认不建议使用“人像宠物”分类，除非素材本身就是人像/宠物主体。"
     },
     {
       "when": {
-        "category": "铁艺图形/五金",
-        "styleCategory": "水彩油画"
+        "productCategory": "铁艺图形/五金",
+        "video2d3dStyleCategory": "水彩油画"
       },
       "level": "warn",
       "message": "铁艺图形/五金场景下水彩油画类风格容易弱化结构硬度，建议确认是否符合预期。"
+    },
+    {
+      "when": {
+        "productCategory": "服装/纺织",
+        "video2d3dStyleCategory": "原始3D风格"
+      },
+      "level": "warn",
+      "message": "服装/纺织场景下原始3D风格容易破坏面料语义，建议优先使用工艺材质、插画卡通或线描手稿。"
     }
   ]
 }

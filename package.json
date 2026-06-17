@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "collect:materials": "node tools/material_collector/collect_materials.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",

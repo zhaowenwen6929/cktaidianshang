@@ -1,90 +1,91 @@
 {
   "toolKey": "video-scene-grid",
   "version": "2026-06-09",
-  "description": "用于多联画场景下的品类差异化推荐与风险约束。当前不直接决定页面字段显示，但应用于 AI 推荐、默认值回填、prompt 品类约束和组合校验提示。",
-  "categoryRules": {
+  "categoryRulesByTool": {
     "服装/纺织": {
       "prompt": "适配服装与纺织印花套系展示，强调系列花型的统一节奏、远观识别度和大面积排版后的耐看性，避免元素过碎导致成衣上身后失焦。",
-      "recommendedModes": ["系列图案", "主副图案"],
-      "recommendedVariationsByMode": {
-        "系列图案": ["裂变主题", "系列衍生", "智能参考"],
-        "主副图案": ["简洁", "丰富", "智能参考"]
-      },
+      "required": ["套系关系清楚", "远看识别强", "大面积排版后不空不乱"],
+      "forbidden": ["元素过碎", "组图风格断裂", "成衣视角下主图失焦"],
+      "recommendedMode": "系列图案",
+      "recommendedVariations": ["裂变主题", "系列衍生", "智能参考"],
       "recommendedRatios": ["1:1", "3:4", "2:3"],
       "warnings": [
-        "不建议默认使用过强叙事性，容易削弱印花主体本身的重复价值",
-        "元素过密时需控制缩略图与上身后的可读性"
+        "主副图案 + 叙事性 在服装/纺织场景下容易弱化印花重复价值。",
+        "元素过密时需控制缩略图与上身后的可读性。"
       ]
     },
     "手机壳": {
       "prompt": "适配手机壳小尺寸印花与缩略图浏览，强调中心主体聚焦、边缘完整和视觉高对比，避免核心元素落入开孔、边框或圆角高风险区域。",
-      "recommendedModes": ["主副图案", "系列图案"],
-      "recommendedVariationsByMode": {
-        "主副图案": ["简洁", "反转", "智能参考"],
-        "系列图案": ["裂变主体", "裂变主体/文本"]
-      },
+      "required": ["中心主体明确", "缩略图下仍清晰", "边缘兼容壳体裁切"],
+      "forbidden": ["主体贴近开孔区", "四角核心元素被切断", "细节过密导致发脏"],
+      "recommendedMode": "主副图案",
+      "recommendedVariations": ["简洁", "反转", "智能参考"],
       "recommendedRatios": ["1:2", "3:4", "1:1"],
       "warnings": [
-        "不建议默认使用过多微小装饰元素，壳体缩略展示下会变脏",
-        "主文案或主图形不应贴近四角与开孔高风险区"
+        "系列图案 + 系列衍生 在手机壳场景下容易造成主体分散。",
+        "主文案或主图形不应贴近四角与开孔高风险区。"
       ]
     },
     "装饰画": {
       "prompt": "适配装饰画远观冲击和近观细节并重的展示目标，强调构图完整、主题清晰和成组叙事关系，允许更强的氛围与层次表达。",
-      "recommendedModes": ["系列图案", "主副图案"],
-      "recommendedVariationsByMode": {
-        "系列图案": ["裂变主题", "系列衍生"],
-        "主副图案": ["叙事性", "丰富", "反转"]
-      },
+      "required": ["构图完整", "主次清晰", "成组展示有明确变化感"],
+      "forbidden": ["变化过弱", "远观无冲击", "高层次叙事但主视觉丢失"],
+      "recommendedMode": "系列图案",
+      "recommendedVariations": ["裂变主题", "系列衍生", "叙事性"],
       "recommendedRatios": ["3:4", "4:3", "16:9"],
       "warnings": [
-        "不建议只做弱差异版本，装饰画成组展示时变化感不足会影响价值感",
-        "高层次叙事场景仍需保证核心主题和主视觉不丢失"
+        "不建议只做弱差异版本，装饰画成组展示时变化感不足会影响价值感。"
       ]
     },
     "情侣/成对载体": {
       "prompt": "适配情侣衫、情侣杯、成对挂画等成对载体，强调双主体的关系呼应、互动一致性和配对逻辑，避免两张图像只是随机并列。",
-      "recommendedModes": ["情侣图案"],
-      "recommendedVariationsByMode": {
-        "情侣图案": ["智能参考"]
-      },
+      "required": ["双主体关系成立", "互动语义自然", "配对逻辑清楚"],
+      "forbidden": ["两张图随机并列", "双边风格不统一", "单边视觉过强导致失衡"],
+      "recommendedMode": "情侣图案",
+      "recommendedVariations": ["智能参考"],
       "recommendedRatios": ["1:1", "3:4", "2:3"],
       "warnings": [
-        "双主体需保持风格、比例和互动语义统一",
-        "避免单边视觉过强导致配对关系失衡"
+        "若未选情侣图案模式，需提示配对关系表达可能不稳定。"
       ]
     },
     "通用": {
       "prompt": "按通用成组视觉标准执行，优先保证组内统一、变化清晰和后续排版可复用性。",
-      "recommendedModes": ["系列图案", "主副图案"],
-      "recommendedVariationsByMode": {
-        "系列图案": ["智能参考", "裂变主题"],
-        "主副图案": ["智能参考", "简洁"]
-      },
+      "required": ["组内风格统一", "变化方向可解释", "后续排版可复用"],
+      "forbidden": ["随机拼接感", "变化无主线", "商业可用性下降"],
+      "recommendedMode": "系列图案",
+      "recommendedVariations": ["智能参考", "裂变主题"],
       "recommendedRatios": ["1:1", "3:4", "4:3"],
       "warnings": [
-        "未识别明确品类时，优先保守处理变化幅度和信息密度"
+        "未识别明确品类时，优先保守处理变化幅度和信息密度。"
       ]
     }
   },
   "validationRules": [
     {
       "when": {
-        "category": "手机壳",
-        "mode": "系列图案",
-        "variation": "系列衍生"
+        "productCategory": "手机壳",
+        "videoSceneGridMode": "系列图案",
+        "videoSceneGridVariation": "系列衍生"
       },
       "level": "warn",
       "message": "手机壳场景下使用“系列衍生”容易导致主体分散，建议优先改为“裂变主体”或“裂变主体/文本”。"
     },
     {
       "when": {
-        "category": "服装/纺织",
-        "mode": "主副图案",
-        "variation": "叙事性"
+        "productCategory": "服装/纺织",
+        "videoSceneGridMode": "主副图案",
+        "videoSceneGridVariation": "叙事性"
       },
       "level": "warn",
       "message": "服装/纺织场景下“叙事性”容易弱化印花重复价值，建议确认是否用于纯展示图而非量产印花。"
+    },
+    {
+      "when": {
+        "productCategory": "情侣/成对载体",
+        "videoSceneGridMode": "系列图案"
+      },
+      "level": "warn",
+      "message": "成对载体建议优先使用“情侣图案”模式，否则双主体互动关系可能不稳定。"
     }
   ]
 }

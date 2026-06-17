@@ -5,6 +5,7 @@
     "video-print-extend": {
       "requiredFields": [
         "toolKey",
+        "productCategory",
         "videoPrintExtendSelectedRatios",
         "videoPrintExtendOutputCount"
       ],
@@ -17,6 +18,7 @@
       ],
       "promptTemplates": {
         "task": "基于上传印花图执行尺寸延展，在不破坏主体和图案可用性的前提下，生成适配多个版型比例的高质量结果。",
+        "category": "当前载体品类为「{productCategory}」，{categoryPrompt}",
         "mode": "{modePrompt}",
         "params": "延展比例={selectedRatiosJoined}；每比例出图数量={videoPrintExtendOutputCount}；比例数={videoPrintExtendRatioCount}；总结果数={videoPrintExtendTotalResultCount}。",
         "ratioPrompts": "{ratioValuePromptsJoined}",
@@ -27,6 +29,7 @@
       },
       "segmentOrder": [
         "task",
+        "category",
         "mode",
         "params",
         "ratioPrompts",
@@ -39,6 +42,7 @@
       ],
       "strictMode": {
         "enabled": true,
+        "onMissingCategoryRule": "warn_and_fallback_to_general",
         "onMissingModeRule": "error",
         "onMissingRequiredField": "error",
         "onUnknownRatio": "error",

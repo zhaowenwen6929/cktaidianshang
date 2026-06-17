@@ -715,6 +715,7 @@ type UploadModuleFieldConfig = {
 };
 
 type ToolModuleSectionKey =
+  | "more-title-setup"
   | "set-pack-strategy"
   | "set-pack-selling-points"
   | "set-pack-type-selector"
@@ -810,6 +811,38 @@ type SetPackTypeSavedTemplate = {
   name: string;
   coverSrc?: string;
   types: SetPackTypeItem[];
+};
+
+type MoreTitleDraftRow = {
+  id: string;
+  productName: string;
+  brand: string;
+  category: string;
+  sellingPoints: string;
+  specs: string;
+  originalTitle: string;
+};
+
+type MoreTitleCandidate = {
+  label: string;
+  title: string;
+  charCount: number;
+  keywords: string[];
+  risk: string;
+  note: string;
+};
+
+type MoreTitleGeneratedRow = {
+  id: string;
+  productName: string;
+  brand: string;
+  category: string;
+  sellingPoints: string;
+  specs: string;
+  originalTitle: string;
+  candidates: MoreTitleCandidate[];
+  selectedCandidateIndex: number;
+  finalTitle: string;
 };
 
 const navGroups: Array<{
@@ -975,6 +1008,42 @@ const setPackVisualStyleOptions = ["简约清新风", "高级质感风", "活泼
 const setPackResultRoleLabels = ["平台主图", "卖点图", "细节图", "场景图", "功能图", "参数图", "收尾图"];
 const SET_PACK_TYPE_LIMIT = 15;
 const setPackPlatformIds = ["amazon", "temu", "tiktok-shop", "aliexpress", "shopee", "ozon", "alibaba-international", "shein"];
+const moreTitlePlatformIds = [
+  "taobao",
+  "tmall",
+  "jd",
+  "pdd",
+  "1688",
+  "douyin",
+  "kuaishou",
+  "xiaohongshu",
+  "amazon",
+  "temu",
+  "tiktok-shop",
+  "alibaba-international",
+  "aliexpress",
+  "shopee",
+  "ozon",
+  "shein",
+  "other"
+];
+const moreTitleStyleOptions = ["平台稳妥版", "搜索覆盖版", "转化卖点版"];
+const moreTitleKeywordStrategyOptions = ["核心词前置", "属性优先", "场景优先"];
+const moreTitleLengthOptions = ["平台自动", "尽量写满", "短标题优先"];
+const moreTitleCategoryOptions = [
+  "服饰类",
+  "鞋靴类",
+  "箱包类",
+  "珠宝饰品类",
+  "美妆个护类",
+  "食品饮料类",
+  "家居百货类",
+  "家电数码类",
+  "家具大件类",
+  "母婴玩具类",
+  "汽配五金类",
+  "通用品类"
+];
 const setPackPlatformDefaultRatios: Record<string, string> = {
   "亚马逊": "1:1",
   "Temu": "3:4",
@@ -4424,6 +4493,203 @@ function buildSetPackTitleRecommendations(selectionMap: AdvancedSelectionMap) {
   ];
 }
 
+function getDefaultMoreTitleDraftRows() {
+  return [
+    {
+      id: "row-1",
+      productName: "蓝牙耳机",
+      brand: "CKT",
+      category: "家电数码类",
+      sellingPoints: "主动降噪；佩戴舒适；长续航",
+      specs: "蓝牙5.4；40小时续航；Type-C快充",
+      originalTitle: "蓝牙耳机"
+    },
+    {
+      id: "row-2",
+      productName: "纯棉短袖T恤",
+      brand: "CKT",
+      category: "服饰类",
+      sellingPoints: "柔软透气；宽松版型；日常百搭",
+      specs: "100%棉；夏季；男女同款",
+      originalTitle: "纯棉T恤"
+    },
+    {
+      id: "row-3",
+      productName: "收纳整理箱",
+      brand: "CKT HOME",
+      category: "家居百货类",
+      sellingPoints: "大容量；可叠放；开盖便捷取物",
+      specs: "带滑轮；PP材质；多尺寸可选",
+      originalTitle: "收纳箱"
+    }
+  ] satisfies MoreTitleDraftRow[];
+}
+
+function parseMoreTitleDraftRows(value?: string) {
+  const rows = safeParseJson<MoreTitleDraftRow[]>(value, []);
+  if (!rows?.length) {
+    return getDefaultMoreTitleDraftRows();
+  }
+  return rows.map((row, index) => ({
+    id: row.id || `row-${index + 1}`,
+    productName: row.productName ?? "",
+    brand: row.brand ?? "",
+    category: row.category ?? "",
+    sellingPoints: row.sellingPoints ?? "",
+    specs: row.specs ?? "",
+    originalTitle: row.originalTitle ?? ""
+  }));
+}
+
+function parseMoreTitleGeneratedRows(value?: string) {
+  return safeParseJson<MoreTitleGeneratedRow[]>(value, []) ?? [];
+}
+
+function splitTitleKeywords(value?: string) {
+  return (value ?? "")
+    .split(/\n|；|;|、|\/|\||,|，/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getMoreTitleLengthLimit(platform: string, lengthPreference: string) {
+  const baseLimit =
+    {
+      "淘宝": 60,
+      "天猫": 60,
+      "京东": 60,
+      "拼多多": 60,
+      "1688": 60,
+      "抖音电商": 55,
+      "快手电商": 55,
+      "小红书电商": 50,
+      "亚马逊": 200,
+      "Temu": 120,
+      "TikTok Shop": 120,
+      "阿里国际站": 128,
+      "速卖通": 128,
+      "Shopee": 120,
+      "OZON": 100,
+      "SHEIN": 100
+    }[platform] ?? 80;
+
+  if (lengthPreference === "短标题优先") {
+    return Math.max(28, Math.floor(baseLimit * 0.72));
+  }
+  if (lengthPreference === "尽量写满") {
+    return baseLimit;
+  }
+  return Math.min(baseLimit, platform === "亚马逊" ? 160 : baseLimit);
+}
+
+function normalizeTitleToken(token: string) {
+  return token
+    .replace(/[|｜]/g, " ")
+    .replace(/[“”"'`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function dedupeTitleTokens(tokens: string[]) {
+  const seen = new Set<string>();
+  return tokens.filter((token) => {
+    const normalized = normalizeTitleToken(token).toLowerCase();
+    if (!normalized || seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
+}
+
+function fitTitleToLimit(tokens: string[], limit: number) {
+  const nextTokens = [...tokens];
+  let title = dedupeTitleTokens(nextTokens).join(" ").replace(/\s+/g, " ").trim();
+  while (title.length > limit && nextTokens.length > 1) {
+    nextTokens.pop();
+    title = dedupeTitleTokens(nextTokens).join(" ").replace(/\s+/g, " ").trim();
+  }
+  return title.slice(0, limit).trim();
+}
+
+function buildMoreTitleCandidates(selectionMap: AdvancedSelectionMap, row: MoreTitleDraftRow) {
+  const platform = selectionMap.platform ?? "目标平台";
+  const keywordStrategy = selectionMap.moreTitleKeywordStrategy ?? "核心词前置";
+  const lengthPreference = selectionMap.moreTitleLengthPreference ?? "平台自动";
+  const mustInclude = splitTitleKeywords(selectionMap.moreTitleMustInclude);
+  const bannedTerms = splitTitleKeywords(selectionMap.moreTitleBannedTerms);
+  const sellingPoints = splitTitleKeywords(row.sellingPoints);
+  const specs = splitTitleKeywords(row.specs);
+  const lengthLimit = getMoreTitleLengthLimit(platform, lengthPreference);
+
+  const baseTokens =
+    keywordStrategy === "属性优先"
+      ? [row.brand, row.productName, ...specs, row.category]
+      : keywordStrategy === "场景优先"
+        ? [row.brand, row.productName, ...sellingPoints, ...specs, row.category]
+        : [row.brand, row.productName, row.category, ...sellingPoints, ...specs];
+
+  const candidateTokens: Array<{ label: string; note: string; tokens: string[] }> = [
+    {
+      label: "平台稳妥版",
+      note: "优先保证标题结构稳定、平台可读和基础属性完整。",
+      tokens: [row.brand, row.productName, row.category, specs[0], sellingPoints[0], ...mustInclude]
+    },
+    {
+      label: "搜索覆盖版",
+      note: "尽量扩大关键词覆盖，适合搜索流量型平台。",
+      tokens: [...baseTokens, ...mustInclude]
+    },
+    {
+      label: "转化卖点版",
+      note: "优先把核心利益点放到前半段，适合点击转化。",
+      tokens: [row.brand, row.productName, sellingPoints[0], sellingPoints[1], specs[0], specs[1], row.category, ...mustInclude]
+    }
+  ];
+
+  return candidateTokens.map((candidate) => {
+    const title = fitTitleToLimit(
+      candidate.tokens.map((token) => normalizeTitleToken(token)).filter(Boolean),
+      lengthLimit
+    );
+    const hitKeywords = dedupeTitleTokens([...sellingPoints, ...specs, ...mustInclude]).filter((keyword) =>
+      title.toLowerCase().includes(normalizeTitleToken(keyword).toLowerCase())
+    );
+    const riskMessages: string[] = [];
+    if (!row.productName.trim()) riskMessages.push("缺少商品名");
+    if (title.length >= Math.max(1, lengthLimit - 4)) riskMessages.push("标题接近平台长度上限");
+    const hitBanned = bannedTerms.filter((term) => title.includes(term));
+    if (hitBanned.length) riskMessages.push(`含禁用词：${hitBanned.join("、")}`);
+    return {
+      label: candidate.label,
+      title,
+      charCount: title.length,
+      keywords: hitKeywords.slice(0, 6),
+      risk: riskMessages[0] ?? "低风险",
+      note: candidate.note
+    } satisfies MoreTitleCandidate;
+  });
+}
+
+function buildMoreTitleGeneratedRows(selectionMap: AdvancedSelectionMap) {
+  const rows = parseMoreTitleDraftRows(selectionMap.moreTitleDraftRows).filter((row) =>
+    [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle].some((value) => value.trim())
+  );
+  const preferredIndex = Math.max(
+    0,
+    moreTitleStyleOptions.findIndex((option) => option === (selectionMap.moreTitlePreferredStyle || "平台稳妥版"))
+  );
+
+  return rows.map((row) => {
+    const candidates = buildMoreTitleCandidates(selectionMap, row);
+    const selectedCandidateIndex = Math.min(preferredIndex, Math.max(candidates.length - 1, 0));
+    return {
+      ...row,
+      candidates,
+      selectedCandidateIndex,
+      finalTitle: candidates[selectedCandidateIndex]?.title ?? row.originalTitle.trim()
+    } satisfies MoreTitleGeneratedRow;
+  });
+}
+
 function inferSceneProductDisplay(sourceText: string) {
   return inferOptionByKeywords(
     sourceText,
@@ -5755,6 +6021,52 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
       }
     ]
   },
+  "more-title": {
+    key: "more-title",
+    title: "输出倾向",
+    showSupplement: true,
+    hideRatioField: true,
+    hideResolutionField: true,
+    hideCountField: true,
+    supplementLabel: "运营限制",
+    supplementPlaceholder: "可补充必须避开的词、活动禁语、品牌露出要求，或指定必须强调的规格表达。",
+    supplementMaxLength: 1000,
+    modes: [
+      {
+        id: "safe",
+        label: "平台稳妥版",
+        apiModel: "mock://listing-title-safe",
+        logicNote: "优先保证标题结构稳定、平台合规和基础属性完整。",
+        ratioOptions: ["文本结果"],
+        countOptions: ["1"],
+        baseUnitCreditCost: 1,
+        defaultRatio: "文本结果",
+        defaultCount: "1"
+      },
+      {
+        id: "search",
+        label: "搜索覆盖版",
+        apiModel: "mock://listing-title-search",
+        logicNote: "扩大关键词覆盖，适合搜索型流量获取。",
+        ratioOptions: ["文本结果"],
+        countOptions: ["1"],
+        baseUnitCreditCost: 1,
+        defaultRatio: "文本结果",
+        defaultCount: "1"
+      },
+      {
+        id: "convert",
+        label: "转化卖点版",
+        apiModel: "mock://listing-title-convert",
+        logicNote: "突出核心卖点，适合点击转化场景。",
+        ratioOptions: ["文本结果"],
+        countOptions: ["1"],
+        baseUnitCreditCost: 1,
+        defaultRatio: "文本结果",
+        defaultCount: "1"
+      }
+    ]
+  },
   retouch: {
     key: "retouch",
     title: "创作模式",
@@ -6381,6 +6693,42 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
         maxCount: 3,
         singleUploadMeta: "（单次最多上传3张）",
         hintTemplate: "同一商品多视角图，最多3张"
+      }
+    }
+  },
+  "more-title": {
+    creationModeConfigKey: "more-title",
+    sectionOrder: ["advanced-settings", "more-title-setup", "creation-mode", "supplement"],
+    advancedSettings: {
+      title: "平台与标题策略",
+      fields: ["platform", "region", "language"],
+      platformIds: moreTitlePlatformIds,
+      extraSelects: [
+        {
+          key: "moreTitlePreferredStyle",
+          label: "默认输出方案",
+          options: moreTitleStyleOptions,
+          mode: "select"
+        },
+        {
+          key: "moreTitleKeywordStrategy",
+          label: "关键词策略",
+          options: moreTitleKeywordStrategyOptions,
+          mode: "select"
+        },
+        {
+          key: "moreTitleLengthPreference",
+          label: "长度控制",
+          options: moreTitleLengthOptions,
+          mode: "select"
+        }
+      ]
+    },
+    uploads: {
+      main: {
+        label: "批量商品数据",
+        required: false,
+        maxCount: 0
       }
     }
   },
@@ -9089,6 +9437,29 @@ function InputSelectField({
         required={required}
         value={value}
       />
+    </div>
+  );
+}
+
+function TextInputField({
+  label,
+  value,
+  placeholder,
+  required,
+  onChange
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  required?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label={label} required={required} />
+      <div className="ck-input-select has-value">
+        <input onChange={(event) => onChange(event.target.value)} placeholder={placeholder ?? "请输入"} value={value} />
+      </div>
     </div>
   );
 }
@@ -14662,6 +15033,159 @@ function ApplicablePlatformSection() {
   );
 }
 
+function MoreTitleSetupSection({
+  onSelectionChange,
+  onSelectionMapChange,
+  selectedValues
+}: {
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  selectedValues?: AdvancedSelectionMap;
+}) {
+  const [rows, setRows] = useState<MoreTitleDraftRow[]>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows));
+  const [mustInclude, setMustInclude] = useState(selectedValues?.moreTitleMustInclude ?? "");
+  const [bannedTerms, setBannedTerms] = useState(selectedValues?.moreTitleBannedTerms ?? "");
+  const lastSyncedValuesRef = useRef("");
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      rows: parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows),
+      mustInclude: selectedValues?.moreTitleMustInclude ?? "",
+      bannedTerms: selectedValues?.moreTitleBannedTerms ?? ""
+    });
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+    lastSyncedValuesRef.current = nextSyncKey;
+    setRows(parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows));
+    setMustInclude(selectedValues?.moreTitleMustInclude ?? "");
+    setBannedTerms(selectedValues?.moreTitleBannedTerms ?? "");
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const filteredRows = rows.filter((row) => [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle].some((value) => value.trim()));
+    const nextSelectionMap: AdvancedSelectionMap = {
+      moreTitleDraftRows: JSON.stringify(rows),
+      moreTitleMustInclude: mustInclude,
+      moreTitleBannedTerms: bannedTerms,
+      moreTitleRowCount: String(filteredRows.length)
+    };
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(
+      dedupeStrings([
+        ...filteredRows.flatMap((row) => [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle]),
+        mustInclude,
+        bannedTerms,
+        filteredRows.length ? `${filteredRows.length}个商品` : ""
+      ]).filter(Boolean)
+    );
+  }, [bannedTerms, mustInclude, onSelectionChange, onSelectionMapChange, rows]);
+
+  const updateRow = (rowId: string, patch: Partial<MoreTitleDraftRow>) => {
+    setRows((current) => current.map((row) => (row.id === rowId ? { ...row, ...patch } : row)));
+  };
+
+  const addRow = () => {
+    setRows((current) => [
+      ...current,
+      {
+        id: `row-${Date.now()}-${current.length + 1}`,
+        productName: "",
+        brand: "",
+        category: "",
+        sellingPoints: "",
+        specs: "",
+        originalTitle: ""
+      }
+    ]);
+  };
+
+  const removeRow = (rowId: string) => {
+    setRows((current) => (current.length <= 1 ? current : current.filter((row) => row.id !== rowId)));
+  };
+
+  return (
+    <div className="ck-more-title-setup">
+      <div className="ck-more-title-header">
+        <div>
+          <div className="ck-panel-subtitle">批量商品信息</div>
+          <p>一行对应一个商品，生成时将输出 3 套上架标题候选，并保留一个默认最终标题。</p>
+        </div>
+        <button className="ck-more-title-add-row" onClick={addRow} type="button">
+          + 添加商品
+        </button>
+      </div>
+
+      <div className="ck-more-title-grid">
+        {rows.map((row, index) => (
+          <article className="ck-more-title-row-card" key={row.id}>
+            <div className="ck-more-title-row-head">
+              <strong>商品 {index + 1}</strong>
+              <button className="ck-more-title-row-delete" disabled={rows.length <= 1} onClick={() => removeRow(row.id)} type="button">
+                删除
+              </button>
+            </div>
+            <div className="ck-more-title-row-fields two">
+              <TextInputField label="商品名" onChange={(value) => updateRow(row.id, { productName: value })} placeholder="请输入商品名" required value={row.productName} />
+              <TextInputField label="品牌" onChange={(value) => updateRow(row.id, { brand: value })} placeholder="请输入品牌名" value={row.brand} />
+            </div>
+            <div className="ck-more-title-row-fields two">
+              <SelectField
+                fullWidth
+                label="商品类目"
+                onChange={(value) => updateRow(row.id, { category: value })}
+                options={moreTitleCategoryOptions}
+                placeholder="请选择"
+                value={row.category}
+              />
+              <TextInputField label="原始标题" onChange={(value) => updateRow(row.id, { originalTitle: value })} placeholder="请输入当前在售标题" value={row.originalTitle} />
+            </div>
+            <div className="ck-more-title-row-fields two textareas">
+              <UnifiedTextareaField
+                formBlockClassName="ck-form-block"
+                label="核心卖点"
+                maxLength={240}
+                onChange={(value) => updateRow(row.id, { sellingPoints: value })}
+                placeholder="用分号分隔，例如：主动降噪；佩戴舒适；长续航"
+                value={row.sellingPoints}
+              />
+              <UnifiedTextareaField
+                formBlockClassName="ck-form-block"
+                label="规格属性"
+                maxLength={240}
+                onChange={(value) => updateRow(row.id, { specs: value })}
+                placeholder="用分号分隔，例如：蓝牙5.4；40小时续航；Type-C快充"
+                value={row.specs}
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="ck-more-title-row-fields two textareas">
+        <UnifiedTextareaField
+          formBlockClassName="ck-form-block"
+          label="必须包含词"
+          maxLength={240}
+          onChange={setMustInclude}
+          optional
+          placeholder="如有平台活动词、品牌保护词，可用分号分隔输入"
+          value={mustInclude}
+        />
+        <UnifiedTextareaField
+          formBlockClassName="ck-form-block"
+          label="禁用词"
+          maxLength={240}
+          onChange={setBannedTerms}
+          optional
+          placeholder="如需避开夸大词、极限词、活动禁语，可用分号分隔输入"
+          value={bannedTerms}
+        />
+      </div>
+    </div>
+  );
+}
+
 function CreationModeSection({
   config,
   onSelectionChange,
@@ -14805,6 +15329,101 @@ function CreationModeSection({
       {config.hideCountField ? null : (
         <CountField label="出图数量" onChange={setSelectedCount} options={activeMode.countOptions} required value={selectedCount} />
       )}
+    </div>
+  );
+}
+
+function MoreTitleWorkbench({
+  task,
+  onApplyCandidate,
+  onFinalTitleChange,
+  onCopyFinalTitles,
+  onExportCsv
+}: {
+  task?: TaskRecord | null;
+  onApplyCandidate: (taskId: string, rowId: string, candidateIndex: number) => void;
+  onFinalTitleChange: (taskId: string, rowId: string, value: string) => void;
+  onCopyFinalTitles: (taskId: string) => void;
+  onExportCsv: (taskId: string) => void;
+}) {
+  const rows = parseMoreTitleGeneratedRows(task?.snapshot.advancedSelections.moreTitleGeneratedRows);
+
+  if (!task) {
+    return (
+      <div className="ck-results-empty ck-more-title-empty">
+        <div className="ck-results-empty-title">还没有标题任务</div>
+        <div className="ck-results-empty-copy">请先在左侧补充商品信息并生成标题方案</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ck-more-title-workbench">
+      <div className="ck-more-title-workbench-head">
+        <div>
+          <strong>批量标题结果</strong>
+          <p>
+            {task.snapshot.advancedSelections.platform ?? "目标平台"} / {task.snapshot.advancedSelections.region ?? "目标地区"} /{" "}
+            {task.snapshot.advancedSelections.language ?? "目标语言"}
+          </p>
+        </div>
+        <div className="ck-more-title-workbench-actions">
+          <button onClick={() => onCopyFinalTitles(task.taskId)} type="button">
+            复制最终标题
+          </button>
+          <button onClick={() => onExportCsv(task.taskId)} type="button">
+            导出 CSV
+          </button>
+        </div>
+      </div>
+
+      {task.status !== "completed" ? <div className="ck-more-title-status-banner">标题方案生成中，候选结果即将完成。</div> : null}
+
+      <div className="ck-more-title-result-list">
+        {rows.map((row, index) => (
+          <article className="ck-more-title-result-card" key={row.id}>
+            <div className="ck-more-title-result-head">
+              <div>
+                <span>商品 {index + 1}</span>
+                <strong>{row.productName || row.originalTitle || "未命名商品"}</strong>
+              </div>
+              <em>{row.brand || row.category || "待补充品牌/类目"}</em>
+            </div>
+            <div className="ck-more-title-result-meta">
+              {row.originalTitle ? <span>原始标题：{row.originalTitle}</span> : null}
+              {row.sellingPoints ? <span>卖点：{row.sellingPoints}</span> : null}
+            </div>
+            <div className="ck-more-title-candidate-grid">
+              {row.candidates.map((candidate, candidateIndex) => (
+                <button
+                  className={`ck-more-title-candidate${candidateIndex === row.selectedCandidateIndex ? " active" : ""}`}
+                  key={`${row.id}-${candidate.label}`}
+                  onClick={() => onApplyCandidate(task.taskId, row.id, candidateIndex)}
+                  type="button"
+                >
+                  <div className="ck-more-title-candidate-top">
+                    <strong>{candidate.label}</strong>
+                    <span>{candidate.charCount}字</span>
+                  </div>
+                  <p>{candidate.title}</p>
+                  <div className="ck-more-title-candidate-foot">
+                    <span>{candidate.risk}</span>
+                    <em>{candidate.keywords.join(" / ") || "待补充关键词"}</em>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <UnifiedTextareaField
+              formBlockClassName="ck-form-block ck-more-title-final-field"
+              label="最终标题"
+              maxLength={260}
+              onChange={(value) => onFinalTitleChange(task.taskId, row.id, value)}
+              placeholder="可手动微调最终标题"
+              value={row.finalTitle}
+            />
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -17229,6 +17848,14 @@ function ConfigPanel({
   const videoPrintExtendRatioCount = getVideoPrintExtendSelectedRatios(advancedSettingSelections).length;
   const setPackSelectedTypes = useMemo(() => getSetPackSelectedTypes(advancedSettingSelections), [advancedSettingSelections]);
   const setPackTypeCount = Math.max(1, setPackSelectedTypes.length);
+  const moreTitleDraftRows = useMemo(() => parseMoreTitleDraftRows(advancedSettingSelections.moreTitleDraftRows), [advancedSettingSelections.moreTitleDraftRows]);
+  const moreTitleFilledRowCount = useMemo(
+    () =>
+      moreTitleDraftRows.filter((row) =>
+        [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle].some((value) => value.trim())
+      ).length,
+    [moreTitleDraftRows]
+  );
   const resolvedCreationModeSelection = useMemo<CreationModeSelection | null>(() => {
     const unitCreditCost = getResolvedToolUnitCreditCost(tool.key, creationModeSelection, advancedSettingSelections);
     if (!creationModeSelection) {
@@ -17256,7 +17883,9 @@ function ConfigPanel({
         ? patternRepeatMetrics.promptCount
         : tool.key === "video-style-print" && videoStylePrintMetrics.createMode === "文生图"
           ? videoStylePrintMetrics.promptCount
-        : uploadImageCount;
+        : tool.key === "more-title"
+          ? moreTitleFilledRowCount
+          : uploadImageCount;
   const effectiveReferenceCount = tool.key === "video-print-extend" ? videoPrintExtendRatioCount : referenceUploadCount;
   const generateCost =
     tool.key === "pod-fusion"
@@ -17277,11 +17906,13 @@ function ConfigPanel({
           : patternRepeatMetrics.isTextReady
         : tool.key === "video-style-print"
           ? referenceUploadCount > 0 && (videoStylePrintMetrics.requiresMainUploads ? uploadImageCount > 0 : videoStylePrintMetrics.isTextReady)
-      : uploadImageCount > 0 &&
+      : tool.key === "more-title"
+        ? moreTitleFilledRowCount > 0
+        : uploadImageCount > 0 &&
         (tool.key === "video-print-extend" ? effectiveReferenceCount > 0 : true) &&
         (tool.key === "set-replica" ? referenceUploadCount > 0 : true) &&
         (tool.key === "video-replica" || tool.key === "video-replace" ? videoUploadCount > 0 : true);
-  const generateCostLabel = hasRequiredInputs ? `消耗${generateCost}积分` : "待上传素材";
+  const generateCostLabel = hasRequiredInputs ? `消耗${generateCost}积分` : tool.key === "more-title" ? "待补充商品信息" : "待上传素材";
   const defaultSectionOrderByPanelKind: Record<PanelKind, ToolModuleSectionKey[]> = {
     retouch: ["upload-main", "advanced-settings", "mode-choice", "creation-mode", "supplement"],
     white: ["upload-main", "advanced-settings", "creation-mode"],
@@ -17497,6 +18128,25 @@ function ConfigPanel({
           selectedValues={advancedSettingSelections}
         />
       ) : null;
+    }
+
+    if (section === "more-title-setup" && tool.key === "more-title") {
+      return (
+        <MoreTitleSetupSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["moreTitleDraftRows", "moreTitleMustInclude", "moreTitleBannedTerms", "moreTitleRowCount"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
     }
 
     if (section === "set-pack-strategy" && isSetPackLikeTool(tool.key)) {
@@ -18421,6 +19071,21 @@ function ConfigPanel({
             productCategory: normalizeGoodsBuyerCategoryByAliases(advancedSettingSelections.productType),
             goodsBuyerPrompt: buildGoodsBuyerPromptAssembly(advancedSettingSelections, supplementValue).prompt
           }
+      : tool.key === "more-title"
+        ? {
+            ...advancedSettingSelections,
+            moreTitlePreferredStyle:
+              resolvedCreationModeSelection?.modeLabel ?? advancedSettingSelections.moreTitlePreferredStyle ?? "平台稳妥版",
+            moreTitleOperatorNote: supplementValue.trim(),
+            moreTitleGeneratedRows: JSON.stringify(
+              buildMoreTitleGeneratedRows({
+                ...advancedSettingSelections,
+                moreTitlePreferredStyle:
+                  resolvedCreationModeSelection?.modeLabel ?? advancedSettingSelections.moreTitlePreferredStyle ?? "平台稳妥版",
+                moreTitleOperatorNote: supplementValue.trim()
+              })
+            )
+          }
       : advancedSettingSelections;
 
   const handleGenerateClick = () => {
@@ -18456,6 +19121,7 @@ function ConfigPanel({
 
     if (
       !uploadImageCount &&
+      tool.key !== "more-title" &&
       tool.key !== "pod-fusion" &&
       !(tool.key === "video-pattern-repeat" && !patternRepeatMetrics.requiresMainUploads) &&
       !(tool.key === "video-style-print" && !videoStylePrintMetrics.requiresMainUploads)
@@ -18494,6 +19160,8 @@ function ConfigPanel({
             : tool.key === "video-pattern-repeat" && patternRepeatMetrics.type === "扩大画幅"
               ? uploads[patternRepeatExpandUploadKey] ?? []
             : tool.key === "video-style-print" && videoStylePrintMetrics.createMode === "文生图"
+              ? []
+            : tool.key === "more-title"
               ? []
             : uploads[mainUploadKey] ?? [],
       referenceUploads: uploads[refUploadKey] ?? [],
@@ -18582,7 +19250,9 @@ function ConfigPanel({
                     ? "生成详情页规划方案"
                     : isFashionTool
                       ? "生成推荐场景"
-                      : "立即生成"}
+                      : tool.key === "more-title"
+                        ? "生成标题方案"
+                        : "立即生成"}
               </span>
               {isAplusTool || isFashionTool ? null : (
                 <em>
@@ -18620,6 +19290,10 @@ function ResultPanel({
   selectedTask,
   onGenerateSetPackTitles,
   onApplySetPackTitle,
+  onApplyMoreTitleCandidate,
+  onChangeMoreTitleFinal,
+  onCopyMoreTitleTask,
+  onExportMoreTitleTask,
   onPreviewItem,
   onEditItemText,
   onOpenDetail
@@ -18641,12 +19315,16 @@ function ResultPanel({
   selectedTask?: TaskRecord | null;
   onGenerateSetPackTitles: (taskId: string) => void;
   onApplySetPackTitle: (taskId: string, title: string) => void;
+  onApplyMoreTitleCandidate: (taskId: string, rowId: string, candidateIndex: number) => void;
+  onChangeMoreTitleFinal: (taskId: string, rowId: string, value: string) => void;
+  onCopyMoreTitleTask: (taskId: string) => void;
+  onExportMoreTitleTask: (taskId: string) => void;
   onPreviewItem: (item: ResultItem) => void;
   onEditItemText: (item: ResultItem) => void;
   onOpenDetail: (item: ResultItem) => void;
 }) {
   const caseCollection = useMemo(() => createCaseCollection(tool), [tool]);
-  const showCaseTab = !tool.key.startsWith("image-");
+  const showCaseTab = !tool.key.startsWith("image-") && tool.key !== "more-title";
   const effectiveActiveTab: ResultTabKey = showCaseTab ? activeTab : "results";
   const readyItems = useMemo(() => items.filter((item) => item.status === "ready"), [items]);
   const selectedReadyCount = useMemo(() => readyItems.filter((item) => item.selected).length, [readyItems]);
@@ -18660,6 +19338,7 @@ function ResultPanel({
   const setPackTitleCandidates = safeParseJson<string[]>(selectedTask?.snapshot.advancedSelections.setPackTitleCandidates, []) ?? [];
   const selectedSetPackTitle = selectedTask?.snapshot.advancedSelections.setPackSelectedTitle ?? "";
   const canGenerateSetPackTitles = tool.key === "set-main" && Boolean(selectedTask?.taskId) && effectiveActiveTab === "results";
+  const isMoreTitleTool = tool.key === "more-title";
 
   return (
     <section className={`ck-results ck-results-tool-${tool.key}`}>
@@ -18675,7 +19354,7 @@ function ResultPanel({
             </button>
           ) : null}
         </div>
-        {effectiveActiveTab === "results" ? (
+        {effectiveActiveTab === "results" && !isMoreTitleTool ? (
           <div className="ck-results-actions">
             <label className="ck-results-check">
               <input
@@ -18774,6 +19453,14 @@ function ResultPanel({
               ))}
             </div>
           </div>
+        ) : isMoreTitleTool ? (
+          <MoreTitleWorkbench
+            onApplyCandidate={onApplyMoreTitleCandidate}
+            onCopyFinalTitles={onCopyMoreTitleTask}
+            onExportCsv={onExportMoreTitleTask}
+            onFinalTitleChange={onChangeMoreTitleFinal}
+            task={selectedTask}
+          />
         ) : showEmptyState ? (
           <div className="ck-results-empty">
             <div className="ck-results-empty-icon" aria-hidden="true">
@@ -20967,6 +21654,10 @@ export const App = () => {
   };
 
   const handleDownloadTaskResults = async (task: TaskRecord) => {
+    if (task.toolKey === "more-title") {
+      handleExportMoreTitleTask(task.taskId);
+      return;
+    }
     const isMemberUser = currentUserId !== "free";
     if (!isMemberUser) {
       await performTaskBatchDownload(task, false);
@@ -21448,6 +22139,119 @@ export const App = () => {
     });
   };
 
+  const updateMoreTitleTaskRows = (taskId: string, updater: (rows: MoreTitleGeneratedRow[]) => MoreTitleGeneratedRow[]) => {
+    updateTaskRecords("more-title", (records) =>
+      records.map((record) => {
+        if (record.taskId !== taskId) return record;
+        const currentRows = parseMoreTitleGeneratedRows(record.snapshot.advancedSelections.moreTitleGeneratedRows);
+        const nextRows = updater(currentRows);
+        return {
+          ...record,
+          snapshot: {
+            ...record.snapshot,
+            advancedSelections: {
+              ...record.snapshot.advancedSelections,
+              moreTitleGeneratedRows: JSON.stringify(nextRows)
+            }
+          }
+        };
+      })
+    );
+  };
+
+  const handleApplyMoreTitleCandidate = (taskId: string, rowId: string, candidateIndex: number) => {
+    updateMoreTitleTaskRows(taskId, (rows) =>
+      rows.map((row) =>
+        row.id === rowId
+          ? {
+              ...row,
+              selectedCandidateIndex: candidateIndex,
+              finalTitle: row.candidates[candidateIndex]?.title ?? row.finalTitle
+            }
+          : row
+      )
+    );
+  };
+
+  const handleChangeMoreTitleFinal = (taskId: string, rowId: string, value: string) => {
+    updateMoreTitleTaskRows(taskId, (rows) =>
+      rows.map((row) =>
+        row.id === rowId
+          ? {
+              ...row,
+              finalTitle: value
+            }
+          : row
+      )
+    );
+  };
+
+  const handleCopyMoreTitleTask = async (taskId: string) => {
+    const task = (taskRecordsByTool["more-title"] ?? []).find((record) => record.taskId === taskId);
+    if (!task) return;
+    const rows = parseMoreTitleGeneratedRows(task.snapshot.advancedSelections.moreTitleGeneratedRows);
+    const content = rows.map((row) => row.finalTitle.trim()).filter(Boolean).join("\n");
+    if (!content) {
+      setToast({
+        id: Date.now(),
+        message: "当前任务暂无可复制标题",
+        tone: "warning"
+      });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(content);
+      setToast({
+        id: Date.now(),
+        message: `已复制 ${rows.length} 条最终标题`
+      });
+    } catch {
+      setToast({
+        id: Date.now(),
+        message: "复制失败，请稍后重试",
+        tone: "warning"
+      });
+    }
+  };
+
+  const handleExportMoreTitleTask = (taskId: string) => {
+    const task = (taskRecordsByTool["more-title"] ?? []).find((record) => record.taskId === taskId);
+    if (!task) return;
+    const rows = parseMoreTitleGeneratedRows(task.snapshot.advancedSelections.moreTitleGeneratedRows);
+    if (!rows.length) {
+      setToast({
+        id: Date.now(),
+        message: "当前任务暂无可导出标题",
+        tone: "warning"
+      });
+      return;
+    }
+    const header = ["商品名", "品牌", "类目", "原始标题", "最终标题", "默认方案", "平台", "地区", "语言"];
+    const csvLines = [
+      header.join(","),
+      ...rows.map((row) =>
+        [
+          row.productName,
+          row.brand,
+          row.category,
+          row.originalTitle,
+          row.finalTitle,
+          row.candidates[row.selectedCandidateIndex]?.label ?? "",
+          task.snapshot.advancedSelections.platform ?? "",
+          task.snapshot.advancedSelections.region ?? "",
+          task.snapshot.advancedSelections.language ?? ""
+        ]
+          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+          .join(",")
+      )
+    ];
+    triggerDownload(new Blob([`\uFEFF${csvLines.join("\n")}`], { type: "text/csv;charset=utf-8;" }), `批量标题_${taskId}.csv`);
+    setToast({
+      id: Date.now(),
+      message: `已导出 ${rows.length} 条标题`
+    });
+  };
+
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 2200);
@@ -21728,6 +22532,10 @@ export const App = () => {
               onEditItemText={handleOpenEditResultText}
               onGenerateSetPackTitles={handleGenerateSetPackTitles}
               onApplySetPackTitle={handleApplySetPackTitle}
+              onApplyMoreTitleCandidate={handleApplyMoreTitleCandidate}
+              onChangeMoreTitleFinal={handleChangeMoreTitleFinal}
+              onCopyMoreTitleTask={handleCopyMoreTitleTask}
+              onExportMoreTitleTask={handleExportMoreTitleTask}
               onRetry={handleRetryResult}
               selectedTask={currentSelectedTask}
               onTabChange={handleResultTabChange}

@@ -4,3 +4,5 @@ dist
 *.tsbuildinfo
 .env
 .env.*
+tools/material_collector/.auth
+tools/material_collector/output
