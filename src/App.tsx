@@ -6701,6 +6701,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
     sectionOrder: ["advanced-settings", "more-title-setup", "creation-mode", "supplement"],
     advancedSettings: {
       title: "平台与标题策略",
+      showAiAssist: false,
       fields: ["platform", "region", "language"],
       platformIds: moreTitlePlatformIds,
       extraSelects: [
