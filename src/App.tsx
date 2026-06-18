@@ -15057,6 +15057,7 @@ function MoreTitleSetupSection({
   const [mustInclude, setMustInclude] = useState(selectedValues?.moreTitleMustInclude ?? "");
   const [bannedTerms, setBannedTerms] = useState(selectedValues?.moreTitleBannedTerms ?? "");
   const [editingRowId, setEditingRowId] = useState<string>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows)[0]?.id ?? "");
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const lastSyncedValuesRef = useRef("");
 
   useEffect(() => {
@@ -15118,6 +15119,7 @@ function MoreTitleSetupSection({
       }
     ]);
     setEditingRowId(nextId);
+    setIsEditorOpen(true);
   };
 
   const removeRow = (rowId: string) => {
@@ -15132,125 +15134,149 @@ function MoreTitleSetupSection({
   };
 
   const editingRow = rows.find((row) => row.id === editingRowId) ?? rows[0] ?? null;
+  const openEditorForRow = (rowId: string) => {
+    setEditingRowId(rowId);
+    setIsEditorOpen(true);
+  };
 
   return (
-    <div className="ck-more-title-setup">
-      <div className="ck-more-title-header">
-        <div>
-          <div className="ck-panel-subtitle">批量商品信息</div>
-          <p>先用卡片预览商品，点击编辑再展开单个商品信息区。商品图区域用于承接其他功能带入的商品图。</p>
+    <>
+      <div className="ck-more-title-setup">
+        <div className="ck-more-title-header">
+          <div>
+            <div className="ck-panel-subtitle">批量商品信息</div>
+            <p>先用卡片预览商品，点击编辑打开侧边小弹框。商品图区域用于承接其他功能带入的商品图。</p>
+          </div>
+          <button className="ck-more-title-add-row" onClick={addRow} type="button">
+            + 添加商品
+          </button>
         </div>
-        <button className="ck-more-title-add-row" onClick={addRow} type="button">
-          + 添加商品
-        </button>
+
+        <div className="ck-more-title-preview-grid">
+          {rows.map((row, index) => (
+            <article className={`ck-more-title-preview-card${row.id === editingRowId && isEditorOpen ? " active" : ""}`} key={row.id}>
+              <div className="ck-more-title-preview-thumb">
+                {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
+              </div>
+              <div className="ck-more-title-preview-body">
+                <div className="ck-more-title-preview-top">
+                  <strong>{row.productName || row.originalTitle || `商品 ${index + 1}`}</strong>
+                  <span>{row.brand || row.category || "待补充信息"}</span>
+                </div>
+                <p>{splitTitleKeywords(row.sellingPoints).slice(0, 2).join(" / ") || "点击编辑后补充卖点与规格"}</p>
+              </div>
+              <div className="ck-more-title-preview-actions">
+                <button onClick={() => openEditorForRow(row.id)} type="button">
+                  编辑
+                </button>
+                <button className="danger" disabled={rows.length <= 1} onClick={() => removeRow(row.id)} type="button">
+                  删除
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="ck-more-title-row-fields two textareas">
+          <UnifiedTextareaField
+            formBlockClassName="ck-form-block"
+            label="必须包含词"
+            maxLength={240}
+            onChange={setMustInclude}
+            optional
+            placeholder="如有平台活动词、品牌保护词，可用分号分隔输入"
+            value={mustInclude}
+          />
+          <UnifiedTextareaField
+            formBlockClassName="ck-form-block"
+            label="禁用词"
+            maxLength={240}
+            onChange={setBannedTerms}
+            optional
+            placeholder="如需避开夸大词、极限词、活动禁语，可用分号分隔输入"
+            value={bannedTerms}
+          />
+        </div>
       </div>
 
-      <div className="ck-more-title-preview-grid">
-        {rows.map((row, index) => (
-          <article className={`ck-more-title-preview-card${row.id === editingRowId ? " active" : ""}`} key={row.id}>
-            <div className="ck-more-title-preview-thumb">
-              {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
-            </div>
-            <div className="ck-more-title-preview-body">
-              <div className="ck-more-title-preview-top">
-                <strong>{row.productName || row.originalTitle || `商品 ${index + 1}`}</strong>
-                <span>{row.brand || row.category || "待补充信息"}</span>
+      {editingRow && isEditorOpen ? (
+        <div className="ck-set-pack-side-drawer-mask ck-more-title-edit-drawer-mask" onClick={() => setIsEditorOpen(false)}>
+          <div className="ck-set-pack-side-drawer ck-more-title-edit-drawer" onClick={(event) => event.stopPropagation()}>
+            <div className="ck-set-pack-side-drawer-head">
+              <div className="ck-set-pack-drawer-title">
+                <strong>{editingRow.productName || editingRow.originalTitle || "编辑商品信息"}</strong>
+                <span>商品图位置已预留，可承接其他功能带入</span>
               </div>
-              <p>{splitTitleKeywords(row.sellingPoints).slice(0, 2).join(" / ") || "点击编辑后补充卖点与规格"}</p>
-            </div>
-            <div className="ck-more-title-preview-actions">
-              <button onClick={() => setEditingRowId(row.id)} type="button">
-                编辑
-              </button>
-              <button className="danger" disabled={rows.length <= 1} onClick={() => removeRow(row.id)} type="button">
-                删除
+              <button aria-label="关闭商品编辑弹框" onClick={() => setIsEditorOpen(false)} type="button">
+                ×
               </button>
             </div>
-          </article>
-        ))}
-      </div>
-
-      {editingRow ? (
-        <article className="ck-more-title-editor-card">
-          <div className="ck-more-title-row-head">
-            <strong>{editingRow.productName || editingRow.originalTitle || "编辑商品信息"}</strong>
-            <span>商品图位置已预留，可承接其他功能带入</span>
-          </div>
-          <div className="ck-more-title-editor-layout">
-            <div className="ck-more-title-editor-thumb">
-              {editingRow.imageSrc ? <img alt={editingRow.imageLabel || editingRow.productName || "商品图"} src={editingRow.imageSrc} /> : <span>商品图预留区</span>}
-            </div>
-            <div className="ck-more-title-editor-fields">
-              <div className="ck-more-title-row-fields two">
-                <TextInputField
-                  label="商品名"
-                  onChange={(value) => updateRow(editingRow.id, { productName: value })}
-                  placeholder="请输入商品名"
-                  required
-                  value={editingRow.productName}
-                />
-                <TextInputField label="品牌" onChange={(value) => updateRow(editingRow.id, { brand: value })} placeholder="请输入品牌名" value={editingRow.brand} />
-              </div>
-              <div className="ck-more-title-row-fields two">
-                <SelectField
-                  fullWidth
-                  label="商品类目"
-                  onChange={(value) => updateRow(editingRow.id, { category: value })}
-                  options={moreTitleCategoryOptions}
-                  placeholder="请选择"
-                  value={editingRow.category}
-                />
-                <TextInputField
-                  label="原始标题"
-                  onChange={(value) => updateRow(editingRow.id, { originalTitle: value })}
-                  placeholder="请输入当前在售标题"
-                  value={editingRow.originalTitle}
-                />
-              </div>
-              <div className="ck-more-title-row-fields two textareas">
-                <UnifiedTextareaField
-                  formBlockClassName="ck-form-block"
-                  label="核心卖点"
-                  maxLength={240}
-                  onChange={(value) => updateRow(editingRow.id, { sellingPoints: value })}
-                  placeholder="用分号分隔，例如：主动降噪；佩戴舒适；长续航"
-                  value={editingRow.sellingPoints}
-                />
-                <UnifiedTextareaField
-                  formBlockClassName="ck-form-block"
-                  label="规格属性"
-                  maxLength={240}
-                  onChange={(value) => updateRow(editingRow.id, { specs: value })}
-                  placeholder="用分号分隔，例如：蓝牙5.4；40小时续航；Type-C快充"
-                  value={editingRow.specs}
-                />
+            <div className="ck-set-pack-side-drawer-body">
+              <div className="ck-more-title-editor-layout">
+                <div className="ck-more-title-editor-thumb">
+                  {editingRow.imageSrc ? (
+                    <img alt={editingRow.imageLabel || editingRow.productName || "商品图"} src={editingRow.imageSrc} />
+                  ) : (
+                    <span>商品图预留区</span>
+                  )}
+                </div>
+                <div className="ck-more-title-editor-fields">
+                  <div className="ck-more-title-row-fields two">
+                    <TextInputField
+                      label="商品名"
+                      onChange={(value) => updateRow(editingRow.id, { productName: value })}
+                      placeholder="请输入商品名"
+                      required
+                      value={editingRow.productName}
+                    />
+                    <TextInputField
+                      label="品牌"
+                      onChange={(value) => updateRow(editingRow.id, { brand: value })}
+                      placeholder="请输入品牌名"
+                      value={editingRow.brand}
+                    />
+                  </div>
+                  <div className="ck-more-title-row-fields two">
+                    <SelectField
+                      fullWidth
+                      label="商品类目"
+                      onChange={(value) => updateRow(editingRow.id, { category: value })}
+                      options={moreTitleCategoryOptions}
+                      placeholder="请选择"
+                      value={editingRow.category}
+                    />
+                    <TextInputField
+                      label="原始标题"
+                      onChange={(value) => updateRow(editingRow.id, { originalTitle: value })}
+                      placeholder="请输入当前在售标题"
+                      value={editingRow.originalTitle}
+                    />
+                  </div>
+                  <div className="ck-more-title-row-fields two textareas">
+                    <UnifiedTextareaField
+                      formBlockClassName="ck-form-block"
+                      label="核心卖点"
+                      maxLength={240}
+                      onChange={(value) => updateRow(editingRow.id, { sellingPoints: value })}
+                      placeholder="用分号分隔，例如：主动降噪；佩戴舒适；长续航"
+                      value={editingRow.sellingPoints}
+                    />
+                    <UnifiedTextareaField
+                      formBlockClassName="ck-form-block"
+                      label="规格属性"
+                      maxLength={240}
+                      onChange={(value) => updateRow(editingRow.id, { specs: value })}
+                      placeholder="用分号分隔，例如：蓝牙5.4；40小时续航；Type-C快充"
+                      value={editingRow.specs}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </article>
+        </div>
       ) : null}
-
-      <div className="ck-more-title-row-fields two textareas">
-        <UnifiedTextareaField
-          formBlockClassName="ck-form-block"
-          label="必须包含词"
-          maxLength={240}
-          onChange={setMustInclude}
-          optional
-          placeholder="如有平台活动词、品牌保护词，可用分号分隔输入"
-          value={mustInclude}
-        />
-        <UnifiedTextareaField
-          formBlockClassName="ck-form-block"
-          label="禁用词"
-          maxLength={240}
-          onChange={setBannedTerms}
-          optional
-          placeholder="如需避开夸大词、极限词、活动禁语，可用分号分隔输入"
-          value={bannedTerms}
-        />
-      </div>
-    </div>
+    </>
   );
 }
 

@@ -13934,7 +13934,6 @@ textarea {
   gap: 10px;
 }
 
-.ck-more-title-editor-card,
 .ck-more-title-result-card {
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -13943,21 +13942,16 @@ textarea {
   box-shadow: 0 8px 20px rgba(20, 27, 45, 0.05);
 }
 
-.ck-more-title-editor-card {
-  display: grid;
-  gap: 10px;
-}
-
 .ck-more-title-editor-layout {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
 
 .ck-more-title-editor-thumb {
-  width: 92px;
-  height: 92px;
+  width: 88px;
+  height: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14019,6 +14013,53 @@ textarea {
 .ck-more-title-row-fields.textareas .ck-textarea-wrap textarea,
 .ck-more-title-final-field .ck-textarea-wrap textarea {
   min-height: 72px;
+}
+
+.ck-more-title-edit-drawer-mask {
+  z-index: 100120;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.ck-more-title-edit-drawer {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 108px);
+  transform: translateX(148px);
+  border: 1px solid #eff0f4;
+  border-radius: 16px;
+  box-shadow: 0 20px 56px rgba(15, 23, 42, 0.18);
+}
+
+.ck-more-title-edit-drawer .ck-set-pack-side-drawer-head {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #eff0f4;
+}
+
+.ck-more-title-edit-drawer .ck-set-pack-side-drawer-head strong {
+  color: #1b2337;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+.ck-more-title-edit-drawer .ck-set-pack-side-drawer-body {
+  padding: 14px 16px 16px;
+}
+
+.ck-more-title-edit-drawer .ck-more-title-editor-layout {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.ck-more-title-edit-drawer .ck-more-title-editor-thumb {
+  width: 96px;
+  height: 96px;
+}
+
+.ck-more-title-edit-drawer .ck-more-title-editor-fields {
+  min-width: 0;
 }
 
 .ck-more-title-workbench {
@@ -14170,7 +14211,6 @@ textarea {
 .ck-panel-tool-more-title .ck-more-title-grid,
 .ck-panel-tool-more-title .ck-more-title-preview-grid,
 .ck-panel-tool-more-title .ck-more-title-preview-card,
-.ck-panel-tool-more-title .ck-more-title-editor-card,
 .ck-panel-tool-more-title .ck-more-title-row-head,
 .ck-panel-tool-more-title .ck-more-title-row-fields,
 .ck-panel-tool-more-title .ck-more-title-editor-layout,
@@ -14209,6 +14249,10 @@ textarea {
   .ck-more-title-result-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .ck-more-title-edit-drawer {
+    transform: translateX(92px);
+  }
 }
 
 @media (max-width: 1180px) {
@@ -14224,5 +14268,11 @@ textarea {
 
   .ck-more-title-preview-card {
     grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .ck-more-title-edit-drawer {
+    left: auto;
+    right: 16px;
+    transform: none;
   }
 }
