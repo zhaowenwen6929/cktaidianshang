@@ -15082,8 +15082,6 @@ function MoreTitleSetupSection({
   selectedValues?: AdvancedSelectionMap;
 }) {
   const [rows, setRows] = useState<MoreTitleDraftRow[]>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows));
-  const [mustInclude, setMustInclude] = useState(selectedValues?.moreTitleMustInclude ?? "");
-  const [bannedTerms, setBannedTerms] = useState(selectedValues?.moreTitleBannedTerms ?? "");
   const [editingRowId, setEditingRowId] = useState<string>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows)[0]?.id ?? "");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [draftRow, setDraftRow] = useState<MoreTitleDraftRow | null>(null);
@@ -15103,9 +15101,7 @@ function MoreTitleSetupSection({
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
-      rows: parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows),
-      mustInclude: selectedValues?.moreTitleMustInclude ?? "",
-      bannedTerms: selectedValues?.moreTitleBannedTerms ?? ""
+      rows: parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows)
     });
     if (nextSyncKey === lastSyncedValuesRef.current) {
       return;
@@ -15113,8 +15109,6 @@ function MoreTitleSetupSection({
     lastSyncedValuesRef.current = nextSyncKey;
     const nextRows = parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows);
     setRows(nextRows);
-    setMustInclude(selectedValues?.moreTitleMustInclude ?? "");
-    setBannedTerms(selectedValues?.moreTitleBannedTerms ?? "");
     if (!nextRows.some((row) => row.id === editingRowId)) {
       setEditingRowId(nextRows[0]?.id ?? "");
     }
@@ -15124,20 +15118,16 @@ function MoreTitleSetupSection({
     const filteredRows = rows.filter((row) => [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle].some((value) => value.trim()));
     const nextSelectionMap: AdvancedSelectionMap = {
       moreTitleDraftRows: JSON.stringify(rows),
-      moreTitleMustInclude: mustInclude,
-      moreTitleBannedTerms: bannedTerms,
       moreTitleRowCount: String(filteredRows.length)
     };
     onSelectionMapChange?.(nextSelectionMap);
     onSelectionChange?.(
       dedupeStrings([
         ...filteredRows.flatMap((row) => [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle]),
-        mustInclude,
-        bannedTerms,
         filteredRows.length ? `${filteredRows.length}个商品` : ""
       ]).filter(Boolean)
     );
-  }, [bannedTerms, mustInclude, onSelectionChange, onSelectionMapChange, rows]);
+  }, [onSelectionChange, onSelectionMapChange, rows]);
 
   const updateDraftRow = (patch: Partial<MoreTitleDraftRow>) => {
     setDraftRow((current) => (current ? { ...current, ...patch } : current));
@@ -15237,26 +15227,6 @@ function MoreTitleSetupSection({
           </div>
         </div>
 
-        <div className="ck-more-title-row-fields two textareas">
-          <UnifiedTextareaField
-            formBlockClassName="ck-form-block"
-            label="必须包含词"
-            maxLength={240}
-            onChange={setMustInclude}
-            optional
-            placeholder="如有平台活动词、品牌保护词，可用分号分隔输入"
-            value={mustInclude}
-          />
-          <UnifiedTextareaField
-            formBlockClassName="ck-form-block"
-            label="禁用词"
-            maxLength={240}
-            onChange={setBannedTerms}
-            optional
-            placeholder="如需避开夸大词、极限词、活动禁语，可用分号分隔输入"
-            value={bannedTerms}
-          />
-        </div>
       </div>
 
       {draftRow && isEditorOpen ? (
@@ -15345,6 +15315,62 @@ function MoreTitleSetupSection({
         </div>
       ) : null}
     </>
+  );
+}
+
+function MoreTitleConstraintsSection({
+  onSelectionChange,
+  onSelectionMapChange,
+  selectedValues
+}: {
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  selectedValues?: AdvancedSelectionMap;
+}) {
+  const [mustInclude, setMustInclude] = useState(selectedValues?.moreTitleMustInclude ?? "");
+  const [bannedTerms, setBannedTerms] = useState(selectedValues?.moreTitleBannedTerms ?? "");
+  const lastSyncedValuesRef = useRef("");
+
+  useEffect(() => {
+    const nextSyncKey = JSON.stringify({
+      mustInclude: selectedValues?.moreTitleMustInclude ?? "",
+      bannedTerms: selectedValues?.moreTitleBannedTerms ?? ""
+    });
+    if (nextSyncKey === lastSyncedValuesRef.current) return;
+    lastSyncedValuesRef.current = nextSyncKey;
+    setMustInclude(selectedValues?.moreTitleMustInclude ?? "");
+    setBannedTerms(selectedValues?.moreTitleBannedTerms ?? "");
+  }, [selectedValues]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({
+      moreTitleMustInclude: mustInclude,
+      moreTitleBannedTerms: bannedTerms
+    });
+    onSelectionChange?.(dedupeStrings([mustInclude, bannedTerms]).filter(Boolean));
+  }, [bannedTerms, mustInclude, onSelectionChange, onSelectionMapChange]);
+
+  return (
+    <div className="ck-more-title-row-fields two textareas">
+      <UnifiedTextareaField
+        formBlockClassName="ck-form-block"
+        label="必须包含词"
+        maxLength={240}
+        onChange={setMustInclude}
+        optional
+        placeholder="如有平台活动词、品牌保护词，可用分号分隔输入"
+        value={mustInclude}
+      />
+      <UnifiedTextareaField
+        formBlockClassName="ck-form-block"
+        label="禁用词"
+        maxLength={240}
+        onChange={setBannedTerms}
+        optional
+        placeholder="如需避开夸大词、极限词、活动禁语，可用分号分隔输入"
+        value={bannedTerms}
+      />
+    </div>
   );
 }
 
@@ -18355,7 +18381,7 @@ function ConfigPanel({
         <MoreTitleSetupSection
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            const sectionKeys = ["moreTitleDraftRows", "moreTitleMustInclude", "moreTitleBannedTerms", "moreTitleRowCount"];
+            const sectionKeys = ["moreTitleDraftRows", "moreTitleRowCount"];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
@@ -18988,27 +19014,45 @@ function ConfigPanel({
             : undefined;
 
       return creationModeConfig.showSupplement ? (
-        <SupplementField
-          aiPolishConfig={supplementAiPolishConfig}
-          formBlockClassName={supplementFormBlockClassName}
-          label={creationModeConfig.supplementLabel}
-          maxLength={creationModeConfig.supplementMaxLength}
-          onAiPolish={(value) =>
-            onSupplementAiPolish(tool.key, value, {
-              advancedValues: advancedSettingValues,
-              creationModeValues: dedupeStrings([
-                resolvedCreationModeSelection?.modeLabel ?? "",
-                resolvedCreationModeSelection?.ratio ?? "",
-                resolvedCreationModeSelection?.resolution ?? "",
-                resolvedCreationModeSelection?.count ? `${resolvedCreationModeSelection.count}张` : ""
-              ])
-            })
-          }
-          onChange={(value) => onSupplementChange(tool.key, value)}
-          onToast={onToast}
-          placeholder={supplementPlaceholderOverrides[tool.key] ?? creationModeConfig.supplementPlaceholder}
-          value={supplementValue}
-        />
+        <>
+          <SupplementField
+            aiPolishConfig={supplementAiPolishConfig}
+            formBlockClassName={supplementFormBlockClassName}
+            label={creationModeConfig.supplementLabel}
+            maxLength={creationModeConfig.supplementMaxLength}
+            onAiPolish={(value) =>
+              onSupplementAiPolish(tool.key, value, {
+                advancedValues: advancedSettingValues,
+                creationModeValues: dedupeStrings([
+                  resolvedCreationModeSelection?.modeLabel ?? "",
+                  resolvedCreationModeSelection?.ratio ?? "",
+                  resolvedCreationModeSelection?.resolution ?? "",
+                  resolvedCreationModeSelection?.count ? `${resolvedCreationModeSelection.count}张` : ""
+                ])
+              })
+            }
+            onChange={(value) => onSupplementChange(tool.key, value)}
+            onToast={onToast}
+            placeholder={supplementPlaceholderOverrides[tool.key] ?? creationModeConfig.supplementPlaceholder}
+            value={supplementValue}
+          />
+          {tool.key === "more-title" ? (
+            <MoreTitleConstraintsSection
+              onSelectionChange={setAdvancedSettingValues}
+              onSelectionMapChange={(values) => {
+                const sectionKeys = ["moreTitleMustInclude", "moreTitleBannedTerms"];
+                setAdvancedSettingSelections((current) => {
+                  const nextSelections = { ...current };
+                  sectionKeys.forEach((key) => {
+                    delete nextSelections[key];
+                  });
+                  return { ...nextSelections, ...values };
+                });
+              }}
+              selectedValues={advancedSettingSelections}
+            />
+          ) : null}
+        </>
       ) : null;
     }
 
