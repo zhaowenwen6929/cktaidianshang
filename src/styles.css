@@ -14012,6 +14012,27 @@ textarea {
   margin-bottom: 10px;
 }
 
+.ck-panel-tool-more-title .ck-more-title-mode-row {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.ck-panel-tool-more-title .ck-more-title-mode-row .ck-mode-card.ck-mode-card-primary {
+  min-height: 74px;
+  padding: 8px 10px;
+}
+
+.ck-panel-tool-more-title .ck-more-title-mode-row .ck-mode-card.ck-mode-card-primary .ck-mode-card-head {
+  margin-bottom: 6px;
+}
+
+.ck-panel-tool-more-title .ck-more-title-mode-row .ck-mode-card.ck-mode-card-primary p {
+  line-height: 15px;
+  text-align: left;
+}
+
 .ck-panel-tool-more-title .ck-field-title {
   height: auto;
   margin-bottom: 6px;
@@ -14329,6 +14350,10 @@ textarea {
   .ck-more-title-result-list,
   .ck-more-title-editor-layout {
     grid-template-columns: 1fr;
+  }
+
+  .ck-panel-tool-more-title .ck-more-title-mode-row {
+    grid-template-columns: 1fr !important;
   }
 
   .ck-more-title-editor-thumb {

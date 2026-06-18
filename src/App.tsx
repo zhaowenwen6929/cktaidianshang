@@ -1031,6 +1031,11 @@ const moreTitlePlatformIds = [
   "other"
 ];
 const moreTitleStyleOptions = ["平台稳妥版", "搜索覆盖版", "转化卖点版"];
+const moreTitleStyleDescriptionMap: Record<string, string> = {
+  平台稳妥版: "优先保证标题结构稳定、平台合规和基础属性完整",
+  搜索覆盖版: "扩大关键词覆盖，适合搜索流量获取",
+  转化卖点版: "突出核心卖点，适合点击转化场景"
+};
 const moreTitleKeywordStrategyOptions = ["核心词前置", "属性优先", "场景优先"];
 const moreTitleLengthOptions = ["平台自动", "尽量写满", "短标题优先"];
 const moreTitleCategoryOptions = [
@@ -16005,18 +16010,25 @@ function AdvancedSettingsSection({
             <div className="ck-platform-item-label">{field.label}</div>
             <div className="ck-platform-inline-select">
               {field.mode === "multi-select" ? (
-                <div className="ck-adaptive-choice-grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, field.options.length))}, minmax(0, 1fr))` }}>
+                <div
+                  className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary ck-more-title-mode-row"
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, field.options.length))}, minmax(0, 1fr))` }}
+                >
                   {field.options.map((option) => {
                     const selectedValues = parseMultiSelectValue(field.value);
                     const active = selectedValues.includes(option);
                     return (
                       <button
-                        className={`ck-adaptive-choice-item${active ? " active" : ""}`}
+                        className={`ck-mode-card ck-mode-card-primary${active ? " active" : ""}`}
                         key={option}
                         onClick={() => field.onSelect(option)}
                         type="button"
                       >
-                        {option}
+                        <div className="ck-mode-card-head">
+                          <strong>{option}</strong>
+                          <span className={`ck-check${active ? " active" : ""}`} />
+                        </div>
+                        <p>{moreTitleStyleDescriptionMap[option] ?? ""}</p>
                       </button>
                     );
                   })}
