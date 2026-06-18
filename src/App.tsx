@@ -6065,8 +6065,8 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
     hideRatioField: true,
     hideResolutionField: true,
     hideCountField: true,
-    supplementLabel: "运营限制",
-    supplementPlaceholder: "可补充必须避开的词、活动禁语、品牌露出要求，或指定必须强调的规格表达。",
+    supplementLabel: "补充要求",
+    supplementPlaceholder: "可补充其他运营要求或写作偏好，例如：优先突出大容量版本、品牌词不要前置、标题口吻更偏夏季上新。",
     supplementMaxLength: 1000,
     modes: [
       {
