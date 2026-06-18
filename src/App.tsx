@@ -6743,13 +6743,6 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       platformIds: moreTitlePlatformIds,
       extraSelects: [
         {
-          key: "moreTitleOutputStyles",
-          label: "输出倾向",
-          options: moreTitleStyleOptions,
-          mode: "multi-select",
-          defaultValue: serializeMultiSelectValue(moreTitleStyleOptions)
-        },
-        {
           key: "moreTitleKeywordStrategy",
           label: "关键词策略",
           options: moreTitleKeywordStrategyOptions,
@@ -6760,6 +6753,13 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
           label: "长度控制",
           options: moreTitleLengthOptions,
           mode: "select"
+        },
+        {
+          key: "moreTitleOutputStyles",
+          label: "输出倾向",
+          options: moreTitleStyleOptions,
+          mode: "multi-select",
+          defaultValue: serializeMultiSelectValue(moreTitleStyleOptions)
         }
       ]
     },
@@ -16041,7 +16041,15 @@ function AdvancedSettingsSection({
                   value={field.value}
                 />
               ) : field.mode === "select" ? (
-                <SelectField fullWidth hideLabel label={field.label} onChange={field.onSelect} options={field.options} value={field.value} />
+                <SelectField
+                  fullWidth
+                  hideLabel
+                  label={field.label}
+                  onChange={field.onSelect}
+                  options={field.options}
+                  placeholder="请选择"
+                  value={field.value}
+                />
               ) : (
                 <div className="ck-select-dropdown full">
                   {field.mode === "input-select" ? (

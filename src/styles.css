@@ -14023,6 +14023,7 @@ textarea {
   width: 100%;
   gap: 8px;
   margin-bottom: 0;
+  grid-template-columns: 1fr !important;
 }
 
 .ck-panel-tool-more-title .ck-more-title-mode-row .ck-mode-card.ck-mode-card-primary {
