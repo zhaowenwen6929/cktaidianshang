@@ -14008,34 +14008,6 @@ textarea {
   grid-template-columns: 1fr;
 }
 
-.ck-multi-select {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.ck-multi-select button {
-  min-width: 0;
-  min-height: 46px;
-  padding: 0 10px;
-  border: 1px solid #e4eaf5;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 500;
-  text-align: center;
-  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
-}
-
-.ck-multi-select button.active {
-  border-color: rgba(99, 95, 242, 0.45);
-  background: rgba(99, 95, 242, 0.08);
-  color: #5d5bf1;
-  box-shadow: 0 0 0 2px rgba(99, 95, 242, 0.08);
-}
-
 .ck-panel-tool-more-title .ck-form-block {
   margin-bottom: 10px;
 }
@@ -14356,10 +14328,6 @@ textarea {
 @media (max-width: 1180px) {
   .ck-more-title-result-list,
   .ck-more-title-editor-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .ck-multi-select {
     grid-template-columns: 1fr;
   }
 

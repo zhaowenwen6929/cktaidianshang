@@ -16005,13 +16005,13 @@ function AdvancedSettingsSection({
             <div className="ck-platform-item-label">{field.label}</div>
             <div className="ck-platform-inline-select">
               {field.mode === "multi-select" ? (
-                <div className="ck-multi-select">
+                <div className="ck-adaptive-choice-grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, field.options.length))}, minmax(0, 1fr))` }}>
                   {field.options.map((option) => {
                     const selectedValues = parseMultiSelectValue(field.value);
                     const active = selectedValues.includes(option);
                     return (
                       <button
-                        className={active ? "active" : ""}
+                        className={`ck-adaptive-choice-item${active ? " active" : ""}`}
                         key={option}
                         onClick={() => field.onSelect(option)}
                         type="button"
