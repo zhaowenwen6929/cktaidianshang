@@ -13808,6 +13808,23 @@ textarea {
   align-items: flex-start;
 }
 
+.ck-more-title-header .ck-field-title {
+  margin-bottom: 0;
+}
+
+.ck-more-title-header .ck-field-title,
+.ck-more-title-header .ck-field-title span,
+.ck-more-title-header .ck-field-title em {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.ck-more-title-header .ck-field-title span,
+.ck-more-title-header .ck-field-title em {
+  font-weight: 600;
+}
+
 .ck-more-title-header p,
 .ck-more-title-workbench-head p,
 .ck-more-title-result-meta {
@@ -14428,9 +14445,13 @@ textarea {
   flex-wrap: wrap;
 }
 
-.ck-panel-tool-more-title .ck-more-title-add-row,
 .ck-panel-tool-more-title .ck-more-title-workbench-actions > button {
   width: 100%;
+}
+
+.ck-panel-tool-more-title .ck-more-title-product-actions .ck-more-title-add-row {
+  flex: 1 1 0;
+  width: auto;
 }
 
 @media (max-width: 1480px) {

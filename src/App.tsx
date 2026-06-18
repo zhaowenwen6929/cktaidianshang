@@ -410,6 +410,7 @@ type ImageExpandPromptContext = {
   referenceUploads?: UploadItem[];
   supplementValue: string;
   creationModeSelection: CreationModeSelection | null;
+  advancedSelections: AdvancedSelectionMap;
 };
 
 type AplusPlanStatus = "idle" | "generating" | "ready";
@@ -528,6 +529,29 @@ type CreationModeSelection = {
   count: number;
   unitCreditCost: number;
 };
+
+const imageExpandModeOptions = [
+  {
+    key: "conservative",
+    label: "保守扩图",
+    description: "优先小到中等幅度补边，保持主体占比和原图构图稳定。",
+    prompt: "优先采用保守扩图策略，以小到中等幅度延展为主，尽量保持主体占比、视觉重心和原图构图关系稳定。"
+  },
+  {
+    key: "blank-space",
+    label: "留白扩图",
+    description: "优先扩出可放文案或贴片的留白区域，适合横幅和营销图。",
+    prompt: "优先采用留白扩图策略，在不破坏主体的前提下，为文案、贴片或排版预留干净且连续的留白区域。"
+  },
+  {
+    key: "layout-convert",
+    label: "版式扩图",
+    description: "优先补全上下或左右画幅，适合横竖版转换和版式重构。",
+    prompt: "优先采用版式扩图策略，围绕目标版式补全上下或左右画幅，使原图更适合横竖版转换或重新构图。"
+  }
+] as const;
+
+const imageExpandTargetRatioOptions = ["自适应尺寸", "1:1", "3:4", "4:5", "16:9", "9:16"] as const;
 
 type VideoPricingSelectionMap = {
   mode?: string;
@@ -725,6 +749,7 @@ type ToolModuleSectionKey =
   | "set-pack-style-analysis"
   | "image-upscale-resolution"
   | "image-lineart-style"
+  | "image-expand-mode"
   | "mask-draw"
   | "baseline-model-setup"
   | "video-main-script-setup"
@@ -4255,6 +4280,20 @@ function buildImageExpandReferencePrompt(referenceUploads: UploadItem[]) {
   return `请参考上传的 ${referenceUploads.length} 张参考图的场景氛围、空间走向、材质风格或装饰元素，但必须保持原商品主体和原图视觉逻辑不变。`;
 }
 
+function buildImageExpandStrategyPrompt(advancedSelections: AdvancedSelectionMap) {
+  const selectedMode = advancedSelections.imageExpandMode ?? "conservative";
+  const option = imageExpandModeOptions.find((item) => item.key === selectedMode) ?? imageExpandModeOptions[0];
+  return `${option.label}；${option.prompt}`;
+}
+
+function buildImageExpandTargetRatioPrompt(advancedSelections: AdvancedSelectionMap) {
+  const targetRatio = advancedSelections.imageExpandTargetRatio ?? "自适应尺寸";
+  if (targetRatio === "自适应尺寸") {
+    return "默认按原图语义与构图关系自适应延展，不强制改成固定画幅。";
+  }
+  return `目标画幅比例为 ${targetRatio}，扩图时请优先朝该比例补全画面，并保持主体结构、占比与构图关系尽量自然。`;
+}
+
 function buildImageExpandModePrompt(context: ImageExpandPromptContext) {
   const modeId = context.creationModeSelection?.modeId ?? "normal";
   const modeLabel = context.creationModeSelection?.modeLabel ?? "普通模式";
@@ -4275,6 +4314,8 @@ function buildImageExpandUserPrompt(context: ImageExpandPromptContext) {
   const userDescription = context.supplementValue.trim() || "未填写额外扩图需求，请按保守扩图策略执行。";
   const referencePrompt = buildImageExpandReferencePrompt(context.referenceUploads ?? []);
   const modePrompt = buildImageExpandModePrompt(context);
+  const strategyPrompt = buildImageExpandStrategyPrompt(context.advancedSelections);
+  const targetRatioPrompt = buildImageExpandTargetRatioPrompt(context.advancedSelections);
 
   return [
     "请基于上传原图进行图片扩图。",
@@ -4287,6 +4328,12 @@ function buildImageExpandUserPrompt(context: ImageExpandPromptContext) {
     "",
     "创作模式：",
     modePrompt,
+    "",
+    "扩展方式：",
+    strategyPrompt,
+    "",
+    "目标画幅：",
+    targetRatioPrompt,
     "",
     "通用约束：",
     "- 保持原图主体结构、材质、颜色和比例稳定",
@@ -4308,7 +4355,9 @@ function buildImageExpandPromptSummary(context: ImageExpandPromptContext) {
   const parts = [
     `原图 ${context.sourceUploads.length} 张`,
     context.referenceUploads?.length ? `参考图 ${context.referenceUploads.length} 张` : "无参考图",
-    context.creationModeSelection?.modeLabel ?? "普通模式"
+    context.creationModeSelection?.modeLabel ?? "普通模式",
+    imageExpandModeOptions.find((item) => item.key === (context.advancedSelections.imageExpandMode ?? "conservative"))?.label ?? "保守扩图",
+    context.advancedSelections.imageExpandTargetRatio ?? "自适应尺寸"
   ];
   if (context.creationModeSelection?.resolution) {
     parts.push(context.creationModeSelection.resolution);
@@ -6507,8 +6556,6 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
   expand: {
     key: "expand",
     title: "创作模式",
-    helperText:
-      "默认按自适应尺寸做保守扩图，更适合小到中等幅度的边界延展。扩图范围越大，越容易出现主体占比变小、背景不自然或透视漂移，建议在需求描述中明确扩图方向和用途，例如“向右留白放文案”或“上下补全成竖版”。",
     showSupplement: true,
     hideRatioField: true,
     hideCountField: true,
@@ -6906,7 +6953,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "image-expand": {
     creationModeConfigKey: "expand",
-    sectionOrder: ["upload-main", "creation-mode", "supplement", "upload-reference"],
+    sectionOrder: ["upload-main", "creation-mode", "image-expand-mode", "supplement", "upload-reference"],
     uploads: {
       main: {
         label: "上传商品图",
@@ -9119,6 +9166,56 @@ function SegmentedField({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ImageExpandModeSection({
+  selectedValues,
+  selectedMap,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  selectedValues: string[];
+  selectedMap: AdvancedSelectionMap;
+  onSelectionChange: (values: string[]) => void;
+  onSelectionMapChange: (values: AdvancedSelectionMap) => void;
+}) {
+  const selectedMode = imageExpandModeOptions.find((option) => option.key === selectedValues[0])?.key ?? "conservative";
+  const selectedIndex = imageExpandModeOptions.findIndex((option) => option.key === selectedMode);
+  const activeOption = imageExpandModeOptions[selectedIndex >= 0 ? selectedIndex : 0];
+  const targetRatio = selectedMap.imageExpandTargetRatio ?? "自适应尺寸";
+
+  return (
+    <div className="ck-form-block">
+      <SegmentedField
+        label="扩展方式"
+        onChange={(index) => {
+          const nextOption = imageExpandModeOptions[index] ?? imageExpandModeOptions[0];
+          onSelectionChange([nextOption.key]);
+          onSelectionMapChange({
+            imageExpandMode: nextOption.key,
+            imageExpandModeLabel: nextOption.label
+          });
+        }}
+        options={imageExpandModeOptions.map((option) => option.label)}
+        required
+        selected={selectedIndex >= 0 ? selectedIndex : 0}
+      />
+      <div className="ck-field-helper-text">{activeOption.description}</div>
+      <SelectField
+        label="目标画幅"
+        onChange={(value) =>
+          onSelectionMapChange({
+            imageExpandMode: selectedMode,
+            imageExpandModeLabel: activeOption.label,
+            imageExpandTargetRatio: value
+          })
+        }
+        options={[...imageExpandTargetRatioOptions]}
+        required
+        value={targetRatio}
+      />
     </div>
   );
 }
@@ -19223,6 +19320,26 @@ function ConfigPanel({
       );
     }
 
+    if (section === "image-expand-mode" && tool.key === "image-expand") {
+      return (
+        <ImageExpandModeSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["imageExpandMode", "imageExpandModeLabel", "imageExpandTargetRatio"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedMap={advancedSettingSelections}
+          selectedValues={advancedSettingSelections.imageExpandMode ? [advancedSettingSelections.imageExpandMode] : []}
+        />
+      );
+    }
+
     if (section === "mask-draw" && tool.key === "image-watermark") {
       if (advancedSettingSelections.watermarkModeKey !== "manual") {
         return null;
@@ -19368,7 +19485,8 @@ function ConfigPanel({
           sourceUploads: uploads[mainUploadKey] ?? [],
           referenceUploads: uploads[refUploadKey] ?? [],
           supplementValue,
-          creationModeSelection: resolvedCreationModeSelection
+          creationModeSelection: resolvedCreationModeSelection,
+          advancedSelections: advancedSettingSelections
         })
       : tool.key === "video-replace"
       ? buildVideoReplacePrompt({
@@ -19398,14 +19516,16 @@ function ConfigPanel({
             sourceUploads: uploads[mainUploadKey] ?? [],
             referenceUploads: uploads[refUploadKey] ?? [],
             supplementValue,
-            creationModeSelection: resolvedCreationModeSelection
+            creationModeSelection: resolvedCreationModeSelection,
+            advancedSelections: advancedSettingSelections
           }),
           imageExpandSystemPrompt: imageExpandSystemPrompt,
           imageExpandUserPrompt: buildImageExpandUserPrompt({
             sourceUploads: uploads[mainUploadKey] ?? [],
             referenceUploads: uploads[refUploadKey] ?? [],
             supplementValue,
-            creationModeSelection: resolvedCreationModeSelection
+            creationModeSelection: resolvedCreationModeSelection,
+            advancedSelections: advancedSettingSelections
           }),
           imageExpandUserDescription: supplementValue.trim()
         }
