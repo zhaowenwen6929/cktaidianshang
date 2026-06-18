@@ -15185,7 +15185,6 @@ function MoreTitleSetupSection({
         <div className="ck-more-title-header">
           <div>
             <div className="ck-panel-subtitle">批量商品信息</div>
-            <p>先用卡片预览商品，点击编辑打开侧边小弹框。商品图区域用于承接其他功能带入的商品图。</p>
           </div>
           <button className="ck-more-title-add-row" onClick={addRow} type="button">
             + 添加商品
