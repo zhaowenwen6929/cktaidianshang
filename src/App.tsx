@@ -15213,10 +15213,8 @@ function MoreTitleSetupSection({
   selectedValues?: AdvancedSelectionMap;
 }) {
   const [rows, setRows] = useState<MoreTitleDraftRow[]>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows));
-  const [editingRowId, setEditingRowId] = useState<string>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows)[0]?.id ?? "");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [draftRow, setDraftRow] = useState<MoreTitleDraftRow | null>(null);
-  const [isCreatingRow, setIsCreatingRow] = useState(false);
+  const [draftRows, setDraftRows] = useState<MoreTitleDraftRow[]>([]);
   const lastSyncedValuesRef = useRef("");
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const createEmptyRow = (id: string): MoreTitleDraftRow => ({
@@ -15239,12 +15237,8 @@ function MoreTitleSetupSection({
       return;
     }
     lastSyncedValuesRef.current = nextSyncKey;
-    const nextRows = parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows);
-    setRows(nextRows);
-    if (!nextRows.some((row) => row.id === editingRowId)) {
-      setEditingRowId(nextRows[0]?.id ?? "");
-    }
-  }, [editingRowId, selectedValues]);
+    setRows(parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows));
+  }, [selectedValues]);
 
   useEffect(() => {
     const filteredRows = rows.filter((row) => [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle].some((value) => value.trim()));
@@ -15261,50 +15255,43 @@ function MoreTitleSetupSection({
     );
   }, [onSelectionChange, onSelectionMapChange, rows]);
 
-  const updateDraftRow = (patch: Partial<MoreTitleDraftRow>) => {
-    setDraftRow((current) => (current ? { ...current, ...patch } : current));
-  };
-
-  const addRow = () => {
-    const nextId = `row-${Date.now()}-${rows.length + 1}`;
-    setEditingRowId(nextId);
-    setDraftRow(createEmptyRow(nextId));
-    setIsCreatingRow(true);
+  const openEditor = (appendEmptyRow = false) => {
+    const nextDraftRows = rows.map((row) => ({ ...row }));
+    if (appendEmptyRow || !nextDraftRows.length) {
+      nextDraftRows.push(createEmptyRow(`row-${Date.now()}-${nextDraftRows.length + 1}`));
+    }
+    setDraftRows(nextDraftRows);
     setIsEditorOpen(true);
   };
 
-  const removeRow = (rowId: string) => {
-    setRows((current) => {
+  const updateDraftRow = (rowId: string, patch: Partial<MoreTitleDraftRow>) => {
+    setDraftRows((current) => current.map((row) => (row.id === rowId ? { ...row, ...patch } : row)));
+  };
+
+  const addDraftRow = () => {
+    setDraftRows((current) => [...current, createEmptyRow(`row-${Date.now()}-${current.length + 1}`)]);
+  };
+
+  const removeDraftRow = (rowId: string) => {
+    setDraftRows((current) => {
       if (current.length <= 1) return current;
-      const nextRows = current.filter((row) => row.id !== rowId);
-      if (editingRowId === rowId) {
-        setEditingRowId(nextRows[0]?.id ?? "");
-      }
-      return nextRows;
+      return current.filter((row) => row.id !== rowId);
     });
   };
 
-  const openEditorForRow = (rowId: string) => {
-    const targetRow = rows.find((row) => row.id === rowId);
-    if (!targetRow) return;
-    setEditingRowId(rowId);
-    setDraftRow({ ...targetRow });
-    setIsCreatingRow(false);
-    setIsEditorOpen(true);
-  };
   const closeEditor = () => {
     setIsEditorOpen(false);
-    setDraftRow(null);
-    setIsCreatingRow(false);
+    setDraftRows([]);
   };
+
   const saveEditor = () => {
-    if (!draftRow) return;
-    setRows((current) =>
-      isCreatingRow ? [...current, draftRow] : current.map((row) => (row.id === draftRow.id ? draftRow : row))
+    const normalizedRows = draftRows.filter((row) =>
+      [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle, row.imageSrc ?? ""].some((value) => value.trim())
     );
-    setEditingRowId(draftRow.id);
+    setRows(normalizedRows.length ? normalizedRows : rows);
     closeEditor();
   };
+
   const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -15332,10 +15319,8 @@ function MoreTitleSetupSection({
       }
 
       setRows(importedRows);
-      setEditingRowId(importedRows[0]?.id ?? "");
       setIsEditorOpen(false);
-      setDraftRow(null);
-      setIsCreatingRow(false);
+      setDraftRows([]);
       onToast(`已导入 ${importedRows.length} 个商品`, "warning");
     } catch {
       onToast("导入失败，请上传 .xlsx/.xls/.csv 文件并检查内容格式", "warning");
@@ -15353,7 +15338,10 @@ function MoreTitleSetupSection({
 
         <div className="ck-more-title-product-panel">
           <div className="ck-more-title-product-actions">
-            <button className="ck-more-title-add-row" onClick={addRow} type="button">
+            <button className="ck-more-title-add-row" onClick={() => openEditor(false)} type="button">
+              编辑商品信息
+            </button>
+            <button className="ck-more-title-add-row secondary" onClick={() => openEditor(true)} type="button">
               + 添加商品
             </button>
             <button
@@ -15374,7 +15362,7 @@ function MoreTitleSetupSection({
 
           <div className="ck-more-title-preview-grid">
             {rows.map((row, index) => (
-              <article className={`ck-more-title-preview-card${row.id === editingRowId && isEditorOpen ? " active" : ""}`} key={row.id}>
+              <article className="ck-more-title-preview-card" key={row.id}>
                 <div className="ck-more-title-preview-body">
                   <div className="ck-more-title-preview-top">
                     <strong>{row.productName || row.originalTitle || `商品 ${index + 1}`}</strong>
@@ -15398,14 +15386,6 @@ function MoreTitleSetupSection({
                 <div className="ck-more-title-preview-thumb">
                   {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
                 </div>
-                <div className="ck-more-title-preview-actions">
-                  <button onClick={() => openEditorForRow(row.id)} type="button">
-                    编辑
-                  </button>
-                  <button className="danger" disabled={rows.length <= 1} onClick={() => removeRow(row.id)} type="button">
-                    删除
-                  </button>
-                </div>
               </article>
             ))}
           </div>
@@ -15413,78 +15393,127 @@ function MoreTitleSetupSection({
 
       </div>
 
-      {draftRow && isEditorOpen ? (
+      {isEditorOpen ? (
         <div className="ck-set-pack-side-drawer-mask ck-more-title-edit-drawer-mask" onClick={closeEditor}>
-          <div className="ck-set-pack-side-drawer ck-more-title-edit-drawer" onClick={(event) => event.stopPropagation()}>
+          <div className="ck-set-pack-side-drawer ck-more-title-table-modal" onClick={(event) => event.stopPropagation()}>
             <div className="ck-set-pack-side-drawer-head">
               <div className="ck-set-pack-drawer-title">
-                <strong>{isCreatingRow ? "添加商品信息" : draftRow.productName || draftRow.originalTitle || "编辑商品信息"}</strong>
-                <span>保存后同步更新左侧商品卡片</span>
+                <strong>批量编辑商品信息</strong>
+                <span>支持批量新增、修改和删除，保存后同步更新左侧商品卡片</span>
               </div>
               <button aria-label="关闭商品编辑弹框" onClick={closeEditor} type="button">
                 ×
               </button>
             </div>
-            <div className="ck-set-pack-side-drawer-body">
-              <div className="ck-more-title-editor-layout">
-                <div className="ck-more-title-editor-thumb">
-                  {draftRow.imageSrc ? (
-                    <img alt={draftRow.imageLabel || draftRow.productName || "商品图"} src={draftRow.imageSrc} />
-                  ) : (
-                    <span>商品图预留区</span>
-                  )}
-                </div>
-                <div className="ck-more-title-editor-fields">
-                  <div className="ck-more-title-row-fields two">
-                    <TextInputField
-                      label="商品名"
-                      onChange={(value) => updateDraftRow({ productName: value })}
-                      placeholder="请输入商品名"
-                      required
-                      value={draftRow.productName}
-                    />
-                    <TextInputField
-                      label="品牌"
-                      onChange={(value) => updateDraftRow({ brand: value })}
-                      placeholder="请输入品牌名"
-                      value={draftRow.brand}
-                    />
-                  </div>
-                  <div className="ck-more-title-row-fields two">
-                    <SelectField
-                      fullWidth
-                      label="商品类目"
-                      onChange={(value) => updateDraftRow({ category: value })}
-                      options={moreTitleCategoryOptions}
-                      placeholder="请选择"
-                      value={draftRow.category}
-                    />
-                    <TextInputField
-                      label="原始标题"
-                      onChange={(value) => updateDraftRow({ originalTitle: value })}
-                      placeholder="请输入当前在售标题"
-                      value={draftRow.originalTitle}
-                    />
-                  </div>
-                  <div className="ck-more-title-row-fields two textareas">
-                    <UnifiedTextareaField
-                      formBlockClassName="ck-form-block"
-                      label="核心卖点"
-                      maxLength={240}
-                      onChange={(value) => updateDraftRow({ sellingPoints: value })}
-                      placeholder="用分号分隔，例如：主动降噪；佩戴舒适；长续航"
-                      value={draftRow.sellingPoints}
-                    />
-                    <UnifiedTextareaField
-                      formBlockClassName="ck-form-block"
-                      label="规格属性"
-                      maxLength={240}
-                      onChange={(value) => updateDraftRow({ specs: value })}
-                      placeholder="用分号分隔，例如：蓝牙5.4；40小时续航；Type-C快充"
-                      value={draftRow.specs}
-                    />
-                  </div>
-                </div>
+            <div className="ck-set-pack-side-drawer-body ck-more-title-table-body">
+              <div className="ck-more-title-table-toolbar">
+                <button className="ck-more-title-add-row secondary" onClick={addDraftRow} type="button">
+                  + 添加一行
+                </button>
+                <button
+                  className="ck-more-title-add-row secondary"
+                  onClick={() => importInputRef.current?.click()}
+                  type="button"
+                >
+                  本地导入
+                </button>
+              </div>
+              <div className="ck-more-title-table-wrap">
+                <table className="ck-more-title-table">
+                  <thead>
+                    <tr>
+                      <th>商品图</th>
+                      <th>商品名</th>
+                      <th>品牌</th>
+                      <th>商品类目</th>
+                      <th>原始标题</th>
+                      <th>核心卖点</th>
+                      <th>规格属性</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {draftRows.map((row, index) => (
+                      <tr key={row.id}>
+                        <td>
+                          <div className="ck-more-title-table-thumb">
+                            {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
+                          </div>
+                          <input
+                            className="ck-more-title-table-input"
+                            onChange={(event) => updateDraftRow(row.id, { imageSrc: event.target.value })}
+                            placeholder="图片链接"
+                            value={row.imageSrc ?? ""}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="ck-more-title-table-input"
+                            onChange={(event) => updateDraftRow(row.id, { productName: event.target.value })}
+                            placeholder="请输入商品名"
+                            value={row.productName}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="ck-more-title-table-input"
+                            onChange={(event) => updateDraftRow(row.id, { brand: event.target.value })}
+                            placeholder="请输入品牌"
+                            value={row.brand}
+                          />
+                        </td>
+                        <td>
+                          <select
+                            className="ck-more-title-table-input"
+                            onChange={(event) => updateDraftRow(row.id, { category: event.target.value })}
+                            value={row.category}
+                          >
+                            <option value="">请选择类目</option>
+                            {moreTitleCategoryOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <textarea
+                            className="ck-more-title-table-textarea"
+                            onChange={(event) => updateDraftRow(row.id, { originalTitle: event.target.value })}
+                            placeholder="请输入原始标题"
+                            value={row.originalTitle}
+                          />
+                        </td>
+                        <td>
+                          <textarea
+                            className="ck-more-title-table-textarea"
+                            onChange={(event) => updateDraftRow(row.id, { sellingPoints: event.target.value })}
+                            placeholder="用分号分隔核心卖点"
+                            value={row.sellingPoints}
+                          />
+                        </td>
+                        <td>
+                          <textarea
+                            className="ck-more-title-table-textarea"
+                            onChange={(event) => updateDraftRow(row.id, { specs: event.target.value })}
+                            placeholder="用分号分隔规格属性"
+                            value={row.specs}
+                          />
+                        </td>
+                        <td>
+                          <button
+                            className="ck-more-title-table-delete"
+                            disabled={draftRows.length <= 1}
+                            onClick={() => removeDraftRow(row.id)}
+                            type="button"
+                          >
+                            删除
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
             <div className="ck-more-title-edit-drawer-footer">

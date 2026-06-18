@@ -14007,6 +14007,124 @@ textarea {
   color: #e15555;
 }
 
+.ck-more-title-table-modal {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: min(1200px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 40px));
+  border: 1px solid #e8edf6;
+  border-radius: 18px;
+  box-shadow: 0 28px 72px rgba(15, 23, 42, 0.22);
+}
+
+.ck-more-title-table-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.ck-more-title-table-toolbar {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.ck-more-title-table-wrap {
+  overflow: auto;
+  border: 1px solid #e8edf6;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.ck-more-title-table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+}
+
+.ck-more-title-table th,
+.ck-more-title-table td {
+  padding: 10px;
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: top;
+  text-align: left;
+}
+
+.ck-more-title-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.ck-more-title-table td {
+  background: #ffffff;
+}
+
+.ck-more-title-table-thumb {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f3f5fb 0%, #eceff8 100%);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ck-more-title-table-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.ck-more-title-table-thumb span {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ck-more-title-table-input,
+.ck-more-title-table-textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 8px 10px;
+}
+
+.ck-more-title-table-textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.ck-more-title-table-delete {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.14);
+  background: #fff7f7;
+  color: #e15555;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ck-more-title-table-delete:disabled {
+  opacity: 0.45;
+}
+
 .ck-more-title-grid,
 .ck-more-title-result-list {
   display: grid;
@@ -14171,33 +14289,6 @@ textarea {
 
 .ck-more-title-edit-drawer .ck-set-pack-side-drawer-body {
   padding: 12px 14px;
-}
-
-.ck-more-title-edit-drawer .ck-more-title-editor-layout {
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.ck-more-title-edit-drawer .ck-more-title-editor-thumb {
-  width: 72px;
-  height: 72px;
-}
-
-.ck-more-title-edit-drawer .ck-more-title-editor-fields {
-  min-width: 0;
-}
-
-.ck-more-title-edit-drawer .ck-form-block {
-  margin-bottom: 8px;
-}
-
-.ck-more-title-edit-drawer .ck-more-title-row-fields {
-  margin-top: 6px;
-  gap: 6px;
-}
-
-.ck-more-title-edit-drawer .ck-more-title-row-fields.textareas .ck-textarea-wrap textarea {
-  min-height: 88px;
 }
 
 .ck-more-title-edit-drawer-footer {
