@@ -13784,11 +13784,17 @@ textarea {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
+  padding-bottom: 8px;
 }
 
 .ck-more-title-product-actions {
   display: flex;
   gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 2px;
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 82%, rgba(255, 255, 255, 0) 100%);
 }
 
 .ck-more-title-header,
@@ -13870,6 +13876,7 @@ textarea {
 .ck-more-title-preview-grid {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .ck-more-title-preview-card {
@@ -13881,6 +13888,8 @@ textarea {
   border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: #fff;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .ck-more-title-preview-card.active {
@@ -13904,6 +13913,8 @@ textarea {
   align-items: center;
   justify-content: center;
   justify-self: end;
+  flex: 0 0 56px;
+  min-width: 56px;
 }
 
 .ck-more-title-preview-thumb img,
@@ -13936,6 +13947,7 @@ textarea {
   color: #1b2337;
   font-size: 13px;
   line-height: 18px;
+  word-break: break-word;
 }
 
 .ck-more-title-preview-top span {
@@ -14011,30 +14023,33 @@ textarea {
   position: relative;
   top: auto;
   left: auto;
-  width: min(1200px, calc(100vw - 32px));
-  max-height: min(760px, calc(100vh - 40px));
-  border: 1px solid #e8edf6;
-  border-radius: 18px;
-  box-shadow: 0 28px 72px rgba(15, 23, 42, 0.22);
+  width: min(1220px, calc(100vw - 36px));
+  max-height: min(780px, calc(100vh - 36px));
+  border: 1px solid #e9eef6;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  box-shadow: 0 36px 96px rgba(15, 23, 42, 0.24);
 }
 
 .ck-more-title-table-body {
   display: grid;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 14px;
+  padding: 14px 16px 10px;
 }
 
 .ck-more-title-table-toolbar {
   display: flex;
   gap: 8px;
   justify-content: flex-start;
+  padding-top: 2px;
 }
 
 .ck-more-title-table-wrap {
   overflow: auto;
-  border: 1px solid #e8edf6;
-  border-radius: 14px;
+  border: 1px solid #e9eef6;
+  border-radius: 16px;
   background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .ck-more-title-table {
@@ -14055,7 +14070,7 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #f8fafc;
+  background: #f7f9fc;
   color: #475569;
   font-size: 12px;
   line-height: 18px;
@@ -14064,6 +14079,10 @@ textarea {
 
 .ck-more-title-table td {
   background: #ffffff;
+}
+
+.ck-more-title-table tbody tr:hover td {
+  background: #fbfcff;
 }
 
 .ck-more-title-table-thumb {
@@ -14098,11 +14117,19 @@ textarea {
   min-width: 0;
   border: 1px solid #dbe3f0;
   border-radius: 10px;
-  background: #ffffff;
+  background: #fbfcff;
   color: #1b2337;
   font-size: 12px;
   line-height: 18px;
   padding: 8px 10px;
+}
+
+.ck-more-title-table-input:focus,
+.ck-more-title-table-textarea:focus {
+  outline: none;
+  border-color: rgba(99, 95, 242, 0.42);
+  box-shadow: 0 0 0 3px rgba(99, 95, 242, 0.08);
+  background: #ffffff;
 }
 
 .ck-more-title-table-textarea {
@@ -14295,9 +14322,9 @@ textarea {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 10px 14px 14px;
+  padding: 10px 16px 16px;
   border-top: 1px solid #eff0f4;
-  background: #ffffff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, #ffffff 24px, #ffffff 100%);
 }
 
 .ck-more-title-edit-drawer-footer button {
@@ -14555,6 +14582,10 @@ textarea {
   .ck-more-title-result-list,
   .ck-more-title-editor-layout {
     grid-template-columns: 1fr;
+  }
+
+  .ck-more-title-product-actions {
+    flex-direction: column;
   }
 
   .ck-panel-tool-more-title .ck-more-title-mode-row {
