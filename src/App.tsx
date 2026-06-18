@@ -15058,7 +15058,20 @@ function MoreTitleSetupSection({
   const [bannedTerms, setBannedTerms] = useState(selectedValues?.moreTitleBannedTerms ?? "");
   const [editingRowId, setEditingRowId] = useState<string>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows)[0]?.id ?? "");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [draftRow, setDraftRow] = useState<MoreTitleDraftRow | null>(null);
+  const [isCreatingRow, setIsCreatingRow] = useState(false);
   const lastSyncedValuesRef = useRef("");
+  const createEmptyRow = (id: string): MoreTitleDraftRow => ({
+    id,
+    productName: "",
+    brand: "",
+    category: "",
+    sellingPoints: "",
+    specs: "",
+    originalTitle: "",
+    imageSrc: "",
+    imageLabel: ""
+  });
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
@@ -15098,27 +15111,15 @@ function MoreTitleSetupSection({
     );
   }, [bannedTerms, mustInclude, onSelectionChange, onSelectionMapChange, rows]);
 
-  const updateRow = (rowId: string, patch: Partial<MoreTitleDraftRow>) => {
-    setRows((current) => current.map((row) => (row.id === rowId ? { ...row, ...patch } : row)));
+  const updateDraftRow = (patch: Partial<MoreTitleDraftRow>) => {
+    setDraftRow((current) => (current ? { ...current, ...patch } : current));
   };
 
   const addRow = () => {
     const nextId = `row-${Date.now()}-${rows.length + 1}`;
-    setRows((current) => [
-      ...current,
-      {
-        id: nextId,
-        productName: "",
-        brand: "",
-        category: "",
-        sellingPoints: "",
-        specs: "",
-        originalTitle: "",
-        imageSrc: "",
-        imageLabel: ""
-      }
-    ]);
     setEditingRowId(nextId);
+    setDraftRow(createEmptyRow(nextId));
+    setIsCreatingRow(true);
     setIsEditorOpen(true);
   };
 
@@ -15133,10 +15134,26 @@ function MoreTitleSetupSection({
     });
   };
 
-  const editingRow = rows.find((row) => row.id === editingRowId) ?? rows[0] ?? null;
   const openEditorForRow = (rowId: string) => {
+    const targetRow = rows.find((row) => row.id === rowId);
+    if (!targetRow) return;
     setEditingRowId(rowId);
+    setDraftRow({ ...targetRow });
+    setIsCreatingRow(false);
     setIsEditorOpen(true);
+  };
+  const closeEditor = () => {
+    setIsEditorOpen(false);
+    setDraftRow(null);
+    setIsCreatingRow(false);
+  };
+  const saveEditor = () => {
+    if (!draftRow) return;
+    setRows((current) =>
+      isCreatingRow ? [...current, draftRow] : current.map((row) => (row.id === draftRow.id ? draftRow : row))
+    );
+    setEditingRowId(draftRow.id);
+    closeEditor();
   };
 
   return (
@@ -15212,23 +15229,23 @@ function MoreTitleSetupSection({
         </div>
       </div>
 
-      {editingRow && isEditorOpen ? (
-        <div className="ck-set-pack-side-drawer-mask ck-more-title-edit-drawer-mask" onClick={() => setIsEditorOpen(false)}>
+      {draftRow && isEditorOpen ? (
+        <div className="ck-set-pack-side-drawer-mask ck-more-title-edit-drawer-mask" onClick={closeEditor}>
           <div className="ck-set-pack-side-drawer ck-more-title-edit-drawer" onClick={(event) => event.stopPropagation()}>
             <div className="ck-set-pack-side-drawer-head">
               <div className="ck-set-pack-drawer-title">
-                <strong>{editingRow.productName || editingRow.originalTitle || "编辑商品信息"}</strong>
-                <span>商品图位置已预留，可承接其他功能带入</span>
+                <strong>{isCreatingRow ? "添加商品信息" : draftRow.productName || draftRow.originalTitle || "编辑商品信息"}</strong>
+                <span>保存后同步更新左侧商品卡片</span>
               </div>
-              <button aria-label="关闭商品编辑弹框" onClick={() => setIsEditorOpen(false)} type="button">
+              <button aria-label="关闭商品编辑弹框" onClick={closeEditor} type="button">
                 ×
               </button>
             </div>
             <div className="ck-set-pack-side-drawer-body">
               <div className="ck-more-title-editor-layout">
                 <div className="ck-more-title-editor-thumb">
-                  {editingRow.imageSrc ? (
-                    <img alt={editingRow.imageLabel || editingRow.productName || "商品图"} src={editingRow.imageSrc} />
+                  {draftRow.imageSrc ? (
+                    <img alt={draftRow.imageLabel || draftRow.productName || "商品图"} src={draftRow.imageSrc} />
                   ) : (
                     <span>商品图预留区</span>
                   )}
@@ -15237,32 +15254,32 @@ function MoreTitleSetupSection({
                   <div className="ck-more-title-row-fields two">
                     <TextInputField
                       label="商品名"
-                      onChange={(value) => updateRow(editingRow.id, { productName: value })}
+                      onChange={(value) => updateDraftRow({ productName: value })}
                       placeholder="请输入商品名"
                       required
-                      value={editingRow.productName}
+                      value={draftRow.productName}
                     />
                     <TextInputField
                       label="品牌"
-                      onChange={(value) => updateRow(editingRow.id, { brand: value })}
+                      onChange={(value) => updateDraftRow({ brand: value })}
                       placeholder="请输入品牌名"
-                      value={editingRow.brand}
+                      value={draftRow.brand}
                     />
                   </div>
                   <div className="ck-more-title-row-fields two">
                     <SelectField
                       fullWidth
                       label="商品类目"
-                      onChange={(value) => updateRow(editingRow.id, { category: value })}
+                      onChange={(value) => updateDraftRow({ category: value })}
                       options={moreTitleCategoryOptions}
                       placeholder="请选择"
-                      value={editingRow.category}
+                      value={draftRow.category}
                     />
                     <TextInputField
                       label="原始标题"
-                      onChange={(value) => updateRow(editingRow.id, { originalTitle: value })}
+                      onChange={(value) => updateDraftRow({ originalTitle: value })}
                       placeholder="请输入当前在售标题"
-                      value={editingRow.originalTitle}
+                      value={draftRow.originalTitle}
                     />
                   </div>
                   <div className="ck-more-title-row-fields two textareas">
@@ -15270,21 +15287,29 @@ function MoreTitleSetupSection({
                       formBlockClassName="ck-form-block"
                       label="核心卖点"
                       maxLength={240}
-                      onChange={(value) => updateRow(editingRow.id, { sellingPoints: value })}
+                      onChange={(value) => updateDraftRow({ sellingPoints: value })}
                       placeholder="用分号分隔，例如：主动降噪；佩戴舒适；长续航"
-                      value={editingRow.sellingPoints}
+                      value={draftRow.sellingPoints}
                     />
                     <UnifiedTextareaField
                       formBlockClassName="ck-form-block"
                       label="规格属性"
                       maxLength={240}
-                      onChange={(value) => updateRow(editingRow.id, { specs: value })}
+                      onChange={(value) => updateDraftRow({ specs: value })}
                       placeholder="用分号分隔，例如：蓝牙5.4；40小时续航；Type-C快充"
-                      value={editingRow.specs}
+                      value={draftRow.specs}
                     />
                   </div>
                 </div>
               </div>
+            </div>
+            <div className="ck-more-title-edit-drawer-footer">
+              <button className="secondary" onClick={closeEditor} type="button">
+                取消
+              </button>
+              <button onClick={saveEditor} type="button">
+                保存
+              </button>
             </div>
           </div>
         </div>
