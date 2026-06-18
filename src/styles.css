@@ -13770,6 +13770,15 @@ textarea {
   gap: 12px;
 }
 
+.ck-more-title-product-panel {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
 .ck-more-title-header,
 .ck-more-title-row-head,
 .ck-more-title-result-head,
@@ -14038,6 +14047,15 @@ textarea {
 .ck-panel-tool-more-title .ck-more-title-mode-row .ck-mode-card.ck-mode-card-primary p {
   line-height: 15px;
   text-align: left;
+}
+
+.ck-panel-tool-more-title .ck-more-title-product-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ck-panel-tool-more-title .ck-more-title-product-panel::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.45);
 }
 
 .ck-panel-tool-more-title .ck-field-title {

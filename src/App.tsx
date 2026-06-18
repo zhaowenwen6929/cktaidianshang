@@ -6735,7 +6735,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "more-title": {
     creationModeConfigKey: "more-title",
-    sectionOrder: ["advanced-settings", "more-title-setup", "supplement"],
+    sectionOrder: ["more-title-setup", "advanced-settings", "supplement"],
     advancedSettings: {
       title: "平台与标题策略",
       showAiAssist: false,
@@ -15191,47 +15191,50 @@ function MoreTitleSetupSection({
           <div>
             <div className="ck-panel-subtitle">批量商品信息</div>
           </div>
+        </div>
+
+        <div className="ck-more-title-product-panel">
           <button className="ck-more-title-add-row" onClick={addRow} type="button">
             + 添加商品
           </button>
-        </div>
 
-        <div className="ck-more-title-preview-grid">
-          {rows.map((row, index) => (
-            <article className={`ck-more-title-preview-card${row.id === editingRowId && isEditorOpen ? " active" : ""}`} key={row.id}>
-              <div className="ck-more-title-preview-body">
-                <div className="ck-more-title-preview-top">
-                  <strong>{row.productName || row.originalTitle || `商品 ${index + 1}`}</strong>
-                  <span>{[row.brand, row.category].filter(Boolean).join(" / ") || "待补充品牌与类目"}</span>
+          <div className="ck-more-title-preview-grid">
+            {rows.map((row, index) => (
+              <article className={`ck-more-title-preview-card${row.id === editingRowId && isEditorOpen ? " active" : ""}`} key={row.id}>
+                <div className="ck-more-title-preview-body">
+                  <div className="ck-more-title-preview-top">
+                    <strong>{row.productName || row.originalTitle || `商品 ${index + 1}`}</strong>
+                    <span>{[row.brand, row.category].filter(Boolean).join(" / ") || "待补充品牌与类目"}</span>
+                  </div>
+                  <div className="ck-more-title-preview-meta">
+                    <p>
+                      <em>原标题</em>
+                      <span>{row.originalTitle || "未填写"}</span>
+                    </p>
+                    <p>
+                      <em>卖点</em>
+                      <span>{row.sellingPoints || "未填写"}</span>
+                    </p>
+                    <p>
+                      <em>规格</em>
+                      <span>{row.specs || "未填写"}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="ck-more-title-preview-meta">
-                  <p>
-                    <em>原标题</em>
-                    <span>{row.originalTitle || "未填写"}</span>
-                  </p>
-                  <p>
-                    <em>卖点</em>
-                    <span>{row.sellingPoints || "未填写"}</span>
-                  </p>
-                  <p>
-                    <em>规格</em>
-                    <span>{row.specs || "未填写"}</span>
-                  </p>
+                <div className="ck-more-title-preview-thumb">
+                  {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
                 </div>
-              </div>
-              <div className="ck-more-title-preview-thumb">
-                {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
-              </div>
-              <div className="ck-more-title-preview-actions">
-                <button onClick={() => openEditorForRow(row.id)} type="button">
-                  编辑
-                </button>
-                <button className="danger" disabled={rows.length <= 1} onClick={() => removeRow(row.id)} type="button">
-                  删除
-                </button>
-              </div>
-            </article>
-          ))}
+                <div className="ck-more-title-preview-actions">
+                  <button onClick={() => openEditorForRow(row.id)} type="button">
+                    编辑
+                  </button>
+                  <button className="danger" disabled={rows.length <= 1} onClick={() => removeRow(row.id)} type="button">
+                    删除
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
 
         <div className="ck-more-title-row-fields two textareas">
