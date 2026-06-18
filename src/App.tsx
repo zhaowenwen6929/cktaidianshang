@@ -11,6 +11,7 @@ import {
   type TextareaHTMLAttributes
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import { ExportArtworkModal } from "./components/ExportArtworkModal";
 import { MembershipPaymentModal } from "./components/MembershipPaymentModal";
 import { PointsBalancePopover } from "./components/PointsBalancePopover";
@@ -847,6 +848,8 @@ type MoreTitleGeneratedRow = {
   selectedCandidateIndex: number;
   finalTitle: string;
 };
+
+type MoreTitleImportSheetRow = Record<string, string | number | boolean | null | undefined>;
 
 const navGroups: Array<{
   key: PrimaryKey;
@@ -5718,6 +5721,32 @@ function serializeMultiSelectValue(values: string[]) {
       return true;
     })
     .join("||");
+}
+
+function getImportCellString(row: MoreTitleImportSheetRow, keys: string[]) {
+  for (const key of keys) {
+    const value = row[key];
+    if (value === undefined || value === null) continue;
+    const nextValue = String(value).trim();
+    if (nextValue) return nextValue;
+  }
+  return "";
+}
+
+function parseMoreTitleImportRows(rows: MoreTitleImportSheetRow[]) {
+  return rows
+    .map((row, index) => ({
+      id: `row-${Date.now()}-${index + 1}`,
+      productName: getImportCellString(row, ["商品名", "商品名称", "产品名称", "title", "product_name"]),
+      brand: getImportCellString(row, ["品牌", "brand"]),
+      category: getImportCellString(row, ["商品类目", "类目", "分类", "category"]),
+      sellingPoints: getImportCellString(row, ["核心卖点", "卖点", "selling_points", "highlights"]),
+      specs: getImportCellString(row, ["规格属性", "规格", "属性", "specs", "attributes"]),
+      originalTitle: getImportCellString(row, ["原始标题", "标题", "original_title"]),
+      imageSrc: getImportCellString(row, ["商品图", "图片", "图片链接", "image", "image_url"]),
+      imageLabel: getImportCellString(row, ["图片说明", "image_label"])
+    }))
+    .filter((row) => [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle, row.imageSrc].some((value) => value.trim()));
 }
 
 function splitInputSegments(input: string): string[] {
@@ -15075,10 +15104,12 @@ function ApplicablePlatformSection() {
 function MoreTitleSetupSection({
   onSelectionChange,
   onSelectionMapChange,
+  onToast,
   selectedValues
 }: {
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onToast: (message: string, tone?: "warning") => void;
   selectedValues?: AdvancedSelectionMap;
 }) {
   const [rows, setRows] = useState<MoreTitleDraftRow[]>(() => parseMoreTitleDraftRows(selectedValues?.moreTitleDraftRows));
@@ -15087,6 +15118,7 @@ function MoreTitleSetupSection({
   const [draftRow, setDraftRow] = useState<MoreTitleDraftRow | null>(null);
   const [isCreatingRow, setIsCreatingRow] = useState(false);
   const lastSyncedValuesRef = useRef("");
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const createEmptyRow = (id: string): MoreTitleDraftRow => ({
     id,
     productName: "",
@@ -15173,20 +15205,72 @@ function MoreTitleSetupSection({
     setEditingRowId(draftRow.id);
     closeEditor();
   };
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = sheetName ? workbook.Sheets[sheetName] : null;
+      if (!sheet) {
+        onToast("未读取到可用工作表", "warning");
+        return;
+      }
+
+      const importedRows = parseMoreTitleImportRows(
+        XLSX.utils.sheet_to_json<MoreTitleImportSheetRow>(sheet, {
+          defval: "",
+          raw: false
+        })
+      );
+
+      if (!importedRows.length) {
+        onToast("未识别到可导入的商品信息，请检查表头", "warning");
+        return;
+      }
+
+      setRows(importedRows);
+      setEditingRowId(importedRows[0]?.id ?? "");
+      setIsEditorOpen(false);
+      setDraftRow(null);
+      setIsCreatingRow(false);
+      onToast(`已导入 ${importedRows.length} 个商品`, "warning");
+    } catch {
+      onToast("导入失败，请上传 .xlsx/.xls/.csv 文件并检查内容格式", "warning");
+    } finally {
+      event.target.value = "";
+    }
+  };
 
   return (
     <>
       <div className="ck-more-title-setup">
         <div className="ck-more-title-header">
-          <div>
-            <div className="ck-panel-subtitle">批量商品信息</div>
-          </div>
+          <FieldTitle label="上传商品信息" required />
         </div>
 
         <div className="ck-more-title-product-panel">
-          <button className="ck-more-title-add-row" onClick={addRow} type="button">
-            + 添加商品
-          </button>
+          <div className="ck-more-title-product-actions">
+            <button className="ck-more-title-add-row" onClick={addRow} type="button">
+              + 添加商品
+            </button>
+            <button
+              className="ck-more-title-add-row secondary"
+              onClick={() => importInputRef.current?.click()}
+              type="button"
+            >
+              本地导入
+            </button>
+            <input
+              accept=".xlsx,.xls,.csv"
+              className="ck-more-title-import-input"
+              onChange={handleImportFile}
+              ref={importInputRef}
+              type="file"
+            />
+          </div>
 
           <div className="ck-more-title-preview-grid">
             {rows.map((row, index) => (
@@ -18390,6 +18474,7 @@ function ConfigPanel({
               return { ...nextSelections, ...values };
             });
           }}
+          onToast={onToast}
           selectedValues={advancedSettingSelections}
         />
       );
@@ -19015,6 +19100,22 @@ function ConfigPanel({
 
       return creationModeConfig.showSupplement ? (
         <>
+          {tool.key === "more-title" ? (
+            <MoreTitleConstraintsSection
+              onSelectionChange={setAdvancedSettingValues}
+              onSelectionMapChange={(values) => {
+                const sectionKeys = ["moreTitleMustInclude", "moreTitleBannedTerms"];
+                setAdvancedSettingSelections((current) => {
+                  const nextSelections = { ...current };
+                  sectionKeys.forEach((key) => {
+                    delete nextSelections[key];
+                  });
+                  return { ...nextSelections, ...values };
+                });
+              }}
+              selectedValues={advancedSettingSelections}
+            />
+          ) : null}
           <SupplementField
             aiPolishConfig={supplementAiPolishConfig}
             formBlockClassName={supplementFormBlockClassName}
@@ -19036,22 +19137,6 @@ function ConfigPanel({
             placeholder={supplementPlaceholderOverrides[tool.key] ?? creationModeConfig.supplementPlaceholder}
             value={supplementValue}
           />
-          {tool.key === "more-title" ? (
-            <MoreTitleConstraintsSection
-              onSelectionChange={setAdvancedSettingValues}
-              onSelectionMapChange={(values) => {
-                const sectionKeys = ["moreTitleMustInclude", "moreTitleBannedTerms"];
-                setAdvancedSettingSelections((current) => {
-                  const nextSelections = { ...current };
-                  sectionKeys.forEach((key) => {
-                    delete nextSelections[key];
-                  });
-                  return { ...nextSelections, ...values };
-                });
-              }}
-              selectedValues={advancedSettingSelections}
-            />
-          ) : null}
         </>
       ) : null;
     }

@@ -13779,6 +13779,11 @@ textarea {
   padding-right: 4px;
 }
 
+.ck-more-title-product-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .ck-more-title-header,
 .ck-more-title-row-head,
 .ck-more-title-result-head,
@@ -13826,6 +13831,16 @@ textarea {
 
 .ck-more-title-row-delete:disabled {
   opacity: 0.45;
+}
+
+.ck-more-title-add-row.secondary {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: #ffffff;
+  color: #475569;
+}
+
+.ck-more-title-import-input {
+  display: none;
 }
 
 .ck-more-title-preview-grid {
@@ -14025,6 +14040,11 @@ textarea {
 
 .ck-panel-tool-more-title .ck-form-block {
   margin-bottom: 10px;
+}
+
+.ck-panel-tool-more-title .ck-more-title-setup + .ck-form-block,
+.ck-panel-tool-more-title .ck-form-block + .ck-form-block {
+  margin-top: 14px;
 }
 
 .ck-panel-tool-more-title .ck-more-title-mode-row {
