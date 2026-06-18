@@ -3553,6 +3553,12 @@ a {
   min-width: 0;
 }
 
+.ck-platform-item.ck-platform-item-stacked {
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 8px;
+}
+
 .ck-platform-item-label {
   color: #505a71;
   font-size: 12px;

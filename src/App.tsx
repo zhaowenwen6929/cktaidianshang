@@ -16006,7 +16006,7 @@ function AdvancedSettingsSection({
       </div>
       <div className="ck-platform-grid">
         {fields.map((field) => (
-          <div className="ck-platform-item" key={field.key}>
+          <div className={`ck-platform-item${field.mode === "multi-select" ? " ck-platform-item-stacked" : ""}`} key={field.key}>
             <div className="ck-platform-item-label">{field.label}</div>
             <div className="ck-platform-inline-select">
               {field.mode === "multi-select" ? (
