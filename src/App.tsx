@@ -675,7 +675,8 @@ type AdvancedSettingsConfig = {
     label: string;
     options?: string[];
     richOptions?: RichSelectOption[];
-    mode?: "select" | "input-select" | "rich-select";
+    mode?: "select" | "input-select" | "rich-select" | "multi-select";
+    defaultValue?: string;
   }>;
   conditionalDetailField?: {
     triggerFieldKey: string;
@@ -2464,6 +2465,10 @@ function getResolvedToolUnitCreditCost(
   creationModeSelection: CreationModeSelection | null,
   advancedSelections: AdvancedSelectionMap
 ) {
+  if (toolKey === "more-title") {
+    return Math.max(1, parseMultiSelectValue(advancedSelections.moreTitleOutputStyles).filter((style) => moreTitleStyleOptions.includes(style)).length);
+  }
+
   if (isVideoGenerationTool(toolKey)) {
     return getVideoGenerationBaseCreditCost(toolKey, creationModeSelection, advancedSelections);
   }
@@ -4683,14 +4688,12 @@ function buildMoreTitleGeneratedRows(selectionMap: AdvancedSelectionMap) {
   const rows = parseMoreTitleDraftRows(selectionMap.moreTitleDraftRows).filter((row) =>
     [row.productName, row.brand, row.category, row.sellingPoints, row.specs, row.originalTitle].some((value) => value.trim())
   );
-  const preferredIndex = Math.max(
-    0,
-    moreTitleStyleOptions.findIndex((option) => option === (selectionMap.moreTitlePreferredStyle || "平台稳妥版"))
-  );
+  const selectedStyles = parseMultiSelectValue(selectionMap.moreTitleOutputStyles).filter((style) => moreTitleStyleOptions.includes(style));
+  const activeStyles = selectedStyles.length ? selectedStyles : moreTitleStyleOptions;
 
   return rows.map((row) => {
-    const candidates = buildMoreTitleCandidates(selectionMap, row);
-    const selectedCandidateIndex = Math.min(preferredIndex, Math.max(candidates.length - 1, 0));
+    const candidates = buildMoreTitleCandidates(selectionMap, row).filter((candidate) => activeStyles.includes(candidate.label));
+    const selectedCandidateIndex = 0;
     return {
       ...row,
       candidates,
@@ -5691,6 +5694,25 @@ const supplementVisualKeywordPattern =
 
 function dedupeStrings(items: string[]): string[] {
   return Array.from(new Set(items.filter(Boolean)));
+}
+
+function parseMultiSelectValue(value?: string) {
+  return (value ?? "")
+    .split("||")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function serializeMultiSelectValue(values: string[]) {
+  const seen = new Set<string>();
+  return values
+    .map((item) => item.trim())
+    .filter((item) => {
+      if (!item || seen.has(item)) return false;
+      seen.add(item);
+      return true;
+    })
+    .join("||");
 }
 
 function splitInputSegments(input: string): string[] {
@@ -6708,7 +6730,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "more-title": {
     creationModeConfigKey: "more-title",
-    sectionOrder: ["advanced-settings", "more-title-setup", "creation-mode", "supplement"],
+    sectionOrder: ["advanced-settings", "more-title-setup", "supplement"],
     advancedSettings: {
       title: "平台与标题策略",
       showAiAssist: false,
@@ -6716,10 +6738,11 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       platformIds: moreTitlePlatformIds,
       extraSelects: [
         {
-          key: "moreTitlePreferredStyle",
-          label: "默认输出方案",
+          key: "moreTitleOutputStyles",
+          label: "输出倾向",
           options: moreTitleStyleOptions,
-          mode: "select"
+          mode: "multi-select",
+          defaultValue: serializeMultiSelectValue(moreTitleStyleOptions)
         },
         {
           key: "moreTitleKeywordStrategy",
@@ -15595,7 +15618,7 @@ function AdvancedSettingsSection({
   const selectedRegion = selectedPlatform?.regions.find((item) => item.id === selectedRegionId);
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [selectedExtraValues, setSelectedExtraValues] = useState<Record<string, string>>(
-    () => Object.fromEntries((config.extraSelects ?? []).map((item) => [item.key, ""]))
+    () => Object.fromEntries((config.extraSelects ?? []).map((item) => [item.key, item.defaultValue ?? ""]))
   );
   const [conditionalDetailValue, setConditionalDetailValue] = useState("");
   const configSelectionSignature = useMemo(
@@ -15619,7 +15642,7 @@ function AdvancedSettingsSection({
       language: values?.language ?? "",
       platformRuleDetail: values?.platformRuleDetail ?? "",
       extras: (config.extraSelects ?? []).reduce<Record<string, string>>((accumulator, item) => {
-        accumulator[item.key] = typeof values?.[item.key] === "string" ? values[item.key] : "";
+        accumulator[item.key] = typeof values?.[item.key] === "string" ? values[item.key] : item.defaultValue ?? "";
         return accumulator;
       }, {})
     });
@@ -15634,7 +15657,7 @@ function AdvancedSettingsSection({
     setSelectedPlatformId("");
     setSelectedRegionId("");
     setSelectedLanguage("");
-    setSelectedExtraValues(Object.fromEntries((config.extraSelects ?? []).map((item) => [item.key, ""])));
+    setSelectedExtraValues(Object.fromEntries((config.extraSelects ?? []).map((item) => [item.key, item.defaultValue ?? ""])));
     setConditionalDetailValue("");
   }, [configSelectionSignature, config.extraSelects]);
 
@@ -15643,7 +15666,9 @@ function AdvancedSettingsSection({
       config.fields.includes("platform") ? selectedPlatform?.label ?? "" : "",
       config.fields.includes("region") ? selectedRegion?.label ?? "" : "",
       config.fields.includes("language") ? selectedLanguage : "",
-      ...(config.extraSelects ?? []).map((item) => selectedExtraValues[item.key] ?? ""),
+      ...(config.extraSelects ?? []).map((item) =>
+        item.mode === "multi-select" ? parseMultiSelectValue(selectedExtraValues[item.key]).join("、") : selectedExtraValues[item.key] ?? ""
+      ),
       conditionalDetailValue
     ]).filter(Boolean);
 
@@ -15721,7 +15746,10 @@ function AdvancedSettingsSection({
     }
 
     const nextExtraValues = Object.fromEntries(
-      (config.extraSelects ?? []).map((item) => [item.key, typeof selectedValues[item.key] === "string" ? selectedValues[item.key] : ""])
+      (config.extraSelects ?? []).map((item) => [
+        item.key,
+        typeof selectedValues[item.key] === "string" ? selectedValues[item.key] : item.defaultValue ?? ""
+      ])
     );
     const hasExtraValueChanged = (config.extraSelects ?? []).some((item) => (selectedExtraValues[item.key] ?? "") !== (nextExtraValues[item.key] ?? ""));
     if (hasExtraValueChanged) {
@@ -15742,7 +15770,9 @@ function AdvancedSettingsSection({
     config.fields.includes("platform") ? selectedPlatform?.label ?? "" : "",
     config.fields.includes("region") ? selectedRegion?.label ?? "" : "",
     config.fields.includes("language") ? selectedLanguage : "",
-    ...(config.extraSelects ?? []).map((item) => selectedExtraValues[item.key] ?? ""),
+    ...(config.extraSelects ?? []).map((item) =>
+      item.mode === "multi-select" ? parseMultiSelectValue(selectedExtraValues[item.key]).join("、") : selectedExtraValues[item.key] ?? ""
+    ),
     conditionalDetailValue
   ]).filter(Boolean);
 
@@ -15771,7 +15801,7 @@ function AdvancedSettingsSection({
     setConditionalDetailValue(typeof values.platformRuleDetail === "string" ? values.platformRuleDetail : "");
     setSelectedExtraValues(
       Object.fromEntries(
-        (config.extraSelects ?? []).map((item) => [item.key, typeof values[item.key] === "string" ? values[item.key] : ""])
+        (config.extraSelects ?? []).map((item) => [item.key, typeof values[item.key] === "string" ? values[item.key] : item.defaultValue ?? ""])
       )
     );
 
@@ -15797,7 +15827,13 @@ function AdvancedSettingsSection({
         values.platform ?? "",
         values.region ?? "",
         values.language ?? "",
-        ...(config.extraSelects ?? []).map((item) => (typeof values[item.key] === "string" ? values[item.key] : "")),
+        ...(config.extraSelects ?? []).map((item) =>
+          item.mode === "multi-select"
+            ? parseMultiSelectValue(typeof values[item.key] === "string" ? values[item.key] : item.defaultValue ?? "").join("、")
+            : typeof values[item.key] === "string"
+              ? values[item.key]
+              : item.defaultValue ?? ""
+        ),
         values.platformRuleDetail ?? ""
       ]).filter(Boolean)
     );
@@ -15828,7 +15864,7 @@ function AdvancedSettingsSection({
     value: string;
     options: string[];
     richOptions?: RichSelectOption[];
-    mode?: "select" | "input-select" | "rich-select";
+    mode?: "select" | "input-select" | "rich-select" | "multi-select";
     onSelect: (value: string) => void;
   }> = [];
 
@@ -15886,10 +15922,23 @@ function AdvancedSettingsSection({
       richOptions: field.richOptions,
       onSelect: (value) => {
         skipSelectedValuesSyncRef.current = true;
-        setSelectedExtraValues((current) => ({
-          ...current,
-          [field.key]: value
-        }));
+        if (field.mode === "multi-select") {
+          setSelectedExtraValues((current) => {
+            const currentValues = parseMultiSelectValue(current[field.key]);
+            const nextValues = currentValues.includes(value)
+              ? currentValues.filter((item) => item !== value)
+              : [...currentValues, value];
+            return {
+              ...current,
+              [field.key]: serializeMultiSelectValue(nextValues)
+            };
+          });
+        } else {
+          setSelectedExtraValues((current) => ({
+            ...current,
+            [field.key]: value
+          }));
+        }
         if (config.conditionalDetailField?.triggerFieldKey === field.key) {
           const presetDetail = config.conditionalDetailField.detailPresetByValue?.[value] ?? "";
           setConditionalDetailValue(presetDetail);
@@ -15956,7 +16005,24 @@ function AdvancedSettingsSection({
           <div className="ck-platform-item" key={field.key}>
             <div className="ck-platform-item-label">{field.label}</div>
             <div className="ck-platform-inline-select">
-              {field.mode === "rich-select" && field.richOptions?.length ? (
+              {field.mode === "multi-select" ? (
+                <div className="ck-multi-select">
+                  {field.options.map((option) => {
+                    const selectedValues = parseMultiSelectValue(field.value);
+                    const active = selectedValues.includes(option);
+                    return (
+                      <button
+                        className={active ? "active" : ""}
+                        key={option}
+                        onClick={() => field.onSelect(option)}
+                        type="button"
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : field.mode === "rich-select" && field.richOptions?.length ? (
                 <RichImageSelectInlineField
                   onChange={field.onSelect}
                   options={field.richOptions}
@@ -19206,14 +19272,10 @@ function ConfigPanel({
       : tool.key === "more-title"
         ? {
             ...advancedSettingSelections,
-            moreTitlePreferredStyle:
-              resolvedCreationModeSelection?.modeLabel ?? advancedSettingSelections.moreTitlePreferredStyle ?? "平台稳妥版",
             moreTitleOperatorNote: supplementValue.trim(),
             moreTitleGeneratedRows: JSON.stringify(
               buildMoreTitleGeneratedRows({
                 ...advancedSettingSelections,
-                moreTitlePreferredStyle:
-                  resolvedCreationModeSelection?.modeLabel ?? advancedSettingSelections.moreTitlePreferredStyle ?? "平台稳妥版",
                 moreTitleOperatorNote: supplementValue.trim()
               })
             )

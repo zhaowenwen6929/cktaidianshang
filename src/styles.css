@@ -14008,6 +14008,30 @@ textarea {
   grid-template-columns: 1fr;
 }
 
+.ck-multi-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ck-multi-select button {
+  min-width: 0;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #dbe3f0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ck-multi-select button.active {
+  border-color: rgba(99, 95, 242, 0.28);
+  background: #f5f3ff;
+  color: #5d5bf1;
+}
+
 .ck-panel-tool-more-title .ck-form-block {
   margin-bottom: 10px;
 }
