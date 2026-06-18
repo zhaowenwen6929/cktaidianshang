@@ -15619,6 +15619,7 @@ function MoreTitleWorkbench({
   onExportCsv: (taskId: string) => void;
 }) {
   const rows = parseMoreTitleGeneratedRows(task?.snapshot.advancedSelections.moreTitleGeneratedRows);
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
   if (!task) {
     return (
@@ -15641,7 +15642,7 @@ function MoreTitleWorkbench({
         </div>
         <div className="ck-more-title-workbench-actions">
           <button onClick={() => onCopyFinalTitles(task.taskId)} type="button">
-            复制最终标题
+            复制已选标题
           </button>
           <button onClick={() => onExportCsv(task.taskId)} type="button">
             导出 CSV
@@ -15685,14 +15686,28 @@ function MoreTitleWorkbench({
                 </button>
               ))}
             </div>
-            <UnifiedTextareaField
-              formBlockClassName="ck-form-block ck-more-title-final-field"
-              label="最终标题"
-              maxLength={260}
-              onChange={(value) => onFinalTitleChange(task.taskId, row.id, value)}
-              placeholder="可手动微调最终标题"
-              value={row.finalTitle}
-            />
+            <div className="ck-more-title-selected-block">
+              <div className="ck-more-title-selected-head">
+                <strong>已选标题</strong>
+                <button
+                  onClick={() => setEditingRowId((current) => (current === row.id ? null : row.id))}
+                  type="button"
+                >
+                  {editingRowId === row.id ? "收起微调" : "微调"}
+                </button>
+              </div>
+              <p>{row.finalTitle}</p>
+            </div>
+            {editingRowId === row.id ? (
+              <UnifiedTextareaField
+                formBlockClassName="ck-form-block ck-more-title-final-field"
+                label="微调标题"
+                maxLength={260}
+                onChange={(value) => onFinalTitleChange(task.taskId, row.id, value)}
+                placeholder="可手动微调已选标题"
+                value={row.finalTitle}
+              />
+            ) : null}
           </article>
         ))}
       </div>

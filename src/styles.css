@@ -14303,8 +14303,49 @@ textarea {
   line-height: 18px;
 }
 
-.ck-more-title-final-field {
+.ck-more-title-selected-block {
   margin-top: 10px;
+  padding: 10px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  background: #fbfcff;
+  display: grid;
+  gap: 6px;
+}
+
+.ck-more-title-selected-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ck-more-title-selected-head strong {
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-more-title-selected-head button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(99, 95, 242, 0.16);
+  border-radius: 8px;
+  background: #f7f6ff;
+  color: #5d5bf1;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ck-more-title-selected-block p {
+  margin: 0;
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-more-title-final-field {
+  margin-top: 8px;
 }
 
 .ck-panel-tool-more-title .ck-generate-btn {
