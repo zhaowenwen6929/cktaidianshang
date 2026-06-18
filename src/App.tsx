@@ -15155,15 +15155,28 @@ function MoreTitleSetupSection({
         <div className="ck-more-title-preview-grid">
           {rows.map((row, index) => (
             <article className={`ck-more-title-preview-card${row.id === editingRowId && isEditorOpen ? " active" : ""}`} key={row.id}>
-              <div className="ck-more-title-preview-thumb">
-                {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
-              </div>
               <div className="ck-more-title-preview-body">
                 <div className="ck-more-title-preview-top">
                   <strong>{row.productName || row.originalTitle || `商品 ${index + 1}`}</strong>
-                  <span>{row.brand || row.category || "待补充信息"}</span>
+                  <span>{[row.brand, row.category].filter(Boolean).join(" / ") || "待补充品牌与类目"}</span>
                 </div>
-                <p>{splitTitleKeywords(row.sellingPoints).slice(0, 2).join(" / ") || "点击编辑后补充卖点与规格"}</p>
+                <div className="ck-more-title-preview-meta">
+                  <p>
+                    <em>原标题</em>
+                    <span>{row.originalTitle || "未填写"}</span>
+                  </p>
+                  <p>
+                    <em>卖点</em>
+                    <span>{row.sellingPoints || "未填写"}</span>
+                  </p>
+                  <p>
+                    <em>规格</em>
+                    <span>{row.specs || "未填写"}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="ck-more-title-preview-thumb">
+                {row.imageSrc ? <img alt={row.imageLabel || row.productName || `商品${index + 1}`} src={row.imageSrc} /> : <span>商品图</span>}
               </div>
               <div className="ck-more-title-preview-actions">
                 <button onClick={() => openEditorForRow(row.id)} type="button">
