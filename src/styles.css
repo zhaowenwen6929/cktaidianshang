@@ -2810,6 +2810,13 @@ a {
   margin-bottom: 0;
 }
 
+.ck-field-helper-text {
+  margin: -6px 0 16px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .ck-form-block-full .ck-field-title {
   margin-bottom: 8px;
 }

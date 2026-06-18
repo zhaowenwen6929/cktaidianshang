@@ -509,6 +509,7 @@ type CreationModeOption = {
 type CreationModeConfig = {
   key: string;
   title?: string;
+  helperText?: string;
   modes: CreationModeOption[];
   showSupplement: boolean;
   hideRatioField?: boolean;
@@ -6506,6 +6507,8 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
   expand: {
     key: "expand",
     title: "创作模式",
+    helperText:
+      "默认按自适应尺寸做保守扩图，更适合小到中等幅度的边界延展。扩图范围越大，越容易出现主体占比变小、背景不自然或透视漂移，建议在需求描述中明确扩图方向和用途，例如“向右留白放文案”或“上下补全成竖版”。",
     showSupplement: true,
     hideRatioField: true,
     hideCountField: true,
@@ -15546,6 +15549,7 @@ function CreationModeSection({
         required
         selected={config.modes.findIndex((mode) => mode.id === activeMode.id)}
       />
+      {config.helperText ? <div className="ck-field-helper-text">{config.helperText}</div> : null}
 
       {!config.hideRatioField ? (
         <div className="ck-inline-field">
