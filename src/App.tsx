@@ -562,7 +562,7 @@ const imageExpandTargetFrameOptions = [
   { ratio: "16:9", name: "抖音横板视频封面", size: "1080x608px" }
 ] as const;
 
-const imageExpandTargetFrameRatioOptions = ["全部比例", ...Array.from(new Set(imageExpandTargetFrameOptions.map((item) => item.ratio)))] as const;
+const imageExpandCanvasRatioSelectOptions = [...imageExpandCanvasRatioOptions, "自定义"] as const;
 
 type VideoPricingSelectionMap = {
   mode?: string;
@@ -4306,11 +4306,10 @@ function buildImageExpandCanvasPositionPrompt(advancedSelections: AdvancedSelect
 
 function buildImageExpandTargetFramePrompt(advancedSelections: AdvancedSelectionMap) {
   const targetFrame = advancedSelections.imageExpandTargetFrame ?? "";
-  const targetRatio = advancedSelections.imageExpandTargetFrameRatio ?? "";
   if (!targetFrame) {
     return "未指定具体目标画幅，请结合原图内容与常规投放版式，自然完成扩图。";
   }
-  return `目标画幅指定为 ${targetRatio || "默认比例"} 的 ${targetFrame}，请按该尺寸对应的版式关系组织扩图边界和留白。`;
+  return `目标画幅指定为 ${targetFrame}，请按该尺寸对应的版式关系组织扩图边界和留白。`;
 }
 
 function buildImageExpandUserPrompt(context: ImageExpandPromptContext) {
@@ -6563,8 +6562,8 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
     showSupplement: true,
     hideRatioField: true,
     hideCountField: true,
-    supplementLabel: "需求描述",
-    supplementPlaceholder: "描述您希望扩展的内容，如：延伸自然风景、添加装饰元素、扩展建筑场景等",
+    supplementLabel: "拓展内容描述（选填）",
+    supplementPlaceholder: "拓展内容描述（选填）",
     supplementMaxLength: 2000,
     modes: [
       {
@@ -9183,103 +9182,40 @@ function ImageExpandModeSection({
 }) {
   const selectedRatio = normalizeImageExpandCanvasRatio(selectedMap.imageExpandCanvasRatio);
   const isPresetRatio = imageExpandCanvasRatioOptions.includes(selectedRatio as (typeof imageExpandCanvasRatioOptions)[number]);
+  const selectedRatioLabel = isPresetRatio ? selectedRatio : `自定义 ${selectedRatio}`;
   const selectedPosition = selectedMap.imageExpandCanvasPosition ?? "center";
   const selectedPositionLabel =
     imageExpandCanvasPositionOptions.find((option) => option.key === selectedPosition)?.label ?? "画面中心";
-  const selectedTargetFrameRatio = selectedMap.imageExpandTargetFrameRatio ?? "全部比例";
-  const filteredTargetFrames =
-    selectedTargetFrameRatio === "全部比例"
-      ? imageExpandTargetFrameOptions
-      : imageExpandTargetFrameOptions.filter((option) => option.ratio === selectedTargetFrameRatio);
   const activeTargetFrame =
-    filteredTargetFrames.find((option) => `${option.name} ${option.size}` === selectedMap.imageExpandTargetFrame) ?? filteredTargetFrames[0] ?? imageExpandTargetFrameOptions[0];
+    imageExpandTargetFrameOptions.find((option) => `${option.name} ${option.size}` === selectedMap.imageExpandTargetFrame) ?? imageExpandTargetFrameOptions[0];
   const activeTargetFrameValue = `${activeTargetFrame.name} ${activeTargetFrame.size}`;
 
   return (
     <div className="ck-image-expand-settings">
       <div className="ck-form-block">
-        <FieldTitle label="画面占比" required />
-        <div className="ck-image-expand-ratio-menu">
-          {imageExpandCanvasRatioOptions.map((option) => (
-            <button
-              className={option === selectedRatio ? "active" : ""}
-              key={option}
-              onClick={() =>
+        <SelectField
+          label="画面占比"
+          onChange={(value) => {
+            if (value === "自定义") {
               onSelectionMapChange({
-                imageExpandCanvasRatio: option,
+                imageExpandCanvasRatio: selectedRatio,
                 imageExpandCanvasPosition: selectedPosition,
-                imageExpandTargetFrameRatio: selectedTargetFrameRatio,
                 imageExpandTargetFrame: activeTargetFrameValue
-              })
-            }
-              type="button"
-            >
-              {option}
-            </button>
-          ))}
-          <div className={`ck-image-expand-ratio-custom${isPresetRatio ? "" : " active"}`}>
-            <span>自定义</span>
-            <div className="ck-image-expand-ratio-custom-input">
-              <input
-                inputMode="decimal"
-                onChange={(event) => {
-                  const digits = event.target.value.replace(/[^\d.]/g, "");
-                  onSelectionMapChange({
-                    imageExpandCanvasRatio: digits ? `${digits}%` : "",
-                    imageExpandCanvasPosition: selectedPosition,
-                    imageExpandTargetFrameRatio: selectedTargetFrameRatio,
-                    imageExpandTargetFrame: activeTargetFrameValue
-                  });
-                }}
-                placeholder="85"
-                value={isPresetRatio ? "" : selectedRatio.replace(/%$/, "")}
-              />
-              <em>%</em>
-            </div>
-          </div>
-        </div>
-        <div className="ck-field-helper-text">默认比例 85%，支持直接输入自定义百分比。</div>
-      </div>
-
-      <div className="ck-form-block">
-        <FieldTitle label="目标画幅" required />
-        <div className="ck-image-expand-target-frame-row">
-          <SelectField
-            className="ck-image-expand-target-frame-ratio"
-            hideLabel
-            label="目标画幅比例"
-            onChange={(value) => {
-              const nextFrames =
-                value === "全部比例" ? imageExpandTargetFrameOptions : imageExpandTargetFrameOptions.filter((option) => option.ratio === value);
-              const nextActive = nextFrames[0] ?? imageExpandTargetFrameOptions[0];
-              onSelectionMapChange({
-                imageExpandCanvasRatio: selectedRatio,
-                imageExpandCanvasPosition: selectedPosition,
-                imageExpandTargetFrameRatio: value,
-                imageExpandTargetFrame: `${nextActive.name} ${nextActive.size}`
               });
-            }}
-            options={[...imageExpandTargetFrameRatioOptions]}
-            required
-            value={selectedTargetFrameRatio}
-          />
-          <SelectField
-            className="ck-image-expand-target-frame-size"
-            hideLabel
-            label="目标画幅尺寸"
-            onChange={(value) =>
-              onSelectionMapChange({
-                imageExpandCanvasRatio: selectedRatio,
-                imageExpandCanvasPosition: selectedPosition,
-                imageExpandTargetFrameRatio: selectedTargetFrameRatio,
-                imageExpandTargetFrame: value
-              })
+              return;
             }
-            options={filteredTargetFrames.map((option) => `${option.name} ${option.size}`)}
-            required
-            value={activeTargetFrameValue}
-          />
-        </div>
+
+            onSelectionMapChange({
+              imageExpandCanvasRatio: value,
+              imageExpandCanvasPosition: selectedPosition,
+              imageExpandTargetFrame: activeTargetFrameValue
+            });
+          }}
+          options={[...imageExpandCanvasRatioSelectOptions]}
+          required
+          value={isPresetRatio ? selectedRatio : "自定义"}
+        />
+        <div className="ck-field-helper-text">{selectedRatioLabel}，默认比例 85%。</div>
       </div>
 
       <div className="ck-form-block">
@@ -9290,7 +9226,6 @@ function ImageExpandModeSection({
             onSelectionMapChange({
               imageExpandCanvasRatio: selectedRatio,
               imageExpandCanvasPosition: matched.key,
-              imageExpandTargetFrameRatio: selectedTargetFrameRatio,
               imageExpandTargetFrame: activeTargetFrameValue
             });
           }}
@@ -9298,26 +9233,22 @@ function ImageExpandModeSection({
           required
           value={selectedPositionLabel}
         />
-        <div className="ck-image-expand-position-grid" role="group" aria-label="画面位置">
-          {imageExpandCanvasPositionOptions.map((option) => (
-            <button
-              className={option.key === selectedPosition ? "active" : ""}
-              key={option.key}
-              onClick={() =>
-                onSelectionMapChange({
-                  imageExpandCanvasRatio: selectedRatio,
-                  imageExpandCanvasPosition: option.key,
-                  imageExpandTargetFrameRatio: selectedTargetFrameRatio,
-                  imageExpandTargetFrame: activeTargetFrameValue
-                })
-              }
-              title={option.label}
-              type="button"
-            >
-              <span aria-hidden="true">{option.icon}</span>
-            </button>
-          ))}
-        </div>
+      </div>
+
+      <div className="ck-form-block">
+        <SelectField
+          label="目标画幅"
+          onChange={(value) =>
+            onSelectionMapChange({
+              imageExpandCanvasRatio: selectedRatio,
+              imageExpandCanvasPosition: selectedPosition,
+              imageExpandTargetFrame: value
+            })
+          }
+          options={imageExpandTargetFrameOptions.map((option) => `${option.name} ${option.size}`)}
+          required
+          value={activeTargetFrameValue}
+        />
       </div>
     </div>
   );
@@ -14591,7 +14522,8 @@ function ReferenceUploadSection({
   onOpenLibrary,
   onRejectedUpload,
   onAtLimit,
-  remainingStorageMb
+  remainingStorageMb,
+  hideLabel = false
 }: {
   fieldKey: string;
   config: UploadModuleFieldConfig;
@@ -14604,12 +14536,13 @@ function ReferenceUploadSection({
   onRejectedUpload: (message: string) => void;
   onAtLimit: () => void;
   remainingStorageMb: number;
+  hideLabel?: boolean;
 }) {
   return (
     <UploadField
       fieldKey={fieldKey}
       hint={hint}
-      label={config.label}
+      label={hideLabel ? "" : config.label}
       maxCount={maxCount}
       meta={config.meta}
       onAdd={onAdd}
@@ -19367,7 +19300,7 @@ function ConfigPanel({
           <SupplementField
             aiPolishConfig={supplementAiPolishConfig}
             formBlockClassName={supplementFormBlockClassName}
-            label={creationModeConfig.supplementLabel}
+            label={tool.key === "image-expand" ? undefined : creationModeConfig.supplementLabel}
             maxLength={creationModeConfig.supplementMaxLength}
             onAiPolish={(value) =>
               onSupplementAiPolish(tool.key, value, {
@@ -19456,7 +19389,7 @@ function ConfigPanel({
       return (
         <ImageExpandModeSection
           onSelectionMapChange={(values) => {
-            const sectionKeys = ["imageExpandCanvasRatio", "imageExpandCanvasPosition", "imageExpandTargetFrameRatio", "imageExpandTargetFrame"];
+            const sectionKeys = ["imageExpandCanvasRatio", "imageExpandCanvasPosition", "imageExpandTargetFrame"];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
@@ -19560,6 +19493,7 @@ function ConfigPanel({
           config={refUploadConfig}
           fieldKey={refUploadKey}
           hint={refUploadHint}
+          hideLabel={tool.key === "image-expand"}
           maxCount={refUploadCountLimit}
           onAdd={onAddUpload}
           onAtLimit={onAtLimit}
