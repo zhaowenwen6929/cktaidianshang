@@ -530,28 +530,39 @@ type CreationModeSelection = {
   unitCreditCost: number;
 };
 
-const imageExpandModeOptions = [
-  {
-    key: "conservative",
-    label: "保守扩图",
-    description: "优先小到中等幅度补边，保持主体占比和原图构图稳定。",
-    prompt: "优先采用保守扩图策略，以小到中等幅度延展为主，尽量保持主体占比、视觉重心和原图构图关系稳定。"
-  },
-  {
-    key: "blank-space",
-    label: "留白扩图",
-    description: "优先扩出可放文案或贴片的留白区域，适合横幅和营销图。",
-    prompt: "优先采用留白扩图策略，在不破坏主体的前提下，为文案、贴片或排版预留干净且连续的留白区域。"
-  },
-  {
-    key: "layout-convert",
-    label: "版式扩图",
-    description: "优先补全上下或左右画幅，适合横竖版转换和版式重构。",
-    prompt: "优先采用版式扩图策略，围绕目标版式补全上下或左右画幅，使原图更适合横竖版转换或重新构图。"
-  }
+const imageExpandCanvasRatioOptions = ["100%", "60%", "70%", "80%", "85%"] as const;
+
+const imageExpandCanvasPositionOptions = [
+  { key: "top-left", label: "左上角", icon: "↖" },
+  { key: "top-center", label: "顶部中心", icon: "↑" },
+  { key: "top-right", label: "右上角", icon: "↗" },
+  { key: "center-left", label: "左侧中心", icon: "←" },
+  { key: "center", label: "画面中心", icon: "○" },
+  { key: "center-right", label: "右侧中心", icon: "→" },
+  { key: "bottom-left", label: "左下角", icon: "↙" },
+  { key: "bottom-center", label: "底部中心", icon: "↓" },
+  { key: "bottom-right", label: "右下角", icon: "↘" }
 ] as const;
 
-const imageExpandTargetRatioOptions = ["自适应尺寸", "1:1", "3:4", "4:5", "16:9", "9:16"] as const;
+const imageExpandTargetFrameOptions = [
+  { ratio: "1:1", name: "电商主图", size: "800x800px" },
+  { ratio: "3:4", name: "电商竖版", size: "750x1000px" },
+  { ratio: "1:1", name: "小红书方形头像", size: "1080x1080px" },
+  { ratio: "1:1", name: "名片", size: "600x600px" },
+  { ratio: "9:16", name: "微信直播封面", size: "810x1440px" },
+  { ratio: "900:383", name: "微信首图", size: "900x383px" },
+  { ratio: "16:9", name: "微信横板封面", size: "1080x608px" },
+  { ratio: "9:5", name: "微信内容引导图", size: "900x500px" },
+  { ratio: "27:13", name: "微博焦点配图", size: "540x260px" },
+  { ratio: "1125:633", name: "抖音个人背景图", size: "1125x633px" },
+  { ratio: "621:830", name: "小红书竖版封面", size: "1242x1660px" },
+  { ratio: "3:4", name: "小红书竖版配图", size: "900x1200px" },
+  { ratio: "16:9", name: "小红书横板封面", size: "2560x1440px" },
+  { ratio: "7:4", name: "微博头条文章封面", size: "980x560px" },
+  { ratio: "16:9", name: "抖音横板视频封面", size: "1080x608px" }
+] as const;
+
+const imageExpandTargetFrameRatioOptions = ["全部比例", ...Array.from(new Set(imageExpandTargetFrameOptions.map((item) => item.ratio)))] as const;
 
 type VideoPricingSelectionMap = {
   mode?: string;
@@ -2373,16 +2384,6 @@ function getImageGenerationUnitCreditCost(
   }
 
   if (toolKey === "image-expand") {
-    if (creationModeSelection?.modeId === "advanced") {
-      const resolution = creationModeSelection.resolution ?? "1K";
-      return (
-        {
-          "1K": 10,
-          "2K": 15,
-          "4K": 20
-        }[resolution] ?? 10
-      );
-    }
     return 5;
   }
 
@@ -4280,42 +4281,44 @@ function buildImageExpandReferencePrompt(referenceUploads: UploadItem[]) {
   return `请参考上传的 ${referenceUploads.length} 张参考图的场景氛围、空间走向、材质风格或装饰元素，但必须保持原商品主体和原图视觉逻辑不变。`;
 }
 
-function buildImageExpandStrategyPrompt(advancedSelections: AdvancedSelectionMap) {
-  const selectedMode = advancedSelections.imageExpandMode ?? "conservative";
-  const option = imageExpandModeOptions.find((item) => item.key === selectedMode) ?? imageExpandModeOptions[0];
-  return `${option.label}；${option.prompt}`;
+function normalizeImageExpandCanvasRatio(value?: string) {
+  const trimmed = value?.trim().replace(/％/g, "%") ?? "";
+  if (!trimmed) return "85%";
+  if (/^\d+(\.\d+)?%$/.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^\d+(\.\d+)?$/.test(trimmed)) {
+    return `${trimmed}%`;
+  }
+  return "85%";
 }
 
-function buildImageExpandTargetRatioPrompt(advancedSelections: AdvancedSelectionMap) {
-  const targetRatio = advancedSelections.imageExpandTargetRatio ?? "自适应尺寸";
-  if (targetRatio === "自适应尺寸") {
-    return "默认按原图语义与构图关系自适应延展，不强制改成固定画幅。";
-  }
-  return `目标画幅比例为 ${targetRatio}，扩图时请优先朝该比例补全画面，并保持主体结构、占比与构图关系尽量自然。`;
+function buildImageExpandCanvasRatioPrompt(advancedSelections: AdvancedSelectionMap) {
+  const canvasRatio = normalizeImageExpandCanvasRatio(advancedSelections.imageExpandCanvasRatio);
+  return `扩图后原主体画面占比目标为 ${canvasRatio}，请围绕该占比扩展背景与留白，保持主体大小自然、边缘衔接稳定。`;
 }
 
-function buildImageExpandModePrompt(context: ImageExpandPromptContext) {
-  const modeId = context.creationModeSelection?.modeId ?? "normal";
-  const modeLabel = context.creationModeSelection?.modeLabel ?? "普通模式";
-  const resolution = context.creationModeSelection?.resolution;
-  const modeInstruction =
-    modeId === "advanced"
-      ? "在保证主体稳定的基础上，增强场景延展完整度、空间层次、光影过渡和细节真实性，适合更复杂的背景补全与商业级扩图。"
-      : "以稳定自然扩展为优先，优先补齐背景、留白与环境边缘，不主动增加复杂新元素。";
+function buildImageExpandCanvasPositionPrompt(advancedSelections: AdvancedSelectionMap) {
+  const positionKey = advancedSelections.imageExpandCanvasPosition ?? "center";
+  const position = imageExpandCanvasPositionOptions.find((item) => item.key === positionKey) ?? imageExpandCanvasPositionOptions[4];
+  return `主体在扩图后的画面位置保持为${position.label}，围绕该位置补全上下左右空间，保证视觉重心稳定。`;
+}
 
-  const parts = [modeLabel, modeInstruction];
-  if (resolution) {
-    parts.push(`输出分辨率目标：${resolution}`);
+function buildImageExpandTargetFramePrompt(advancedSelections: AdvancedSelectionMap) {
+  const targetFrame = advancedSelections.imageExpandTargetFrame ?? "";
+  const targetRatio = advancedSelections.imageExpandTargetFrameRatio ?? "";
+  if (!targetFrame) {
+    return "未指定具体目标画幅，请结合原图内容与常规投放版式，自然完成扩图。";
   }
-  return parts.join("；");
+  return `目标画幅指定为 ${targetRatio || "默认比例"} 的 ${targetFrame}，请按该尺寸对应的版式关系组织扩图边界和留白。`;
 }
 
 function buildImageExpandUserPrompt(context: ImageExpandPromptContext) {
   const userDescription = context.supplementValue.trim() || "未填写额外扩图需求，请按保守扩图策略执行。";
   const referencePrompt = buildImageExpandReferencePrompt(context.referenceUploads ?? []);
-  const modePrompt = buildImageExpandModePrompt(context);
-  const strategyPrompt = buildImageExpandStrategyPrompt(context.advancedSelections);
-  const targetRatioPrompt = buildImageExpandTargetRatioPrompt(context.advancedSelections);
+  const canvasRatioPrompt = buildImageExpandCanvasRatioPrompt(context.advancedSelections);
+  const canvasPositionPrompt = buildImageExpandCanvasPositionPrompt(context.advancedSelections);
+  const targetFramePrompt = buildImageExpandTargetFramePrompt(context.advancedSelections);
 
   return [
     "请基于上传原图进行图片扩图。",
@@ -4326,14 +4329,14 @@ function buildImageExpandUserPrompt(context: ImageExpandPromptContext) {
     "参考图要求：",
     referencePrompt,
     "",
-    "创作模式：",
-    modePrompt,
+    "画面占比：",
+    canvasRatioPrompt,
     "",
-    "扩展方式：",
-    strategyPrompt,
+    "画面位置：",
+    canvasPositionPrompt,
     "",
     "目标画幅：",
-    targetRatioPrompt,
+    targetFramePrompt,
     "",
     "通用约束：",
     "- 保持原图主体结构、材质、颜色和比例稳定",
@@ -4352,16 +4355,17 @@ function buildImageExpandPrompt(context: ImageExpandPromptContext) {
 }
 
 function buildImageExpandPromptSummary(context: ImageExpandPromptContext) {
+  const canvasRatio = normalizeImageExpandCanvasRatio(context.advancedSelections.imageExpandCanvasRatio);
+  const positionKey = context.advancedSelections.imageExpandCanvasPosition ?? "center";
+  const positionLabel = imageExpandCanvasPositionOptions.find((item) => item.key === positionKey)?.label ?? "画面中心";
+  const targetFrame = context.advancedSelections.imageExpandTargetFrame ?? "未指定";
   const parts = [
     `原图 ${context.sourceUploads.length} 张`,
     context.referenceUploads?.length ? `参考图 ${context.referenceUploads.length} 张` : "无参考图",
-    context.creationModeSelection?.modeLabel ?? "普通模式",
-    imageExpandModeOptions.find((item) => item.key === (context.advancedSelections.imageExpandMode ?? "conservative"))?.label ?? "保守扩图",
-    context.advancedSelections.imageExpandTargetRatio ?? "自适应尺寸"
+    `画面占比 ${canvasRatio}`,
+    `画面位置 ${positionLabel}`,
+    `目标画幅 ${targetFrame}`
   ];
-  if (context.creationModeSelection?.resolution) {
-    parts.push(context.creationModeSelection.resolution);
-  }
   return parts.join(" / ");
 }
 
@@ -6953,7 +6957,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "image-expand": {
     creationModeConfigKey: "expand",
-    sectionOrder: ["upload-main", "creation-mode", "image-expand-mode", "supplement", "upload-reference"],
+    sectionOrder: ["upload-main", "image-expand-mode", "supplement", "upload-reference"],
     uploads: {
       main: {
         label: "上传商品图",
@@ -9171,51 +9175,150 @@ function SegmentedField({
 }
 
 function ImageExpandModeSection({
-  selectedValues,
   selectedMap,
-  onSelectionChange,
   onSelectionMapChange
 }: {
-  selectedValues: string[];
   selectedMap: AdvancedSelectionMap;
-  onSelectionChange: (values: string[]) => void;
   onSelectionMapChange: (values: AdvancedSelectionMap) => void;
 }) {
-  const selectedMode = imageExpandModeOptions.find((option) => option.key === selectedValues[0])?.key ?? "conservative";
-  const selectedIndex = imageExpandModeOptions.findIndex((option) => option.key === selectedMode);
-  const activeOption = imageExpandModeOptions[selectedIndex >= 0 ? selectedIndex : 0];
-  const targetRatio = selectedMap.imageExpandTargetRatio ?? "自适应尺寸";
+  const selectedRatio = normalizeImageExpandCanvasRatio(selectedMap.imageExpandCanvasRatio);
+  const isPresetRatio = imageExpandCanvasRatioOptions.includes(selectedRatio as (typeof imageExpandCanvasRatioOptions)[number]);
+  const selectedPosition = selectedMap.imageExpandCanvasPosition ?? "center";
+  const selectedPositionLabel =
+    imageExpandCanvasPositionOptions.find((option) => option.key === selectedPosition)?.label ?? "画面中心";
+  const selectedTargetFrameRatio = selectedMap.imageExpandTargetFrameRatio ?? "全部比例";
+  const filteredTargetFrames =
+    selectedTargetFrameRatio === "全部比例"
+      ? imageExpandTargetFrameOptions
+      : imageExpandTargetFrameOptions.filter((option) => option.ratio === selectedTargetFrameRatio);
+  const activeTargetFrame =
+    filteredTargetFrames.find((option) => `${option.name} ${option.size}` === selectedMap.imageExpandTargetFrame) ?? filteredTargetFrames[0] ?? imageExpandTargetFrameOptions[0];
+  const activeTargetFrameValue = `${activeTargetFrame.name} ${activeTargetFrame.size}`;
 
   return (
-    <div className="ck-form-block">
-      <SegmentedField
-        label="扩展方式"
-        onChange={(index) => {
-          const nextOption = imageExpandModeOptions[index] ?? imageExpandModeOptions[0];
-          onSelectionChange([nextOption.key]);
-          onSelectionMapChange({
-            imageExpandMode: nextOption.key,
-            imageExpandModeLabel: nextOption.label
-          });
-        }}
-        options={imageExpandModeOptions.map((option) => option.label)}
-        required
-        selected={selectedIndex >= 0 ? selectedIndex : 0}
-      />
-      <div className="ck-field-helper-text">{activeOption.description}</div>
-      <SelectField
-        label="目标画幅"
-        onChange={(value) =>
-          onSelectionMapChange({
-            imageExpandMode: selectedMode,
-            imageExpandModeLabel: activeOption.label,
-            imageExpandTargetRatio: value
-          })
-        }
-        options={[...imageExpandTargetRatioOptions]}
-        required
-        value={targetRatio}
-      />
+    <div className="ck-image-expand-settings">
+      <div className="ck-form-block">
+        <FieldTitle label="画面占比" required />
+        <div className="ck-image-expand-ratio-menu">
+          {imageExpandCanvasRatioOptions.map((option) => (
+            <button
+              className={option === selectedRatio ? "active" : ""}
+              key={option}
+              onClick={() =>
+              onSelectionMapChange({
+                imageExpandCanvasRatio: option,
+                imageExpandCanvasPosition: selectedPosition,
+                imageExpandTargetFrameRatio: selectedTargetFrameRatio,
+                imageExpandTargetFrame: activeTargetFrameValue
+              })
+            }
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
+          <div className={`ck-image-expand-ratio-custom${isPresetRatio ? "" : " active"}`}>
+            <span>自定义</span>
+            <div className="ck-image-expand-ratio-custom-input">
+              <input
+                inputMode="decimal"
+                onChange={(event) => {
+                  const digits = event.target.value.replace(/[^\d.]/g, "");
+                  onSelectionMapChange({
+                    imageExpandCanvasRatio: digits ? `${digits}%` : "",
+                    imageExpandCanvasPosition: selectedPosition,
+                    imageExpandTargetFrameRatio: selectedTargetFrameRatio,
+                    imageExpandTargetFrame: activeTargetFrameValue
+                  });
+                }}
+                placeholder="85"
+                value={isPresetRatio ? "" : selectedRatio.replace(/%$/, "")}
+              />
+              <em>%</em>
+            </div>
+          </div>
+        </div>
+        <div className="ck-field-helper-text">默认比例 85%，支持直接输入自定义百分比。</div>
+      </div>
+
+      <div className="ck-form-block">
+        <FieldTitle label="目标画幅" required />
+        <div className="ck-image-expand-target-frame-row">
+          <SelectField
+            className="ck-image-expand-target-frame-ratio"
+            hideLabel
+            label="目标画幅比例"
+            onChange={(value) => {
+              const nextFrames =
+                value === "全部比例" ? imageExpandTargetFrameOptions : imageExpandTargetFrameOptions.filter((option) => option.ratio === value);
+              const nextActive = nextFrames[0] ?? imageExpandTargetFrameOptions[0];
+              onSelectionMapChange({
+                imageExpandCanvasRatio: selectedRatio,
+                imageExpandCanvasPosition: selectedPosition,
+                imageExpandTargetFrameRatio: value,
+                imageExpandTargetFrame: `${nextActive.name} ${nextActive.size}`
+              });
+            }}
+            options={[...imageExpandTargetFrameRatioOptions]}
+            required
+            value={selectedTargetFrameRatio}
+          />
+          <SelectField
+            className="ck-image-expand-target-frame-size"
+            hideLabel
+            label="目标画幅尺寸"
+            onChange={(value) =>
+              onSelectionMapChange({
+                imageExpandCanvasRatio: selectedRatio,
+                imageExpandCanvasPosition: selectedPosition,
+                imageExpandTargetFrameRatio: selectedTargetFrameRatio,
+                imageExpandTargetFrame: value
+              })
+            }
+            options={filteredTargetFrames.map((option) => `${option.name} ${option.size}`)}
+            required
+            value={activeTargetFrameValue}
+          />
+        </div>
+      </div>
+
+      <div className="ck-form-block">
+        <SelectField
+          label="画面位置"
+          onChange={(value) => {
+            const matched = imageExpandCanvasPositionOptions.find((option) => option.label === value) ?? imageExpandCanvasPositionOptions[4];
+            onSelectionMapChange({
+              imageExpandCanvasRatio: selectedRatio,
+              imageExpandCanvasPosition: matched.key,
+              imageExpandTargetFrameRatio: selectedTargetFrameRatio,
+              imageExpandTargetFrame: activeTargetFrameValue
+            });
+          }}
+          options={imageExpandCanvasPositionOptions.map((option) => option.label)}
+          required
+          value={selectedPositionLabel}
+        />
+        <div className="ck-image-expand-position-grid" role="group" aria-label="画面位置">
+          {imageExpandCanvasPositionOptions.map((option) => (
+            <button
+              className={option.key === selectedPosition ? "active" : ""}
+              key={option.key}
+              onClick={() =>
+                onSelectionMapChange({
+                  imageExpandCanvasRatio: selectedRatio,
+                  imageExpandCanvasPosition: option.key,
+                  imageExpandTargetFrameRatio: selectedTargetFrameRatio,
+                  imageExpandTargetFrame: activeTargetFrameValue
+                })
+              }
+              title={option.label}
+              type="button"
+            >
+              <span aria-hidden="true">{option.icon}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -19352,9 +19455,8 @@ function ConfigPanel({
     if (section === "image-expand-mode" && tool.key === "image-expand") {
       return (
         <ImageExpandModeSection
-          onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            const sectionKeys = ["imageExpandMode", "imageExpandModeLabel", "imageExpandTargetRatio"];
+            const sectionKeys = ["imageExpandCanvasRatio", "imageExpandCanvasPosition", "imageExpandTargetFrameRatio", "imageExpandTargetFrame"];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
@@ -19364,7 +19466,6 @@ function ConfigPanel({
             });
           }}
           selectedMap={advancedSettingSelections}
-          selectedValues={advancedSettingSelections.imageExpandMode ? [advancedSettingSelections.imageExpandMode] : []}
         />
       );
     }
