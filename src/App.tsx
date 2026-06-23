@@ -6562,8 +6562,8 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
     showSupplement: true,
     hideRatioField: true,
     hideCountField: true,
-    supplementLabel: "拓展内容描述（选填）",
-    supplementPlaceholder: "拓展内容描述（选填）",
+    supplementLabel: "扩展画面描述",
+    supplementPlaceholder: "扩展画面描述",
     supplementMaxLength: 2000,
     modes: [
       {
@@ -6956,18 +6956,11 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "image-expand": {
     creationModeConfigKey: "expand",
-    sectionOrder: ["upload-main", "image-expand-mode", "supplement", "upload-reference"],
+    sectionOrder: ["upload-main", "image-expand-mode", "supplement"],
     uploads: {
       main: {
-        label: "上传商品图",
+        label: "上传素材",
         required: true,
-        maxCount: 24,
-        singleUploadMeta: "（单次最多上传{count}张）",
-        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
-      },
-      reference: {
-        label: "上传参考图",
-        optional: true,
         maxCount: 24,
         singleUploadMeta: "（单次最多上传{count}张）",
         hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
@@ -9182,7 +9175,6 @@ function ImageExpandModeSection({
 }) {
   const selectedRatio = normalizeImageExpandCanvasRatio(selectedMap.imageExpandCanvasRatio);
   const isPresetRatio = imageExpandCanvasRatioOptions.includes(selectedRatio as (typeof imageExpandCanvasRatioOptions)[number]);
-  const selectedRatioLabel = isPresetRatio ? selectedRatio : `自定义 ${selectedRatio}`;
   const selectedPosition = selectedMap.imageExpandCanvasPosition ?? "center";
   const selectedPositionLabel =
     imageExpandCanvasPositionOptions.find((option) => option.key === selectedPosition)?.label ?? "画面中心";
@@ -9192,7 +9184,7 @@ function ImageExpandModeSection({
 
   return (
     <div className="ck-image-expand-settings">
-      <div className="ck-form-block">
+      <div className="ck-form-block ck-image-expand-compact-block">
         <SelectField
           label="画面占比"
           onChange={(value) => {
@@ -9215,10 +9207,9 @@ function ImageExpandModeSection({
           required
           value={isPresetRatio ? selectedRatio : "自定义"}
         />
-        <div className="ck-field-helper-text">{selectedRatioLabel}，默认比例 85%。</div>
       </div>
 
-      <div className="ck-form-block">
+      <div className="ck-form-block ck-image-expand-compact-block">
         <SelectField
           label="画面位置"
           onChange={(value) => {
@@ -9235,7 +9226,7 @@ function ImageExpandModeSection({
         />
       </div>
 
-      <div className="ck-form-block">
+      <div className="ck-form-block ck-image-expand-frame-block">
         <SelectField
           label="目标画幅"
           onChange={(value) =>

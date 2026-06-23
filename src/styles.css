@@ -4504,7 +4504,25 @@ a {
 
 .ck-image-expand-settings {
   display: grid;
-  gap: 16px;
+  gap: 8px;
+}
+
+.ck-image-expand-compact-block {
+  margin-bottom: 0;
+}
+
+.ck-image-expand-frame-block {
+  margin-bottom: 0;
+}
+
+.ck-image-expand-frame-block .ck-inline-field {
+  width: 100%;
+}
+
+.ck-image-expand-frame-block .ck-select-dropdown,
+.ck-image-expand-frame-block .ck-select,
+.ck-image-expand-frame-block .ck-select-dropdown-menu {
+  width: 100%;
 }
 
 .ck-video-print-extend-head {
