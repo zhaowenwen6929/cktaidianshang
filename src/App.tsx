@@ -21107,8 +21107,8 @@ function ResultEmptyGuide({
         <button className="ck-results-empty-primary" onClick={onTriggerUpload} type="button">
           {config.actionLabel}
         </button>
-        <div className="ck-results-empty-copy-shell">
-          <div className="ck-results-empty-title">{config.title}</div>
+        <div className="ck-results-empty-copy-shell ck-results-empty-copy-shell-compact">
+          <div className="ck-results-empty-title ck-results-empty-title-compact">{config.title}</div>
           <div className="ck-results-empty-copy">{config.description}</div>
           <div className="ck-results-empty-hint">{config.uploadHint}</div>
         </div>
@@ -21182,8 +21182,7 @@ function ResultEmptyGuide({
         {config.steps.map((step) => (
           <article className="ck-results-empty-step" key={step.id}>
             <span className="ck-results-empty-step-index">{step.index}</span>
-            <strong>{step.title}</strong>
-            <p>{step.description}</p>
+            <div className="ck-results-empty-step-copy">{`${step.title}，${step.description}`}</div>
             <div className="ck-results-empty-step-media">
               <img alt={step.title} src={step.mediaSrc} />
             </div>

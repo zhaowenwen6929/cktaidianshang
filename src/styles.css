@@ -7170,6 +7170,16 @@ a {
   text-align: center;
 }
 
+.ck-results-empty-copy-shell-compact {
+  gap: 2px;
+}
+
+.ck-results-empty-title-compact {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
 .ck-results-empty-hint {
   color: #98a2b3;
   font-size: 12px;
@@ -7318,6 +7328,12 @@ a {
   flex-direction: column;
   gap: 7px;
   text-align: left;
+}
+
+.ck-results-empty-step-copy {
+  color: #4b5565;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .ck-results-empty-step-index {
