@@ -492,6 +492,55 @@ type ResultDetailRoute = {
   source: DetailRouteSource;
 };
 
+type ResultEmptyGuideSample = {
+  id: string;
+  title: string;
+  src: string;
+};
+
+type ResultEmptyGuideTab = {
+  id: string;
+  label: string;
+  title: string;
+  description: string;
+  heroSrc: string;
+  noteTitle: string;
+  notes: string[];
+  samples: ResultEmptyGuideSample[];
+};
+
+type ResultEmptyGuideStep = {
+  id: string;
+  index: string;
+  title: string;
+  description: string;
+  mediaSrc: string;
+};
+
+type ResultEmptyGuideConfig =
+  | {
+      mode: "illustration";
+      title: string;
+      description: string;
+      actionLabel: string;
+      uploadHint: string;
+      heroSrc: string;
+      samples: ResultEmptyGuideSample[];
+    }
+  | {
+      mode: "switcher";
+      title: string;
+      description: string;
+      tabs: ResultEmptyGuideTab[];
+    }
+  | {
+      mode: "steps";
+      title: string;
+      description: string;
+      steps: ResultEmptyGuideStep[];
+      samples: ResultEmptyGuideSample[];
+    };
+
 type CreationModeOption = {
   id: string;
   label: string;
@@ -997,6 +1046,208 @@ const resultAssetPool = [
   "/assets/result-1.png",
   "/assets/result-2.png"
 ];
+
+const resultEmptyGuideAssetSets = {
+  ecommerce: ["/assets/task-gallery-4.png", "/assets/task-gallery-5.png", "/assets/task-gallery-6.png"],
+  model: ["/assets/task-gallery-6.png", "/assets/task-gallery-7.png", "/assets/task-gallery-8.png"],
+  video: ["/assets/result-1.png", "/assets/result-2.png", "/assets/result-3.png"],
+  image: ["/assets/upload-preview.png", "/assets/task-thumb-1.png", "/assets/task-thumb-2.png"],
+  pod: ["/assets/task-gallery-5.png", "/assets/task-gallery-7.png", "/assets/result-4.png"]
+} as const;
+
+const createResultEmptyGuideConfig = (tool: ToolConfig): ResultEmptyGuideConfig => {
+  if (tool.key.startsWith("model-")) {
+    return {
+      mode: "switcher",
+      title: "先选一种生成方式，再上传素材开始创作",
+      description: "不同模特场景下，上传要求和推荐素材略有差异，可先切换查看示意图再开始。",
+      tabs: [
+        {
+          id: "outfit",
+          label: "服饰试穿",
+          title: "上传平铺服饰图与参考模特图",
+          description: "适合单品试穿、上下装搭配和基础换装展示，优先选择边缘清晰、无遮挡的服饰图。",
+          heroSrc: resultEmptyGuideAssetSets.model[0],
+          noteTitle: "上传建议",
+          notes: ["服饰尽量平铺或悬挂拍摄", "模特参考图建议背景干净、姿态明确", "服饰主体不要被道具遮挡"],
+          samples: [
+            { id: "model-sample-1", title: "女装样例", src: resultEmptyGuideAssetSets.model[0] },
+            { id: "model-sample-2", title: "男装样例", src: resultEmptyGuideAssetSets.model[1] },
+            { id: "model-sample-3", title: "外套样例", src: resultEmptyGuideAssetSets.model[2] }
+          ]
+        },
+        {
+          id: "pose",
+          label: "形象调整",
+          title: "基于现有模特图做姿态和细节调整",
+          description: "适合优化表情、动作、构图和局部服饰表现，原图越清晰，结果越稳定。",
+          heroSrc: resultEmptyGuideAssetSets.model[1],
+          noteTitle: "温馨提示",
+          notes: ["建议上传单人半身或全身模特图", "补充说明里可写动作、镜头和表情需求", "人物边缘清晰时更适合精细调整"],
+          samples: [
+            { id: "model-adjust-1", title: "半身示例", src: resultEmptyGuideAssetSets.model[1] },
+            { id: "model-adjust-2", title: "外景示例", src: resultEmptyGuideAssetSets.model[2] },
+            { id: "model-adjust-3", title: "棚拍示例", src: resultEmptyGuideAssetSets.model[0] }
+          ]
+        }
+      ]
+    };
+  }
+
+  if (tool.key.startsWith("video-")) {
+    return {
+      mode: "steps",
+      title: "只需三步，快速开始生成视频结果",
+      description: "先准备主体素材，再补充画面描述或脚本要求，系统会输出对应的视频结果。",
+      steps: [
+        {
+          id: "video-step-1",
+          index: "01",
+          title: "上传主体素材",
+          description: "上传商品图、模特图或需要替换的视频首帧素材。",
+          mediaSrc: resultEmptyGuideAssetSets.video[0]
+        },
+        {
+          id: "video-step-2",
+          index: "02",
+          title: "补充脚本或动作描述",
+          description: "可写镜头运动、节奏、文案卖点和画面风格，让结果更贴近预期。",
+          mediaSrc: resultEmptyGuideAssetSets.video[1]
+        },
+        {
+          id: "video-step-3",
+          index: "03",
+          title: "生成并查看结果",
+          description: "完成后可在这里预览、筛选并下载视频结果。",
+          mediaSrc: resultEmptyGuideAssetSets.video[2]
+        }
+      ],
+      samples: [
+        { id: "video-sample-1", title: "产品展示", src: resultEmptyGuideAssetSets.video[0] },
+        { id: "video-sample-2", title: "卖点演示", src: resultEmptyGuideAssetSets.video[1] },
+        { id: "video-sample-3", title: "人物讲解", src: resultEmptyGuideAssetSets.video[2] }
+      ]
+    };
+  }
+
+  if (tool.key.startsWith("pod-")) {
+    return {
+      mode: "illustration",
+      title: "上传图案素材，快速开始印花处理",
+      description: "适用于图案裁剪、裂变、提取和局部编辑，建议上传边界清晰、主体完整的素材图。",
+      actionLabel: "上传图片",
+      uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+      heroSrc: resultEmptyGuideAssetSets.pod[0],
+      samples: [
+        { id: "pod-sample-1", title: "卡通印花", src: resultEmptyGuideAssetSets.pod[0] },
+        { id: "pod-sample-2", title: "拼贴图案", src: resultEmptyGuideAssetSets.pod[1] },
+        { id: "pod-sample-3", title: "黑白纹样", src: resultEmptyGuideAssetSets.pod[2] }
+      ]
+    };
+  }
+
+  if (tool.key.startsWith("image-")) {
+    return {
+      mode: "illustration",
+      title: "上传素材后，在这里查看处理结果",
+      description: "可用于抠图、去水印、变清晰、无损放大、消除和扩图，建议优先上传主体清楚的原图。",
+      actionLabel: "上传图片",
+      uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+      heroSrc: resultEmptyGuideAssetSets.image[0],
+      samples: [
+        { id: "image-sample-1", title: "商品图", src: resultEmptyGuideAssetSets.image[0] },
+        { id: "image-sample-2", title: "人物图", src: resultEmptyGuideAssetSets.image[1] },
+        { id: "image-sample-3", title: "海报图", src: resultEmptyGuideAssetSets.image[2] }
+      ]
+    };
+  }
+
+  if (tool.key.startsWith("goods-")) {
+    return {
+      mode: "illustration",
+      title: "上传商品图后，快速生成电商展示结果",
+      description: "适合主图、白底图、场景图、卖点图等电商物料生成，推荐使用主体完整、边缘清晰的商品图。",
+      actionLabel: "上传图片",
+      uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+      heroSrc: resultEmptyGuideAssetSets.ecommerce[0],
+      samples: [
+        { id: "goods-sample-1", title: "白底商品", src: resultEmptyGuideAssetSets.ecommerce[0] },
+        { id: "goods-sample-2", title: "场景商品", src: resultEmptyGuideAssetSets.ecommerce[1] },
+        { id: "goods-sample-3", title: "数码商品", src: resultEmptyGuideAssetSets.ecommerce[2] }
+      ]
+    };
+  }
+
+  if (tool.key === "more-rights" || tool.key === "more-collect") {
+    return {
+      mode: "steps",
+      title: "按步骤上传并处理，结果会展示在这里",
+      description: "这类工具通常需要先上传素材或链接，再补充筛选条件，最后查看处理结果。",
+      steps: [
+        {
+          id: "more-step-1",
+          index: "01",
+          title: "上传或导入内容",
+          description: "可先上传商品图、文档或待检测素材。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[0]
+        },
+        {
+          id: "more-step-2",
+          index: "02",
+          title: "补充处理条件",
+          description: "根据工具类型填写采集范围、检测要求或筛选条件。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[1]
+        },
+        {
+          id: "more-step-3",
+          index: "03",
+          title: "查看处理结果",
+          description: "生成完成后，可在结果区继续预览、复制或下载。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[2]
+        }
+      ],
+      samples: [
+        { id: "more-sample-1", title: "电商示例", src: resultEmptyGuideAssetSets.ecommerce[0] },
+        { id: "more-sample-2", title: "详情示例", src: resultEmptyGuideAssetSets.ecommerce[1] },
+        { id: "more-sample-3", title: "素材示例", src: resultEmptyGuideAssetSets.ecommerce[2] }
+      ]
+    };
+  }
+
+  return {
+    mode: "steps",
+    title: "按步骤准备素材，生成结果会展示在这里",
+    description: "先上传主素材，再补充描述或策略信息，系统会根据当前功能生成对应结果。",
+    steps: [
+      {
+        id: "default-step-1",
+        index: "01",
+        title: "上传主素材",
+        description: "先上传商品图、参考图或原始素材。",
+        mediaSrc: resultEmptyGuideAssetSets.ecommerce[0]
+      },
+      {
+        id: "default-step-2",
+        index: "02",
+        title: "补充生成要求",
+        description: "可填写文案、风格、布局或其他业务要求。",
+        mediaSrc: resultEmptyGuideAssetSets.ecommerce[1]
+      },
+      {
+        id: "default-step-3",
+        index: "03",
+        title: "生成并筛选结果",
+        description: "完成后在结果区预览、对比并下载需要的内容。",
+        mediaSrc: resultEmptyGuideAssetSets.ecommerce[2]
+      }
+    ],
+    samples: [
+      { id: "default-sample-1", title: "示例 1", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "default-sample-2", title: "示例 2", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "default-sample-3", title: "示例 3", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  };
+};
 
 const RESULT_DETAIL_ROUTE_PREFIX = "/results/";
 
@@ -20311,6 +20562,128 @@ function ConfigPanel({
   );
 }
 
+function ResultEmptyGuideSampleStrip({
+  samples,
+  onApplySamples
+}: {
+  samples: ResultEmptyGuideSample[];
+  onApplySamples: (samples: ResultEmptyGuideSample[]) => void;
+}) {
+  return (
+    <div className="ck-results-empty-samples">
+      <div className="ck-results-empty-divider">
+        <span>点击样例图试试</span>
+      </div>
+      <div className="ck-results-empty-sample-grid">
+        {samples.map((sample) => (
+          <button className="ck-results-empty-sample" key={sample.id} onClick={() => onApplySamples([sample])} type="button">
+            <img alt={sample.title} src={sample.src} />
+            <span>{sample.title}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultEmptyGuide({
+  config,
+  activeTabId,
+  onChangeTab,
+  onTriggerUpload,
+  onApplySamples
+}: {
+  config: ResultEmptyGuideConfig;
+  activeTabId: string;
+  onChangeTab: (tabId: string) => void;
+  onTriggerUpload: () => void;
+  onApplySamples: (samples: ResultEmptyGuideSample[]) => void;
+}) {
+  if (config.mode === "illustration") {
+    return (
+      <div className="ck-results-empty ck-results-empty-guide">
+        <div className="ck-results-empty-hero">
+          <img alt={config.title} src={config.heroSrc} />
+        </div>
+        <button className="ck-results-empty-primary" onClick={onTriggerUpload} type="button">
+          {config.actionLabel}
+        </button>
+        <div className="ck-results-empty-copy-shell">
+          <div className="ck-results-empty-title">{config.title}</div>
+          <div className="ck-results-empty-copy">{config.description}</div>
+          <div className="ck-results-empty-hint">{config.uploadHint}</div>
+        </div>
+        <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={config.samples} />
+      </div>
+    );
+  }
+
+  if (config.mode === "switcher") {
+    const activeTab = config.tabs.find((item) => item.id === activeTabId) ?? config.tabs[0];
+    return (
+      <div className="ck-results-empty ck-results-empty-guide">
+        <div className="ck-results-empty-copy-shell">
+          <div className="ck-results-empty-title">{config.title}</div>
+          <div className="ck-results-empty-copy">{config.description}</div>
+        </div>
+        <div className="ck-results-empty-switcher">
+          <div className="ck-results-empty-switch-tabs">
+            {config.tabs.map((tab) => (
+              <button className={tab.id === activeTab.id ? "active" : ""} key={tab.id} onClick={() => onChangeTab(tab.id)} type="button">
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="ck-results-empty-switch-panel">
+            <div className="ck-results-empty-switch-hero">
+              <img alt={activeTab.title} src={activeTab.heroSrc} />
+            </div>
+            <div className="ck-results-empty-switch-content">
+              <strong>{activeTab.title}</strong>
+              <p>{activeTab.description}</p>
+              <div className="ck-results-empty-note">
+                <span>{activeTab.noteTitle}</span>
+                {activeTab.notes.map((note) => (
+                  <em key={note}>{note}</em>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <button className="ck-results-empty-primary" onClick={onTriggerUpload} type="button">
+          上传图片
+        </button>
+        <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={activeTab.samples} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="ck-results-empty ck-results-empty-guide">
+      <div className="ck-results-empty-copy-shell">
+        <div className="ck-results-empty-title">{config.title}</div>
+        <div className="ck-results-empty-copy">{config.description}</div>
+      </div>
+      <div className="ck-results-empty-steps">
+        {config.steps.map((step) => (
+          <article className="ck-results-empty-step" key={step.id}>
+            <span className="ck-results-empty-step-index">{step.index}</span>
+            <strong>{step.title}</strong>
+            <p>{step.description}</p>
+            <div className="ck-results-empty-step-media">
+              <img alt={step.title} src={step.mediaSrc} />
+            </div>
+          </article>
+        ))}
+      </div>
+      <button className="ck-results-empty-primary" onClick={onTriggerUpload} type="button">
+        上传图片
+      </button>
+      <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={config.samples} />
+    </div>
+  );
+}
+
 function ResultPanel({
   collapsed,
   tool,
@@ -20335,7 +20708,9 @@ function ResultPanel({
   onExportMoreTitleTask,
   onPreviewItem,
   onEditItemText,
-  onOpenDetail
+  onOpenDetail,
+  onTriggerUpload,
+  onApplyGuideSamples
 }: {
   collapsed: boolean;
   tool: ToolConfig;
@@ -20361,8 +20736,11 @@ function ResultPanel({
   onPreviewItem: (item: ResultItem) => void;
   onEditItemText: (item: ResultItem) => void;
   onOpenDetail: (item: ResultItem) => void;
+  onTriggerUpload: (toolKey: string) => void;
+  onApplyGuideSamples: (toolKey: string, samples: ResultEmptyGuideSample[]) => void;
 }) {
   const caseCollection = useMemo(() => createCaseCollection(tool), [tool]);
+  const emptyGuideConfig = useMemo(() => createResultEmptyGuideConfig(tool), [tool]);
   const showCaseTab = !tool.key.startsWith("image-") && tool.key !== "more-title";
   const effectiveActiveTab: ResultTabKey = showCaseTab ? activeTab : "results";
   const readyItems = useMemo(() => items.filter((item) => item.status === "ready"), [items]);
@@ -20378,6 +20756,15 @@ function ResultPanel({
   const selectedSetPackTitle = selectedTask?.snapshot.advancedSelections.setPackSelectedTitle ?? "";
   const canGenerateSetPackTitles = tool.key === "set-main" && Boolean(selectedTask?.taskId) && effectiveActiveTab === "results";
   const isMoreTitleTool = tool.key === "more-title";
+  const [activeGuideTabId, setActiveGuideTabId] = useState(
+    emptyGuideConfig.mode === "switcher" ? emptyGuideConfig.tabs[0]?.id ?? "" : ""
+  );
+
+  useEffect(() => {
+    if (emptyGuideConfig.mode === "switcher") {
+      setActiveGuideTabId(emptyGuideConfig.tabs[0]?.id ?? "");
+    }
+  }, [emptyGuideConfig]);
 
   return (
     <section className={`ck-results ck-results-tool-${tool.key}`}>
@@ -20501,16 +20888,13 @@ function ResultPanel({
             task={selectedTask}
           />
         ) : showEmptyState ? (
-          <div className="ck-results-empty">
-            <div className="ck-results-empty-icon" aria-hidden="true">
-              <span className="ck-results-empty-card back" />
-              <span className="ck-results-empty-card front" />
-              <span className="ck-results-empty-badge" />
-              <span className="ck-results-empty-close" />
-            </div>
-            <div className="ck-results-empty-title">暂无生成结果</div>
-            <div className="ck-results-empty-copy">请在左侧上传并生成</div>
-          </div>
+          <ResultEmptyGuide
+            activeTabId={activeGuideTabId}
+            config={emptyGuideConfig}
+            onApplySamples={(samples) => onApplyGuideSamples(tool.key, samples)}
+            onChangeTab={setActiveGuideTabId}
+            onTriggerUpload={() => onTriggerUpload(tool.key)}
+          />
         ) : (
           <>
             <div className="ck-card-grid">
@@ -21741,6 +22125,37 @@ export const App = () => {
         remainingStorageMb: Number((current[currentUserId].remainingStorageMb + removedSizeMb).toFixed(1))
       }
     }));
+  };
+
+  const handleTriggerToolUpload = (toolKey: string) => {
+    const panel = document.querySelector(`.ck-panel-tool-${toolKey}`);
+    if (!panel) return;
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    const uploadInput = panel.querySelector<HTMLInputElement>(".ck-upload-input");
+    uploadInput?.click();
+  };
+
+  const handleApplyResultGuideSamples = (toolKey: string, samples: ResultEmptyGuideSample[]) => {
+    const fieldKey = `${toolKey}:main`;
+    const nextItems: UploadItem[] = samples.map((sample, index) => ({
+      id: `${toolKey}-guide-sample-${Date.now()}-${index}`,
+      name: `${sample.title}.png`,
+      src: sample.src,
+      previewSrc: sample.src,
+      format: "PNG",
+      sizeMb: 0,
+      status: "ready"
+    }));
+    setUploads((current) => ({
+      ...current,
+      [fieldKey]: nextItems
+    }));
+    const panel = document.querySelector(`.ck-panel-tool-${toolKey}`);
+    panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setToast({
+      id: Date.now(),
+      message: "已填入样例图"
+    });
   };
 
   const handleUploadModels = async (files: File[]) => {
@@ -23578,6 +23993,8 @@ export const App = () => {
               onRetry={handleRetryResult}
               selectedTask={currentSelectedTask}
               onTabChange={handleResultTabChange}
+              onTriggerUpload={handleTriggerToolUpload}
+              onApplyGuideSamples={handleApplyResultGuideSamples}
               onToggleItem={handleToggleResultItem}
               onToggleSelectAll={handleToggleResultSelectAll}
               onOpenDetail={(item) => handleOpenResultDetail(item, "workspace")}
