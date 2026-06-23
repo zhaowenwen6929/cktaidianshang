@@ -9209,22 +9209,18 @@ function ImageExpandModeSection({
         />
       </div>
 
-      <div className="ck-form-block ck-image-expand-compact-block">
-        <SelectField
-          label="画面位置"
-          onChange={(value) => {
-            const matched = imageExpandCanvasPositionOptions.find((option) => option.label === value) ?? imageExpandCanvasPositionOptions[4];
-            onSelectionMapChange({
-              imageExpandCanvasRatio: selectedRatio,
-              imageExpandCanvasPosition: matched.key,
-              imageExpandTargetFrame: activeTargetFrameValue
-            });
-          }}
-          options={imageExpandCanvasPositionOptions.map((option) => option.label)}
-          required
-          value={selectedPositionLabel}
-        />
-      </div>
+      <ImageExpandPositionSelect
+        onChange={(value) => {
+          const matched = imageExpandCanvasPositionOptions.find((option) => option.label === value) ?? imageExpandCanvasPositionOptions[4];
+          onSelectionMapChange({
+            imageExpandCanvasRatio: selectedRatio,
+            imageExpandCanvasPosition: matched.key,
+            imageExpandTargetFrame: activeTargetFrameValue
+          });
+        }}
+        required
+        value={selectedPositionLabel}
+      />
 
       <div className="ck-form-block ck-image-expand-frame-block">
         <SelectField
@@ -9240,6 +9236,160 @@ function ImageExpandModeSection({
           required
           value={activeTargetFrameValue}
         />
+      </div>
+
+      <ImageExpandPreviewCard canvasRatio={selectedRatio} positionKey={selectedPosition} targetFrame={activeTargetFrame} />
+    </div>
+  );
+}
+
+function ImageExpandPreviewCard({
+  canvasRatio,
+  positionKey,
+  targetFrame
+}: {
+  canvasRatio: string;
+  positionKey: string;
+  targetFrame: (typeof imageExpandTargetFrameOptions)[number];
+}) {
+  const normalizedRatioValue = Math.min(100, Math.max(20, Number.parseFloat(canvasRatio.replace("%", "")) || 85));
+  const frameMatch = targetFrame.size.match(/^(\d+)x(\d+)px$/i);
+  const frameWidth = frameMatch ? Number(frameMatch[1]) : 800;
+  const frameHeight = frameMatch ? Number(frameMatch[2]) : 800;
+  const frameAspectRatio = `${frameWidth} / ${frameHeight}`;
+  const scale = Math.min(1, Math.max(0.2, Math.sqrt(normalizedRatioValue / 100)));
+  const contentSize = `${Math.round(scale * 100)}%`;
+  const [vertical = "center", horizontal = "center"] = positionKey.split("-");
+  const justifyContent = horizontal === "left" ? "flex-start" : horizontal === "right" ? "flex-end" : "center";
+  const alignItems = vertical === "top" ? "flex-start" : vertical === "bottom" ? "flex-end" : "center";
+
+  return (
+    <div className="ck-image-expand-preview-card">
+      <div className="ck-image-expand-preview-head">
+        <strong>画面预览</strong>
+        <span>
+          {targetFrame.name} {targetFrame.size}
+        </span>
+      </div>
+      <div className="ck-image-expand-preview-shell">
+        <div className="ck-image-expand-preview-frame" style={{ aspectRatio: frameAspectRatio }}>
+          <div className="ck-image-expand-preview-stage" style={{ alignItems, justifyContent }}>
+            <div className="ck-image-expand-preview-content" style={{ width: contentSize, height: contentSize }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImageExpandPositionSelect({
+  value,
+  required,
+  onChange
+}: {
+  value: string;
+  required?: boolean;
+  onChange?: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+
+  useEffect(() => {
+    setOpen(false);
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updateMenuPlacement = () => {
+      const triggerRect = dropdownRef.current?.getBoundingClientRect();
+      if (!triggerRect) return;
+
+      const panelElement = dropdownRef.current?.closest(".ck-panel");
+      const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
+      const footerRect = footerElement?.getBoundingClientRect();
+      const lowerBoundary = footerRect ? footerRect.top - 8 : window.innerHeight - 16;
+      const upperBoundary = 16;
+      const spaceBelow = lowerBoundary - triggerRect.bottom - 6;
+      const spaceAbove = triggerRect.top - upperBoundary - 6;
+      const availableBelow = Math.max(220, Math.floor(spaceBelow));
+      const availableAbove = Math.max(220, Math.floor(spaceAbove));
+
+      const sharedStyle: CSSProperties = {
+        left: triggerRect.left,
+        width: triggerRect.width,
+        position: "fixed",
+        zIndex: 100130
+      };
+
+      if (spaceBelow < 260 && spaceAbove > spaceBelow) {
+        setOpenDirection("up");
+        setMenuStyle({
+          ...sharedStyle,
+          bottom: window.innerHeight - triggerRect.top + 6,
+          maxHeight: Math.min(320, availableAbove)
+        });
+        return;
+      }
+
+      setOpenDirection("down");
+      setMenuStyle({
+        ...sharedStyle,
+        top: triggerRect.bottom + 6,
+        maxHeight: Math.min(320, availableBelow)
+      });
+    };
+
+    updateMenuPlacement();
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", updateMenuPlacement);
+    window.addEventListener("scroll", updateMenuPlacement, true);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("resize", updateMenuPlacement);
+      window.removeEventListener("scroll", updateMenuPlacement, true);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="ck-form-block ck-image-expand-compact-block">
+      <div className="ck-inline-field">
+        <FieldTitle label="画面位置" required={required} />
+        <div className="ck-select-dropdown" ref={dropdownRef}>
+          <button className="ck-select" onClick={() => setOpen((current) => !current)} type="button">
+            {value}
+            <span>⌄</span>
+          </button>
+          {open ? (
+            <div className={`ck-select-dropdown-menu ck-image-expand-position-menu${openDirection === "up" ? " up" : ""}`} style={menuStyle}>
+              <div className="ck-image-expand-position-grid" role="group" aria-label="画面位置">
+                {imageExpandCanvasPositionOptions.map((option) => (
+                  <button
+                    className={option.label === value ? "active" : ""}
+                    key={option.key}
+                    onClick={() => {
+                      onChange?.(option.label);
+                      setOpen(false);
+                    }}
+                    title={option.label}
+                    type="button"
+                  >
+                    <span aria-hidden="true">{option.icon}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
