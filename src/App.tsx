@@ -498,6 +498,11 @@ type ResultEmptyGuideSample = {
   src: string;
 };
 
+type ResultEmptyGuideNotice = {
+  title: string;
+  items: string[];
+};
+
 type ResultEmptyGuideTab = {
   id: string;
   label: string;
@@ -507,6 +512,7 @@ type ResultEmptyGuideTab = {
   noteTitle: string;
   notes: string[];
   samples: ResultEmptyGuideSample[];
+  notice?: ResultEmptyGuideNotice;
 };
 
 type ResultEmptyGuideStep = {
@@ -526,6 +532,7 @@ type ResultEmptyGuideConfig =
       uploadHint: string;
       heroSrc: string;
       samples: ResultEmptyGuideSample[];
+      notice?: ResultEmptyGuideNotice;
     }
   | {
       mode: "simple-hero";
@@ -533,12 +540,14 @@ type ResultEmptyGuideConfig =
       description: string;
       heroSrc: string;
       samples: ResultEmptyGuideSample[];
+      notice?: ResultEmptyGuideNotice;
     }
   | {
       mode: "switcher";
       title: string;
       description: string;
       tabs: ResultEmptyGuideTab[];
+      notice?: ResultEmptyGuideNotice;
     }
   | {
       mode: "steps";
@@ -546,6 +555,7 @@ type ResultEmptyGuideConfig =
       description: string;
       steps: ResultEmptyGuideStep[];
       samples: ResultEmptyGuideSample[];
+      notice?: ResultEmptyGuideNotice;
     };
 
 type CreationModeOption = {
@@ -1417,7 +1427,11 @@ const createResultEmptyGuideConfig = (tool: ToolConfig): ResultEmptyGuideConfig 
             { id: "set-fashion-sample-1", title: "上衣示例", src: resultEmptyGuideAssetSets.model[0] },
             { id: "set-fashion-sample-2", title: "外套示例", src: resultEmptyGuideAssetSets.model[1] },
             { id: "set-fashion-sample-3", title: "裤装示例", src: resultEmptyGuideAssetSets.model[2] }
-          ]
+          ],
+          notice: {
+            title: "温馨提示",
+            items: ["上传清晰平整的服装平铺图", "图片内只展示单件服装", "服装在图内占比尽可能大", "优先选择同品类模特参考图"]
+          }
         },
         {
           id: "fashion-look",
@@ -1431,7 +1445,11 @@ const createResultEmptyGuideConfig = (tool: ToolConfig): ResultEmptyGuideConfig 
             { id: "set-fashion-look-1", title: "通勤风", src: resultEmptyGuideAssetSets.model[1] },
             { id: "set-fashion-look-2", title: "休闲风", src: resultEmptyGuideAssetSets.model[2] },
             { id: "set-fashion-look-3", title: "棚拍风", src: resultEmptyGuideAssetSets.model[0] }
-          ]
+          ],
+          notice: {
+            title: "温馨提示",
+            items: ["建议补充服饰风格和场景需求", "上传主体清晰的服饰图更稳定", "避免服饰被手部或道具遮挡", "可优先选择同风格样图尝试"]
+          }
         }
       ]
     };
@@ -21063,9 +21081,11 @@ function ConfigPanel({
 
 function ResultEmptyGuideSampleStrip({
   samples,
+  notice,
   onApplySamples
 }: {
   samples: ResultEmptyGuideSample[];
+  notice?: ResultEmptyGuideNotice;
   onApplySamples: (samples: ResultEmptyGuideSample[]) => void;
 }) {
   return (
@@ -21081,6 +21101,19 @@ function ResultEmptyGuideSampleStrip({
           </button>
         ))}
       </div>
+      {notice?.items.length ? (
+        <div className="ck-results-empty-notice">
+          <div className="ck-results-empty-notice-head">
+            <span className="ck-results-empty-notice-icon">!</span>
+            <strong>{notice.title}</strong>
+          </div>
+          <ol>
+            {notice.items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -21112,7 +21145,7 @@ function ResultEmptyGuide({
           <div className="ck-results-empty-copy">{config.description}</div>
           <div className="ck-results-empty-hint">{config.uploadHint}</div>
         </div>
-        <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={config.samples} />
+        <ResultEmptyGuideSampleStrip notice={config.notice} onApplySamples={onApplySamples} samples={config.samples} />
       </div>
     );
   }
@@ -21127,7 +21160,7 @@ function ResultEmptyGuide({
         <div className="ck-results-empty-hero">
           <img alt={config.title} src={config.heroSrc} />
         </div>
-        <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={config.samples} />
+        <ResultEmptyGuideSampleStrip notice={config.notice} onApplySamples={onApplySamples} samples={config.samples} />
       </div>
     );
   }
@@ -21167,7 +21200,7 @@ function ResultEmptyGuide({
         <button className="ck-results-empty-primary" onClick={onTriggerUpload} type="button">
           上传图片
         </button>
-        <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={activeTab.samples} />
+        <ResultEmptyGuideSampleStrip notice={activeTab.notice ?? config.notice} onApplySamples={onApplySamples} samples={activeTab.samples} />
       </div>
     );
   }
@@ -21192,7 +21225,7 @@ function ResultEmptyGuide({
       <button className="ck-results-empty-primary" onClick={onTriggerUpload} type="button">
         上传图片
       </button>
-      <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={config.samples} />
+      <ResultEmptyGuideSampleStrip notice={config.notice} onApplySamples={onApplySamples} samples={config.samples} />
     </div>
   );
 }

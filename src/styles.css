@@ -7425,6 +7425,55 @@ a {
   line-height: 16px;
 }
 
+.ck-results-empty-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f2f5fa;
+  color: #4b5565;
+}
+
+.ck-results-empty-notice-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ck-results-empty-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ff8a1f;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.ck-results-empty-notice-head strong {
+  color: #4b5565;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.ck-results-empty-notice ol {
+  margin: 0;
+  padding-left: 22px;
+  color: #4b5565;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.ck-results-empty-notice li + li {
+  margin-top: 2px;
+}
+
 .ck-case-panel {
   display: flex;
   flex-direction: column;
