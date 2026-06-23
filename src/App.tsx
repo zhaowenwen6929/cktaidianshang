@@ -8607,7 +8607,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "video-main": {
     creationModeConfigKey: "video-main",
-    sectionOrder: ["upload-main", "video-replica-setup", "video-main-script-setup"],
+    sectionOrder: ["upload-main", "set-pack-selling-points", "set-pack-strategy", "video-replica-setup", "video-main-script-setup"],
     uploads: {
       main: {
         label: "上传商品图",
@@ -14406,6 +14406,8 @@ function VideoReplicaSetupSection({
   const [sound, setSound] = useState<string>(normalizeSoundOption(selectedValues?.videoReplicaHasSound));
   const lastSyncedValuesRef = useRef("");
   const lastEmitRef = useRef("");
+  const isVideoMainTool = toolKey === "video-main";
+  const modeOptions = isVideoMainTool ? ["爆款类型", "视频脚本"] : [...videoReplicaModeOptions];
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
@@ -14455,27 +14457,46 @@ function VideoReplicaSetupSection({
 
   return (
     <div className="ck-creation-mode">
-      <SegmentedField
-        label="创作模式"
-        onChange={(index) => setMode(videoReplicaModeOptions[index] ?? "普通模式")}
-        options={[...videoReplicaModeOptions]}
-        required
-        selected={videoReplicaModeOptions.findIndex((option) => option === mode)}
-      />
+      {isVideoMainTool ? (
+        <div className="ck-form-block">
+          <div className="ck-switch" style={{ gridTemplateColumns: `repeat(${modeOptions.length}, 1fr)` }}>
+            {modeOptions.map((option, index) => (
+              <button
+                className={index === videoReplicaModeOptions.findIndex((item) => item === mode) ? "active" : ""}
+                key={option}
+                onClick={() => setMode(videoReplicaModeOptions[index] ?? "普通模式")}
+                type="button"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <SegmentedField
+            label="创作模式"
+            onChange={(index) => setMode(videoReplicaModeOptions[index] ?? "普通模式")}
+            options={modeOptions}
+            required
+            selected={videoReplicaModeOptions.findIndex((option) => option === mode)}
+          />
 
-      <SelectField label="视频时长" onChange={setDuration} options={videoReplicaDurationOptions} required value={duration} />
+          <SelectField label="视频时长" onChange={setDuration} options={videoReplicaDurationOptions} required value={duration} />
 
-      <SelectField label="视频比例" onChange={setRatio} options={videoReplicaRatioOptions} required value={ratio} />
+          <SelectField label="视频比例" onChange={setRatio} options={videoReplicaRatioOptions} required value={ratio} />
 
-      <CountField label="视频分辨率" onChange={setResolution} options={videoReplicaResolutionOptions} required value={resolution} />
+          <CountField label="视频分辨率" onChange={setResolution} options={videoReplicaResolutionOptions} required value={resolution} />
 
-      <SelectField
-        label="视频声音"
-        onChange={(value) => setSound(normalizeSoundOption(value))}
-        options={soundOptions}
-        required
-        value={sound}
-      />
+          <SelectField
+            label="视频声音"
+            onChange={(value) => setSound(normalizeSoundOption(value))}
+            options={soundOptions}
+            required
+            value={sound}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -20116,7 +20137,7 @@ function ConfigPanel({
       );
     }
 
-    if (section === "set-pack-strategy" && isSetPackLikeTool(tool.key)) {
+    if (section === "set-pack-strategy" && (isSetPackLikeTool(tool.key) || tool.key === "video-main")) {
       return (
         <SetPackStrategySection
           onSelectionChange={setAdvancedSettingValues}
@@ -20135,7 +20156,7 @@ function ConfigPanel({
       );
     }
 
-    if (section === "set-pack-selling-points" && isSetPackLikeTool(tool.key)) {
+    if (section === "set-pack-selling-points" && (isSetPackLikeTool(tool.key) || tool.key === "video-main")) {
       return (
         <SetPackSellingPointsSection
           onSelectionChange={(values) => {
