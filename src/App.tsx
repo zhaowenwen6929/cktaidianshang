@@ -22489,7 +22489,7 @@ export const App = () => {
 
     setResultTabsByTool((current) => ({
       ...current,
-      [activeTool]: "cases"
+      [activeTool]: "results"
     }));
   }, [activePage, activeTool, resultItemsByTool]);
 
