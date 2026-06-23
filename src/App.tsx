@@ -10077,10 +10077,6 @@ function ImageExpandRatioSelect({
   const displayValue = isPresetRatio ? value : customInputValue ? `${customInputValue}%` : "自定义";
 
   useEffect(() => {
-    setOpen(false);
-  }, [value]);
-
-  useEffect(() => {
     if (!open) return;
 
     const updateMenuPlacement = () => {
@@ -10178,11 +10174,16 @@ function ImageExpandRatioSelect({
                 >
                   自定义
                 </button>
-                <div className="ck-image-expand-ratio-custom-input">
+                <div
+                  className="ck-image-expand-ratio-custom-input"
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
                   <input
                     inputMode="numeric"
                     max={100}
                     min={1}
+                    onClick={(event) => event.stopPropagation()}
                     onChange={(event) => {
                       const digits = event.target.value.replace(/[^\d]/g, "");
                       if (!digits) {
@@ -10192,6 +10193,7 @@ function ImageExpandRatioSelect({
                       const nextValue = Math.min(100, Math.max(1, Number(digits)));
                       onChange?.(`${nextValue}%`);
                     }}
+                    onKeyDown={(event) => event.stopPropagation()}
                     placeholder="15"
                     value={customInputValue}
                   />
@@ -10318,13 +10320,19 @@ function ImageExpandFrameSelect({
                   </button>
                 ))}
               </div>
-              <div className="ck-image-expand-frame-custom-bar">
+              <div
+                className="ck-image-expand-frame-custom-bar"
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
                 <div className="ck-image-expand-frame-custom-input">
                   <input
                     inputMode="numeric"
                     max={99999}
                     min={1}
+                    onClick={(event) => event.stopPropagation()}
                     onChange={(event) => setCustomWidth(event.target.value.replace(/[^\d]/g, ""))}
+                    onKeyDown={(event) => event.stopPropagation()}
                     placeholder="宽"
                     value={customWidth}
                   />
@@ -10335,7 +10343,9 @@ function ImageExpandFrameSelect({
                     inputMode="numeric"
                     max={99999}
                     min={1}
+                    onClick={(event) => event.stopPropagation()}
                     onChange={(event) => setCustomHeight(event.target.value.replace(/[^\d]/g, ""))}
+                    onKeyDown={(event) => event.stopPropagation()}
                     placeholder="高"
                     value={customHeight}
                   />
