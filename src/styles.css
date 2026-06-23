@@ -4550,15 +4550,16 @@ a {
 
 .ck-image-expand-frame-block .ck-select-dropdown-menu button {
   height: auto;
-  min-height: 44px;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  min-height: 30px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 .ck-image-expand-frame-option-label {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -4566,12 +4567,14 @@ a {
   color: #1b2337;
   font-size: 12px;
   line-height: 18px;
+  white-space: nowrap;
 }
 
 .ck-image-expand-frame-option-label span:last-child {
   color: #6f7b92;
   font-size: 12px;
   line-height: 18px;
+  white-space: nowrap;
 }
 
 .ck-image-expand-position-menu {

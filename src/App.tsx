@@ -6565,7 +6565,7 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
     supplementLabel: "扩展画面描述",
     supplementPlaceholder:
       "扩展画面描述，例如：向左右延展客厅背景并保留自然留白；补充桌面、墙面、窗景等环境元素；保持原商品材质、光影和透视一致；整体氛围更干净、更高级、更适合电商展示。",
-    supplementMaxLength: 2000,
+    supplementMaxLength: 500,
     modes: [
       {
         id: "normal",
@@ -19450,7 +19450,7 @@ function ConfigPanel({
           <SupplementField
             aiPolishConfig={supplementAiPolishConfig}
             formBlockClassName={supplementFormBlockClassName}
-            label={tool.key === "image-expand" ? undefined : creationModeConfig.supplementLabel}
+            label={tool.key === "image-expand" ? "扩展画面描述" : creationModeConfig.supplementLabel}
             maxLength={creationModeConfig.supplementMaxLength}
             onAiPolish={(value) =>
               onSupplementAiPolish(tool.key, value, {
