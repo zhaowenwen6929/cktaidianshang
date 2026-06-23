@@ -853,6 +853,7 @@ type ToolModuleSectionKey =
   | "video-style-print-setup"
   | "video-2d3d-setup"
   | "video-clarify-resolution"
+  | "video-translate-mode"
   | "creation-mode"
   | "supplement"
   | "mode-choice"
@@ -3343,6 +3344,23 @@ const VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST = 5;
 const defaultResolutionOptions = ["1K", "2K", "4K"];
 const videoClarifyResolutionOptions = ["原画增强", "2K", "4K"] as const;
 const videoOnlyToolKeys = ["video-clarify", "video-watermark", "video-translate", "video-remove-bg"] as const;
+const videoTranslateModeCards = [
+  {
+    key: "翻译视频语音",
+    label: "翻译视频语音",
+    description: "识别视频语音内容为字幕"
+  },
+  {
+    key: "翻译视频文字、字幕",
+    label: "翻译视频文字、字幕",
+    description: "仅翻译视频中的文字及字幕内容"
+  },
+  {
+    key: "提取语音字幕",
+    label: "提取语音字幕",
+    description: "仅将视频语音翻译成字幕"
+  }
+] as const;
 const podCropModeOptions = [
   { key: "通用", label: "通用" },
   { key: "铁皮画", label: "铁皮画" },
@@ -7894,7 +7912,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "video-watermark": {
     creationModeConfigKey: "video-processing",
-    sectionOrder: ["upload-video", "supplement"],
+    sectionOrder: ["upload-video", "mode-choice", "mask-draw", "supplement"],
     uploads: {
       main: {
         label: "上传素材",
@@ -7914,7 +7932,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "video-translate": {
     creationModeConfigKey: "video-processing",
-    sectionOrder: ["upload-video", "target-language", "supplement"],
+    sectionOrder: ["upload-video", "video-translate-mode", "target-language", "supplement"],
     uploads: {
       main: {
         label: "上传素材",
@@ -7934,7 +7952,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "video-remove-bg": {
     creationModeConfigKey: "video-processing",
-    sectionOrder: ["upload-video", "supplement"],
+    sectionOrder: ["upload-video"],
     uploads: {
       main: {
         label: "上传素材",
@@ -11662,6 +11680,58 @@ function VideoClarifyResolutionSection({
       required
       value={resolution}
     />
+  );
+}
+
+function VideoTranslateModeSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const defaultMode = selectedValues?.videoTranslateMode ?? videoTranslateModeCards[0].key;
+  const [mode, setMode] = useState(defaultMode);
+
+  useEffect(() => {
+    if (selectedValues?.videoTranslateMode && selectedValues.videoTranslateMode !== mode) {
+      setMode(selectedValues.videoTranslateMode);
+    }
+  }, [mode, selectedValues]);
+
+  useEffect(() => {
+    onSelectionMapChange?.({ videoTranslateMode: mode });
+    onSelectionChange?.([mode]);
+    onCreationModeChange?.({
+      modeId: "video-translate",
+      modeLabel: mode,
+      ratio: "原视频比例",
+      count: 1,
+      unitCreditCost: 1
+    });
+  }, [mode, onCreationModeChange, onSelectionChange, onSelectionMapChange]);
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="选择模式" required />
+      <div className="ck-aplus-module-grid">
+        {videoTranslateModeCards.map((option) => (
+          <button
+            className={`ck-aplus-module-card${mode === option.key ? " active" : ""}`}
+            key={option.key}
+            onClick={() => setMode(option.key)}
+            type="button"
+          >
+            <strong>{option.label}</strong>
+            <span>{option.description}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -16275,6 +16345,108 @@ function WatermarkModeSection({
   );
 }
 
+function VideoWatermarkModeSection({
+  selectedValues,
+  uploads,
+  onSelectionChange,
+  onSelectionMapChange,
+  onToast,
+  onCreationModeChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  uploads: UploadItem[];
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onToast: (message: string, tone?: "warning") => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
+  const isManualSupported = uploads.length <= 1;
+  const autoOptions = ["智能识别", "水印", "字幕"] as const;
+  const [mode, setMode] = useState<"smart" | "manual">(selectedValues?.videoWatermarkModeKey === "manual" ? "manual" : "smart");
+  const [autoTarget, setAutoTarget] = useState<string>(selectedValues?.videoWatermarkAutoTarget ?? autoOptions[0]);
+
+  useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+    const nextMode = selectedValues?.videoWatermarkModeKey === "manual" ? "manual" : "smart";
+    const nextAutoTarget = selectedValues?.videoWatermarkAutoTarget ?? autoOptions[0];
+    const nextSignature = JSON.stringify({ videoWatermarkModeKey: nextMode, videoWatermarkAutoTarget: nextAutoTarget });
+    if (nextSignature === lastSelectedValuesSignatureRef.current) return;
+    lastSelectedValuesSignatureRef.current = nextSignature;
+    setMode((current) => (current === nextMode ? current : nextMode));
+    setAutoTarget((current) => (current === nextAutoTarget ? current : nextAutoTarget));
+  }, [selectedValues]);
+
+  useEffect(() => {
+    if (mode === "manual" && !isManualSupported) {
+      setMode("smart");
+    }
+  }, [isManualSupported, mode]);
+
+  useEffect(() => {
+    const modeLabel = mode === "manual" ? "手动绘制蒙版" : "自动识别";
+    const nextMap: AdvancedSelectionMap = {
+      videoWatermarkModeKey: mode,
+      videoWatermarkMode: modeLabel
+    };
+    if (mode === "smart") {
+      nextMap.videoWatermarkAutoTarget = autoTarget;
+    }
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({
+      videoWatermarkModeKey: mode,
+      videoWatermarkAutoTarget: mode === "smart" ? autoTarget : ""
+    });
+    onSelectionMapChange?.(nextMap);
+    onSelectionChange?.([modeLabel, mode === "smart" ? autoTarget : ""].filter(Boolean));
+    onCreationModeChange?.({
+      modeId: "video-watermark",
+      modeLabel: mode === "smart" ? `${modeLabel}·${autoTarget}` : modeLabel,
+      ratio: "原视频比例",
+      count: 1,
+      unitCreditCost: 1
+    });
+  }, [autoTarget, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange]);
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="选择模式" required />
+      <div className="ck-mini-switch ck-adaptive-segmented full" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+        <button className={mode === "smart" ? "active" : ""} onClick={() => setMode("smart")} type="button">
+          自动
+        </button>
+        <button
+          className={mode === "manual" ? "active" : ""}
+          onClick={() => {
+            if (!isManualSupported) {
+              onToast("手动绘制蒙版仅支持单个视频，请只保留1个后再使用", "warning");
+              return;
+            }
+            setMode("manual");
+          }}
+          type="button"
+        >
+          手动
+        </button>
+      </div>
+      {mode === "smart" ? (
+        <AdaptiveChoiceField
+          columns={3}
+          label=""
+          onChange={setAutoTarget}
+          options={autoOptions.map((option) => ({ key: option, label: option }))}
+          required
+          value={autoTarget}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function UpscaleResolutionSection({
   selectedValues,
   onSelectionChange,
@@ -16632,6 +16804,7 @@ function MaskDrawSection({
   selectedValues,
   maskKey,
   helperText,
+  mediaLabel = "图片",
   singleUploadOnly = false,
   onSelectionChange,
   onSelectionMapChange,
@@ -16643,6 +16816,7 @@ function MaskDrawSection({
   selectedValues?: AdvancedSelectionMap;
   maskKey: string;
   helperText?: string;
+  mediaLabel?: string;
   singleUploadOnly?: boolean;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
@@ -16650,14 +16824,15 @@ function MaskDrawSection({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const maskDataUrl = typeof selectedValues?.[maskKey] === "string" ? selectedValues[maskKey] : "";
-  const primaryImage = uploads[0]?.previewSrc || uploads[0]?.src || "/assets/upload-preview.png";
+  const primaryImage =
+    uploads[0]?.mediaKind === "video" ? "/assets/upload-preview.png" : uploads[0]?.previewSrc || uploads[0]?.src || "/assets/upload-preview.png";
   const openMaskEditor = () => {
     if (!uploads.length) {
-      onToast("请先上传图片后再绘制蒙版", "warning");
+      onToast(`请先上传${mediaLabel}后再绘制蒙版`, "warning");
       return;
     }
     if (singleUploadOnly && uploads.length !== 1) {
-      onToast("手动涂抹仅支持单张图片，请只保留1张后再使用", "warning");
+      onToast(`手动涂抹仅支持单个${mediaLabel}，请只保留1个后再使用`, "warning");
       return;
     }
     setIsOpen(true);
@@ -20507,6 +20682,26 @@ function ConfigPanel({
       );
     }
 
+    if (section === "video-translate-mode" && tool.key === "video-translate") {
+      return (
+        <VideoTranslateModeSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["videoTranslateMode"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
     if (section === "pod-extract-setup" && tool.key === "pod-extract") {
       return (
         <PodExtractSetupSection
@@ -20930,6 +21125,28 @@ function ConfigPanel({
       );
     }
 
+    if (section === "mode-choice" && tool.key === "video-watermark") {
+      return (
+        <VideoWatermarkModeSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["videoWatermarkModeKey", "videoWatermarkMode", "videoWatermarkAutoTarget"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+          uploads={uploads[videoUploadKey] ?? []}
+        />
+      );
+    }
+
     if (section === "image-upscale-resolution" && tool.key === "image-upscale") {
       return (
         <UpscaleResolutionSection
@@ -21010,6 +21227,36 @@ function ConfigPanel({
           selectedValues={advancedSettingSelections}
           singleUploadOnly
           uploads={uploads[mainUploadKey] ?? []}
+        />
+      );
+    }
+
+    if (section === "mask-draw" && tool.key === "video-watermark") {
+      if (advancedSettingSelections.videoWatermarkModeKey !== "manual") {
+        return null;
+      }
+      return (
+        <MaskDrawSection
+          buttonText="开始绘制"
+          helperText="仅支持单个视频。先基于视频封面帧绘制需要处理的区域，再执行去水印或去字幕。"
+          maskKey="videoWatermarkMaskDataUrl"
+          mediaLabel="视频"
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["videoWatermarkMaskDataUrl"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          onToast={onToast}
+          selectedValues={advancedSettingSelections}
+          singleUploadOnly
+          title="绘制蒙版"
+          uploads={uploads[videoUploadKey] ?? []}
         />
       );
     }
