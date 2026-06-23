@@ -10087,6 +10087,7 @@ function ImageExpandRatioSelect({
     const updateMenuPlacement = () => {
       const triggerRect = dropdownRef.current?.getBoundingClientRect();
       if (!triggerRect) return;
+      const menuWidth = Math.max(triggerRect.width, 176);
 
       const panelElement = dropdownRef.current?.closest(".ck-panel");
       const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
@@ -10100,7 +10101,7 @@ function ImageExpandRatioSelect({
 
       const sharedStyle: CSSProperties = {
         left: triggerRect.left,
-        width: triggerRect.width,
+        width: menuWidth,
         position: "fixed",
         zIndex: 100130
       };

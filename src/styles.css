@@ -4584,7 +4584,7 @@ a {
 }
 
 .ck-image-expand-ratio-menu {
-  width: 120px !important;
+  width: 176px !important;
   max-height: none !important;
 }
 
@@ -4593,17 +4593,25 @@ a {
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
   padding: 6px 8px 2px;
   border-radius: 8px;
+  box-sizing: border-box;
 }
 
-.ck-image-expand-ratio-custom-trigger {
+.ck-image-expand-ratio-custom-row > .ck-image-expand-ratio-custom-trigger {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  height: auto;
   border: 0;
   padding: 0;
   background: transparent;
   color: inherit;
   font-size: 12px;
   line-height: 18px;
+  text-align: left;
   white-space: nowrap;
 }
 
@@ -4624,10 +4632,13 @@ a {
 }
 
 .ck-image-expand-ratio-custom-input {
+  flex: 0 0 72px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   width: 72px;
+  min-width: 72px;
+  margin-left: 0;
   height: 28px;
   padding: 0 8px;
   border: 1px solid #d9e0ef;
@@ -4640,6 +4651,7 @@ a {
 }
 
 .ck-image-expand-ratio-custom-input input {
+  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   border: 0;
@@ -4746,12 +4758,15 @@ a {
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) minmax(72px, auto);
   align-items: center;
   gap: 8px;
   padding: 12px 10px;
   border-top: 1px solid #ebeef5;
   background: #fff;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .ck-image-expand-frame-custom-bar > span {
@@ -4762,16 +4777,18 @@ a {
 }
 
 .ck-image-expand-frame-custom-input {
-  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   height: 36px;
   padding: 0 14px;
   border-radius: 10px;
   background: #f5f7fd;
+  box-sizing: border-box;
 }
 
 .ck-image-expand-frame-custom-input input {
+  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   border: 0;
@@ -4788,7 +4805,7 @@ a {
 }
 
 .ck-image-expand-frame-custom-confirm {
-  flex: 0 0 auto;
+  min-width: 72px;
   height: 36px;
   padding: 0 14px;
   border: 0;
@@ -4798,6 +4815,7 @@ a {
   font-size: 13px;
   line-height: 20px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .ck-image-expand-frame-custom-confirm:disabled {
