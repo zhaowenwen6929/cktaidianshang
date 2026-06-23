@@ -9235,6 +9235,7 @@ function ImageExpandModeSection({
 
       <div className="ck-form-block ck-image-expand-frame-block">
         <SelectField
+          fullWidth
           label="目标画幅"
           onChange={(value) =>
             onSelectionMapChange({
