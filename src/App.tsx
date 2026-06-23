@@ -852,6 +852,7 @@ type ToolModuleSectionKey =
   | "video-print-extend-setup"
   | "video-style-print-setup"
   | "video-2d3d-setup"
+  | "video-clarify-resolution"
   | "creation-mode"
   | "supplement"
   | "mode-choice"
@@ -3340,7 +3341,7 @@ const videoPrintExtendBaseRatioOptions = ["1:1", "1:2", "2:1", "2:3", "3:2", "3:
 const videoPrintExtendOutputCountOptions = ["1", "2", "3", "4"] as const;
 const VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST = 5;
 const defaultResolutionOptions = ["1K", "2K", "4K"];
-const videoClarifyResolutionOptions = ["原画质增强", "720p", "1080p", "2K"] as const;
+const videoClarifyResolutionOptions = ["原画增强", "2K", "4K"] as const;
 const videoOnlyToolKeys = ["video-clarify", "video-watermark", "video-translate", "video-remove-bg"] as const;
 const podCropModeOptions = [
   { key: "通用", label: "通用" },
@@ -3822,6 +3823,16 @@ const videoMainScriptModeOptions = [
   { key: "ai-script", label: "AI生成脚本" },
   { key: "custom-script", label: "自定义脚本" }
 ];
+const videoMainHotTypeOptions = [
+  "UGC 种草",
+  "带货短剧🔥",
+  "产品演示",
+  "产品口播",
+  "TVC广告",
+  "痛点解决",
+  "开箱种草",
+  "反应展示"
+] as const;
 const spokespersonInteractionOptions = ["穿戴展示", "手持展示", "使用状态展示", "推荐代言", "产品静置人物出现", "身体局部展示"];
 const spokespersonCharacterOptions = [
   "明星气质",
@@ -7863,7 +7874,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "video-clarify": {
     creationModeConfigKey: "video-clarify",
-    sectionOrder: ["upload-video", "creation-mode"],
+    sectionOrder: ["upload-video", "video-clarify-resolution"],
     uploads: {
       main: {
         label: "上传素材",
@@ -11609,6 +11620,51 @@ function PodCropModeSection({
   return <AdaptiveChoiceField label="选择模式" onChange={setMode} options={podCropModeOptions} required value={mode} />;
 }
 
+function VideoClarifyResolutionSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange,
+  onCreationModeChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onCreationModeChange?: (selection: CreationModeSelection) => void;
+}) {
+  const defaultResolution = selectedValues?.videoClarifyResolution ?? videoClarifyResolutionOptions[0];
+  const [resolution, setResolution] = useState(defaultResolution);
+
+  useEffect(() => {
+    if (selectedValues?.videoClarifyResolution && selectedValues.videoClarifyResolution !== resolution) {
+      setResolution(selectedValues.videoClarifyResolution);
+    }
+  }, [resolution, selectedValues]);
+
+  useEffect(() => {
+    onSelectionChange?.([resolution]);
+    onSelectionMapChange?.({ videoClarifyResolution: resolution });
+    onCreationModeChange?.({
+      modeId: "video-clarify",
+      modeLabel: resolution,
+      ratio: "原视频比例",
+      resolution,
+      count: 1,
+      unitCreditCost: 1
+    });
+  }, [onCreationModeChange, onSelectionChange, onSelectionMapChange, resolution]);
+
+  return (
+    <AdaptiveChoiceField
+      columns={3}
+      label="分辨率"
+      onChange={setResolution}
+      options={videoClarifyResolutionOptions.map((option) => ({ key: option, label: option }))}
+      required
+      value={resolution}
+    />
+  );
+}
+
 function PodExtractSetupSection({
   selectedValues,
   onSelectionChange,
@@ -14408,10 +14464,12 @@ function VideoReplicaSetupSection({
   const lastEmitRef = useRef("");
   const isVideoMainTool = toolKey === "video-main";
   const modeOptions = isVideoMainTool ? ["爆款类型", "视频脚本"] : [...videoReplicaModeOptions];
+  const [videoMainType, setVideoMainType] = useState(selectedValues?.videoMainType ?? videoMainHotTypeOptions[0]);
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
       mode: selectedValues?.videoReplicaMode ?? "普通模式",
+      videoMainType: selectedValues?.videoMainType ?? videoMainHotTypeOptions[0],
       duration: selectedValues?.videoReplicaDuration ?? "10s",
       ratio: selectedValues?.videoReplicaRatio ?? "竖9:16",
       resolution: selectedValues?.videoReplicaResolution ?? "480p",
@@ -14424,6 +14482,7 @@ function VideoReplicaSetupSection({
 
     lastSyncedValuesRef.current = nextSyncKey;
     setMode(defaultMode);
+    setVideoMainType(selectedValues?.videoMainType ?? videoMainHotTypeOptions[0]);
     setDuration(selectedValues?.videoReplicaDuration ?? "10s");
     setRatio(selectedValues?.videoReplicaRatio ?? "竖9:16");
     setResolution(selectedValues?.videoReplicaResolution ?? "480p");
@@ -14438,7 +14497,10 @@ function VideoReplicaSetupSection({
       videoReplicaResolution: resolution,
       videoReplicaHasSound: sound
     };
-    const nextSelectionValues = [mode, duration, ratio, resolution, sound];
+    if (isVideoMainTool && mode === "普通模式" && videoMainType) {
+      nextMap.videoMainType = videoMainType;
+    }
+    const nextSelectionValues = [mode, isVideoMainTool && mode === "普通模式" ? videoMainType : "", duration, ratio, resolution, sound].filter(Boolean);
     const nextCreationModeSelection: CreationModeSelection = {
       modeId: mode === "高级模式" ? "video-replica-advanced" : "video-replica-normal",
       modeLabel: mode,
@@ -14453,25 +14515,47 @@ function VideoReplicaSetupSection({
     onSelectionMapChange?.(nextMap);
     onSelectionChange?.(nextSelectionValues);
     onCreationModeChange?.(nextCreationModeSelection);
-  }, [duration, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution, sound]);
+  }, [duration, isVideoMainTool, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution, sound, videoMainType]);
 
   return (
     <div className="ck-creation-mode">
       {isVideoMainTool ? (
-        <div className="ck-form-block">
-          <div className="ck-switch" style={{ gridTemplateColumns: `repeat(${modeOptions.length}, 1fr)` }}>
-            {modeOptions.map((option, index) => (
-              <button
-                className={index === videoReplicaModeOptions.findIndex((item) => item === mode) ? "active" : ""}
-                key={option}
-                onClick={() => setMode(videoReplicaModeOptions[index] ?? "普通模式")}
-                type="button"
-              >
-                {option}
-              </button>
-            ))}
+        <>
+          <div className="ck-form-block">
+            <div className="ck-switch" style={{ gridTemplateColumns: `repeat(${modeOptions.length}, 1fr)` }}>
+              {modeOptions.map((option, index) => (
+                <button
+                  className={index === videoReplicaModeOptions.findIndex((item) => item === mode) ? "active" : ""}
+                  key={option}
+                  onClick={() => setMode(videoReplicaModeOptions[index] ?? "普通模式")}
+                  type="button"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+          {mode === "普通模式" ? (
+            <div className="ck-form-block">
+              <FieldTitle label="爆款类型" required />
+              <div className="ck-aplus-module-grid">
+                {videoMainHotTypeOptions.map((option) => {
+                  const selected = option === videoMainType;
+                  return (
+                    <button
+                      className={`ck-aplus-module-card${selected ? " active" : ""}`}
+                      key={option}
+                      onClick={() => setVideoMainType(option)}
+                      type="button"
+                    >
+                      <strong>{option}</strong>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </>
       ) : (
         <>
           <SegmentedField
@@ -20403,6 +20487,26 @@ function ConfigPanel({
       );
     }
 
+    if (section === "video-clarify-resolution" && tool.key === "video-clarify") {
+      return (
+        <VideoClarifyResolutionSection
+          onCreationModeChange={setCreationModeSelection}
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["videoClarifyResolution"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
     if (section === "pod-extract-setup" && tool.key === "pod-extract") {
       return (
         <PodExtractSetupSection
@@ -20684,6 +20788,9 @@ function ConfigPanel({
     }
 
     if (section === "video-main-script-setup" && tool.key === "video-main") {
+      if (advancedSettingSelections.videoReplicaMode !== "高级模式") {
+        return null;
+      }
       return (
         <VideoMainScriptSetupSection
           onSelectionChange={setAdvancedSettingValues}

@@ -28,19 +28,14 @@ export const videoMainScriptFieldConfigs: VideoMainScriptFieldConfig[] = [
     key: "videoMainType",
     label: "视频类型",
     options: [
-      "智能匹配",
-      "电商主图视频",
-      "口播/评测讲解",
-      "场景种草",
-      "品牌形象大片",
-      "主体/细节展示",
-      "穿搭/佩戴展示",
-      "使用教程",
-      "品牌匠心",
-      "活动促销",
+      "UGC 种草",
+      "带货短剧🔥",
+      "产品演示",
+      "产品口播",
+      "TVC广告",
       "痛点解决",
-      "沉浸式开箱",
-      "达人Vlog种草"
+      "开箱种草",
+      "反应展示"
     ],
     prompt: "按商品属性与营销目标匹配最合适的视频内容类型。",
     aiKeywords: ["开箱", "测评", "展示", "场景", "教程", "直播"]
