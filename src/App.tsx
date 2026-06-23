@@ -9181,6 +9181,16 @@ function ImageExpandModeSection({
   const activeTargetFrame =
     imageExpandTargetFrameOptions.find((option) => `${option.name} ${option.size}` === selectedMap.imageExpandTargetFrame) ?? imageExpandTargetFrameOptions[0];
   const activeTargetFrameValue = `${activeTargetFrame.name} ${activeTargetFrame.size}`;
+  const renderTargetFrameLabel = (option: string) => {
+    const matched = imageExpandTargetFrameOptions.find((item) => `${item.name} ${item.size}` === option);
+    if (!matched) return option;
+    return (
+      <span className="ck-image-expand-frame-option-label">
+        <span>{matched.name}</span>
+        <span>{matched.size}</span>
+      </span>
+    );
+  };
 
   return (
     <div className="ck-image-expand-settings">
@@ -9233,6 +9243,7 @@ function ImageExpandModeSection({
             })
           }
           options={imageExpandTargetFrameOptions.map((option) => `${option.name} ${option.size}`)}
+          renderOptionLabel={renderTargetFrameLabel}
           required
           value={activeTargetFrameValue}
         />
@@ -9405,6 +9416,7 @@ function SelectField({
   width,
   className,
   options,
+  renderOptionLabel,
   onChange
 }: {
   label: string;
@@ -9416,6 +9428,7 @@ function SelectField({
   width?: number;
   className?: string;
   options?: string[];
+  renderOptionLabel?: (value: string) => ReactNode;
   onChange?: (value: string) => void;
 }) {
   const hasValue = Boolean(value);
@@ -9502,7 +9515,7 @@ function SelectField({
             style={widthStyle}
             type="button"
           >
-            {displayValue}
+            <span className="ck-select-label">{hasValue && renderOptionLabel ? renderOptionLabel(displayValue) : displayValue}</span>
             <span>⌄</span>
           </button>
           {open && options?.length ? (
@@ -9517,7 +9530,7 @@ function SelectField({
                   }}
                   type="button"
                 >
-                  {option}
+                  {renderOptionLabel ? renderOptionLabel(option) : option}
                 </button>
               ))}
             </div>

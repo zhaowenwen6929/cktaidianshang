@@ -4525,6 +4525,44 @@ a {
   width: 100%;
 }
 
+.ck-image-expand-frame-block .ck-select {
+  min-height: 52px;
+  height: auto;
+  align-items: flex-start;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.ck-image-expand-frame-block .ck-select-label {
+  min-width: 0;
+}
+
+.ck-image-expand-frame-block .ck-select-dropdown-menu button {
+  height: auto;
+  min-height: 44px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.ck-image-expand-frame-option-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ck-image-expand-frame-option-label span:first-child {
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-image-expand-frame-option-label span:last-child {
+  color: #6f7b92;
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .ck-image-expand-position-menu {
   width: 240px !important;
   max-height: none !important;
