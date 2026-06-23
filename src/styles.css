@@ -4526,11 +4526,11 @@ a {
 }
 
 .ck-image-expand-frame-block .ck-select {
-  min-height: 52px;
+  min-height: 26px;
   height: auto;
-  align-items: flex-start;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  align-items: center;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 .ck-image-expand-frame-block .ck-select-label {
@@ -4581,6 +4581,64 @@ a {
   width: 240px !important;
   max-height: none !important;
   padding: 12px !important;
+}
+
+.ck-image-expand-ratio-menu {
+  width: 120px !important;
+  max-height: none !important;
+}
+
+.ck-image-expand-ratio-custom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 2px;
+}
+
+.ck-image-expand-ratio-custom-row span {
+  color: #505a71;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.ck-image-expand-ratio-custom-row.active span {
+  color: #635ff2;
+}
+
+.ck-image-expand-ratio-custom-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 54px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #d9e0ef;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ck-image-expand-ratio-custom-input input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #1b2337;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ck-image-expand-ratio-custom-input input:focus {
+  outline: none;
+}
+
+.ck-image-expand-ratio-custom-input em {
+  color: #8a94aa;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .ck-image-expand-position-grid {

@@ -949,7 +949,8 @@ const navGroups: Array<{
     tools: [
       { key: "image-cutout", label: "一键抠图", panelTitle: "一键抠图", resultCount: 5, ratioLabel: "自适应尺寸" },
       { key: "image-watermark", label: "去除水印", panelTitle: "去除水印", resultCount: 5, ratioLabel: "自适应尺寸" },
-      { key: "image-upscale", label: "超分提质", panelTitle: "超分提质", resultCount: 5, ratioLabel: "自适应尺寸" },
+      { key: "image-clarify", label: "图片变清晰", panelTitle: "图片变清晰", resultCount: 5, ratioLabel: "自适应尺寸" },
+      { key: "image-upscale", label: "无损放大", panelTitle: "无损放大", resultCount: 5, ratioLabel: "自适应尺寸" },
       { key: "image-remove", label: "图片消除", panelTitle: "图片消除", resultCount: 5, ratioLabel: "自适应尺寸" },
       { key: "image-lineart", label: "提取线稿", panelTitle: "提取线稿", resultCount: 5, ratioLabel: "自适应尺寸" },
       { key: "image-expand", label: "图片扩图", panelTitle: "图片扩图", resultCount: 5, ratioLabel: "自适应尺寸" }
@@ -2366,6 +2367,10 @@ function getImageGenerationUnitCreditCost(
         "8K": 20
       }[resolution] ?? 5
     );
+  }
+
+  if (toolKey === "image-clarify") {
+    return 5;
   }
 
   if (toolKey === "image-remove") {
@@ -6916,6 +6921,19 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       }
     }
   },
+  "image-clarify": {
+    creationModeConfigKey: "default",
+    sectionOrder: ["upload-main"],
+    uploads: {
+      main: {
+        label: "上传素材",
+        required: true,
+        maxCount: 24,
+        singleUploadMeta: "（单次最多上传{count}张）",
+        hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
   "image-remove": {
     creationModeConfigKey: "default",
     sectionOrder: ["upload-main", "mask-draw"],
@@ -9195,30 +9213,17 @@ function ImageExpandModeSection({
 
   return (
     <div className="ck-image-expand-settings">
-      <div className="ck-form-block ck-image-expand-compact-block">
-        <SelectField
-          label="画面占比"
-          onChange={(value) => {
-            if (value === "自定义") {
-              onSelectionMapChange({
-                imageExpandCanvasRatio: selectedRatio,
-                imageExpandCanvasPosition: selectedPosition,
-                imageExpandTargetFrame: activeTargetFrameValue
-              });
-              return;
-            }
-
-            onSelectionMapChange({
-              imageExpandCanvasRatio: value,
-              imageExpandCanvasPosition: selectedPosition,
-              imageExpandTargetFrame: activeTargetFrameValue
-            });
-          }}
-          options={[...imageExpandCanvasRatioSelectOptions]}
-          required
-          value={isPresetRatio ? selectedRatio : "自定义"}
-        />
-      </div>
+      <ImageExpandRatioSelect
+        onChange={(value) =>
+          onSelectionMapChange({
+            imageExpandCanvasRatio: value,
+            imageExpandCanvasPosition: selectedPosition,
+            imageExpandTargetFrame: activeTargetFrameValue
+          })
+        }
+        required
+        value={selectedRatio}
+      />
 
       <ImageExpandPositionSelect
         onChange={(value) => {
@@ -9252,6 +9257,140 @@ function ImageExpandModeSection({
       </div>
 
       <ImageExpandPreviewCard canvasRatio={selectedRatio} positionKey={selectedPosition} targetFrame={activeTargetFrame} />
+    </div>
+  );
+}
+
+function ImageExpandRatioSelect({
+  value,
+  required,
+  onChange
+}: {
+  value: string;
+  required?: boolean;
+  onChange?: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+  const isPresetRatio = imageExpandCanvasRatioOptions.includes(value as (typeof imageExpandCanvasRatioOptions)[number]);
+  const customInputValue = isPresetRatio ? "" : value.replace("%", "");
+
+  useEffect(() => {
+    setOpen(false);
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updateMenuPlacement = () => {
+      const triggerRect = dropdownRef.current?.getBoundingClientRect();
+      if (!triggerRect) return;
+
+      const panelElement = dropdownRef.current?.closest(".ck-panel");
+      const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
+      const footerRect = footerElement?.getBoundingClientRect();
+      const lowerBoundary = footerRect ? footerRect.top - 8 : window.innerHeight - 16;
+      const upperBoundary = 16;
+      const spaceBelow = lowerBoundary - triggerRect.bottom - 6;
+      const spaceAbove = triggerRect.top - upperBoundary - 6;
+      const availableBelow = Math.max(220, Math.floor(spaceBelow));
+      const availableAbove = Math.max(220, Math.floor(spaceAbove));
+
+      const sharedStyle: CSSProperties = {
+        left: triggerRect.left,
+        width: triggerRect.width,
+        position: "fixed",
+        zIndex: 100130
+      };
+
+      if (spaceBelow < 260 && spaceAbove > spaceBelow) {
+        setOpenDirection("up");
+        setMenuStyle({
+          ...sharedStyle,
+          bottom: window.innerHeight - triggerRect.top + 6,
+          maxHeight: Math.min(320, availableAbove)
+        });
+        return;
+      }
+
+      setOpenDirection("down");
+      setMenuStyle({
+        ...sharedStyle,
+        top: triggerRect.bottom + 6,
+        maxHeight: Math.min(320, availableBelow)
+      });
+    };
+
+    updateMenuPlacement();
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", updateMenuPlacement);
+    window.addEventListener("scroll", updateMenuPlacement, true);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("resize", updateMenuPlacement);
+      window.removeEventListener("scroll", updateMenuPlacement, true);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="ck-form-block ck-image-expand-compact-block">
+      <div className="ck-inline-field">
+        <FieldTitle label="画面占比" required={required} />
+        <div className="ck-select-dropdown" ref={dropdownRef}>
+          <button className="ck-select" onClick={() => setOpen((current) => !current)} type="button">
+            {isPresetRatio ? value : `${customInputValue}%`}
+            <span>⌄</span>
+          </button>
+          {open ? (
+            <div className={`ck-select-dropdown-menu ck-image-expand-ratio-menu${openDirection === "up" ? " up" : ""}`} style={menuStyle}>
+              {imageExpandCanvasRatioOptions.map((option) => (
+                <button
+                  className={option === value ? "active" : ""}
+                  key={option}
+                  onClick={() => {
+                    onChange?.(option);
+                    setOpen(false);
+                  }}
+                  type="button"
+                >
+                  {option}
+                </button>
+              ))}
+              <div className={`ck-image-expand-ratio-custom-row${!isPresetRatio ? " active" : ""}`}>
+                <span>自定义</span>
+                <div className="ck-image-expand-ratio-custom-input">
+                  <input
+                    inputMode="numeric"
+                    max={100}
+                    min={1}
+                    onChange={(event) => {
+                      const digits = event.target.value.replace(/[^\d]/g, "");
+                      if (!digits) {
+                        onChange?.("1%");
+                        return;
+                      }
+                      const nextValue = Math.min(100, Math.max(1, Number(digits)));
+                      onChange?.(`${nextValue}%`);
+                    }}
+                    placeholder="15"
+                    value={customInputValue}
+                  />
+                  <em>%</em>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
