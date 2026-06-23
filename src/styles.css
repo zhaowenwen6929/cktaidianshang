@@ -4591,9 +4591,10 @@ a {
 .ck-image-expand-ratio-custom-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   padding: 6px 8px 2px;
+  border-radius: 8px;
 }
 
 .ck-image-expand-ratio-custom-trigger {
@@ -4603,6 +4604,7 @@ a {
   color: inherit;
   font-size: 12px;
   line-height: 18px;
+  white-space: nowrap;
 }
 
 .ck-image-expand-ratio-custom-row span {
@@ -4612,7 +4614,12 @@ a {
   white-space: nowrap;
 }
 
-.ck-image-expand-ratio-custom-row.active span {
+.ck-image-expand-ratio-custom-row.active {
+  background: #f0effe;
+}
+
+.ck-image-expand-ratio-custom-row.active span,
+.ck-image-expand-ratio-custom-row.active .ck-image-expand-ratio-custom-trigger {
   color: #635ff2;
 }
 
@@ -4620,12 +4627,16 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  width: 54px;
+  width: 72px;
   height: 28px;
   padding: 0 8px;
   border: 1px solid #d9e0ef;
   border-radius: 8px;
   background: #fff;
+}
+
+.ck-image-expand-ratio-custom-row.active .ck-image-expand-ratio-custom-input {
+  border-color: #cfd7ff;
 }
 
 .ck-image-expand-ratio-custom-input input {
@@ -4682,9 +4693,9 @@ a {
 }
 
 .ck-image-expand-preview-card {
-  margin-top: 8px;
+  margin-top: 30px;
   padding: 10px;
-  border: 1px solid #e7ebf5;
+  border: 0;
   border-radius: 16px;
   background: #fbfcff;
 }
@@ -4717,11 +4728,11 @@ a {
 
 .ck-image-expand-preview-card + .ck-form-block,
 .ck-image-expand-preview-card + .ck-form-block.ck-set-pack-selling-points {
-  margin-top: 10px;
+  margin-top: 30px;
 }
 
 .ck-image-expand-frame-menu {
-  padding-bottom: 72px !important;
+  padding-bottom: 78px !important;
 }
 
 .ck-image-expand-frame-menu-options {
@@ -4738,7 +4749,7 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 12px 10px;
   border-top: 1px solid #ebeef5;
   background: #fff;
 }
@@ -4747,15 +4758,16 @@ a {
   color: #1b2337;
   font-size: 14px;
   line-height: 20px;
+  font-weight: 500;
 }
 
 .ck-image-expand-frame-custom-input {
   flex: 1 1 0;
   display: flex;
   align-items: center;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
   background: #f5f7fd;
 }
 
@@ -4777,14 +4789,15 @@ a {
 
 .ck-image-expand-frame-custom-confirm {
   flex: 0 0 auto;
-  height: 34px;
+  height: 36px;
   padding: 0 14px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #f5f7fd;
   color: #8a94aa;
   font-size: 13px;
   line-height: 20px;
+  font-weight: 500;
 }
 
 .ck-image-expand-frame-custom-confirm:disabled {
