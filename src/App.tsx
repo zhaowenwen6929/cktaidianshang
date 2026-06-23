@@ -1003,6 +1003,10 @@ const navGroups: Array<{
       { key: "video-main", label: "产品视频", panelTitle: "产品视频", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-replica", label: "爆款复刻", panelTitle: "爆款复刻", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-replace", label: "商品替换", panelTitle: "商品替换", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-clarify", label: "视频变清晰", panelTitle: "视频变清晰", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-watermark", label: "视频去水印字幕", panelTitle: "视频去水印字幕", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-translate", label: "视频翻译", panelTitle: "视频翻译", resultCount: 4, ratioLabel: "16:9" },
+      { key: "video-remove-bg", label: "视频背景移除", panelTitle: "视频背景移除", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-remix", label: "智能混剪（待完善）", panelTitle: "智能混剪（待完善）", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-match", label: "智能匹配视频（待完善）", panelTitle: "智能匹配视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-ad", label: "广告大片视频（待完善）", panelTitle: "广告大片视频（待完善）", resultCount: 4, ratioLabel: "16:9" },
@@ -3069,6 +3073,10 @@ function isVideoGenerationTool(toolKey: string) {
   return toolKey.startsWith("video-");
 }
 
+function isVideoOnlyTool(toolKey: string) {
+  return (videoOnlyToolKeys as readonly string[]).includes(toolKey);
+}
+
 function resolveVideoPricingSelections(
   toolKey: string,
   creationModeSelection: CreationModeSelection | null,
@@ -3332,6 +3340,8 @@ const videoPrintExtendBaseRatioOptions = ["1:1", "1:2", "2:1", "2:3", "3:2", "3:
 const videoPrintExtendOutputCountOptions = ["1", "2", "3", "4"] as const;
 const VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST = 5;
 const defaultResolutionOptions = ["1K", "2K", "4K"];
+const videoClarifyResolutionOptions = ["原画质增强", "720p", "1080p", "2K"] as const;
+const videoOnlyToolKeys = ["video-clarify", "video-watermark", "video-translate", "video-remove-bg"] as const;
 const podCropModeOptions = [
   { key: "通用", label: "通用" },
   { key: "铁皮画", label: "铁皮画" },
@@ -4311,6 +4321,22 @@ const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig
     modelLabel: "创客贴AI商品替换视频润色",
     prompt: "优化商品替换视频描述，强调保留原视频动作和运镜不变，同时让新商品在多视角一致性、真实结构、光影透视和商业成片稳定性上更具体、清晰、可执行。"
   },
+  "video-clarify": {
+    modelLabel: "创客贴AI视频增强润色",
+    prompt: "优化视频清晰化补充说明，强调保留原视频节奏与构图，同时提升主体细节、边缘锐度、画面纯净度和整体稳定性。"
+  },
+  "video-watermark": {
+    modelLabel: "创客贴AI视频去水印润色",
+    prompt: "优化视频去水印字幕补充说明，强调完整去除水印、字幕或角标，同时保证背景连续、人物主体完整和画面自然无修补痕迹。"
+  },
+  "video-translate": {
+    modelLabel: "创客贴AI视频翻译润色",
+    prompt: "优化视频翻译补充说明，强调字幕翻译准确、语气自然、时间轴匹配稳定，并保持原视频节奏与主体内容不被破坏。"
+  },
+  "video-remove-bg": {
+    modelLabel: "创客贴AI视频移除背景润色",
+    prompt: "优化视频背景移除补充说明，强调主体边缘干净、发丝和透明区域保留自然、帧间稳定，并便于后续换背景或二次剪辑。"
+  },
   "model-try": {
     modelLabel: "创客贴AI补充说明润色",
     prompt: "优化试衣补充说明，使描述更具体、清晰、可执行。"
@@ -4352,7 +4378,11 @@ const advancedAiAssistPromptConfigs: Partial<Record<string, string>> = {
 const supplementPlaceholderOverrides: Partial<Record<string, string>> = {
   "goods-detail": "请输入您对图片的细节补充描述，例如：色调、构图、氛围等。",
   "model-try": "请输入模特试穿细节补充，例如：希望突出上身效果、面料垂感、搭配氛围或人物状态。",
-  "video-replace": "请输入视频描述，例如：保留原视频全部动作和镜头节奏，将原商品替换为上传商品，重点突出瓶身高光、标签清晰和开箱拿取时的真实手部接触。"
+  "video-replace": "请输入视频描述，例如：保留原视频全部动作和镜头节奏，将原商品替换为上传商品，重点突出瓶身高光、标签清晰和开箱拿取时的真实手部接触。",
+  "video-clarify": "请输入清晰化要求，例如：保留原视频镜头与节奏，重点提升人物主体、商品细节和字幕边缘清晰度，避免过度锐化与闪烁。",
+  "video-watermark": "请输入处理要求，例如：去除右上角平台水印和底部字幕，保持人物、商品和背景纹理完整自然。",
+  "video-translate": "请输入翻译要求，例如：翻译成英文，保留原视频节奏与卖点表达，字幕语气更适合跨境电商投放。",
+  "video-remove-bg": "请输入处理要求，例如：完整保留人物和商品主体，发丝边缘干净，输出适合后续换背景或二次剪辑。"
 };
 
 function normalizeUploadClueText(items: UploadItem[]) {
@@ -7519,6 +7549,78 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
         defaultResolution: "480p"
       }
     ]
+  },
+  "video-processing": {
+    key: "video-processing",
+    title: "创作模式",
+    showSupplement: true,
+    hideRatioField: true,
+    hideResolutionField: true,
+    hideCountField: true,
+    supplementLabel: "处理要求",
+    supplementPlaceholder: "请输入处理要求，例如：保留主体、画面更稳定、边缘更自然、适合电商投放。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://video-processing-normal",
+        logicNote: "使用视频处理普通模型。",
+        ratioOptions: ["原视频比例"],
+        countOptions: ["1"],
+        baseUnitCreditCost: 1,
+        defaultRatio: "原视频比例",
+        defaultCount: "1"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://video-processing-advanced",
+        logicNote: "使用视频处理高级模型。",
+        ratioOptions: ["原视频比例"],
+        countOptions: ["1"],
+        baseUnitCreditCost: 1,
+        defaultRatio: "原视频比例",
+        defaultCount: "1"
+      }
+    ]
+  },
+  "video-clarify": {
+    key: "video-clarify",
+    title: "创作模式",
+    showSupplement: false,
+    hideRatioField: true,
+    hideCountField: true,
+    supplementPlaceholder: "请输入视频清晰化补充说明。",
+    supplementMaxLength: 2000,
+    modes: [
+      {
+        id: "normal",
+        label: "普通模式",
+        apiModel: "mock://video-clarify-normal",
+        logicNote: "使用视频清晰化普通模型。",
+        ratioOptions: ["原视频比例"],
+        countOptions: ["1"],
+        resolutionOptions: [...videoClarifyResolutionOptions],
+        resolutionUnitCreditCosts: { 原画质增强: 1, "720p": 1, "1080p": 1, "2K": 1 },
+        defaultRatio: "原视频比例",
+        defaultCount: "1",
+        defaultResolution: "原画质增强"
+      },
+      {
+        id: "advanced",
+        label: "高级模式",
+        apiModel: "mock://video-clarify-advanced",
+        logicNote: "使用视频清晰化高级模型。",
+        ratioOptions: ["原视频比例"],
+        countOptions: ["1"],
+        resolutionOptions: [...videoClarifyResolutionOptions],
+        resolutionUnitCreditCosts: { 原画质增强: 1, "720p": 1, "1080p": 1, "2K": 1 },
+        defaultRatio: "原视频比例",
+        defaultCount: "1",
+        defaultResolution: "原画质增强"
+      }
+    ]
   }
 };
 
@@ -7542,7 +7644,11 @@ const creationModeConfigByToolKey: Record<string, string> = {
   "model-try": "default",
   "model-change": "model-adjust",
   "model-generate": "spoke",
-  "video-replace": "video-replace"
+  "video-replace": "video-replace",
+  "video-clarify": "video-clarify",
+  "video-watermark": "video-processing",
+  "video-translate": "video-processing",
+  "video-remove-bg": "video-processing"
 };
 
 const defaultToolModuleConfigs = Object.fromEntries(
@@ -7752,6 +7858,86 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
         maxCount: 24,
         singleUploadMeta: "（单次最多上传{count}张）",
         hintTemplate: "最多{count}张，支持JPG/PNG/WebP"
+      }
+    }
+  },
+  "video-clarify": {
+    creationModeConfigKey: "video-clarify",
+    sectionOrder: ["upload-video", "creation-mode"],
+    uploads: {
+      main: {
+        label: "上传素材",
+        required: false,
+        maxCount: 0
+      },
+      video: {
+        label: "上传视频",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传1个）",
+        hintTemplate: "最多{count}个，支持MP4/MOV",
+        maxFileSizeMb: 500,
+        maxDurationSeconds: 300
+      }
+    }
+  },
+  "video-watermark": {
+    creationModeConfigKey: "video-processing",
+    sectionOrder: ["upload-video", "supplement"],
+    uploads: {
+      main: {
+        label: "上传素材",
+        required: false,
+        maxCount: 0
+      },
+      video: {
+        label: "上传视频",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传1个）",
+        hintTemplate: "最多{count}个，支持MP4/MOV",
+        maxFileSizeMb: 500,
+        maxDurationSeconds: 300
+      }
+    }
+  },
+  "video-translate": {
+    creationModeConfigKey: "video-processing",
+    sectionOrder: ["upload-video", "target-language", "supplement"],
+    uploads: {
+      main: {
+        label: "上传素材",
+        required: false,
+        maxCount: 0
+      },
+      video: {
+        label: "上传视频",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传1个）",
+        hintTemplate: "最多{count}个，支持MP4/MOV",
+        maxFileSizeMb: 500,
+        maxDurationSeconds: 300
+      }
+    }
+  },
+  "video-remove-bg": {
+    creationModeConfigKey: "video-processing",
+    sectionOrder: ["upload-video", "supplement"],
+    uploads: {
+      main: {
+        label: "上传素材",
+        required: false,
+        maxCount: 0
+      },
+      video: {
+        label: "上传视频",
+        required: true,
+        maxCount: 1,
+        singleUploadMeta: "（单次最多上传1个）",
+        hintTemplate: "最多{count}个，支持MP4/MOV",
+        maxFileSizeMb: 500,
+        maxDurationSeconds: 300
       }
     }
   },
@@ -10496,6 +10682,7 @@ function ImageExpandPositionSelect({
                 {imageExpandCanvasPositionOptions.map((option) => (
                   <button
                     className={option.label === value ? "active" : ""}
+                    data-label={option.label}
                     key={option.key}
                     onClick={() => {
                       onChange?.(option.label);
@@ -19660,6 +19847,8 @@ function ConfigPanel({
           ? videoStylePrintMetrics.promptCount
         : tool.key === "more-title"
           ? moreTitleFilledRowCount
+          : isVideoOnlyTool(tool.key)
+            ? videoUploadCount
           : uploadImageCount;
   const effectiveReferenceCount = tool.key === "video-print-extend" ? videoPrintExtendRatioCount : referenceUploadCount;
   const generateCost =
@@ -19683,6 +19872,8 @@ function ConfigPanel({
           ? referenceUploadCount > 0 && (videoStylePrintMetrics.requiresMainUploads ? uploadImageCount > 0 : videoStylePrintMetrics.isTextReady)
       : tool.key === "more-title"
         ? moreTitleFilledRowCount > 0
+        : isVideoOnlyTool(tool.key)
+          ? videoUploadCount > 0
         : uploadImageCount > 0 &&
         (tool.key === "video-print-extend" ? effectiveReferenceCount > 0 : true) &&
         (tool.key === "set-replica" ? referenceUploadCount > 0 : true) &&
