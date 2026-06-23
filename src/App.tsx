@@ -528,6 +528,13 @@ type ResultEmptyGuideConfig =
       samples: ResultEmptyGuideSample[];
     }
   | {
+      mode: "simple-hero";
+      title: string;
+      description: string;
+      heroSrc: string;
+      samples: ResultEmptyGuideSample[];
+    }
+  | {
       mode: "switcher";
       title: string;
       description: string;
@@ -1055,7 +1062,417 @@ const resultEmptyGuideAssetSets = {
   pod: ["/assets/task-gallery-5.png", "/assets/task-gallery-7.png", "/assets/result-4.png"]
 } as const;
 
+const goodsSimpleHeroGuideConfigs: Partial<Record<string, Extract<ResultEmptyGuideConfig, { mode: "simple-hero" }>>> = {
+  "goods-marketing": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成营销主图结果",
+    description: "适合做平台主图、活动主视觉和点击转化图，建议上传主体完整、卖点清晰的商品图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[0],
+    samples: [
+      { id: "goods-marketing-1", title: "活动主图", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "goods-marketing-2", title: "促销主图", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-marketing-3", title: "爆款主图", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  },
+  "goods-white": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成白底图结果",
+    description: "适合平台白底主图、商品入库图和标准展示图，建议上传边缘清楚、无遮挡的商品图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[0],
+    samples: [
+      { id: "goods-white-1", title: "白底服饰", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "goods-white-2", title: "白底家居", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-white-3", title: "白底数码", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  },
+  "goods-buyer": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成买家秀结果",
+    description: "适合做生活化种草和使用场景表达，推荐上传主体清晰、结构完整的商品图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[1],
+    samples: [
+      { id: "goods-buyer-1", title: "穿搭买家秀", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "goods-buyer-2", title: "家居买家秀", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-buyer-3", title: "数码买家秀", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  },
+  "goods-scene": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成场景图结果",
+    description: "适合丰富商品使用环境、提升氛围感和种草感，建议上传主体角度明确的商品图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[1],
+    samples: [
+      { id: "goods-scene-1", title: "家居场景", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-scene-2", title: "桌面场景", src: resultEmptyGuideAssetSets.ecommerce[2] },
+      { id: "goods-scene-3", title: "通勤场景", src: resultEmptyGuideAssetSets.ecommerce[0] }
+    ]
+  },
+  "goods-detail": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成细节图结果",
+    description: "适合突出材质、工艺、结构和局部卖点，推荐上传清晰度较高的原图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[2],
+    samples: [
+      { id: "goods-detail-1", title: "材质细节", src: resultEmptyGuideAssetSets.ecommerce[2] },
+      { id: "goods-detail-2", title: "结构细节", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-detail-3", title: "工艺细节", src: resultEmptyGuideAssetSets.ecommerce[0] }
+    ]
+  },
+  "goods-sell": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成卖点图结果",
+    description: "适合提炼产品核心卖点、参数优势和对比信息，便于做电商转化表达。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[2],
+    samples: [
+      { id: "goods-sell-1", title: "功能卖点", src: resultEmptyGuideAssetSets.ecommerce[2] },
+      { id: "goods-sell-2", title: "参数卖点", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-sell-3", title: "对比卖点", src: resultEmptyGuideAssetSets.ecommerce[0] }
+    ]
+  },
+  "goods-spoke": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成代言图结果",
+    description: "适合做人物带货、品牌感表达和场景化种草展示，建议上传适合人物演绎的商品图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[1],
+    samples: [
+      { id: "goods-spoke-1", title: "品牌代言", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-spoke-2", title: "种草展示", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "goods-spoke-3", title: "达人带货", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  },
+  "goods-view": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成三视角结果",
+    description: "适合展示正面、侧面和背面等多角度信息，推荐上传轮廓完整、结构清晰的商品图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[0],
+    samples: [
+      { id: "goods-view-1", title: "服饰三视角", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "goods-view-2", title: "箱包三视角", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-view-3", title: "数码三视角", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  },
+  "goods-retouch": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成精修结果",
+    description: "适合提升光感、质感、边缘和整体视觉表现，推荐上传清晰原图以获得更稳定结果。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[2],
+    samples: [
+      { id: "goods-retouch-1", title: "高质感精修", src: resultEmptyGuideAssetSets.ecommerce[2] },
+      { id: "goods-retouch-2", title: "通透精修", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-retouch-3", title: "电商精修", src: resultEmptyGuideAssetSets.ecommerce[0] }
+    ]
+  },
+  "goods-bg": {
+    mode: "simple-hero",
+    title: "上传商品图后，快速生成换背景结果",
+    description: "适合切换展示环境、增强氛围感和适配不同营销场景，建议上传主体边缘清晰的商品图。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[1],
+    samples: [
+      { id: "goods-bg-1", title: "家居背景", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-bg-2", title: "户外背景", src: resultEmptyGuideAssetSets.ecommerce[2] },
+      { id: "goods-bg-3", title: "棚拍背景", src: resultEmptyGuideAssetSets.ecommerce[0] }
+    ]
+  },
+  "goods-translate": {
+    mode: "simple-hero",
+    title: "上传图片后，快速生成翻译结果",
+    description: "适合跨境商品图、海报图和详情图的文字翻译与替换，推荐上传文字区域清晰的图片。",
+    heroSrc: resultEmptyGuideAssetSets.ecommerce[2],
+    samples: [
+      { id: "goods-translate-1", title: "主图翻译", src: resultEmptyGuideAssetSets.ecommerce[2] },
+      { id: "goods-translate-2", title: "海报翻译", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "goods-translate-3", title: "详情翻译", src: resultEmptyGuideAssetSets.ecommerce[0] }
+    ]
+  }
+};
+
+const imageIllustrationGuideConfigs: Partial<Record<string, Extract<ResultEmptyGuideConfig, { mode: "illustration" }>>> = {
+  "image-cutout": {
+    mode: "illustration",
+    title: "上传素材后，快速生成抠图结果",
+    description: "适合人物、商品和复杂边缘主体的背景去除，建议上传主体边界清楚的原图。",
+    actionLabel: "上传图片",
+    uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+    heroSrc: resultEmptyGuideAssetSets.image[0],
+    samples: [
+      { id: "image-cutout-1", title: "商品抠图", src: resultEmptyGuideAssetSets.image[0] },
+      { id: "image-cutout-2", title: "人物抠图", src: resultEmptyGuideAssetSets.image[1] },
+      { id: "image-cutout-3", title: "海报抠图", src: resultEmptyGuideAssetSets.image[2] }
+    ]
+  },
+  "image-watermark": {
+    mode: "illustration",
+    title: "上传素材后，快速生成去水印结果",
+    description: "适合处理角标、水印、logo 和覆盖文字，建议上传水印区域清晰可见的图片。",
+    actionLabel: "上传图片",
+    uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+    heroSrc: resultEmptyGuideAssetSets.image[2],
+    samples: [
+      { id: "image-watermark-1", title: "海报去水印", src: resultEmptyGuideAssetSets.image[2] },
+      { id: "image-watermark-2", title: "商品图去标识", src: resultEmptyGuideAssetSets.image[0] },
+      { id: "image-watermark-3", title: "人物图去字样", src: resultEmptyGuideAssetSets.image[1] }
+    ]
+  },
+  "image-clarify": {
+    mode: "illustration",
+    title: "上传素材后，快速生成清晰化结果",
+    description: "适合轻度模糊、压缩失真和细节不清的图片修复，建议上传主体仍可识别的原图。",
+    actionLabel: "上传图片",
+    uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+    heroSrc: resultEmptyGuideAssetSets.image[1],
+    samples: [
+      { id: "image-clarify-1", title: "人物修复", src: resultEmptyGuideAssetSets.image[1] },
+      { id: "image-clarify-2", title: "商品修复", src: resultEmptyGuideAssetSets.image[0] },
+      { id: "image-clarify-3", title: "海报修复", src: resultEmptyGuideAssetSets.image[2] }
+    ]
+  },
+  "image-upscale": {
+    mode: "illustration",
+    title: "上传素材后，快速生成无损放大结果",
+    description: "适合小尺寸图片放大、细节增强和二次输出，推荐上传原始质量较好的图片。",
+    actionLabel: "上传图片",
+    uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+    heroSrc: resultEmptyGuideAssetSets.image[0],
+    samples: [
+      { id: "image-upscale-1", title: "商品放大", src: resultEmptyGuideAssetSets.image[0] },
+      { id: "image-upscale-2", title: "人物放大", src: resultEmptyGuideAssetSets.image[1] },
+      { id: "image-upscale-3", title: "海报放大", src: resultEmptyGuideAssetSets.image[2] }
+    ]
+  },
+  "image-remove": {
+    mode: "illustration",
+    title: "上传素材后，快速生成图片消除结果",
+    description: "适合去除路人、杂物、污点和多余元素，建议上传待消除区域边界清晰的图片。",
+    actionLabel: "上传图片",
+    uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+    heroSrc: resultEmptyGuideAssetSets.image[2],
+    samples: [
+      { id: "image-remove-1", title: "路人消除", src: resultEmptyGuideAssetSets.image[1] },
+      { id: "image-remove-2", title: "杂物消除", src: resultEmptyGuideAssetSets.image[0] },
+      { id: "image-remove-3", title: "文字消除", src: resultEmptyGuideAssetSets.image[2] }
+    ]
+  },
+  "image-lineart": {
+    mode: "illustration",
+    title: "上传素材后，快速生成线稿结果",
+    description: "适合插画、草图、印花和轮廓稿提取，建议上传主体边缘清晰、颜色层级明确的图片。",
+    actionLabel: "上传图片",
+    uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+    heroSrc: resultEmptyGuideAssetSets.image[1],
+    samples: [
+      { id: "image-lineart-1", title: "插画线稿", src: resultEmptyGuideAssetSets.image[1] },
+      { id: "image-lineart-2", title: "商品线稿", src: resultEmptyGuideAssetSets.image[0] },
+      { id: "image-lineart-3", title: "海报轮廓", src: resultEmptyGuideAssetSets.image[2] }
+    ]
+  }
+};
+
+const videoStepsGuideConfigs: Partial<Record<string, Extract<ResultEmptyGuideConfig, { mode: "steps" }>>> = {
+  "video-main": {
+    mode: "steps",
+    title: "按步骤上传素材，快速生成产品视频",
+    description: "适合商品展示、卖点讲解和基础短视频输出，先准备主体图，再补充脚本或画面描述。",
+    steps: [
+      { id: "video-main-1", index: "01", title: "上传商品素材", description: "先上传商品图或主视觉素材。", mediaSrc: resultEmptyGuideAssetSets.video[0] },
+      { id: "video-main-2", index: "02", title: "补充脚本描述", description: "可填写镜头节奏、卖点顺序和文案重点。", mediaSrc: resultEmptyGuideAssetSets.video[1] },
+      { id: "video-main-3", index: "03", title: "生成并查看视频", description: "完成后在这里预览和下载结果。", mediaSrc: resultEmptyGuideAssetSets.video[2] }
+    ],
+    samples: [
+      { id: "video-main-s1", title: "产品展示", src: resultEmptyGuideAssetSets.video[0] },
+      { id: "video-main-s2", title: "卖点讲解", src: resultEmptyGuideAssetSets.video[1] },
+      { id: "video-main-s3", title: "氛围短片", src: resultEmptyGuideAssetSets.video[2] }
+    ]
+  },
+  "video-replica": {
+    mode: "steps",
+    title: "按步骤上传素材，快速复刻视频风格",
+    description: "适合参考已有爆款视频做同风格生成，先上传主体素材和参考视频，再补充复刻重点。",
+    steps: [
+      { id: "video-replica-1", index: "01", title: "上传主体素材", description: "上传需要展示的商品图或主视觉图。", mediaSrc: resultEmptyGuideAssetSets.video[0] },
+      { id: "video-replica-2", index: "02", title: "上传参考视频", description: "用参考视频表达你要复刻的节奏、构图和风格。", mediaSrc: resultEmptyGuideAssetSets.video[1] },
+      { id: "video-replica-3", index: "03", title: "生成并筛选结果", description: "完成后在结果区挑选更接近目标风格的视频。", mediaSrc: resultEmptyGuideAssetSets.video[2] }
+    ],
+    samples: [
+      { id: "video-replica-s1", title: "口播复刻", src: resultEmptyGuideAssetSets.video[0] },
+      { id: "video-replica-s2", title: "种草复刻", src: resultEmptyGuideAssetSets.video[1] },
+      { id: "video-replica-s3", title: "广告复刻", src: resultEmptyGuideAssetSets.video[2] }
+    ]
+  },
+  "video-replace": {
+    mode: "steps",
+    title: "按步骤上传素材，快速完成商品替换",
+    description: "适合保留原视频结构并替换商品主体，建议准备清晰商品图和待替换视频。",
+    steps: [
+      { id: "video-replace-1", index: "01", title: "上传替换商品图", description: "商品图将作为新主体替换进视频中。", mediaSrc: resultEmptyGuideAssetSets.video[0] },
+      { id: "video-replace-2", index: "02", title: "上传原始视频", description: "原视频用于保留镜头结构和运动节奏。", mediaSrc: resultEmptyGuideAssetSets.video[1] },
+      { id: "video-replace-3", index: "03", title: "生成并查看结果", description: "完成后可在结果区查看商品替换效果。", mediaSrc: resultEmptyGuideAssetSets.video[2] }
+    ],
+    samples: [
+      { id: "video-replace-s1", title: "口播替换", src: resultEmptyGuideAssetSets.video[0] },
+      { id: "video-replace-s2", title: "展示替换", src: resultEmptyGuideAssetSets.video[1] },
+      { id: "video-replace-s3", title: "种草替换", src: resultEmptyGuideAssetSets.video[2] }
+    ]
+  }
+};
+
+const moreStepsGuideConfigs: Partial<Record<string, Extract<ResultEmptyGuideConfig, { mode: "steps" }>>> = {
+  "more-rights": {
+    mode: "steps",
+    title: "按步骤导入素材，快速完成侵权检测",
+    description: "先上传或导入待检测内容，再补充检测要求，结果会在这里汇总展示。",
+    steps: [
+      { id: "more-rights-1", index: "01", title: "上传待检测素材", description: "先导入商品图、详情图或其他待检测内容。", mediaSrc: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "more-rights-2", index: "02", title: "补充检测要求", description: "可按平台、类目和重点风险项补充筛选条件。", mediaSrc: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "more-rights-3", index: "03", title: "查看检测结果", description: "完成后在这里查看风险提示和处理建议。", mediaSrc: resultEmptyGuideAssetSets.ecommerce[2] }
+    ],
+    samples: [
+      { id: "more-rights-s1", title: "主图检测", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "more-rights-s2", title: "详情检测", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "more-rights-s3", title: "海报检测", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  },
+  "more-collect": {
+    mode: "steps",
+    title: "按步骤导入目标内容，快速完成电商图采集",
+    description: "先补充采集来源，再填写筛选条件，采集完成后结果会汇总展示在这里。",
+    steps: [
+      { id: "more-collect-1", index: "01", title: "输入采集来源", description: "可先导入链接、商品页或采集目标。", mediaSrc: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "more-collect-2", index: "02", title: "补充筛选条件", description: "按平台、类目或内容类型补充采集要求。", mediaSrc: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "more-collect-3", index: "03", title: "查看采集结果", description: "完成后在这里统一查看采集到的图片结果。", mediaSrc: resultEmptyGuideAssetSets.ecommerce[2] }
+    ],
+    samples: [
+      { id: "more-collect-s1", title: "主图采集", src: resultEmptyGuideAssetSets.ecommerce[0] },
+      { id: "more-collect-s2", title: "详情采集", src: resultEmptyGuideAssetSets.ecommerce[1] },
+      { id: "more-collect-s3", title: "场景采集", src: resultEmptyGuideAssetSets.ecommerce[2] }
+    ]
+  }
+};
+
 const createResultEmptyGuideConfig = (tool: ToolConfig): ResultEmptyGuideConfig => {
+  if (tool.key === "set-main") {
+    return {
+      mode: "simple-hero",
+      title: "上传商品图后，快速生成整套电商展示结果",
+      description: "适合主图、卖点图、细节图和场景图等成套输出，推荐使用主体完整、角度清晰的商品图。",
+      heroSrc: resultEmptyGuideAssetSets.ecommerce[1],
+      samples: [
+        { id: "set-main-sample-1", title: "服饰套图", src: resultEmptyGuideAssetSets.ecommerce[0] },
+        { id: "set-main-sample-2", title: "家居套图", src: resultEmptyGuideAssetSets.ecommerce[1] },
+        { id: "set-main-sample-3", title: "数码套图", src: resultEmptyGuideAssetSets.ecommerce[2] }
+      ]
+    };
+  }
+
+  if (tool.key === "set-aplus") {
+    return {
+      mode: "steps",
+      title: "按步骤准备商品素材，生成 A+ 详情结果",
+      description: "先上传商品图和卖点信息，再生成详情页规划与视觉结果，适合需要完整详情内容的场景。",
+      steps: [
+        {
+          id: "set-aplus-step-1",
+          index: "01",
+          title: "上传商品主素材",
+          description: "先准备主图、细节图或品牌素材，便于后续生成详情内容。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[0]
+        },
+        {
+          id: "set-aplus-step-2",
+          index: "02",
+          title: "补充卖点与模块信息",
+          description: "填写产品卖点、模块结构和展示重点，帮助系统规划详情页内容。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[1]
+        },
+        {
+          id: "set-aplus-step-3",
+          index: "03",
+          title: "生成并查看详情结果",
+          description: "完成后可在这里查看规划结果和生成内容。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[2]
+        }
+      ],
+      samples: [
+        { id: "set-aplus-sample-1", title: "品牌详情", src: resultEmptyGuideAssetSets.ecommerce[0] },
+        { id: "set-aplus-sample-2", title: "卖点详情", src: resultEmptyGuideAssetSets.ecommerce[1] },
+        { id: "set-aplus-sample-3", title: "模块详情", src: resultEmptyGuideAssetSets.ecommerce[2] }
+      ]
+    };
+  }
+
+  if (tool.key === "set-fashion") {
+    return {
+      mode: "switcher",
+      title: "按不同服饰场景选择合适的生成方式",
+      description: "服饰套图对模特、服饰和平铺素材要求不同，可先查看示意再决定上传哪类素材。",
+      tabs: [
+        {
+          id: "fashion-flat",
+          label: "平铺服饰",
+          title: "上传平铺服饰图，生成模特服饰套图",
+          description: "适合女装、男装和童装等标准单品展示，建议服饰边缘清晰、无遮挡。",
+          heroSrc: resultEmptyGuideAssetSets.model[0],
+          noteTitle: "适用场景",
+          notes: ["适合单件上衣、裤装、外套", "适合快速生成多场景展示", "优先选择正面平铺图"],
+          samples: [
+            { id: "set-fashion-sample-1", title: "上衣示例", src: resultEmptyGuideAssetSets.model[0] },
+            { id: "set-fashion-sample-2", title: "外套示例", src: resultEmptyGuideAssetSets.model[1] },
+            { id: "set-fashion-sample-3", title: "裤装示例", src: resultEmptyGuideAssetSets.model[2] }
+          ]
+        },
+        {
+          id: "fashion-look",
+          label: "穿搭效果",
+          title: "围绕服饰风格生成整套穿搭场景",
+          description: "适合需要强化场景感、风格感和模特氛围的服饰成套展示结果。",
+          heroSrc: resultEmptyGuideAssetSets.model[1],
+          noteTitle: "温馨提示",
+          notes: ["建议补充风格、场景和镜头需求", "适合上新、Lookbook 和种草表达", "可优先上传质感较好的服饰图"],
+          samples: [
+            { id: "set-fashion-look-1", title: "通勤风", src: resultEmptyGuideAssetSets.model[1] },
+            { id: "set-fashion-look-2", title: "休闲风", src: resultEmptyGuideAssetSets.model[2] },
+            { id: "set-fashion-look-3", title: "棚拍风", src: resultEmptyGuideAssetSets.model[0] }
+          ]
+        }
+      ]
+    };
+  }
+
+  if (tool.key === "set-replica") {
+    return {
+      mode: "steps",
+      title: "参考爆款内容，按步骤生成同风格套图",
+      description: "先上传商品图和参考图，再补充你希望保留或强化的卖点，系统会生成同风格结果。",
+      steps: [
+        {
+          id: "set-replica-step-1",
+          index: "01",
+          title: "上传商品图与参考图",
+          description: "商品图用于还原主体，参考图用于学习排版、场景和风格表达。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[0]
+        },
+        {
+          id: "set-replica-step-2",
+          index: "02",
+          title: "补充复刻重点",
+          description: "可写清需要保留的构图、光影、卖点层级和场景氛围。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[1]
+        },
+        {
+          id: "set-replica-step-3",
+          index: "03",
+          title: "生成并筛选同款结果",
+          description: "完成后可在这里筛选更贴近目标风格的结果。",
+          mediaSrc: resultEmptyGuideAssetSets.ecommerce[2]
+        }
+      ],
+      samples: [
+        { id: "set-replica-sample-1", title: "白底风格", src: resultEmptyGuideAssetSets.ecommerce[0] },
+        { id: "set-replica-sample-2", title: "场景风格", src: resultEmptyGuideAssetSets.ecommerce[1] },
+        { id: "set-replica-sample-3", title: "卖点风格", src: resultEmptyGuideAssetSets.ecommerce[2] }
+      ]
+    };
+  }
+
   if (tool.key.startsWith("model-")) {
     return {
       mode: "switcher",
@@ -1095,37 +1512,77 @@ const createResultEmptyGuideConfig = (tool: ToolConfig): ResultEmptyGuideConfig 
   }
 
   if (tool.key.startsWith("video-")) {
+    return (
+      videoStepsGuideConfigs[tool.key] ?? {
+        mode: "steps",
+        title: "只需三步，快速开始生成视频结果",
+        description: "先准备主体素材，再补充画面描述或脚本要求，系统会输出对应的视频结果。",
+        steps: [
+          {
+            id: "video-step-1",
+            index: "01",
+            title: "上传主体素材",
+            description: "上传商品图、模特图或需要替换的视频首帧素材。",
+            mediaSrc: resultEmptyGuideAssetSets.video[0]
+          },
+          {
+            id: "video-step-2",
+            index: "02",
+            title: "补充脚本或动作描述",
+            description: "可写镜头运动、节奏、文案卖点和画面风格，让结果更贴近预期。",
+            mediaSrc: resultEmptyGuideAssetSets.video[1]
+          },
+          {
+            id: "video-step-3",
+            index: "03",
+            title: "生成并查看结果",
+            description: "完成后可在这里预览、筛选并下载视频结果。",
+            mediaSrc: resultEmptyGuideAssetSets.video[2]
+          }
+        ],
+        samples: [
+          { id: "video-sample-1", title: "产品展示", src: resultEmptyGuideAssetSets.video[0] },
+          { id: "video-sample-2", title: "卖点演示", src: resultEmptyGuideAssetSets.video[1] },
+          { id: "video-sample-3", title: "人物讲解", src: resultEmptyGuideAssetSets.video[2] }
+        ]
+      }
+    );
+  }
+
+  if (tool.key === "pod-partial-edit" || tool.key === "pod-variation" || tool.key === "pod-fusion") {
     return {
-      mode: "steps",
-      title: "只需三步，快速开始生成视频结果",
-      description: "先准备主体素材，再补充画面描述或脚本要求，系统会输出对应的视频结果。",
-      steps: [
+      mode: "switcher",
+      title: "根据不同印花处理目标，选择更合适的使用方式",
+      description: "这类功能对输入素材和预期结果差异较大，可先切换查看不同处理方向再开始。",
+      tabs: [
         {
-          id: "video-step-1",
-          index: "01",
-          title: "上传主体素材",
-          description: "上传商品图、模特图或需要替换的视频首帧素材。",
-          mediaSrc: resultEmptyGuideAssetSets.video[0]
+          id: "pod-preserve",
+          label: "保留主体",
+          title: "在保留原有主体特征下做细节调整",
+          description: "适合轻度改图、局部优化和风格微调，适合已有成熟图案二次处理。",
+          heroSrc: resultEmptyGuideAssetSets.pod[0],
+          noteTitle: "适合场景",
+          notes: ["局部改色", "微调元素", "保留原主体结构"],
+          samples: [
+            { id: "pod-switch-1", title: "卡通图案", src: resultEmptyGuideAssetSets.pod[0] },
+            { id: "pod-switch-2", title: "贴花图案", src: resultEmptyGuideAssetSets.pod[1] },
+            { id: "pod-switch-3", title: "纹样图案", src: resultEmptyGuideAssetSets.pod[2] }
+          ]
         },
         {
-          id: "video-step-2",
-          index: "02",
-          title: "补充脚本或动作描述",
-          description: "可写镜头运动、节奏、文案卖点和画面风格，让结果更贴近预期。",
-          mediaSrc: resultEmptyGuideAssetSets.video[1]
-        },
-        {
-          id: "video-step-3",
-          index: "03",
-          title: "生成并查看结果",
-          description: "完成后可在这里预览、筛选并下载视频结果。",
-          mediaSrc: resultEmptyGuideAssetSets.video[2]
+          id: "pod-expand-style",
+          label: "扩展风格",
+          title: "围绕原图案做更多风格和构图变化",
+          description: "适合做裂变、元素融合和方向探索，帮助快速产出更多备选方案。",
+          heroSrc: resultEmptyGuideAssetSets.pod[1],
+          noteTitle: "温馨提示",
+          notes: ["适合风格探索", "适合批量做方向对比", "建议上传主体完整的图案"],
+          samples: [
+            { id: "pod-switch-4", title: "拼贴变化", src: resultEmptyGuideAssetSets.pod[1] },
+            { id: "pod-switch-5", title: "风格融合", src: resultEmptyGuideAssetSets.pod[2] },
+            { id: "pod-switch-6", title: "图案延展", src: resultEmptyGuideAssetSets.pod[0] }
+          ]
         }
-      ],
-      samples: [
-        { id: "video-sample-1", title: "产品展示", src: resultEmptyGuideAssetSets.video[0] },
-        { id: "video-sample-2", title: "卖点演示", src: resultEmptyGuideAssetSets.video[1] },
-        { id: "video-sample-3", title: "人物讲解", src: resultEmptyGuideAssetSets.video[2] }
       ]
     };
   }
@@ -1146,72 +1603,114 @@ const createResultEmptyGuideConfig = (tool: ToolConfig): ResultEmptyGuideConfig 
     };
   }
 
-  if (tool.key.startsWith("image-")) {
+  if (tool.key === "image-expand") {
     return {
-      mode: "illustration",
-      title: "上传素材后，在这里查看处理结果",
-      description: "可用于抠图、去水印、变清晰、无损放大、消除和扩图，建议优先上传主体清楚的原图。",
-      actionLabel: "上传图片",
-      uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
-      heroSrc: resultEmptyGuideAssetSets.image[0],
-      samples: [
-        { id: "image-sample-1", title: "商品图", src: resultEmptyGuideAssetSets.image[0] },
-        { id: "image-sample-2", title: "人物图", src: resultEmptyGuideAssetSets.image[1] },
-        { id: "image-sample-3", title: "海报图", src: resultEmptyGuideAssetSets.image[2] }
+      mode: "switcher",
+      title: "按不同扩图目标查看示意后再开始",
+      description: "图片扩图会受到目标画幅、画面位置和扩展内容的影响，建议先选择更接近的使用场景。",
+      tabs: [
+        {
+          id: "expand-product",
+          label: "商品扩图",
+          title: "围绕商品主体延展背景和构图空间",
+          description: "适合主图补边、海报留白、横竖版适配等电商场景。",
+          heroSrc: resultEmptyGuideAssetSets.image[0],
+          noteTitle: "推荐填写",
+          notes: ["补充左右背景", "增加桌面或场景元素", "保留商品主体不变"],
+          samples: [
+            { id: "expand-sample-1", title: "主图扩边", src: resultEmptyGuideAssetSets.image[0] },
+            { id: "expand-sample-2", title: "人像扩边", src: resultEmptyGuideAssetSets.image[1] },
+            { id: "expand-sample-3", title: "海报扩边", src: resultEmptyGuideAssetSets.image[2] }
+          ]
+        },
+        {
+          id: "expand-poster",
+          label: "海报扩图",
+          title: "按目标比例补足版面和氛围内容",
+          description: "适合横版转竖版、竖版转横版、补充画面氛围和排版空间。",
+          heroSrc: resultEmptyGuideAssetSets.image[2],
+          noteTitle: "温馨提示",
+          notes: ["建议明确目标画幅", "可填写扩展方向和环境描述", "主体越清晰结果越稳定"],
+          samples: [
+            { id: "expand-poster-1", title: "横版海报", src: resultEmptyGuideAssetSets.image[2] },
+            { id: "expand-poster-2", title: "商品扩展", src: resultEmptyGuideAssetSets.image[0] },
+            { id: "expand-poster-3", title: "人物扩展", src: resultEmptyGuideAssetSets.image[1] }
+          ]
+        }
       ]
     };
+  }
+
+  if (tool.key.startsWith("image-")) {
+    return (
+      imageIllustrationGuideConfigs[tool.key] ?? {
+        mode: "illustration",
+        title: "上传素材后，在这里查看处理结果",
+        description: "可用于抠图、去水印、变清晰、无损放大、消除和扩图，建议优先上传主体清楚的原图。",
+        actionLabel: "上传图片",
+        uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
+        heroSrc: resultEmptyGuideAssetSets.image[0],
+        samples: [
+          { id: "image-sample-1", title: "商品图", src: resultEmptyGuideAssetSets.image[0] },
+          { id: "image-sample-2", title: "人物图", src: resultEmptyGuideAssetSets.image[1] },
+          { id: "image-sample-3", title: "海报图", src: resultEmptyGuideAssetSets.image[2] }
+        ]
+      }
+    );
   }
 
   if (tool.key.startsWith("goods-")) {
-    return {
-      mode: "illustration",
-      title: "上传商品图后，快速生成电商展示结果",
-      description: "适合主图、白底图、场景图、卖点图等电商物料生成，推荐使用主体完整、边缘清晰的商品图。",
-      actionLabel: "上传图片",
-      uploadHint: "支持多张图片同时上传，也可以直接拖拽或粘贴到左侧上传区域",
-      heroSrc: resultEmptyGuideAssetSets.ecommerce[0],
-      samples: [
-        { id: "goods-sample-1", title: "白底商品", src: resultEmptyGuideAssetSets.ecommerce[0] },
-        { id: "goods-sample-2", title: "场景商品", src: resultEmptyGuideAssetSets.ecommerce[1] },
-        { id: "goods-sample-3", title: "数码商品", src: resultEmptyGuideAssetSets.ecommerce[2] }
-      ]
-    };
+    return (
+      goodsSimpleHeroGuideConfigs[tool.key] ?? {
+        mode: "simple-hero",
+        title: "上传商品图后，快速生成电商展示结果",
+        description: "适合主图、白底图、场景图、卖点图等电商物料生成，推荐使用主体完整、边缘清晰的商品图。",
+        heroSrc: resultEmptyGuideAssetSets.ecommerce[0],
+        samples: [
+          { id: "goods-sample-1", title: "白底商品", src: resultEmptyGuideAssetSets.ecommerce[0] },
+          { id: "goods-sample-2", title: "场景商品", src: resultEmptyGuideAssetSets.ecommerce[1] },
+          { id: "goods-sample-3", title: "数码商品", src: resultEmptyGuideAssetSets.ecommerce[2] }
+        ]
+      }
+    );
   }
 
   if (tool.key === "more-rights" || tool.key === "more-collect") {
-    return {
-      mode: "steps",
-      title: "按步骤上传并处理，结果会展示在这里",
-      description: "这类工具通常需要先上传素材或链接，再补充筛选条件，最后查看处理结果。",
-      steps: [
-        {
-          id: "more-step-1",
-          index: "01",
-          title: "上传或导入内容",
-          description: "可先上传商品图、文档或待检测素材。",
-          mediaSrc: resultEmptyGuideAssetSets.ecommerce[0]
-        },
-        {
-          id: "more-step-2",
-          index: "02",
-          title: "补充处理条件",
-          description: "根据工具类型填写采集范围、检测要求或筛选条件。",
-          mediaSrc: resultEmptyGuideAssetSets.ecommerce[1]
-        },
-        {
-          id: "more-step-3",
-          index: "03",
-          title: "查看处理结果",
-          description: "生成完成后，可在结果区继续预览、复制或下载。",
-          mediaSrc: resultEmptyGuideAssetSets.ecommerce[2]
-        }
-      ],
-      samples: [
-        { id: "more-sample-1", title: "电商示例", src: resultEmptyGuideAssetSets.ecommerce[0] },
-        { id: "more-sample-2", title: "详情示例", src: resultEmptyGuideAssetSets.ecommerce[1] },
-        { id: "more-sample-3", title: "素材示例", src: resultEmptyGuideAssetSets.ecommerce[2] }
-      ]
-    };
+    return (
+      moreStepsGuideConfigs[tool.key] ?? {
+        mode: "steps",
+        title: "按步骤上传并处理，结果会展示在这里",
+        description: "这类工具通常需要先上传素材或链接，再补充筛选条件，最后查看处理结果。",
+        steps: [
+          {
+            id: "more-step-1",
+            index: "01",
+            title: "上传或导入内容",
+            description: "可先上传商品图、文档或待检测素材。",
+            mediaSrc: resultEmptyGuideAssetSets.ecommerce[0]
+          },
+          {
+            id: "more-step-2",
+            index: "02",
+            title: "补充处理条件",
+            description: "根据工具类型填写采集范围、检测要求或筛选条件。",
+            mediaSrc: resultEmptyGuideAssetSets.ecommerce[1]
+          },
+          {
+            id: "more-step-3",
+            index: "03",
+            title: "查看处理结果",
+            description: "生成完成后，可在结果区继续预览、复制或下载。",
+            mediaSrc: resultEmptyGuideAssetSets.ecommerce[2]
+          }
+        ],
+        samples: [
+          { id: "more-sample-1", title: "电商示例", src: resultEmptyGuideAssetSets.ecommerce[0] },
+          { id: "more-sample-2", title: "详情示例", src: resultEmptyGuideAssetSets.ecommerce[1] },
+          { id: "more-sample-3", title: "素材示例", src: resultEmptyGuideAssetSets.ecommerce[2] }
+        ]
+      }
+    );
   }
 
   return {
@@ -20612,6 +21111,21 @@ function ResultEmptyGuide({
           <div className="ck-results-empty-title">{config.title}</div>
           <div className="ck-results-empty-copy">{config.description}</div>
           <div className="ck-results-empty-hint">{config.uploadHint}</div>
+        </div>
+        <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={config.samples} />
+      </div>
+    );
+  }
+
+  if (config.mode === "simple-hero") {
+    return (
+      <div className="ck-results-empty ck-results-empty-guide ck-results-empty-guide-simple">
+        <div className="ck-results-empty-copy-shell">
+          <div className="ck-results-empty-title">{config.title}</div>
+          <div className="ck-results-empty-copy">{config.description}</div>
+        </div>
+        <div className="ck-results-empty-hero">
+          <img alt={config.title} src={config.heroSrc} />
         </div>
         <ResultEmptyGuideSampleStrip onApplySamples={onApplySamples} samples={config.samples} />
       </div>
