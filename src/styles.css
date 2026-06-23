@@ -4504,7 +4504,7 @@ a {
 
 .ck-image-expand-settings {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .ck-image-expand-compact-block {
@@ -4550,9 +4550,9 @@ a {
 
 .ck-image-expand-frame-block .ck-select-dropdown-menu button {
   height: auto;
-  min-height: 30px;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  min-height: 24px;
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
 .ck-image-expand-frame-option-label {
@@ -4615,8 +4615,8 @@ a {
 }
 
 .ck-image-expand-preview-card {
-  margin-top: 4px;
-  padding: 14px;
+  margin-top: 0;
+  padding: 10px;
   border: 1px solid #e7ebf5;
   border-radius: 16px;
   background: #fbfcff;
@@ -4628,11 +4628,11 @@ a {
 }
 
 .ck-image-expand-preview-frame {
-  width: min(100%, 260px);
+  width: min(100%, 130px);
   border: 1px dashed #b9c3d8;
   border-radius: 18px;
   background: repeating-linear-gradient(45deg, #f6f8fc 0 10px, #ffffff 10px 20px);
-  padding: 16px;
+  padding: 8px;
   box-sizing: border-box;
 }
 
