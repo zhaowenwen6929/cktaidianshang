@@ -4504,15 +4504,15 @@ a {
 
 .ck-image-expand-settings {
   display: grid;
-  gap: 4px;
+  gap: 0;
 }
 
 .ck-image-expand-compact-block {
-  margin-bottom: 0;
+  margin-bottom: -6px;
 }
 
 .ck-image-expand-frame-block {
-  margin-bottom: 0;
+  margin-bottom: -6px;
 }
 
 .ck-image-expand-frame-block .ck-inline-field {
@@ -4526,7 +4526,7 @@ a {
 }
 
 .ck-image-expand-frame-block .ck-select {
-  min-height: 26px;
+  min-height: 32px;
   height: auto;
   align-items: center;
   padding-top: 4px;
@@ -4550,7 +4550,7 @@ a {
 
 .ck-image-expand-frame-block .ck-select-dropdown-menu button {
   height: auto;
-  min-height: 24px;
+  min-height: 32px;
   padding-top: 2px;
   padding-bottom: 2px;
 }
@@ -4594,6 +4594,15 @@ a {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 8px 2px;
+}
+
+.ck-image-expand-ratio-custom-trigger {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .ck-image-expand-ratio-custom-row span {
@@ -4673,7 +4682,7 @@ a {
 }
 
 .ck-image-expand-preview-card {
-  margin-top: 0;
+  margin-top: 8px;
   padding: 10px;
   border: 1px solid #e7ebf5;
   border-radius: 16px;
@@ -4703,7 +4712,88 @@ a {
 .ck-image-expand-preview-content {
   border-radius: 12px;
   background: #111111;
-  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.18);
+  box-shadow: none;
+}
+
+.ck-image-expand-preview-card + .ck-form-block,
+.ck-image-expand-preview-card + .ck-form-block.ck-set-pack-selling-points {
+  margin-top: 10px;
+}
+
+.ck-image-expand-frame-menu {
+  padding-bottom: 72px !important;
+}
+
+.ck-image-expand-frame-menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ck-image-expand-frame-custom-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.ck-image-expand-frame-custom-bar > span {
+  color: #1b2337;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ck-image-expand-frame-custom-input {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #f5f7fd;
+}
+
+.ck-image-expand-frame-custom-input input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #1b2337;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.ck-image-expand-frame-custom-input input:focus {
+  outline: none;
+}
+
+.ck-image-expand-frame-custom-confirm {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #f5f7fd;
+  color: #8a94aa;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.ck-image-expand-frame-custom-confirm:disabled {
+  opacity: 1;
+}
+
+.ck-image-expand-frame-custom-confirm:not(:disabled) {
+  background: #eef4ff;
+  color: #2f6bff;
 }
 
 .ck-video-print-extend-head {

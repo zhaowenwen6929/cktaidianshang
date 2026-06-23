@@ -563,6 +563,7 @@ const imageExpandTargetFrameOptions = [
 ] as const;
 
 const imageExpandCanvasRatioSelectOptions = [...imageExpandCanvasRatioOptions, "自定义"] as const;
+const imageExpandCustomFrameStorageKey = "image-expand-custom-frames";
 
 type VideoPricingSelectionMap = {
   mode?: string;
@@ -9193,15 +9194,16 @@ function ImageExpandModeSection({
   onSelectionMapChange: (values: AdvancedSelectionMap) => void;
 }) {
   const selectedRatio = normalizeImageExpandCanvasRatio(selectedMap.imageExpandCanvasRatio);
-  const isPresetRatio = imageExpandCanvasRatioOptions.includes(selectedRatio as (typeof imageExpandCanvasRatioOptions)[number]);
+  const [customTargetFrames, setCustomTargetFrames] = useState<Array<{ ratio: string; name: string; size: string }>>([]);
+  const targetFrameOptions = [...customTargetFrames, ...imageExpandTargetFrameOptions];
   const selectedPosition = selectedMap.imageExpandCanvasPosition ?? "center";
   const selectedPositionLabel =
     imageExpandCanvasPositionOptions.find((option) => option.key === selectedPosition)?.label ?? "画面中心";
   const activeTargetFrame =
-    imageExpandTargetFrameOptions.find((option) => `${option.name} ${option.size}` === selectedMap.imageExpandTargetFrame) ?? imageExpandTargetFrameOptions[0];
+    targetFrameOptions.find((option) => `${option.name} ${option.size}` === selectedMap.imageExpandTargetFrame) ?? targetFrameOptions[0];
   const activeTargetFrameValue = `${activeTargetFrame.name} ${activeTargetFrame.size}`;
   const renderTargetFrameLabel = (option: string) => {
-    const matched = imageExpandTargetFrameOptions.find((item) => `${item.name} ${item.size}` === option);
+    const matched = targetFrameOptions.find((item) => `${item.name} ${item.size}` === option);
     if (!matched) return option;
     return (
       <span className="ck-image-expand-frame-option-label">
@@ -9210,6 +9212,19 @@ function ImageExpandModeSection({
       </span>
     );
   };
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(imageExpandCustomFrameStorageKey);
+      if (!stored) return;
+      const parsed = JSON.parse(stored) as Array<{ ratio: string; name: string; size: string }>;
+      if (Array.isArray(parsed)) {
+        setCustomTargetFrames(parsed);
+      }
+    } catch {
+      // ignore malformed local data
+    }
+  }, []);
 
   return (
     <div className="ck-image-expand-settings">
@@ -9238,23 +9253,38 @@ function ImageExpandModeSection({
         value={selectedPositionLabel}
       />
 
-      <div className="ck-form-block ck-image-expand-frame-block">
-        <SelectField
-          fullWidth
-          label="目标画幅"
-          onChange={(value) =>
-            onSelectionMapChange({
-              imageExpandCanvasRatio: selectedRatio,
-              imageExpandCanvasPosition: selectedPosition,
-              imageExpandTargetFrame: value
-            })
+      <ImageExpandFrameSelect
+        onChange={(value) =>
+          onSelectionMapChange({
+            imageExpandCanvasRatio: selectedRatio,
+            imageExpandCanvasPosition: selectedPosition,
+            imageExpandTargetFrame: value
+          })
+        }
+        onCreateCustomSize={(payload) => {
+          const customOption = {
+            ratio: `${payload.width}:${payload.height}`,
+            name: "自定义",
+            size: `${payload.width}x${payload.height}px`
+          };
+          const nextCustomOptions = [customOption, ...customTargetFrames.filter((item) => item.size !== customOption.size)].slice(0, 10);
+          setCustomTargetFrames(nextCustomOptions);
+          try {
+            window.localStorage.setItem(imageExpandCustomFrameStorageKey, JSON.stringify(nextCustomOptions));
+          } catch {
+            // ignore storage failures
           }
-          options={imageExpandTargetFrameOptions.map((option) => `${option.name} ${option.size}`)}
-          renderOptionLabel={renderTargetFrameLabel}
-          required
-          value={activeTargetFrameValue}
-        />
-      </div>
+          onSelectionMapChange({
+            imageExpandCanvasRatio: selectedRatio,
+            imageExpandCanvasPosition: selectedPosition,
+            imageExpandTargetFrame: `${customOption.name} ${customOption.size}`
+          });
+        }}
+        options={targetFrameOptions.map((option) => `${option.name} ${option.size}`)}
+        renderOptionLabel={renderTargetFrameLabel}
+        required
+        value={activeTargetFrameValue}
+      />
 
       <ImageExpandPreviewCard canvasRatio={selectedRatio} positionKey={selectedPosition} targetFrame={activeTargetFrame} />
     </div>
@@ -9276,6 +9306,7 @@ function ImageExpandRatioSelect({
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
   const isPresetRatio = imageExpandCanvasRatioOptions.includes(value as (typeof imageExpandCanvasRatioOptions)[number]);
   const customInputValue = isPresetRatio ? "" : value.replace("%", "");
+  const displayValue = isPresetRatio ? value : customInputValue ? `${customInputValue}%` : "自定义";
 
   useEffect(() => {
     setOpen(false);
@@ -9347,7 +9378,7 @@ function ImageExpandRatioSelect({
         <FieldTitle label="画面占比" required={required} />
         <div className="ck-select-dropdown" ref={dropdownRef}>
           <button className="ck-select" onClick={() => setOpen((current) => !current)} type="button">
-            {isPresetRatio ? value : `${customInputValue}%`}
+            {displayValue}
             <span>⌄</span>
           </button>
           {open ? (
@@ -9366,7 +9397,19 @@ function ImageExpandRatioSelect({
                 </button>
               ))}
               <div className={`ck-image-expand-ratio-custom-row${!isPresetRatio ? " active" : ""}`}>
-                <span>自定义</span>
+                <button
+                  className="ck-image-expand-ratio-custom-trigger"
+                  onClick={() => {
+                    if (customInputValue) {
+                      onChange?.(`${customInputValue}%`);
+                      return;
+                    }
+                    onChange?.("15%");
+                  }}
+                  type="button"
+                >
+                  自定义
+                </button>
                 <div className="ck-image-expand-ratio-custom-input">
                   <input
                     inputMode="numeric"
@@ -9395,6 +9438,165 @@ function ImageExpandRatioSelect({
   );
 }
 
+function ImageExpandFrameSelect({
+  value,
+  required,
+  options,
+  renderOptionLabel,
+  onChange,
+  onCreateCustomSize
+}: {
+  value: string;
+  required?: boolean;
+  options: string[];
+  renderOptionLabel?: (value: string) => ReactNode;
+  onChange?: (value: string) => void;
+  onCreateCustomSize?: (value: { width: number; height: number }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [customWidth, setCustomWidth] = useState("");
+  const [customHeight, setCustomHeight] = useState("");
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+
+  useEffect(() => {
+    setOpen(false);
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updateMenuPlacement = () => {
+      const triggerRect = dropdownRef.current?.getBoundingClientRect();
+      if (!triggerRect) return;
+
+      const panelElement = dropdownRef.current?.closest(".ck-panel");
+      const footerElement = panelElement?.querySelector(".ck-panel-footer") as HTMLElement | null;
+      const footerRect = footerElement?.getBoundingClientRect();
+      const lowerBoundary = footerRect ? footerRect.top - 8 : window.innerHeight - 16;
+      const upperBoundary = 16;
+      const spaceBelow = lowerBoundary - triggerRect.bottom - 6;
+      const spaceAbove = triggerRect.top - upperBoundary - 6;
+      const availableBelow = Math.max(260, Math.floor(spaceBelow));
+      const availableAbove = Math.max(260, Math.floor(spaceAbove));
+
+      const sharedStyle: CSSProperties = {
+        left: triggerRect.left,
+        width: triggerRect.width,
+        position: "fixed",
+        zIndex: 100130
+      };
+
+      if (spaceBelow < 320 && spaceAbove > spaceBelow) {
+        setOpenDirection("up");
+        setMenuStyle({
+          ...sharedStyle,
+          bottom: window.innerHeight - triggerRect.top + 6,
+          maxHeight: Math.min(360, availableAbove)
+        });
+        return;
+      }
+
+      setOpenDirection("down");
+      setMenuStyle({
+        ...sharedStyle,
+        top: triggerRect.bottom + 6,
+        maxHeight: Math.min(360, availableBelow)
+      });
+    };
+
+    updateMenuPlacement();
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", updateMenuPlacement);
+    window.addEventListener("scroll", updateMenuPlacement, true);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("resize", updateMenuPlacement);
+      window.removeEventListener("scroll", updateMenuPlacement, true);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="ck-form-block ck-image-expand-frame-block">
+      <div className="ck-form-block-full">
+        <FieldTitle label="目标画幅" required={required} />
+        <div className="ck-select-dropdown full" ref={dropdownRef}>
+          <button className="ck-select full" onClick={() => setOpen((current) => !current)} type="button">
+            <span className="ck-select-label">{renderOptionLabel ? renderOptionLabel(value) : value}</span>
+            <span>⌄</span>
+          </button>
+          {open ? (
+            <div className={`ck-select-dropdown-menu full ck-image-expand-frame-menu${openDirection === "up" ? " up" : ""}`} style={menuStyle}>
+              <div className="ck-image-expand-frame-menu-options">
+                {options.map((option) => (
+                  <button
+                    className={option === value ? "active" : ""}
+                    key={option}
+                    onClick={() => {
+                      onChange?.(option);
+                      setOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {renderOptionLabel ? renderOptionLabel(option) : option}
+                  </button>
+                ))}
+              </div>
+              <div className="ck-image-expand-frame-custom-bar">
+                <div className="ck-image-expand-frame-custom-input">
+                  <input
+                    inputMode="numeric"
+                    max={99999}
+                    min={1}
+                    onChange={(event) => setCustomWidth(event.target.value.replace(/[^\d]/g, ""))}
+                    placeholder="宽"
+                    value={customWidth}
+                  />
+                </div>
+                <span>x</span>
+                <div className="ck-image-expand-frame-custom-input">
+                  <input
+                    inputMode="numeric"
+                    max={99999}
+                    min={1}
+                    onChange={(event) => setCustomHeight(event.target.value.replace(/[^\d]/g, ""))}
+                    placeholder="高"
+                    value={customHeight}
+                  />
+                </div>
+                <button
+                  className="ck-image-expand-frame-custom-confirm"
+                  disabled={!customWidth || !customHeight}
+                  onClick={() => {
+                    const width = Math.max(1, Number(customWidth) || 0);
+                    const height = Math.max(1, Number(customHeight) || 0);
+                    if (!width || !height) return;
+                    onCreateCustomSize?.({ width, height });
+                    setCustomWidth("");
+                    setCustomHeight("");
+                    setOpen(false);
+                  }}
+                  type="button"
+                >
+                  确定
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImageExpandPreviewCard({
   canvasRatio,
   positionKey,
@@ -9402,7 +9604,7 @@ function ImageExpandPreviewCard({
 }: {
   canvasRatio: string;
   positionKey: string;
-  targetFrame: (typeof imageExpandTargetFrameOptions)[number];
+  targetFrame: { ratio: string; name: string; size: string };
 }) {
   const normalizedRatioValue = Math.min(100, Math.max(20, Number.parseFloat(canvasRatio.replace("%", "")) || 85));
   const frameMatch = targetFrame.size.match(/^(\d+)x(\d+)px$/i);
