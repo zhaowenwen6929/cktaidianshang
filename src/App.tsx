@@ -1037,7 +1037,7 @@ const navGroups: Array<{
       { key: "pod-extract", label: "印花图提取", panelTitle: "印花图提取", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-variation", label: "印花图裂变", panelTitle: "印花图裂变", resultCount: 5, ratioLabel: "1:1" },
       { key: "pod-partial-edit", label: "局部改图", panelTitle: "局部改图", resultCount: 5, ratioLabel: "1:1" },
-      { key: "pod-fusion", label: "元素融合（待完善）", panelTitle: "元素融合", resultCount: 5, ratioLabel: "1:1" },
+      { key: "pod-fusion", label: "元素融合", panelTitle: "元素融合", resultCount: 5, ratioLabel: "1:1" },
       { key: "video-scene-grid", label: "多联画", panelTitle: "多联画", resultCount: 4, ratioLabel: "16:9" },
       { key: "video-pattern-repeat", label: "四方连续图", panelTitle: "四方连续图", resultCount: 4, ratioLabel: "1:1" },
       { key: "video-pod-mockup", label: "POD样机套图（待完善）", panelTitle: "POD样机套图（待完善）", resultCount: 4, ratioLabel: "1:1" },
@@ -12882,6 +12882,10 @@ function PodFusionSetupSection({
           </div>
         </>
       )}
+
+      {mode === "一对多融合" ? (
+        <div className="ck-pod-fusion-mode-tip">每一张融合对象将分别与全部的融合元素进行融合，生成新创意</div>
+      ) : null}
 
       <div className="ck-inline-field ck-aligned-inline-field">
         <FieldTitle label="选择风格" required />
