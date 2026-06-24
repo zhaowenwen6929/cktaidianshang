@@ -7912,7 +7912,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "video-watermark": {
     creationModeConfigKey: "video-processing",
-    sectionOrder: ["upload-video", "mode-choice", "mask-draw", "supplement"],
+    sectionOrder: ["upload-video", "mode-choice", "mask-draw"],
     uploads: {
       main: {
         label: "上传素材",
@@ -11674,7 +11674,7 @@ function VideoClarifyResolutionSection({
   return (
     <AdaptiveChoiceField
       columns={3}
-      label="分辨率"
+      label="选择模式"
       onChange={setResolution}
       options={videoClarifyResolutionOptions.map((option) => ({ key: option, label: option }))}
       required
@@ -11694,16 +11694,35 @@ function VideoTranslateModeSection({
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
   const defaultMode = selectedValues?.videoTranslateMode ?? videoTranslateModeCards[0].key;
   const [mode, setMode] = useState(defaultMode);
 
   useEffect(() => {
-    if (selectedValues?.videoTranslateMode && selectedValues.videoTranslateMode !== mode) {
-      setMode(selectedValues.videoTranslateMode);
+    if (!selectedValues) {
+      return;
+    }
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+
+    const nextMode = selectedValues.videoTranslateMode ?? videoTranslateModeCards[0].key;
+    const nextSignature = JSON.stringify({ mode: nextMode });
+    if (nextSignature === lastSelectedValuesSignatureRef.current) {
+      return;
+    }
+    lastSelectedValuesSignatureRef.current = nextSignature;
+
+    if (nextMode !== mode) {
+      setMode(nextMode);
     }
   }, [mode, selectedValues]);
 
   useEffect(() => {
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({ mode });
     onSelectionMapChange?.({ videoTranslateMode: mode });
     onSelectionChange?.([mode]);
     onCreationModeChange?.({
@@ -11718,10 +11737,10 @@ function VideoTranslateModeSection({
   return (
     <div className="ck-form-block">
       <FieldTitle label="选择模式" required />
-      <div className="ck-aplus-module-grid">
+      <div className="ck-aplus-module-grid ck-video-translate-mode-grid">
         {videoTranslateModeCards.map((option) => (
           <button
-            className={`ck-aplus-module-card${mode === option.key ? " active" : ""}`}
+            className={`ck-aplus-module-card ck-video-translate-mode-card${mode === option.key ? " active" : ""}`}
             key={option.key}
             onClick={() => setMode(option.key)}
             type="button"
@@ -16434,14 +16453,16 @@ function VideoWatermarkModeSection({
         </button>
       </div>
       {mode === "smart" ? (
-        <AdaptiveChoiceField
-          columns={3}
-          label=""
-          onChange={setAutoTarget}
-          options={autoOptions.map((option) => ({ key: option, label: option }))}
-          required
-          value={autoTarget}
-        />
+        <div style={{ marginTop: 18 }}>
+          <AdaptiveChoiceField
+            columns={3}
+            label=""
+            onChange={setAutoTarget}
+            options={autoOptions.map((option) => ({ key: option, label: option }))}
+            required
+            value={autoTarget}
+          />
+        </div>
       ) : null}
     </div>
   );

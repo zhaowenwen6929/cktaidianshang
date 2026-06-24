@@ -4581,6 +4581,7 @@ a {
   width: 240px !important;
   max-height: none !important;
   padding: 12px !important;
+  overflow: visible !important;
 }
 
 .ck-image-expand-ratio-menu {
@@ -4674,12 +4675,14 @@ a {
 }
 
 .ck-image-expand-position-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .ck-image-expand-position-grid button {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4693,9 +4696,33 @@ a {
   padding: 0;
 }
 
+.ck-image-expand-position-grid button::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(27, 35, 55, 0.92);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+  z-index: 100131;
+}
+
 .ck-image-expand-position-grid button:hover {
   background: #eef4ff;
   color: #2f6bff;
+}
+
+.ck-image-expand-position-grid button:hover::after,
+.ck-image-expand-position-grid button:focus-visible::after {
+  opacity: 1;
 }
 
 .ck-image-expand-position-grid button.active {
@@ -4722,8 +4749,8 @@ a {
   border: 1px dashed #b9c3d8;
   border-radius: 18px;
   background: repeating-linear-gradient(45deg, #f6f8fc 0 10px, #ffffff 10px 20px);
-  padding: 8px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .ck-image-expand-preview-stage {
@@ -4744,25 +4771,30 @@ a {
 }
 
 .ck-image-expand-frame-menu {
-  padding-bottom: 78px !important;
+  display: flex !important;
+  flex-direction: column;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
 }
 
 .ck-image-expand-frame-menu-options {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 6px;
 }
 
 .ck-image-expand-frame-custom-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) minmax(72px, auto);
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
   padding: 12px 10px;
+  margin: 0 -6px -6px;
   border-top: 1px solid #ebeef5;
   background: #fff;
   box-sizing: border-box;
@@ -12457,6 +12489,33 @@ textarea {
   word-break: keep-all;
 }
 
+.ck-video-translate-mode-card {
+  min-height: 96px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.ck-video-translate-mode-card strong,
+.ck-video-translate-mode-card span {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.ck-video-translate-mode-card strong {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.ck-video-translate-mode-card span {
+  margin-top: 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .ck-set-pack-type-modal {
   width: min(760px, calc(100vw - 32px));
   height: calc(100vh - 82px);
@@ -13755,6 +13814,22 @@ textarea {
 
   .ck-aplus-module-card strong {
     font-size: 12px;
+    line-height: 16px;
+  }
+
+  .ck-video-translate-mode-card {
+    min-height: 88px;
+    padding: 12px 12px 10px;
+    gap: 6px;
+  }
+
+  .ck-video-translate-mode-card strong {
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .ck-video-translate-mode-card span {
+    font-size: 11px;
     line-height: 16px;
   }
 
