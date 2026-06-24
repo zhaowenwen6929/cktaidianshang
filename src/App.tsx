@@ -699,7 +699,7 @@ type PodFusionPairGroup = {
 };
 
 type PodFusionOneToManySelection = {
-  base?: UploadItem;
+  baseItems: UploadItem[];
   fusionItems: UploadItem[];
 };
 
@@ -12067,8 +12067,9 @@ function getPodFusionPairGroups(selectionMap?: AdvancedSelectionMap) {
 function getPodFusionOneToManySelection(selectionMap?: AdvancedSelectionMap) {
   return (
     safeParseJson<PodFusionOneToManySelection>(selectionMap?.podFusionOneToManySelection, {
+      baseItems: [],
       fusionItems: []
-    }) ?? { fusionItems: [] }
+    }) ?? { baseItems: [], fusionItems: [] }
   );
 }
 
@@ -12078,14 +12079,15 @@ function getPodFusionMetrics(selectionMap?: AdvancedSelectionMap) {
 
   if (mode === "一对多融合") {
     const oneToMany = getPodFusionOneToManySelection(selectionMap);
+    const baseCount = oneToMany.baseItems.length;
     const fusionCount = oneToMany.fusionItems.length;
     return {
       mode,
       outputCount,
-      isReady: Boolean(oneToMany.base && fusionCount > 0),
-      groupCount: fusionCount,
-      sourceCount: fusionCount,
-      payloadUploads: [oneToMany.base, ...oneToMany.fusionItems].filter(Boolean) as UploadItem[]
+      isReady: Boolean(baseCount > 0 && fusionCount > 0),
+      groupCount: baseCount * fusionCount,
+      sourceCount: baseCount + fusionCount,
+      payloadUploads: [...oneToMany.baseItems, ...oneToMany.fusionItems]
     };
   }
 
@@ -12696,13 +12698,19 @@ function PodFusionSetupSection({
   selectedValues,
   onSelectionChange,
   onSelectionMapChange,
-  onCreationModeChange
+  onCreationModeChange,
+  remainingStorageMb,
+  onToast
 }: {
   selectedValues?: AdvancedSelectionMap;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
+  remainingStorageMb: number;
+  onToast: (message: string, tone?: "warning") => void;
 }) {
+  const lastSyncedValuesRef = useRef("");
+  const lastEmitRef = useRef("");
   const [mode, setMode] = useState<PodFusionMode>(
     (podFusionModeOptions.find((item) => item === selectedValues?.podFusionMode) ?? podFusionModeOptions[0]) as PodFusionMode
   );
@@ -12714,27 +12722,32 @@ function PodFusionSetupSection({
   const [oneToMany, setOneToMany] = useState<PodFusionOneToManySelection>(getPodFusionOneToManySelection(selectedValues));
   const [pairModalOpen, setPairModalOpen] = useState(false);
   const [libraryTarget, setLibraryTarget] = useState<"base" | "fusion" | null>(null);
-  const baseLocalInputRef = useRef<HTMLInputElement | null>(null);
-  const fusionLocalInputRef = useRef<HTMLInputElement | null>(null);
+  const baseFieldKey = "pod-fusion:base";
+  const fusionFieldKey = "pod-fusion:fusion";
 
   useEffect(() => {
-    const nextMode = selectedValues?.podFusionMode;
-    if (nextMode && podFusionModeOptions.includes(nextMode as PodFusionMode) && nextMode !== mode) {
-      setMode(nextMode as PodFusionMode);
+    const nextState = {
+      mode: (podFusionModeOptions.find((item) => item === selectedValues?.podFusionMode) ?? podFusionModeOptions[0]) as PodFusionMode,
+      style: selectedValues?.podFusionStyle ?? podFusionStyleOptions[0],
+      background: selectedValues?.podFusionBackground ?? podFusionBackgroundOptions[0],
+      ratio: selectedValues?.podFusionRatio ?? podFusionRatioOptions[0],
+      outputCount: selectedValues?.podFusionOutputCount ?? podFusionOutputCountOptions[0],
+      pairGroups: getPodFusionPairGroups(selectedValues),
+      oneToMany: getPodFusionOneToManySelection(selectedValues)
+    };
+    const nextSyncKey = JSON.stringify(nextState);
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
     }
-    if (selectedValues?.podFusionStyle && selectedValues.podFusionStyle !== style) {
-      setStyle(selectedValues.podFusionStyle);
-    }
-    if (selectedValues?.podFusionBackground && selectedValues.podFusionBackground !== background) {
-      setBackground(selectedValues.podFusionBackground);
-    }
-    if (selectedValues?.podFusionRatio && selectedValues.podFusionRatio !== ratio) {
-      setRatio(selectedValues.podFusionRatio);
-    }
-    if (selectedValues?.podFusionOutputCount && selectedValues.podFusionOutputCount !== outputCount) {
-      setOutputCount(selectedValues.podFusionOutputCount);
-    }
-  }, [background, mode, outputCount, ratio, selectedValues, style]);
+    lastSyncedValuesRef.current = nextSyncKey;
+    setMode(nextState.mode);
+    setStyle(nextState.style);
+    setBackground(nextState.background);
+    setRatio(nextState.ratio);
+    setOutputCount(nextState.outputCount);
+    setPairGroups(nextState.pairGroups);
+    setOneToMany(nextState.oneToMany);
+  }, [selectedValues]);
 
   useEffect(() => {
     const nextSelectionMap: AdvancedSelectionMap = {
@@ -12746,30 +12759,33 @@ function PodFusionSetupSection({
       podFusionPairGroups: JSON.stringify(pairGroups),
       podFusionOneToManySelection: JSON.stringify(oneToMany)
     };
-    onSelectionMapChange?.(nextSelectionMap);
-    onSelectionChange?.(buildPodFusionSelectionSummary(nextSelectionMap));
-    onCreationModeChange?.({
+    const nextSelectionValues = buildPodFusionSelectionSummary(nextSelectionMap);
+    const nextCreationModeSelection: CreationModeSelection = {
       modeId: `pod-fusion-${mode}`,
       modeLabel: mode,
       ratio,
       count: Number(outputCount) || 1,
       unitCreditCost: 5
+    };
+    const nextSyncKey = JSON.stringify({
+      mode,
+      style,
+      background,
+      ratio,
+      outputCount,
+      pairGroups,
+      oneToMany
     });
+    const emitKey = JSON.stringify({ nextSelectionMap, nextSelectionValues, nextCreationModeSelection });
+    if (emitKey === lastEmitRef.current) {
+      return;
+    }
+    lastEmitRef.current = emitKey;
+    lastSyncedValuesRef.current = nextSyncKey;
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(nextSelectionValues);
+    onCreationModeChange?.(nextCreationModeSelection);
   }, [background, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, oneToMany, outputCount, pairGroups, ratio, style]);
-
-  const handleBaseLocalUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files?.length) return;
-    setOneToMany((current) => ({ ...current, base: buildUploadItemsFromFiles(files)[0] }));
-    event.target.value = "";
-  };
-
-  const handleFusionLocalUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files?.length) return;
-    setOneToMany((current) => ({ ...current, fusionItems: [...current.fusionItems, ...buildUploadItemsFromFiles(files)] }));
-    event.target.value = "";
-  };
 
   return (
     <div className="ck-form-block ck-pod-fusion-panel">
@@ -12784,9 +12800,9 @@ function PodFusionSetupSection({
         </div>
       </div>
 
-      <div className="ck-form-block">
-        <FieldTitle label="添加素材" required />
-        {mode === "两两融合" ? (
+      {mode === "两两融合" ? (
+        <div className="ck-form-block">
+          <FieldTitle label="添加素材" required />
           <div className="ck-pod-fusion-material-box">
             <div className="ck-pod-fusion-pair-list">
               {(pairGroups.length ? pairGroups : [{ id: "placeholder" }]).map((group, index) => (
@@ -12812,48 +12828,60 @@ function PodFusionSetupSection({
               从我的空间选取
             </button>
           </div>
-        ) : (
-          <div className="ck-pod-fusion-one-to-many-grid">
-            <div className="ck-pod-fusion-dual-card">
-              <div className="ck-pod-fusion-dual-card-title">单一元素</div>
-              <div className="ck-pod-fusion-dual-card-subtitle">作为固定的融合对象</div>
-              <div className="ck-pod-fusion-dual-preview">
-                {oneToMany.base ? <img alt="单一元素" src={oneToMany.base.previewSrc ?? oneToMany.base.src} /> : <span>仅支持1张</span>}
-              </div>
-              <div className="ck-pod-fusion-dual-actions">
-                <button onClick={() => baseLocalInputRef.current?.click()} type="button">
-                  本地上传
-                </button>
-                <button onClick={() => setLibraryTarget("base")} type="button">
-                  资源库选择
-                </button>
-              </div>
-              <input accept="image/*" hidden onChange={handleBaseLocalUpload} ref={baseLocalInputRef} type="file" />
-            </div>
-
-            <div className="ck-pod-fusion-dual-card">
-              <div className="ck-pod-fusion-dual-card-title">融合元素</div>
-              <div className="ck-pod-fusion-dual-card-subtitle">可上传多张图片，分别与单一元素融合</div>
-              <div className="ck-pod-fusion-multi-preview">
-                {oneToMany.fusionItems.length ? (
-                  oneToMany.fusionItems.map((item) => <img alt={item.name ?? "融合元素"} key={item.id} src={item.previewSrc ?? item.src} />)
-                ) : (
-                  <span>可上传多张</span>
-                )}
-              </div>
-              <div className="ck-pod-fusion-dual-actions">
-                <button onClick={() => fusionLocalInputRef.current?.click()} type="button">
-                  本地上传
-                </button>
-                <button onClick={() => setLibraryTarget("fusion")} type="button">
-                  资源库选择
-                </button>
-              </div>
-              <input accept="image/*" hidden multiple onChange={handleFusionLocalUpload} ref={fusionLocalInputRef} type="file" />
-            </div>
+        </div>
+      ) : (
+        <>
+          <div className="ck-form-block">
+            <UploadField
+              fieldKey={baseFieldKey}
+              hint="最多24张，支持JPG/PNG/WebP"
+              label="融合对象"
+              maxCount={24}
+              meta="（单次最多上传24张）"
+              onAdd={(_fieldKey, nextValues) => {
+                setOneToMany((current) => ({ ...current, baseItems: nextValues.slice(0, 24) }));
+              }}
+              onAtLimit={() => onToast("最多上传24张", "warning")}
+              onOpenLibrary={() => setLibraryTarget("base")}
+              onRejectedUpload={(message) => onToast(message, "warning")}
+              onRemove={(_fieldKey, index) => {
+                setOneToMany((current) => ({
+                  ...current,
+                  baseItems: current.baseItems.filter((_, itemIndex) => itemIndex !== index)
+                }));
+              }}
+              remainingStorageMb={remainingStorageMb}
+              required
+              values={oneToMany.baseItems}
+            />
           </div>
-        )}
-      </div>
+
+          <div className="ck-form-block">
+            <UploadField
+              fieldKey={fusionFieldKey}
+              hint="最多24张，支持JPG/PNG/WebP"
+              label="融合元素"
+              maxCount={24}
+              meta="（单次最多上传24张）"
+              onAdd={(_fieldKey, nextValues) => {
+                setOneToMany((current) => ({ ...current, fusionItems: nextValues.slice(0, 24) }));
+              }}
+              onAtLimit={() => onToast("最多上传24张", "warning")}
+              onOpenLibrary={() => setLibraryTarget("fusion")}
+              onRejectedUpload={(message) => onToast(message, "warning")}
+              onRemove={(_fieldKey, index) => {
+                setOneToMany((current) => ({
+                  ...current,
+                  fusionItems: current.fusionItems.filter((_, itemIndex) => itemIndex !== index)
+                }));
+              }}
+              remainingStorageMb={remainingStorageMb}
+              required
+              values={oneToMany.fusionItems}
+            />
+          </div>
+        </>
+      )}
 
       <div className="ck-inline-field ck-aligned-inline-field">
         <FieldTitle label="选择风格" required />
@@ -12870,7 +12898,16 @@ function PodFusionSetupSection({
         <SelectField hideLabel label="比例" onChange={setRatio} options={[...podFusionRatioOptions]} required value={ratio} />
       </div>
 
-      <CountField label="出图数量" onChange={setOutputCount} options={[...podFusionOutputCountOptions]} required value={outputCount} />
+      <div className="ck-inline-field ck-aligned-inline-field ck-pod-fusion-count-field">
+        <FieldTitle label="出图数量" required />
+        <div className="ck-mini-switch count" style={{ gridTemplateColumns: `repeat(${podFusionOutputCountOptions.length}, 1fr)`, width: 176 }}>
+          {podFusionOutputCountOptions.map((option, index) => (
+            <button className={option === outputCount || (!outputCount && index === 0) ? "active" : ""} key={option} onClick={() => setOutputCount(option)} type="button">
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <PodFusionPairModal
         initialGroups={pairGroups}
@@ -12883,13 +12920,13 @@ function PodFusionSetupSection({
       />
 
       <PodFusionOneToManyLibraryModal
-        maxSelectable={libraryTarget === "base" ? 1 : 24}
+        maxSelectable={24}
         onClose={() => setLibraryTarget(null)}
         onConfirm={(items) => {
           if (libraryTarget === "base") {
-            setOneToMany((current) => ({ ...current, base: items[0] }));
+            setOneToMany((current) => ({ ...current, baseItems: [...current.baseItems, ...items].slice(0, 24) }));
           } else if (libraryTarget === "fusion") {
-            setOneToMany((current) => ({ ...current, fusionItems: [...current.fusionItems, ...items] }));
+            setOneToMany((current) => ({ ...current, fusionItems: [...current.fusionItems, ...items].slice(0, 24) }));
           }
           setLibraryTarget(null);
         }}
@@ -14717,9 +14754,6 @@ function VideoReplicaSetupSection({
                       tabIndex={0}
                     >
                       <div className="ck-video-main-type-card-main">
-                        <span className={`ck-video-main-type-check${selected ? " active" : ""}`} aria-hidden="true">
-                          {selected ? "✓" : ""}
-                        </span>
                         <strong>{option}</strong>
                       </div>
                       {selected ? (
@@ -15011,19 +15045,20 @@ function VideoMainScriptSetupSection({
 
     const nextMap: AdvancedSelectionMap = {
       videoMainScriptMode: scriptMode,
-      videoMainScriptModeLabel: videoMainScriptModeOptions.find((item) => item.key === scriptMode)?.label ?? ""
+      videoMainScriptModeLabel: videoMainScriptModeOptions.find((item) => item.key === scriptMode)?.label ?? "",
+      videoMainVoiceEnabled: String(voiceEnabled)
     };
 
     if (scriptMode === "ai-script") {
       Object.entries(fieldValues).forEach(([key, value]) => {
         if (value) nextMap[key] = value;
       });
-      nextMap.videoMainVoiceEnabled = String(voiceEnabled);
-      if (voiceEnabled) {
-        nextMap.videoMainVoiceLanguage = voiceLanguage;
-        nextMap.videoMainVoiceTone = voiceTone;
-        if (voiceCopy.trim()) nextMap.videoMainVoiceCopy = voiceCopy.trim();
-      }
+    }
+
+    if (voiceEnabled) {
+      nextMap.videoMainVoiceLanguage = voiceLanguage;
+      nextMap.videoMainVoiceTone = voiceTone;
+      if (voiceCopy.trim()) nextMap.videoMainVoiceCopy = voiceCopy.trim();
     }
 
     const nextSelectionValues = [
@@ -18488,7 +18523,7 @@ function SetPackStrategySection({
         <div className="ck-form-block ck-video-parameter-stack" style={{ marginTop: 12 }}>
           <FieldTitle label="生成参数" />
           <div className="ck-select-dropdown full" ref={parameterDropdownRef}>
-            <button className="ck-select ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">
+            <button className="ck-select full ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">
               <span>{`${videoRatioDisplay} · ${videoResolution} · ${videoDuration}`}</span>
               <span>⌄</span>
             </button>
@@ -21008,6 +21043,8 @@ function ConfigPanel({
               return { ...nextSelections, ...values };
             });
           }}
+          onToast={onToast}
+          remainingStorageMb={remainingStorageMb}
           selectedValues={advancedSettingSelections}
         />
       );
