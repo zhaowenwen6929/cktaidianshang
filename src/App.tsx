@@ -3709,6 +3709,15 @@ type VideoReplicaModeKey = (typeof videoReplicaModeOptions)[number];
 const videoReplicaDurationOptions = ["4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s", "13s", "14s", "15s"];
 const videoReplicaRatioOptions = ["自适应尺寸", "横16:9", "横4:3", "正1:1", "竖3:4", "竖9:16", "横21:9"];
 const videoReplicaResolutionOptions = ["480p", "720p"];
+const videoMainParameterRatioOptions = [
+  { label: "16:9", value: "横16:9" },
+  { label: "9:16", value: "竖9:16" },
+  { label: "4:3", value: "横4:3" },
+  { label: "3:4", value: "竖3:4" },
+  { label: "1:1", value: "正1:1" }
+] as const;
+const videoMainParameterDurationOptions = ["5s", "10s", "12s"] as const;
+const videoMainParameterResolutionOptions = ["480p", "720p", "1080p"] as const;
 const videoReplicaSoundOptions = ["无声", "参考原视频声音", "智能匹配声音"] as const;
 const videoReplaceSoundOptions = ["无声", "使用原视频声音", "智能匹配声音"] as const;
 type VideoReplicaSoundOption = (typeof videoReplicaSoundOptions)[number];
@@ -18191,14 +18200,17 @@ function AdvancedSettingsSection({
 }
 
 function SetPackStrategySection({
+  toolKey,
   selectedValues,
   onSelectionChange,
   onSelectionMapChange
 }: {
+  toolKey?: string;
   selectedValues?: AdvancedSelectionMap;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
 }) {
+  const isVideoMainTool = toolKey === "video-main";
   const platformOptions = useMemo(() => platformMockData.filter((item) => setPackPlatformIds.includes(item.id)), []);
   const defaultPlatform = platformOptions[0];
   const skipSelectedValuesSyncRef = useRef(false);
@@ -18208,6 +18220,11 @@ function SetPackStrategySection({
   const [targetMarket, setTargetMarket] = useState(selectedValues?.targetMarket ?? selectedValues?.region ?? "北美");
   const [copyLanguage, setCopyLanguage] = useState(selectedValues?.copyLanguage ?? selectedValues?.language ?? "英文");
   const [visualStyle, setVisualStyle] = useState(selectedValues?.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? "");
+  const [videoRatio, setVideoRatio] = useState(selectedValues?.videoReplicaRatio ?? "竖9:16");
+  const [videoDuration, setVideoDuration] = useState(selectedValues?.videoReplicaDuration ?? "10s");
+  const [videoResolution, setVideoResolution] = useState(selectedValues?.videoReplicaResolution ?? "480p");
+  const parameterDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [parameterOpen, setParameterOpen] = useState(false);
 
   useEffect(() => {
     if (!selectedValues) return;
@@ -18220,7 +18237,10 @@ function SetPackStrategySection({
       platform: selectedValues.platform ?? "",
       targetMarket: selectedValues.targetMarket ?? selectedValues.region ?? "北美",
       copyLanguage: selectedValues.copyLanguage ?? selectedValues.language ?? "英文",
-      visualStyle: selectedValues.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? ""
+      visualStyle: selectedValues.setPackVisualStyle ?? setPackVisualStyleOptions[0] ?? "",
+      videoRatio: selectedValues.videoReplicaRatio ?? "竖9:16",
+      videoDuration: selectedValues.videoReplicaDuration ?? "10s",
+      videoResolution: selectedValues.videoReplicaResolution ?? "480p"
     });
 
     if (nextSignature === lastSelectedValuesSignatureRef.current) {
@@ -18248,7 +18268,35 @@ function SetPackStrategySection({
     if (nextVisualStyle !== visualStyle) {
       setVisualStyle(nextVisualStyle);
     }
-  }, [copyLanguage, defaultPlatform?.id, platformId, platformOptions, selectedValues, targetMarket, visualStyle]);
+
+    const nextVideoRatio = selectedValues.videoReplicaRatio ?? "竖9:16";
+    if (nextVideoRatio !== videoRatio) {
+      setVideoRatio(nextVideoRatio);
+    }
+
+    const nextVideoDuration = selectedValues.videoReplicaDuration ?? "10s";
+    if (nextVideoDuration !== videoDuration) {
+      setVideoDuration(nextVideoDuration);
+    }
+
+    const nextVideoResolution = selectedValues.videoReplicaResolution ?? "480p";
+    if (nextVideoResolution !== videoResolution) {
+      setVideoResolution(nextVideoResolution);
+    }
+  }, [copyLanguage, defaultPlatform?.id, platformId, platformOptions, selectedValues, targetMarket, videoDuration, videoRatio, videoResolution, visualStyle]);
+
+  useEffect(() => {
+    if (!parameterOpen) {
+      return;
+    }
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!parameterDropdownRef.current?.contains(event.target as Node)) {
+        setParameterOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [parameterOpen]);
 
   useEffect(() => {
     if (!selectedPlatform) return;
@@ -18258,20 +18306,34 @@ function SetPackStrategySection({
       targetMarket,
       language: copyLanguage,
       copyLanguage,
-      setPackVisualStyle: visualStyle
+      ...(!isVideoMainTool ? { setPackVisualStyle: visualStyle } : {}),
+      ...(isVideoMainTool
+        ? {
+            videoReplicaRatio: videoRatio,
+            videoReplicaDuration: videoDuration,
+            videoReplicaResolution: videoResolution
+          }
+        : {})
     };
     skipSelectedValuesSyncRef.current = true;
     lastSelectedValuesSignatureRef.current = JSON.stringify({
       platform: nextSelectionMap.platform,
       targetMarket: nextSelectionMap.targetMarket,
       copyLanguage: nextSelectionMap.copyLanguage,
-      visualStyle: nextSelectionMap.setPackVisualStyle
+      visualStyle: nextSelectionMap.setPackVisualStyle ?? "",
+      videoRatio: nextSelectionMap.videoReplicaRatio ?? "竖9:16",
+      videoDuration: nextSelectionMap.videoReplicaDuration ?? "10s",
+      videoResolution: nextSelectionMap.videoReplicaResolution ?? "480p"
     });
     onSelectionMapChange?.({
       ...nextSelectionMap
     });
-    onSelectionChange?.([selectedPlatform.label, targetMarket, copyLanguage, visualStyle].filter(Boolean));
-  }, [copyLanguage, onSelectionChange, onSelectionMapChange, selectedPlatform, targetMarket, visualStyle]);
+    onSelectionChange?.(
+      [selectedPlatform.label, targetMarket, copyLanguage, isVideoMainTool ? videoRatio : visualStyle, isVideoMainTool ? videoDuration : "", isVideoMainTool ? videoResolution : ""].filter(Boolean)
+    );
+  }, [copyLanguage, isVideoMainTool, onSelectionChange, onSelectionMapChange, selectedPlatform, targetMarket, videoDuration, videoRatio, videoResolution, visualStyle]);
+
+  const videoRatioDisplay = videoMainParameterRatioOptions.find((item) => item.value === videoRatio)?.label ?? videoRatio.replace(/^[^\d]+/, "");
 
   return (
     <div className="ck-form-block ck-set-pack-market-block">
@@ -18315,17 +18377,63 @@ function SetPackStrategySection({
           required
           value={copyLanguage}
         />
-        <SelectField
-          fullWidth
-          hideLabel
-          label="视觉风格"
-          onChange={(value) => {
-            skipSelectedValuesSyncRef.current = true;
-            setVisualStyle(value);
-          }}
-          options={setPackVisualStyleOptions}
-          value={visualStyle}
-        />
+        {isVideoMainTool ? (
+          <div className="ck-inline-field">
+            <FieldTitle label="视频参数" />
+            <div className="ck-select-dropdown full" ref={parameterDropdownRef}>
+              <button className="ck-select ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">
+                <span>{`${videoRatioDisplay} · ${videoResolution} · ${videoDuration}`}</span>
+                <span>⌄</span>
+              </button>
+              {parameterOpen ? (
+                <div className="ck-select-dropdown-menu full ck-video-parameter-menu">
+                  <div className="ck-video-parameter-group">
+                    <strong>比例</strong>
+                    <div className="ck-video-parameter-chip-grid">
+                      {videoMainParameterRatioOptions.map((option) => (
+                        <button className={option.value === videoRatio ? "active" : ""} key={option.value} onClick={() => setVideoRatio(option.value)} type="button">
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="ck-video-parameter-group">
+                    <strong>时长</strong>
+                    <div className="ck-video-parameter-chip-row">
+                      {videoMainParameterDurationOptions.map((option) => (
+                        <button className={option === videoDuration ? "active" : ""} key={option} onClick={() => setVideoDuration(option)} type="button">
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="ck-video-parameter-group">
+                    <strong>分辨率</strong>
+                    <div className="ck-video-parameter-chip-row">
+                      {videoMainParameterResolutionOptions.map((option) => (
+                        <button className={option === videoResolution ? "active" : ""} key={option} onClick={() => setVideoResolution(option)} type="button">
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <SelectField
+            fullWidth
+            hideLabel
+            label="视觉风格"
+            onChange={(value) => {
+              skipSelectedValuesSyncRef.current = true;
+              setVisualStyle(value);
+            }}
+            options={setPackVisualStyleOptions}
+            value={visualStyle}
+          />
+        )}
       </div>
     </div>
   );
@@ -20422,7 +20530,17 @@ function ConfigPanel({
         <SetPackStrategySection
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            const sectionKeys = ["platform", "region", "targetMarket", "language", "copyLanguage", "setPackVisualStyle"];
+            const sectionKeys = [
+              "platform",
+              "region",
+              "targetMarket",
+              "language",
+              "copyLanguage",
+              "setPackVisualStyle",
+              "videoReplicaRatio",
+              "videoReplicaDuration",
+              "videoReplicaResolution"
+            ];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
@@ -20432,6 +20550,7 @@ function ConfigPanel({
             });
           }}
           selectedValues={advancedSettingSelections}
+          toolKey={tool.key}
         />
       );
     }
