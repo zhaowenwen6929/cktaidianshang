@@ -18392,7 +18392,7 @@ function SetPackStrategySection({
         )}
       </div>
       {isVideoMainTool ? (
-        <div className="ck-inline-field" style={{ marginTop: 12 }}>
+        <div className="ck-inline-field ck-video-parameter-inline" style={{ marginTop: 12 }}>
           <FieldTitle label="生成参数" />
           <div className="ck-select-dropdown full" ref={parameterDropdownRef}>
             <button className="ck-select ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">

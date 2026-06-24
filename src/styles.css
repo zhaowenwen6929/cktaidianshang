@@ -12163,18 +12163,35 @@ textarea {
   gap: 10px;
 }
 
+.ck-video-parameter-inline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.ck-video-parameter-inline .ck-field-title {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
 .ck-video-parameter-menu {
   padding: 14px;
   border-radius: 16px;
 }
 
+.ck-video-parameter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .ck-video-parameter-group + .ck-video-parameter-group {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .ck-video-parameter-group strong {
-  display: block;
-  margin-bottom: 10px;
+  flex: 0 0 42px;
   color: #7c88a5;
   font-size: 14px;
   line-height: 20px;
@@ -12182,19 +12199,24 @@ textarea {
 }
 
 .ck-video-parameter-chip-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 10px;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .ck-video-parameter-chip-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .ck-video-parameter-chip-grid button,
 .ck-video-parameter-chip-row button {
+  flex: 0 0 auto;
   min-height: 42px;
   padding: 0 14px;
   border: 1px solid #eef1f7;
@@ -12212,6 +12234,11 @@ textarea {
   background: #eef0ff;
   color: #5a5ee6;
   box-shadow: inset 0 0 0 1px rgba(90, 94, 230, 0.08);
+}
+
+.ck-video-parameter-chip-grid::-webkit-scrollbar,
+.ck-video-parameter-chip-row::-webkit-scrollbar {
+  display: none;
 }
 
 .ck-input-select-field {
