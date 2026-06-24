@@ -12142,6 +12142,10 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.ck-set-pack-strategy-grid-span-2 {
+  grid-column: 1 / -1;
+}
+
 .ck-set-pack-strategy-grid .ck-form-block,
 .ck-set-pack-strategy-grid .ck-inline-field {
   margin-bottom: 0;
@@ -12570,6 +12574,42 @@ textarea {
   line-height: 14px;
   font-weight: 500;
   word-break: keep-all;
+}
+
+.ck-video-main-type-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ck-video-main-type-count-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 2px solid #2dbf4c;
+  border-radius: 8px;
+  background: #ffffff;
+  flex: 0 0 auto;
+}
+
+.ck-video-main-type-count-switch button {
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #2dbf4c;
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.ck-video-main-type-count-switch button.active {
+  background: #2dbf4c;
+  color: #ffffff;
 }
 
 .ck-video-translate-mode-card {

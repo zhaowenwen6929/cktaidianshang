@@ -3722,6 +3722,27 @@ const videoReplicaSoundOptions = ["无声", "参考原视频声音", "智能匹�
 const videoReplaceSoundOptions = ["无声", "使用原视频声音", "智能匹配声音"] as const;
 type VideoReplicaSoundOption = (typeof videoReplicaSoundOptions)[number];
 type VideoReplaceSoundOption = (typeof videoReplaceSoundOptions)[number];
+const VIDEO_MAIN_TYPE_LIMIT = 5;
+
+function parseVideoMainTypes(value?: string) {
+  if (!value) {
+    return [videoMainHotTypeOptions[0]];
+  }
+  const nextTypes = value
+    .split(/[、,，]/)
+    .map((item) => item.trim())
+    .filter((item): item is (typeof videoMainHotTypeOptions)[number] => videoMainHotTypeOptions.includes(item as (typeof videoMainHotTypeOptions)[number]));
+  return nextTypes.length ? Array.from(new Set(nextTypes)) : [videoMainHotTypeOptions[0]];
+}
+
+function parseVideoMainTypeCounts(value?: string) {
+  const parsed = safeParseJson<Record<string, string | number>>(value, {}) ?? {};
+  return Object.fromEntries(
+    Object.entries(parsed)
+      .map(([key, rawValue]) => [key, Math.min(4, Math.max(1, Number(rawValue) || 1))])
+      .filter(([key]) => videoMainHotTypeOptions.includes(key as (typeof videoMainHotTypeOptions)[number]))
+  ) as Record<string, number>;
+}
 
 function normalizeVideoReplicaSoundOption(value?: string): VideoReplicaSoundOption {
   switch (value) {
@@ -14562,12 +14583,14 @@ function VideoReplicaSetupSection({
   const lastEmitRef = useRef("");
   const isVideoMainTool = toolKey === "video-main";
   const modeOptions = isVideoMainTool ? ["爆款类型", "视频脚本"] : [...videoReplicaModeOptions];
-  const [videoMainType, setVideoMainType] = useState(selectedValues?.videoMainType ?? videoMainHotTypeOptions[0]);
+  const [videoMainTypes, setVideoMainTypes] = useState<string[]>(parseVideoMainTypes(selectedValues?.videoMainType));
+  const [videoMainTypeCounts, setVideoMainTypeCounts] = useState<Record<string, number>>(parseVideoMainTypeCounts(selectedValues?.videoMainTypeCounts));
 
   useEffect(() => {
     const nextSyncKey = JSON.stringify({
       mode: selectedValues?.videoReplicaMode ?? "普通模式",
-      videoMainType: selectedValues?.videoMainType ?? videoMainHotTypeOptions[0],
+      videoMainTypes: parseVideoMainTypes(selectedValues?.videoMainType),
+      videoMainTypeCounts: parseVideoMainTypeCounts(selectedValues?.videoMainTypeCounts),
       duration: selectedValues?.videoReplicaDuration ?? "10s",
       ratio: selectedValues?.videoReplicaRatio ?? "竖9:16",
       resolution: selectedValues?.videoReplicaResolution ?? "480p",
@@ -14580,7 +14603,8 @@ function VideoReplicaSetupSection({
 
     lastSyncedValuesRef.current = nextSyncKey;
     setMode(defaultMode);
-    setVideoMainType(selectedValues?.videoMainType ?? videoMainHotTypeOptions[0]);
+    setVideoMainTypes(parseVideoMainTypes(selectedValues?.videoMainType));
+    setVideoMainTypeCounts(parseVideoMainTypeCounts(selectedValues?.videoMainTypeCounts));
     setDuration(selectedValues?.videoReplicaDuration ?? "10s");
     setRatio(selectedValues?.videoReplicaRatio ?? "竖9:16");
     setResolution(selectedValues?.videoReplicaResolution ?? "480p");
@@ -14588,6 +14612,8 @@ function VideoReplicaSetupSection({
   }, [defaultMode, normalizeSoundOption, selectedValues]);
 
   useEffect(() => {
+    const selectedTypeCounts = Object.fromEntries(videoMainTypes.map((type) => [type, videoMainTypeCounts[type] ?? 1]));
+    const totalTypeCount = Object.values(selectedTypeCounts).reduce((sum, count) => sum + count, 0);
     const nextMap: AdvancedSelectionMap = {
       videoReplicaMode: mode,
       videoReplicaDuration: duration,
@@ -14595,16 +14621,26 @@ function VideoReplicaSetupSection({
       videoReplicaResolution: resolution,
       videoReplicaHasSound: sound
     };
-    if (isVideoMainTool && mode === "普通模式" && videoMainType) {
-      nextMap.videoMainType = videoMainType;
+    if (isVideoMainTool && mode === "普通模式" && videoMainTypes.length) {
+      nextMap.videoMainType = videoMainTypes.join("、");
+      nextMap.videoMainTypeCounts = JSON.stringify(selectedTypeCounts);
+    } else if (isVideoMainTool) {
+      nextMap.videoMainTypeCounts = "";
     }
-    const nextSelectionValues = [mode, isVideoMainTool && mode === "普通模式" ? videoMainType : "", duration, ratio, resolution, sound].filter(Boolean);
+    const nextSelectionValues = [
+      mode,
+      ...(isVideoMainTool && mode === "普通模式" ? videoMainTypes.map((type) => `${type} x${selectedTypeCounts[type] ?? 1}`) : []),
+      duration,
+      ratio,
+      resolution,
+      sound
+    ].filter(Boolean);
     const nextCreationModeSelection: CreationModeSelection = {
       modeId: mode === "高级模式" ? "video-replica-advanced" : "video-replica-normal",
       modeLabel: mode,
       ratio,
       resolution,
-      count: 1,
+      count: isVideoMainTool && mode === "普通模式" ? totalTypeCount : 1,
       unitCreditCost: 1
     };
     const emitKey = JSON.stringify({ nextMap, nextSelectionValues, nextCreationModeSelection });
@@ -14613,13 +14649,40 @@ function VideoReplicaSetupSection({
     onSelectionMapChange?.(nextMap);
     onSelectionChange?.(nextSelectionValues);
     onCreationModeChange?.(nextCreationModeSelection);
-  }, [duration, isVideoMainTool, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution, sound, videoMainType]);
+  }, [duration, isVideoMainTool, mode, onCreationModeChange, onSelectionChange, onSelectionMapChange, ratio, resolution, sound, videoMainTypeCounts, videoMainTypes]);
+
+  const handleToggleVideoMainType = (option: string) => {
+    setVideoMainTypes((current) => {
+      if (current.includes(option)) {
+        if (current.length === 1) {
+          return current;
+        }
+        return current.filter((item) => item !== option);
+      }
+      if (current.length >= VIDEO_MAIN_TYPE_LIMIT) {
+        return current;
+      }
+      return [...current, option];
+    });
+    setVideoMainTypeCounts((current) => ({
+      ...current,
+      [option]: current[option] ?? 1
+    }));
+  };
+
+  const handleChangeVideoMainTypeCount = (option: string, count: number) => {
+    setVideoMainTypeCounts((current) => ({
+      ...current,
+      [option]: count
+    }));
+  };
 
   return (
     <div className="ck-creation-mode">
       {isVideoMainTool ? (
         <>
           <div className="ck-form-block">
+            <FieldTitle label="视频类型" required />
             <div className="ck-switch" style={{ gridTemplateColumns: `repeat(${modeOptions.length}, 1fr)` }}>
               {modeOptions.map((option, index) => (
                 <button
@@ -14635,19 +14698,40 @@ function VideoReplicaSetupSection({
           </div>
           {mode === "普通模式" ? (
             <div className="ck-form-block">
-              <FieldTitle label="爆款类型" required />
               <div className="ck-aplus-module-grid">
                 {videoMainHotTypeOptions.map((option) => {
-                  const selected = option === videoMainType;
+                  const selected = videoMainTypes.includes(option);
                   return (
-                    <button
-                      className={`ck-aplus-module-card${selected ? " active" : ""}`}
+                    <div
+                      aria-pressed={selected}
+                      className={`ck-aplus-module-card ck-video-main-type-card${selected ? " active" : ""}`}
                       key={option}
-                      onClick={() => setVideoMainType(option)}
-                      type="button"
+                      onClick={() => handleToggleVideoMainType(option)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleToggleVideoMainType(option);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
                     >
                       <strong>{option}</strong>
-                    </button>
+                      {selected ? (
+                        <div className="ck-video-main-type-count-switch" onClick={(event) => event.stopPropagation()} role="presentation">
+                          {["1", "2", "3", "4"].map((count) => (
+                            <button
+                              className={Number(count) === (videoMainTypeCounts[option] ?? 1) ? "active" : ""}
+                              key={count}
+                              onClick={() => handleChangeVideoMainTypeCount(option, Number(count))}
+                              type="button"
+                            >
+                              {count}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
@@ -18339,20 +18423,22 @@ function SetPackStrategySection({
     <div className="ck-form-block ck-set-pack-market-block">
       <FieldTitle label="市场配置" required />
       <div className="ck-set-pack-strategy-grid ck-set-pack-strategy-grid-2x2">
-        <SelectField
-          fullWidth
-          hideLabel
-          label="目标平台"
-          onChange={(value) => {
-            const nextPlatform = platformOptions.find((item) => item.label === value);
-            if (!nextPlatform) return;
-            skipSelectedValuesSyncRef.current = true;
-            setPlatformId(nextPlatform.id);
-          }}
-          options={platformOptions.map((item) => item.label)}
-          required
-          value={selectedPlatform?.label}
-        />
+        <div className="ck-set-pack-strategy-grid-span-2">
+          <SelectField
+            fullWidth
+            hideLabel
+            label="目标平台"
+            onChange={(value) => {
+              const nextPlatform = platformOptions.find((item) => item.label === value);
+              if (!nextPlatform) return;
+              skipSelectedValuesSyncRef.current = true;
+              setPlatformId(nextPlatform.id);
+            }}
+            options={platformOptions.map((item) => item.label)}
+            required
+            value={selectedPlatform?.label}
+          />
+        </div>
         <SelectField
           fullWidth
           hideLabel
@@ -18392,7 +18478,7 @@ function SetPackStrategySection({
         )}
       </div>
       {isVideoMainTool ? (
-        <div className="ck-inline-field ck-video-parameter-inline" style={{ marginTop: 12 }}>
+        <div className="ck-inline-field" style={{ marginTop: 12 }}>
           <FieldTitle label="生成参数" />
           <div className="ck-select-dropdown full" ref={parameterDropdownRef}>
             <button className="ck-select ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">
