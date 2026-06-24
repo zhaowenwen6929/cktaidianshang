@@ -14716,19 +14716,26 @@ function VideoReplicaSetupSection({
                       role="button"
                       tabIndex={0}
                     >
-                      <strong>{option}</strong>
+                      <div className="ck-video-main-type-card-main">
+                        <span className={`ck-video-main-type-check${selected ? " active" : ""}`} aria-hidden="true">
+                          {selected ? "✓" : ""}
+                        </span>
+                        <strong>{option}</strong>
+                      </div>
                       {selected ? (
-                        <div className="ck-video-main-type-count-switch" onClick={(event) => event.stopPropagation()} role="presentation">
-                          {["1", "2", "3", "4"].map((count) => (
-                            <button
-                              className={Number(count) === (videoMainTypeCounts[option] ?? 1) ? "active" : ""}
-                              key={count}
-                              onClick={() => handleChangeVideoMainTypeCount(option, Number(count))}
-                              type="button"
-                            >
-                              {count}
-                            </button>
-                          ))}
+                        <div className="ck-video-main-type-count-select-wrap" onClick={(event) => event.stopPropagation()} role="presentation">
+                          <select
+                            aria-label={`${option} 生成数量`}
+                            className="ck-video-main-type-count-select"
+                            onChange={(event) => handleChangeVideoMainTypeCount(option, Number(event.target.value))}
+                            value={String(videoMainTypeCounts[option] ?? 1)}
+                          >
+                            {["1", "2", "3", "4"].map((count) => (
+                              <option key={count} value={count}>
+                                {count}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       ) : null}
                     </div>
@@ -18478,7 +18485,7 @@ function SetPackStrategySection({
         )}
       </div>
       {isVideoMainTool ? (
-        <div className="ck-inline-field" style={{ marginTop: 12 }}>
+        <div className="ck-form-block ck-video-parameter-stack" style={{ marginTop: 12 }}>
           <FieldTitle label="生成参数" />
           <div className="ck-select-dropdown full" ref={parameterDropdownRef}>
             <button className="ck-select ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">

@@ -12167,15 +12167,19 @@ textarea {
   gap: 10px;
 }
 
-.ck-video-parameter-inline {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
+.ck-video-parameter-stack {
+  display: block;
+  margin-bottom: 0;
 }
 
-.ck-video-parameter-inline .ck-field-title {
-  margin-bottom: 0;
+.ck-video-parameter-stack .ck-select-dropdown.full,
+.ck-video-parameter-stack .ck-select.full,
+.ck-video-parameter-stack .ck-select-dropdown-menu.full {
+  width: 100%;
+}
+
+.ck-video-parameter-stack .ck-field-title {
+  margin-bottom: 8px;
   white-space: nowrap;
 }
 
@@ -12581,35 +12585,75 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 54px;
+  padding: 0 12px;
+  background: #f7f8fb;
+  border-color: #eef1f6;
 }
 
-.ck-video-main-type-count-switch {
+.ck-video-main-type-card.active {
+  border-color: #d8def0;
+  box-shadow: none;
+}
+
+.ck-video-main-type-card-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ck-video-main-type-check {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 2px solid #2dbf4c;
-  border-radius: 8px;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #d8deea;
+  border-radius: 4px;
   background: #ffffff;
+  color: transparent;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
   flex: 0 0 auto;
 }
 
-.ck-video-main-type-count-switch button {
-  min-width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: #2dbf4c;
-  font-size: 11px;
-  line-height: 18px;
-  font-weight: 700;
+.ck-video-main-type-check.active {
+  border-color: #4f88ff;
+  background: #4f88ff;
+  color: #ffffff;
 }
 
-.ck-video-main-type-count-switch button.active {
-  background: #2dbf4c;
-  color: #ffffff;
+.ck-video-main-type-card strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ck-video-main-type-count-select-wrap {
+  flex: 0 0 auto;
+}
+
+.ck-video-main-type-count-select {
+  min-width: 44px;
+  height: 28px;
+  padding: 0 20px 0 10px;
+  border: 1px solid #d8deea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 28px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #7f8aa3 50%),
+    linear-gradient(135deg, #7f8aa3 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) 11px,
+    calc(100% - 8px) 11px;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
 }
 
 .ck-video-translate-mode-card {
