@@ -18377,51 +18377,7 @@ function SetPackStrategySection({
           required
           value={copyLanguage}
         />
-        {isVideoMainTool ? (
-          <div className="ck-inline-field">
-            <FieldTitle label="视频参数" />
-            <div className="ck-select-dropdown full" ref={parameterDropdownRef}>
-              <button className="ck-select ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">
-                <span>{`${videoRatioDisplay} · ${videoResolution} · ${videoDuration}`}</span>
-                <span>⌄</span>
-              </button>
-              {parameterOpen ? (
-                <div className="ck-select-dropdown-menu full ck-video-parameter-menu">
-                  <div className="ck-video-parameter-group">
-                    <strong>比例</strong>
-                    <div className="ck-video-parameter-chip-grid">
-                      {videoMainParameterRatioOptions.map((option) => (
-                        <button className={option.value === videoRatio ? "active" : ""} key={option.value} onClick={() => setVideoRatio(option.value)} type="button">
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="ck-video-parameter-group">
-                    <strong>时长</strong>
-                    <div className="ck-video-parameter-chip-row">
-                      {videoMainParameterDurationOptions.map((option) => (
-                        <button className={option === videoDuration ? "active" : ""} key={option} onClick={() => setVideoDuration(option)} type="button">
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="ck-video-parameter-group">
-                    <strong>分辨率</strong>
-                    <div className="ck-video-parameter-chip-row">
-                      {videoMainParameterResolutionOptions.map((option) => (
-                        <button className={option === videoResolution ? "active" : ""} key={option} onClick={() => setVideoResolution(option)} type="button">
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : (
+        {isVideoMainTool ? null : (
           <SelectField
             fullWidth
             hideLabel
@@ -18435,6 +18391,51 @@ function SetPackStrategySection({
           />
         )}
       </div>
+      {isVideoMainTool ? (
+        <div className="ck-inline-field" style={{ marginTop: 12 }}>
+          <FieldTitle label="生成参数" />
+          <div className="ck-select-dropdown full" ref={parameterDropdownRef}>
+            <button className="ck-select ck-video-parameter-trigger" onClick={() => setParameterOpen((current) => !current)} type="button">
+              <span>{`${videoRatioDisplay} · ${videoResolution} · ${videoDuration}`}</span>
+              <span>⌄</span>
+            </button>
+            {parameterOpen ? (
+              <div className="ck-select-dropdown-menu full ck-video-parameter-menu">
+                <div className="ck-video-parameter-group">
+                  <strong>比例</strong>
+                  <div className="ck-video-parameter-chip-grid">
+                    {videoMainParameterRatioOptions.map((option) => (
+                      <button className={option.value === videoRatio ? "active" : ""} key={option.value} onClick={() => setVideoRatio(option.value)} type="button">
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="ck-video-parameter-group">
+                  <strong>时长</strong>
+                  <div className="ck-video-parameter-chip-row">
+                    {videoMainParameterDurationOptions.map((option) => (
+                      <button className={option === videoDuration ? "active" : ""} key={option} onClick={() => setVideoDuration(option)} type="button">
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="ck-video-parameter-group">
+                  <strong>分辨率</strong>
+                  <div className="ck-video-parameter-chip-row">
+                    {videoMainParameterResolutionOptions.map((option) => (
+                      <button className={option === videoResolution ? "active" : ""} key={option} onClick={() => setVideoResolution(option)} type="button">
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
