@@ -14603,13 +14603,21 @@ function VideoReplicaSetupSection({
   selectedValues,
   onSelectionChange,
   onSelectionMapChange,
-  onCreationModeChange
+  onCreationModeChange,
+  modelAssets,
+  onGenerateBaselineModel,
+  onUploadModels,
+  onToast
 }: {
   toolKey: string;
   selectedValues?: AdvancedSelectionMap;
   onSelectionChange?: (values: string[]) => void;
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
+  modelAssets?: ModelAsset[];
+  onGenerateBaselineModel?: (values: AdvancedSelectionMap) => Promise<string | null>;
+  onUploadModels?: (files: File[]) => Promise<ModelAsset[]>;
+  onToast?: (message: string, tone?: "warning") => void;
 }) {
   const defaultMode: VideoReplicaModeKey =
     selectedValues?.videoReplicaMode === "高级模式" || selectedValues?.videoReplicaMode === "普通模式" ? selectedValues.videoReplicaMode : "普通模式";
@@ -14738,49 +14746,62 @@ function VideoReplicaSetupSection({
             </div>
           </div>
           {mode === "普通模式" ? (
-            <div className="ck-form-block">
-              <div className="ck-aplus-module-grid">
-                {videoMainHotTypeOptions.map((option) => {
-                  const selected = videoMainTypes.includes(option);
-                  return (
-                    <div
-                      aria-pressed={selected}
-                      className={`ck-aplus-module-card ck-video-main-type-card${selected ? " active" : ""}`}
-                      key={option}
-                      onClick={() => handleToggleVideoMainType(option)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          handleToggleVideoMainType(option);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="ck-video-main-type-card-main">
-                        <strong>{option}</strong>
-                      </div>
-                      {selected ? (
-                        <div className="ck-video-main-type-count-select-wrap" onClick={(event) => event.stopPropagation()} role="presentation">
-                          <select
-                            aria-label={`${option} 生成数量`}
-                            className="ck-video-main-type-count-select"
-                            onChange={(event) => handleChangeVideoMainTypeCount(option, Number(event.target.value))}
-                            value={String(videoMainTypeCounts[option] ?? 1)}
-                          >
-                            {["1", "2", "3", "4"].map((count) => (
-                              <option key={count} value={count}>
-                                {count}
-                              </option>
-                            ))}
-                          </select>
+            <>
+              <div className="ck-form-block">
+                <div className="ck-aplus-module-grid">
+                  {videoMainHotTypeOptions.map((option) => {
+                    const selected = videoMainTypes.includes(option);
+                    return (
+                      <div
+                        aria-pressed={selected}
+                        className={`ck-aplus-module-card ck-video-main-type-card${selected ? " active" : ""}`}
+                        key={option}
+                        onClick={() => handleToggleVideoMainType(option)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            handleToggleVideoMainType(option);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className="ck-video-main-type-card-main">
+                          <strong>{option}</strong>
                         </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
+                        {selected ? (
+                          <div className="ck-video-main-type-count-select-wrap" onClick={(event) => event.stopPropagation()} role="presentation">
+                            <select
+                              aria-label={`${option} 生成数量`}
+                              className="ck-video-main-type-count-select"
+                              onChange={(event) => handleChangeVideoMainTypeCount(option, Number(event.target.value))}
+                              value={String(videoMainTypeCounts[option] ?? 1)}
+                            >
+                              {["1", "2", "3", "4"].map((count) => (
+                                <option key={count} value={count}>
+                                  {count}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+              {modelAssets && onGenerateBaselineModel && onUploadModels && onToast ? (
+                <VideoMainModelSection
+                  modelAssets={modelAssets}
+                  onGenerateBaselineModel={onGenerateBaselineModel}
+                  onSelectionMapChange={onSelectionMapChange}
+                  onSelectionChange={onSelectionChange}
+                  onToast={onToast}
+                  onUploadModels={onUploadModels}
+                  selectedValues={selectedValues}
+                />
+              ) : null}
+            </>
           ) : null}
         </>
       ) : (
@@ -15004,39 +15025,13 @@ function VideoMainScriptSetupSection({
   const [voiceLanguage, setVoiceLanguage] = useState(selectedValues?.videoMainVoiceLanguage ?? videoMainVoiceLanguageOptions[0]);
   const [voiceTone, setVoiceTone] = useState(selectedValues?.videoMainVoiceTone ?? videoMainVoiceToneOptions[0]);
   const [voiceCopy, setVoiceCopy] = useState(selectedValues?.videoMainVoiceCopy ?? "");
-  const [modelEnabled, setModelEnabled] = useState(selectedValues?.videoMainModelEnabled === "true");
-  const [modelTab, setModelTab] = useState<"ai" | "mine" | "preference">(
-    (selectedValues?.videoMainModelSourceTab as "ai" | "mine" | "preference") ?? "mine"
-  );
-  const [selectedModelId, setSelectedModelId] = useState(selectedValues?.videoMainSelectedModelId ?? "");
-  const [gender, setGender] = useState(selectedValues?.videoMainModelGender ?? "");
-  const [appearance, setAppearance] = useState(selectedValues?.videoMainModelAppearance ?? "");
-  const [age, setAge] = useState(selectedValues?.videoMainModelAge ?? "");
-  const [persona, setPersona] = useState(selectedValues?.videoMainModelPersona ?? "");
-  const [bodyType, setBodyType] = useState(selectedValues?.videoMainModelBodyType ?? "");
-  const [modelDetailSupplement, setModelDetailSupplement] = useState(selectedValues?.videoMainModelDetailSupplement ?? "");
-  const [ethnicity, setEthnicity] = useState(selectedValues?.videoMainModelEthnicity ?? "");
-  const [genderSpecies, setGenderSpecies] = useState(selectedValues?.videoMainModelGenderSpecies ?? "");
-  const [ageRange, setAgeRange] = useState(selectedValues?.videoMainModelAgeRange ?? "");
-  const [isGeneratingModel, setIsGeneratingModel] = useState(false);
   const [scriptDetailMode, setScriptDetailMode] = useState<"general" | "storyboard">("general");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({
     ...defaultScriptFieldValues,
     ...Object.fromEntries(videoMainScriptFieldConfigs.map((item) => [item.key, selectedValues?.[item.key] ?? defaultScriptFieldValues[item.key]]))
   });
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const lastSyncedValuesRef = useRef<string>("");
   const lastEmitRef = useRef<string>("");
-  const modelCandidates = useMemo(
-    () =>
-      [...modelAssets].sort((left, right) => {
-        if (left.sourceType !== right.sourceType) {
-          return left.sourceType === "upload" ? -1 : 1;
-        }
-        return right.createdAt - left.createdAt;
-      }),
-    [modelAssets]
-  );
 
   useEffect(() => {
     const nextScriptFields = Object.fromEntries(
@@ -15052,19 +15047,7 @@ function VideoMainScriptSetupSection({
       videoMainVoiceEnabled: selectedValues?.videoMainVoiceEnabled === "true",
       videoMainVoiceLanguage: selectedValues?.videoMainVoiceLanguage ?? videoMainVoiceLanguageOptions[0],
       videoMainVoiceTone: selectedValues?.videoMainVoiceTone ?? videoMainVoiceToneOptions[0],
-      videoMainVoiceCopy: selectedValues?.videoMainVoiceCopy ?? "",
-      videoMainModelEnabled: selectedValues?.videoMainModelEnabled === "true",
-      videoMainModelSourceTab: (selectedValues?.videoMainModelSourceTab as "ai" | "mine" | "preference") ?? "mine",
-      videoMainSelectedModelId: selectedValues?.videoMainSelectedModelId ?? "",
-      videoMainModelGender: selectedValues?.videoMainModelGender ?? "",
-      videoMainModelAppearance: selectedValues?.videoMainModelAppearance ?? "",
-      videoMainModelAge: selectedValues?.videoMainModelAge ?? "",
-      videoMainModelPersona: selectedValues?.videoMainModelPersona ?? "",
-      videoMainModelBodyType: selectedValues?.videoMainModelBodyType ?? "",
-      videoMainModelDetailSupplement: selectedValues?.videoMainModelDetailSupplement ?? "",
-      videoMainModelEthnicity: selectedValues?.videoMainModelEthnicity ?? "",
-      videoMainModelGenderSpecies: selectedValues?.videoMainModelGenderSpecies ?? "",
-      videoMainModelAgeRange: selectedValues?.videoMainModelAgeRange ?? ""
+      videoMainVoiceCopy: selectedValues?.videoMainVoiceCopy ?? ""
     };
     const nextSyncKey = JSON.stringify(nextState);
 
@@ -15079,18 +15062,6 @@ function VideoMainScriptSetupSection({
     setVoiceLanguage(nextState.videoMainVoiceLanguage);
     setVoiceTone(nextState.videoMainVoiceTone);
     setVoiceCopy(nextState.videoMainVoiceCopy);
-    setModelEnabled(nextState.videoMainModelEnabled);
-    setModelTab(nextState.videoMainModelSourceTab);
-    setSelectedModelId(nextState.videoMainSelectedModelId);
-    setGender(nextState.videoMainModelGender);
-    setAppearance(nextState.videoMainModelAppearance);
-    setAge(nextState.videoMainModelAge);
-    setPersona(nextState.videoMainModelPersona);
-    setBodyType(nextState.videoMainModelBodyType);
-    setModelDetailSupplement(nextState.videoMainModelDetailSupplement);
-    setEthnicity(nextState.videoMainModelEthnicity);
-    setGenderSpecies(nextState.videoMainModelGenderSpecies);
-    setAgeRange(nextState.videoMainModelAgeRange);
   }, [defaultScriptFieldValues, legacyAutoDefaultSet, selectedValues, videoMainScriptFieldConfigs]);
 
   useEffect(() => {
@@ -15100,26 +15071,13 @@ function VideoMainScriptSetupSection({
       videoMainVoiceEnabled: voiceEnabled,
       videoMainVoiceLanguage: voiceLanguage,
       videoMainVoiceTone: voiceTone,
-      videoMainVoiceCopy: voiceCopy,
-      videoMainModelEnabled: modelEnabled,
-      videoMainModelSourceTab: modelTab,
-      videoMainSelectedModelId: selectedModelId,
-      videoMainModelGender: gender,
-      videoMainModelAppearance: appearance,
-      videoMainModelAge: age,
-      videoMainModelPersona: persona,
-      videoMainModelBodyType: bodyType,
-      videoMainModelDetailSupplement: modelDetailSupplement,
-      videoMainModelEthnicity: ethnicity,
-      videoMainModelGenderSpecies: genderSpecies,
-      videoMainModelAgeRange: ageRange
+      videoMainVoiceCopy: voiceCopy
     });
 
     const nextMap: AdvancedSelectionMap = {
       videoMainScriptMode: scriptMode,
       videoMainScriptModeLabel: videoMainScriptModeOptions.find((item) => item.key === scriptMode)?.label ?? "",
-      videoMainVoiceEnabled: String(voiceEnabled),
-      videoMainModelEnabled: String(modelEnabled)
+      videoMainVoiceEnabled: String(voiceEnabled)
     };
 
     if (scriptMode === "ai-script") {
@@ -15134,37 +15092,12 @@ function VideoMainScriptSetupSection({
       if (voiceCopy.trim()) nextMap.videoMainVoiceCopy = voiceCopy.trim();
     }
 
-    if (modelEnabled) {
-      nextMap.videoMainModelSourceTab = modelTab;
-      if (modelTab === "ai") {
-        nextMap.videoMainModelSourceType = "AI生成模特";
-        if (gender) nextMap.videoMainModelGender = gender;
-        if (appearance) nextMap.videoMainModelAppearance = appearance;
-        if (age) nextMap.videoMainModelAge = age;
-        if (persona) nextMap.videoMainModelPersona = persona;
-        if (bodyType) nextMap.videoMainModelBodyType = bodyType;
-        if (modelDetailSupplement.trim()) nextMap.videoMainModelDetailSupplement = modelDetailSupplement.trim();
-      } else if (modelTab === "mine") {
-        nextMap.videoMainModelSourceType = "我的模特";
-        if (selectedModelId) nextMap.videoMainSelectedModelId = selectedModelId;
-        const selectedModel = modelCandidates.find((item) => item.id === selectedModelId);
-        if (selectedModel?.name) nextMap.videoMainSelectedModelName = selectedModel.name;
-      } else {
-        nextMap.videoMainModelSourceType = "模特偏好模板";
-        if (ethnicity) nextMap.videoMainModelEthnicity = ethnicity;
-        if (genderSpecies) nextMap.videoMainModelGenderSpecies = genderSpecies;
-        if (ageRange) nextMap.videoMainModelAgeRange = ageRange;
-        if (bodyType) nextMap.videoMainModelBodyType = bodyType;
-      }
-    }
-
     const nextSelectionValues = [
       nextMap.videoMainScriptModeLabel,
       ...(scriptMode === "ai-script" ? Object.values(fieldValues).filter(Boolean) : []),
       voiceEnabled ? voiceLanguage : "",
       voiceEnabled ? voiceTone : "",
       voiceEnabled ? voiceCopy : "",
-      modelEnabled ? (modelTab === "ai" ? "AI生成模特" : modelTab === "mine" ? "我的模特" : "模特偏好") : "",
       supplementValue
     ].filter(Boolean);
     const emitKey = JSON.stringify({ nextMap, nextSelectionValues });
@@ -15172,7 +15105,7 @@ function VideoMainScriptSetupSection({
     lastEmitRef.current = emitKey;
     onSelectionMapChange?.(nextMap);
     onSelectionChange?.(nextSelectionValues);
-  }, [age, ageRange, appearance, bodyType, ethnicity, fieldValues, gender, genderSpecies, modelCandidates, modelDetailSupplement, modelEnabled, modelTab, onSelectionChange, onSelectionMapChange, persona, scriptMode, selectedModelId, supplementValue, voiceCopy, voiceEnabled, voiceLanguage, voiceTone]);
+  }, [fieldValues, onSelectionChange, onSelectionMapChange, scriptMode, supplementValue, voiceCopy, voiceEnabled, voiceLanguage, voiceTone]);
 
   const inputFields = videoMainScriptFieldConfigs;
 
@@ -15223,41 +15156,6 @@ function VideoMainScriptSetupSection({
     }
     const nextCopy = `本视频围绕产品核心卖点展开，重点展示使用场景与细节优势，帮助用户快速理解价值并提升购买意愿。${compact.slice(0, 120)}`.slice(0, 200);
     setVoiceCopy(nextCopy);
-  };
-
-  const appendModelFiles = async (files: File[]) => {
-    const nextModels = await onUploadModels(files);
-    if (!selectedModelId && nextModels[0]?.id) {
-      setModelTab("mine");
-      setSelectedModelId(nextModels[0].id);
-    }
-  };
-
-  const handleGenerateModel = async () => {
-    if (!gender || !appearance || !age || !persona || !bodyType) {
-      onToast("请先补全模特基础信息", "warning");
-      return;
-    }
-    setIsGeneratingModel(true);
-    try {
-      const nextModelId = await onGenerateBaselineModel({
-        baselineModelSource: "ai",
-        modelGenerateTypeKey: "real-model",
-        modelGenerateType: "真人模特图",
-        gender,
-        appearance,
-        age,
-        persona,
-        bodyType,
-        baselineModelSupplement: modelDetailSupplement
-      });
-      if (nextModelId) {
-        setModelTab("mine");
-        setSelectedModelId(nextModelId);
-      }
-    } finally {
-      setIsGeneratingModel(false);
-    }
   };
 
   useEffect(() => {
@@ -15373,120 +15271,15 @@ function VideoMainScriptSetupSection({
           </div>
         ) : null}
       </div>
-      <div className="ck-form-block ck-video-voice-block">
-        <div className="ck-inline-field">
-          <FieldTitle label="选择模特" />
-          <div className="ck-switch" style={{ width: 96, gridTemplateColumns: "repeat(2, 1fr)" }}>
-            <button className={!modelEnabled ? "active" : ""} onClick={() => setModelEnabled(false)} type="button">
-              关闭
-            </button>
-            <button className={modelEnabled ? "active" : ""} onClick={() => setModelEnabled(true)} type="button">
-              开启
-            </button>
-          </div>
-        </div>
-        {modelEnabled ? (
-          <div className="ck-baseline-model-panel">
-            <div className="ck-task-rail-mode-switch ck-baseline-model-tabs">
-              <button className={modelTab === "ai" ? "active" : ""} onClick={() => {
-                setModelTab("ai");
-                setSelectedModelId("");
-              }} type="button">
-                AI生成
-              </button>
-              <button className={modelTab === "mine" ? "active" : ""} onClick={() => setModelTab("mine")} type="button">
-                我的模特
-              </button>
-              <button className={modelTab === "preference" ? "active" : ""} onClick={() => {
-                setModelTab("preference");
-                setSelectedModelId("");
-              }} type="button">
-                模特偏好
-              </button>
-            </div>
-
-            {modelTab === "ai" ? (
-              <>
-                <div className="ck-baseline-model-ai-row three">
-                  <SelectField fullWidth hideLabel label="性别" onChange={setGender} options={["男", "女"]} placeholder="性别" value={gender} />
-                  <SelectField fullWidth hideLabel label="年龄段" onChange={setAge} options={modelGenerateAgeOptions} placeholder="年龄段" value={age} />
-                  <SelectField fullWidth hideLabel label="体型" onChange={setBodyType} options={modelGenerateBodyOptions} placeholder="体型" value={bodyType} />
-                </div>
-                <div className="ck-baseline-model-ai-row two">
-                  <SelectField fullWidth hideLabel label="人设" onChange={setPersona} options={modelGeneratePersonaOptions} placeholder="人设" value={persona} />
-                  <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
-                </div>
-                <UnifiedTextareaField
-                  formBlockClassName="ck-form-block ck-set-pack-selling-points ck-model-input-detail"
-                  label="细节补充"
-                  maxLength={600}
-                  onChange={setModelDetailSupplement}
-                  optional
-                  placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
-                  value={modelDetailSupplement}
-                />
-                <div className="ck-baseline-model-ai-actions">
-                  <button className="ck-baseline-model-generate-mini" onClick={() => void handleGenerateModel()} type="button">
-                    <img alt="" src={figmaIcons.creditGem} />
-                    <span>5积分</span>
-                    <em>{isGeneratingModel ? "生成中..." : "生成模特"}</em>
-                  </button>
-                </div>
-              </>
-            ) : null}
-
-            {modelTab === "mine" ? (
-              <>
-                <input
-                  accept="image/*"
-                  className="ck-upload-input"
-                  multiple
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files ?? []);
-                    if (!files.length) return;
-                    void appendModelFiles(files);
-                    event.target.value = "";
-                  }}
-                  ref={inputRef}
-                  type="file"
-                />
-                <div className="ck-baseline-model-grid">
-                  <button className="ck-baseline-model-upload-card" onClick={() => inputRef.current?.click()} type="button">
-                    <span className="ck-baseline-model-upload-icon">+</span>
-                  </button>
-                  {modelCandidates.map((item) => (
-                    <button
-                      className={`ck-baseline-model-card${selectedModelId === item.id ? " active" : ""}`}
-                      key={item.id}
-                      onClick={() => setSelectedModelId(item.id)}
-                      type="button"
-                    >
-                      <div className="ck-baseline-model-card-visual">
-                        <img alt={item.name ?? "模特图"} src={item.src} />
-                        <span className="ck-baseline-model-card-tag">{getModelSourceLabel(item.sourceType)}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                {modelCandidates.length === 0 ? <div className="ck-baseline-model-empty">当前还没有模特素材，先上传一张即可使用。</div> : null}
-              </>
-            ) : null}
-
-            {modelTab === "preference" ? (
-              <div className="ck-model-try-preference-panel">
-                <div className="ck-baseline-model-ai-row two">
-                  <SelectField fullWidth hideLabel label="人种肤色" onChange={setEthnicity} options={modelTryEthnicityOptions} placeholder="人种肤色" value={ethnicity} />
-                  <SelectField fullWidth hideLabel label="性别物种" onChange={setGenderSpecies} options={modelTryGenderSpeciesOptions} placeholder="性别物种" value={genderSpecies} />
-                </div>
-                <div className="ck-baseline-model-ai-row two">
-                  <SelectField fullWidth hideLabel label="年龄维度" onChange={setAgeRange} options={modelTryAgeRangeOptions} placeholder="年龄维度" value={ageRange} />
-                  <SelectField fullWidth hideLabel label="身型身材" onChange={setBodyType} options={modelTryBodyTypeOptions} placeholder="身型身材" value={bodyType} />
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      <VideoMainModelSection
+        modelAssets={modelAssets}
+        onGenerateBaselineModel={onGenerateBaselineModel}
+        onSelectionMapChange={onSelectionMapChange}
+        onSelectionChange={onSelectionChange}
+        onToast={onToast}
+        onUploadModels={onUploadModels}
+        selectedValues={selectedValues}
+      />
 
       {scriptDrawerOpen ? (
         <div className="ck-set-pack-side-drawer-mask ck-video-script-drawer-mask" onClick={() => setScriptDrawerOpen(false)} role="presentation">
@@ -16107,6 +15900,316 @@ function BaselineModelSection({
           {orderedModelAssets.length === 0 ? <div className="ck-baseline-model-empty">当前还没有模特素材，先上传一张即可使用。</div> : null}
         </div>
       )}
+    </div>
+  );
+}
+
+function VideoMainModelSection({
+  modelAssets,
+  onSelectionChange,
+  onSelectionMapChange,
+  onGenerateBaselineModel,
+  onUploadModels,
+  onToast,
+  selectedValues
+}: {
+  modelAssets: ModelAsset[];
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+  onGenerateBaselineModel: (values: AdvancedSelectionMap) => Promise<string | null>;
+  onUploadModels: (files: File[]) => Promise<ModelAsset[]>;
+  onToast: (message: string, tone?: "warning") => void;
+  selectedValues?: AdvancedSelectionMap;
+}) {
+  const [modelEnabled, setModelEnabled] = useState(selectedValues?.videoMainModelEnabled === "true");
+  const [activeTab, setActiveTab] = useState<"ai" | "mine" | "preference">(
+    (selectedValues?.videoMainModelSourceTab as "ai" | "mine" | "preference") ?? "mine"
+  );
+  const [selectedModelId, setSelectedModelId] = useState(selectedValues?.videoMainSelectedModelId ?? "");
+  const [gender, setGender] = useState(selectedValues?.videoMainModelGender ?? "");
+  const [appearance, setAppearance] = useState(selectedValues?.videoMainModelAppearance ?? "");
+  const [age, setAge] = useState(selectedValues?.videoMainModelAge ?? "");
+  const [persona, setPersona] = useState(selectedValues?.videoMainModelPersona ?? "");
+  const [bodyType, setBodyType] = useState(selectedValues?.videoMainModelBodyType ?? "");
+  const [detailSupplement, setDetailSupplement] = useState(selectedValues?.videoMainModelDetailSupplement ?? "");
+  const [ethnicity, setEthnicity] = useState(selectedValues?.videoMainModelEthnicity ?? "");
+  const [genderSpecies, setGenderSpecies] = useState(selectedValues?.videoMainModelGenderSpecies ?? "");
+  const [ageRange, setAgeRange] = useState(selectedValues?.videoMainModelAgeRange ?? "");
+  const [isGeneratingModel, setIsGeneratingModel] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const skipSelectedValuesSyncRef = useRef(false);
+  const pendingSelectedValuesSignatureRef = useRef("");
+  const lastSyncedValuesRef = useRef("");
+  const orderedModelAssets = useMemo(
+    () =>
+      [...modelAssets].sort((left, right) => {
+        if (left.sourceType !== right.sourceType) {
+          return left.sourceType === "upload" ? -1 : 1;
+        }
+        return right.createdAt - left.createdAt;
+      }),
+    [modelAssets]
+  );
+
+  useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+
+    const nextSyncKey = JSON.stringify({
+      videoMainModelEnabled: selectedValues?.videoMainModelEnabled === "true",
+      videoMainModelSourceTab: (selectedValues?.videoMainModelSourceTab as "ai" | "mine" | "preference") ?? "mine",
+      videoMainSelectedModelId: selectedValues?.videoMainSelectedModelId ?? "",
+      videoMainModelGender: selectedValues?.videoMainModelGender ?? "",
+      videoMainModelAppearance: selectedValues?.videoMainModelAppearance ?? "",
+      videoMainModelAge: selectedValues?.videoMainModelAge ?? "",
+      videoMainModelPersona: selectedValues?.videoMainModelPersona ?? "",
+      videoMainModelBodyType: selectedValues?.videoMainModelBodyType ?? "",
+      videoMainModelDetailSupplement: selectedValues?.videoMainModelDetailSupplement ?? "",
+      videoMainModelEthnicity: selectedValues?.videoMainModelEthnicity ?? "",
+      videoMainModelGenderSpecies: selectedValues?.videoMainModelGenderSpecies ?? "",
+      videoMainModelAgeRange: selectedValues?.videoMainModelAgeRange ?? ""
+    });
+
+    if (pendingSelectedValuesSignatureRef.current) {
+      if (nextSyncKey !== pendingSelectedValuesSignatureRef.current) {
+        return;
+      }
+      pendingSelectedValuesSignatureRef.current = "";
+    }
+
+    if (nextSyncKey === lastSyncedValuesRef.current) {
+      return;
+    }
+
+    lastSyncedValuesRef.current = nextSyncKey;
+    setModelEnabled(selectedValues?.videoMainModelEnabled === "true");
+    setActiveTab((selectedValues?.videoMainModelSourceTab as "ai" | "mine" | "preference") ?? "mine");
+    setSelectedModelId(selectedValues?.videoMainSelectedModelId ?? "");
+    setGender(selectedValues?.videoMainModelGender ?? "");
+    setAppearance(selectedValues?.videoMainModelAppearance ?? "");
+    setAge(selectedValues?.videoMainModelAge ?? "");
+    setPersona(selectedValues?.videoMainModelPersona ?? "");
+    setBodyType(selectedValues?.videoMainModelBodyType ?? "");
+    setDetailSupplement(selectedValues?.videoMainModelDetailSupplement ?? "");
+    setEthnicity(selectedValues?.videoMainModelEthnicity ?? "");
+    setGenderSpecies(selectedValues?.videoMainModelGenderSpecies ?? "");
+    setAgeRange(selectedValues?.videoMainModelAgeRange ?? "");
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const selectedModel = orderedModelAssets.find((item) => item.id === selectedModelId);
+    const nextSelectionMap: AdvancedSelectionMap = {
+      videoMainModelEnabled: String(modelEnabled)
+    };
+    const currentCharacterFit = selectedValues?.videoMainCharacterFit ?? "";
+
+    if (modelEnabled) {
+      if (!currentCharacterFit || currentCharacterFit === "无人物") {
+        nextSelectionMap.videoMainCharacterFit = "局部出境";
+      }
+      nextSelectionMap.videoMainModelSourceTab = activeTab;
+      if (activeTab === "ai") {
+        nextSelectionMap.videoMainModelSourceType = "AI生成模特";
+        if (gender) nextSelectionMap.videoMainModelGender = gender;
+        if (appearance) nextSelectionMap.videoMainModelAppearance = appearance;
+        if (age) nextSelectionMap.videoMainModelAge = age;
+        if (persona) nextSelectionMap.videoMainModelPersona = persona;
+        if (bodyType) nextSelectionMap.videoMainModelBodyType = bodyType;
+        if (detailSupplement) nextSelectionMap.videoMainModelDetailSupplement = detailSupplement;
+        onSelectionChange?.(["AI生成模特", gender, appearance, age, persona, bodyType, detailSupplement].filter(Boolean));
+      } else if (activeTab === "mine") {
+        nextSelectionMap.videoMainModelSourceType = "我的模特";
+        if (selectedModelId) nextSelectionMap.videoMainSelectedModelId = selectedModelId;
+        if (selectedModel?.name) nextSelectionMap.videoMainSelectedModelName = selectedModel.name;
+        onSelectionChange?.(["我的模特", selectedModel?.name ?? ""].filter(Boolean));
+      } else {
+        nextSelectionMap.videoMainModelSourceType = "模特偏好模板";
+        if (ethnicity) nextSelectionMap.videoMainModelEthnicity = ethnicity;
+        if (genderSpecies) nextSelectionMap.videoMainModelGenderSpecies = genderSpecies;
+        if (ageRange) nextSelectionMap.videoMainModelAgeRange = ageRange;
+        if (bodyType) nextSelectionMap.videoMainModelBodyType = bodyType;
+        onSelectionChange?.(["模特偏好", ethnicity, genderSpecies, ageRange, bodyType].filter(Boolean));
+      }
+    } else {
+      onSelectionChange?.([]);
+    }
+
+    skipSelectedValuesSyncRef.current = true;
+    const nextSyncKey = JSON.stringify(nextSelectionMap);
+    pendingSelectedValuesSignatureRef.current = nextSyncKey;
+    lastSyncedValuesRef.current = nextSyncKey;
+    onSelectionMapChange?.(nextSelectionMap);
+  }, [
+    activeTab,
+    age,
+    ageRange,
+    appearance,
+    bodyType,
+    detailSupplement,
+    ethnicity,
+    gender,
+    genderSpecies,
+    modelEnabled,
+    onSelectionChange,
+    onSelectionMapChange,
+    orderedModelAssets,
+    persona,
+    selectedModelId,
+    selectedValues
+  ]);
+
+  const appendModelFiles = async (files: File[]) => {
+    const nextModels = await onUploadModels(files);
+    if (!selectedModelId && nextModels[0]?.id) {
+      setActiveTab("mine");
+      setSelectedModelId(nextModels[0].id);
+    }
+  };
+
+  const handleGenerateModel = async () => {
+    if (!gender || !appearance || !age || !persona || !bodyType) {
+      onToast("请先补全模特基础信息", "warning");
+      return;
+    }
+    setIsGeneratingModel(true);
+    try {
+      const nextModelId = await onGenerateBaselineModel({
+        baselineModelSource: "ai",
+        modelGenerateTypeKey: "real-model",
+        modelGenerateType: "真人模特图",
+        gender,
+        appearance,
+        age,
+        persona,
+        bodyType,
+        baselineModelSupplement: detailSupplement
+      });
+      if (nextModelId) {
+        setActiveTab("mine");
+        setSelectedModelId(nextModelId);
+      }
+    } finally {
+      setIsGeneratingModel(false);
+    }
+  };
+
+  return (
+    <div className="ck-form-block ck-video-voice-block">
+      <div className="ck-inline-field">
+        <FieldTitle label="选择模特" />
+        <div className="ck-switch" style={{ width: 96, gridTemplateColumns: "repeat(2, 1fr)" }}>
+          <button className={!modelEnabled ? "active" : ""} onClick={() => setModelEnabled(false)} type="button">
+            关闭
+          </button>
+          <button className={modelEnabled ? "active" : ""} onClick={() => setModelEnabled(true)} type="button">
+            开启
+          </button>
+        </div>
+      </div>
+
+      {modelEnabled ? (
+        <div className="ck-baseline-model-panel">
+          <div className="ck-task-rail-mode-switch ck-baseline-model-tabs">
+            <button className={activeTab === "ai" ? "active" : ""} onClick={() => {
+              setActiveTab("ai");
+              setSelectedModelId("");
+            }} type="button">
+              AI生成
+            </button>
+            <button className={activeTab === "mine" ? "active" : ""} onClick={() => setActiveTab("mine")} type="button">
+              我的模特
+            </button>
+            <button className={activeTab === "preference" ? "active" : ""} onClick={() => {
+              setActiveTab("preference");
+              setSelectedModelId("");
+            }} type="button">
+              模特偏好
+            </button>
+          </div>
+
+          {activeTab === "ai" ? (
+            <>
+              <div className="ck-baseline-model-ai-row three">
+                <SelectField fullWidth hideLabel label="性别" onChange={setGender} options={["男", "女"]} placeholder="性别" value={gender} />
+                <SelectField fullWidth hideLabel label="年龄段" onChange={setAge} options={modelGenerateAgeOptions} placeholder="年龄段" value={age} />
+                <SelectField fullWidth hideLabel label="体型" onChange={setBodyType} options={modelGenerateBodyOptions} placeholder="体型" value={bodyType} />
+              </div>
+              <div className="ck-baseline-model-ai-row two">
+                <SelectField fullWidth hideLabel label="人设" onChange={setPersona} options={modelGeneratePersonaOptions} placeholder="人设" value={persona} />
+                <SelectField fullWidth hideLabel label="外貌特征" onChange={setAppearance} options={modelGenerateAppearanceOptions} placeholder="外貌特征" value={appearance} />
+              </div>
+              <UnifiedTextareaField
+                formBlockClassName="ck-form-block ck-set-pack-selling-points ck-model-input-detail"
+                label="细节补充"
+                maxLength={600}
+                onChange={setDetailSupplement}
+                optional
+                placeholder="细节补充，例如：冷白皮、长卷发、镜头感强、站姿自然。"
+                value={detailSupplement}
+              />
+              <div className="ck-baseline-model-ai-actions">
+                <button className="ck-baseline-model-generate-mini" onClick={() => void handleGenerateModel()} type="button">
+                  <img alt="" src={figmaIcons.creditGem} />
+                  <span>5积分</span>
+                  <em>{isGeneratingModel ? "生成中..." : "生成模特"}</em>
+                </button>
+              </div>
+            </>
+          ) : null}
+
+          {activeTab === "mine" ? (
+            <>
+              <input
+                accept="image/*"
+                className="ck-upload-input"
+                multiple
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  if (!files.length) return;
+                  void appendModelFiles(files);
+                  event.target.value = "";
+                }}
+                ref={inputRef}
+                type="file"
+              />
+              <div className="ck-baseline-model-grid">
+                <button className="ck-baseline-model-upload-card" onClick={() => inputRef.current?.click()} type="button">
+                  <span className="ck-baseline-model-upload-icon">+</span>
+                </button>
+                {orderedModelAssets.map((item) => (
+                  <button
+                    className={`ck-baseline-model-card${selectedModelId === item.id ? " active" : ""}`}
+                    key={item.id}
+                    onClick={() => setSelectedModelId(item.id)}
+                    type="button"
+                  >
+                    <div className="ck-baseline-model-card-visual">
+                      <img alt={item.name ?? "模特图"} src={item.src} />
+                      <span className="ck-baseline-model-card-tag">{getModelSourceLabel(item.sourceType)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {orderedModelAssets.length === 0 ? <div className="ck-baseline-model-empty">当前还没有模特素材，先上传一张即可使用。</div> : null}
+            </>
+          ) : null}
+
+          {activeTab === "preference" ? (
+            <div className="ck-model-try-preference-panel">
+              <div className="ck-baseline-model-ai-row two">
+                <SelectField fullWidth hideLabel label="人种肤色" onChange={setEthnicity} options={modelTryEthnicityOptions} placeholder="人种肤色" value={ethnicity} />
+                <SelectField fullWidth hideLabel label="性别物种" onChange={setGenderSpecies} options={modelTryGenderSpeciesOptions} placeholder="性别物种" value={genderSpecies} />
+              </div>
+              <div className="ck-baseline-model-ai-row two">
+                <SelectField fullWidth hideLabel label="年龄维度" onChange={setAgeRange} options={modelTryAgeRangeOptions} placeholder="年龄维度" value={ageRange} />
+                <SelectField fullWidth hideLabel label="身型身材" onChange={setBodyType} options={modelTryBodyTypeOptions} placeholder="身型身材" value={bodyType} />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -21486,8 +21589,11 @@ function ConfigPanel({
     if (section === "video-replica-setup" && (tool.key === "video-main" || tool.key === "video-replica" || tool.key === "video-replace")) {
       return (
         <VideoReplicaSetupSection
+          modelAssets={tool.key === "video-main" ? modelAssets : undefined}
+          onGenerateBaselineModel={tool.key === "video-main" ? onGenerateBaselineModel : undefined}
           toolKey={tool.key}
           onCreationModeChange={setCreationModeSelection}
+          onToast={tool.key === "video-main" ? onToast : undefined}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
             setAdvancedSettingSelections((current) => ({
@@ -21495,6 +21601,7 @@ function ConfigPanel({
               ...values
             }));
           }}
+          onUploadModels={tool.key === "video-main" ? onUploadModels : undefined}
           selectedValues={advancedSettingSelections}
         />
       );
