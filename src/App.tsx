@@ -9393,6 +9393,7 @@ function UploadField({
   const [isDragging, setIsDragging] = useState(false);
   const [showFade, setShowFade] = useState(false);
   const [previewIds, setPreviewIds] = useState<string[]>([]);
+  const showFadeRef = useRef(showFade);
 
   const activatePreview = (itemId: string) => {
     setPreviewIds((current) => (current.includes(itemId) ? current : [...current, itemId]));
@@ -9405,11 +9406,18 @@ function UploadField({
   const refreshFade = () => {
     const gallery = galleryRef.current;
     if (!gallery) {
-      setShowFade(false);
+      if (showFadeRef.current !== false) {
+        showFadeRef.current = false;
+        setShowFade(false);
+      }
       return;
     }
     const maxScrollTop = gallery.scrollHeight - gallery.clientHeight;
-    setShowFade(maxScrollTop > 1 && gallery.scrollTop < maxScrollTop - 1);
+    const nextShowFade = maxScrollTop > 1 && gallery.scrollTop < maxScrollTop - 1;
+    if (showFadeRef.current !== nextShowFade) {
+      showFadeRef.current = nextShowFade;
+      setShowFade(nextShowFade);
+    }
   };
 
   const openPicker = () => {
@@ -9538,7 +9546,13 @@ function UploadField({
   }, [values.length]);
 
   useEffect(() => {
-    setPreviewIds((current) => current.filter((id) => values.some((item) => item.id === id)));
+    setPreviewIds((current) => {
+      const nextPreviewIds = current.filter((id) => values.some((item) => item.id === id));
+      if (nextPreviewIds.length === current.length && nextPreviewIds.every((id, index) => id === current[index])) {
+        return current;
+      }
+      return nextPreviewIds;
+    });
   }, [values]);
 
   useEffect(() => {
@@ -9739,15 +9753,23 @@ function UploadVideoField({
   const galleryHeight = Math.min(420, visibleRows * 124 + Math.max(0, visibleRows - 1) * 8);
   const [isDragging, setIsDragging] = useState(false);
   const [showFade, setShowFade] = useState(false);
+  const showFadeRef = useRef(showFade);
 
   const refreshFade = () => {
     const gallery = galleryRef.current;
     if (!gallery) {
-      setShowFade(false);
+      if (showFadeRef.current !== false) {
+        showFadeRef.current = false;
+        setShowFade(false);
+      }
       return;
     }
     const maxScrollTop = gallery.scrollHeight - gallery.clientHeight;
-    setShowFade(maxScrollTop > 1 && gallery.scrollTop < maxScrollTop - 1);
+    const nextShowFade = maxScrollTop > 1 && gallery.scrollTop < maxScrollTop - 1;
+    if (showFadeRef.current !== nextShowFade) {
+      showFadeRef.current = nextShowFade;
+      setShowFade(nextShowFade);
+    }
   };
 
   const openPicker = () => {
@@ -15972,6 +15994,7 @@ function VideoMainModelSection({
   const skipSelectedValuesSyncRef = useRef(false);
   const pendingSelectedValuesSignatureRef = useRef("");
   const lastSyncedValuesRef = useRef("");
+  const lastEmitSignatureRef = useRef("");
   const orderedModelAssets = useMemo(
     () =>
       [...modelAssets].sort((left, right) => {
@@ -16050,28 +16073,43 @@ function VideoMainModelSection({
         if (persona) nextSelectionMap.videoMainModelPersona = persona;
         if (bodyType) nextSelectionMap.videoMainModelBodyType = bodyType;
         if (detailSupplement) nextSelectionMap.videoMainModelDetailSupplement = detailSupplement;
-        onSelectionChange?.(["AI生成模特", gender, appearance, age, persona, bodyType, detailSupplement].filter(Boolean));
       } else if (activeTab === "mine") {
         nextSelectionMap.videoMainModelSourceType = "我的模特";
         if (selectedModelId) nextSelectionMap.videoMainSelectedModelId = selectedModelId;
         if (selectedModel?.name) nextSelectionMap.videoMainSelectedModelName = selectedModel.name;
-        onSelectionChange?.(["我的模特", selectedModel?.name ?? ""].filter(Boolean));
       } else {
         nextSelectionMap.videoMainModelSourceType = "模特偏好模板";
         if (ethnicity) nextSelectionMap.videoMainModelEthnicity = ethnicity;
         if (genderSpecies) nextSelectionMap.videoMainModelGenderSpecies = genderSpecies;
         if (ageRange) nextSelectionMap.videoMainModelAgeRange = ageRange;
         if (bodyType) nextSelectionMap.videoMainModelBodyType = bodyType;
-        onSelectionChange?.(["模特偏好", ethnicity, genderSpecies, ageRange, bodyType].filter(Boolean));
       }
-    } else {
-      onSelectionChange?.([]);
     }
+
+    const nextSelectionValues =
+      !modelEnabled
+        ? []
+        : activeTab === "ai"
+          ? ["AI生成模特", gender, appearance, age, persona, bodyType, detailSupplement].filter(Boolean)
+          : activeTab === "mine"
+            ? ["我的模特", selectedModel?.name ?? ""].filter(Boolean)
+            : ["模特偏好", ethnicity, genderSpecies, ageRange, bodyType].filter(Boolean);
+    const nextEmitSignature = JSON.stringify({
+      nextSelectionMap,
+      nextSelectionValues
+    });
+
+    if (nextEmitSignature === lastEmitSignatureRef.current) {
+      return;
+    }
+
+    lastEmitSignatureRef.current = nextEmitSignature;
 
     skipSelectedValuesSyncRef.current = true;
     const nextSyncKey = JSON.stringify(nextSelectionMap);
     pendingSelectedValuesSignatureRef.current = nextSyncKey;
     lastSyncedValuesRef.current = nextSyncKey;
+    onSelectionChange?.(nextSelectionValues);
     onSelectionMapChange?.(nextSelectionMap);
   }, [
     activeTab,
@@ -18723,6 +18761,7 @@ function SetPackStrategySection({
   const defaultPlatform = platformOptions[0];
   const skipSelectedValuesSyncRef = useRef(false);
   const lastSelectedValuesSignatureRef = useRef("");
+  const lastEmitSignatureRef = useRef("");
   const [platformId, setPlatformId] = useState(selectedValues?.platform ? platformOptions.find((item) => item.label === selectedValues.platform)?.id ?? defaultPlatform?.id ?? "" : defaultPlatform?.id ?? "");
   const selectedPlatform = platformOptions.find((item) => item.id === platformId) ?? defaultPlatform;
   const [targetMarket, setTargetMarket] = useState(selectedValues?.targetMarket ?? selectedValues?.region ?? "北美");
@@ -18823,6 +18862,17 @@ function SetPackStrategySection({
           }
         : {})
     };
+    const nextSelectionValues = [selectedPlatform.label, targetMarket, copyLanguage, isVideoMainTool ? videoRatio : visualStyle, isVideoMainTool ? videoDuration : "", isVideoMainTool ? videoResolution : ""].filter(Boolean);
+    const nextEmitSignature = JSON.stringify({
+      nextSelectionMap,
+      nextSelectionValues
+    });
+
+    if (nextEmitSignature === lastEmitSignatureRef.current) {
+      return;
+    }
+
+    lastEmitSignatureRef.current = nextEmitSignature;
     skipSelectedValuesSyncRef.current = true;
     lastSelectedValuesSignatureRef.current = JSON.stringify({
       platform: nextSelectionMap.platform,
@@ -18836,9 +18886,7 @@ function SetPackStrategySection({
     onSelectionMapChange?.({
       ...nextSelectionMap
     });
-    onSelectionChange?.(
-      [selectedPlatform.label, targetMarket, copyLanguage, isVideoMainTool ? videoRatio : visualStyle, isVideoMainTool ? videoDuration : "", isVideoMainTool ? videoResolution : ""].filter(Boolean)
-    );
+    onSelectionChange?.(nextSelectionValues);
   }, [copyLanguage, isVideoMainTool, onSelectionChange, onSelectionMapChange, selectedPlatform, targetMarket, videoDuration, videoRatio, videoResolution, visualStyle]);
 
   const videoRatioDisplay = videoMainParameterRatioOptions.find((item) => item.value === videoRatio)?.label ?? videoRatio.replace(/^[^\d]+/, "");
@@ -18987,6 +19035,7 @@ function SetPackSellingPointsSection({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const lastLocalSyncSignatureRef = useRef("");
+  const lastEmitSignatureRef = useRef("");
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
 
   useEffect(() => {
@@ -19022,25 +19071,32 @@ function SetPackSellingPointsSection({
   ]);
 
   useEffect(() => {
-    lastLocalSyncSignatureRef.current = JSON.stringify({
-      productName: detailDraft.productName,
-      sellingPoints: detailText,
-      audience: detailDraft.audience,
-      scenario: detailDraft.scenario,
-      parameters: detailDraft.parameters,
-      detailText
-    });
-
-    onSelectionMapChange?.({
+    const nextSelectionMap: AdvancedSelectionMap = {
       setPackProductName: detailDraft.productName,
       setPackSellingPoints: detailText,
       setPackAudience: detailDraft.audience,
       setPackScenario: detailDraft.scenario,
       setPackParameters: detailDraft.parameters
+    };
+    const nextSelectionValues = [detailDraft.productName, detailText, detailDraft.audience, detailDraft.scenario, detailDraft.parameters].filter(Boolean);
+    const nextSignature = JSON.stringify({
+      productName: detailDraft.productName,
+      sellingPoints: detailText,
+      audience: detailDraft.audience,
+      scenario: detailDraft.scenario,
+      parameters: detailDraft.parameters,
+      detailText,
+      nextSelectionValues
     });
-    onSelectionChange?.(
-      [detailDraft.productName, detailText, detailDraft.audience, detailDraft.scenario, detailDraft.parameters].filter(Boolean)
-    );
+    lastLocalSyncSignatureRef.current = nextSignature;
+
+    if (nextSignature === lastEmitSignatureRef.current) {
+      return;
+    }
+
+    lastEmitSignatureRef.current = nextSignature;
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(nextSelectionValues);
   }, [detailDraft, detailText, onSelectionChange, onSelectionMapChange]);
 
   useEffect(() => {
@@ -19219,6 +19275,7 @@ function SetPackStyleAnalysisSection({
   const [styles, setStyles] = useState<SetPackStyleCard[]>(safeParseJson<SetPackStyleCard[]>(selectedValues?.setPackStyleCards, []) ?? []);
   const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>((selectedValues?.setPackSelectedStyleIds ?? "").split(",").filter(Boolean));
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const lastEmitSignatureRef = useRef("");
 
   useEffect(() => {
     setStyles(safeParseJson<SetPackStyleCard[]>(selectedValues?.setPackStyleCards, []) ?? []);
@@ -19227,12 +19284,24 @@ function SetPackStyleAnalysisSection({
 
   useEffect(() => {
     const selectedCards = styles.filter((item) => selectedStyleIds.includes(item.id));
-    onSelectionMapChange?.({
+    const nextSelectionMap = {
       setPackStyleCards: JSON.stringify(styles),
       setPackSelectedStyleIds: selectedStyleIds.join(","),
       setPackSelectedStyleNames: selectedCards.map((item) => item.name).join(" / ")
+    };
+    const nextSelectionValues = selectedCards.map((item) => item.name);
+    const nextEmitSignature = JSON.stringify({
+      nextSelectionMap,
+      nextSelectionValues
     });
-    onSelectionChange?.(selectedCards.map((item) => item.name));
+
+    if (nextEmitSignature === lastEmitSignatureRef.current) {
+      return;
+    }
+
+    lastEmitSignatureRef.current = nextEmitSignature;
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(nextSelectionValues);
   }, [onSelectionChange, onSelectionMapChange, selectedStyleIds, styles]);
 
   const handleAnalyze = () => {
@@ -19350,6 +19419,7 @@ function SetPackTypeSection({
   const lastSelectedTypesSyncRef = useRef("");
   const lastSavedTemplatesSyncRef = useRef("");
   const lastGlobalSettingsSyncRef = useRef("");
+  const lastEmitSignatureRef = useRef("");
   const [templateDraftName, setTemplateDraftName] = useState("未命名组图模板");
   const [customDraft, setCustomDraft] = useState<SetPackTypeItem>({
     id: "custom-draft",
