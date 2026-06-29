@@ -6,7 +6,7 @@ export type VideoMainScriptFieldKey =
   | "videoMainMusicMood"
   | "videoMainVisualStyle"
   | "videoMainAudience"
-  | "videoMainCharacterFit";
+  | "videoMainCharacterParticipation";
 
 export type VideoMainScriptFieldConfig = {
   key: VideoMainScriptFieldKey;
@@ -114,10 +114,10 @@ export const videoMainScriptFieldConfigs: VideoMainScriptFieldConfig[] = [
     aiKeywords: ["女性", "男性", "通用", "年轻", "家庭"]
   },
   {
-    key: "videoMainCharacterFit",
-    label: "人物适配",
-    options: ["无人物", "局部出境", "亚洲时尚女性", "欧美成熟男性", "宠物展示", "动漫角色", "虚拟偶像", "国风端庄女性", "专业人士"],
-    prompt: "确定人物是否出镜及人物调性，提升镜头代入感。",
+    key: "videoMainCharacterParticipation",
+    label: "人物出镜方式",
+    options: ["无人物", "局部出镜", "半身出镜", "全身出镜", "讲解型出镜", "体验型出镜"],
+    prompt: "确定人物如何出镜，平衡商品展示与人物参与方式。",
     aiKeywords: ["人物", "模特", "真人", "特写"]
   }
 ];

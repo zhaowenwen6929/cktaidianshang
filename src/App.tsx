@@ -15082,7 +15082,15 @@ function VideoMainScriptSetupSection({
   const [scriptDetailMode, setScriptDetailMode] = useState<"general" | "storyboard">("general");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({
     ...defaultScriptFieldValues,
-    ...Object.fromEntries(videoMainScriptFieldConfigs.map((item) => [item.key, selectedValues?.[item.key] ?? defaultScriptFieldValues[item.key]]))
+    ...Object.fromEntries(
+      videoMainScriptFieldConfigs.map((item) => {
+        const rawValue =
+          item.key === "videoMainCharacterParticipation"
+            ? selectedValues?.videoMainCharacterParticipation ?? selectedValues?.videoMainCharacterFit ?? defaultScriptFieldValues[item.key]
+            : selectedValues?.[item.key] ?? defaultScriptFieldValues[item.key];
+        return [item.key, rawValue];
+      })
+    )
   });
   const lastSyncedValuesRef = useRef<string>("");
   const lastEmitRef = useRef<string>("");
@@ -15090,7 +15098,10 @@ function VideoMainScriptSetupSection({
   useEffect(() => {
     const nextScriptFields = Object.fromEntries(
       videoMainScriptFieldConfigs.map((item) => {
-        const rawValue = selectedValues?.[item.key] ?? defaultScriptFieldValues[item.key];
+        const rawValue =
+          item.key === "videoMainCharacterParticipation"
+            ? selectedValues?.videoMainCharacterParticipation ?? selectedValues?.videoMainCharacterFit ?? defaultScriptFieldValues[item.key]
+            : selectedValues?.[item.key] ?? defaultScriptFieldValues[item.key];
         const normalizedValue = legacyAutoDefaultSet.has(rawValue) ? "" : rawValue;
         return [item.key, normalizedValue];
       })
