@@ -3871,6 +3871,38 @@ const videoMainScriptModeOptions = [
   { key: "ai-script", label: "AI生成脚本" },
   { key: "custom-script", label: "自定义脚本" }
 ];
+const videoMainScriptSectionKeys = [
+  "videoMainScriptMode",
+  "videoMainScriptModeLabel",
+  "videoMainSellingPoint",
+  "videoMainType",
+  "videoMainMarketingNeed",
+  "videoMainRhythm",
+  "videoMainMusicMood",
+  "videoMainVisualStyle",
+  "videoMainAudience",
+  "videoMainCharacterFit",
+  "videoMainVoiceEnabled",
+  "videoMainVoiceLanguage",
+  "videoMainVoiceTone",
+  "videoMainVoiceCopy"
+] as const;
+const videoMainModelSectionKeys = [
+  "videoMainModelEnabled",
+  "videoMainModelSourceTab",
+  "videoMainModelSourceType",
+  "videoMainSelectedModelId",
+  "videoMainSelectedModelName",
+  "videoMainModelGender",
+  "videoMainModelAppearance",
+  "videoMainModelAge",
+  "videoMainModelPersona",
+  "videoMainModelBodyType",
+  "videoMainModelDetailSupplement",
+  "videoMainModelEthnicity",
+  "videoMainModelGenderSpecies",
+  "videoMainModelAgeRange"
+] as const;
 const videoMainHotTypeOptions = [
   "UGC 种草",
   "带货短剧🔥",
@@ -21596,10 +21628,21 @@ function ConfigPanel({
           onToast={tool.key === "video-main" ? onToast : undefined}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            setAdvancedSettingSelections((current) => ({
-              ...current,
-              ...values
-            }));
+            if (tool.key !== "video-main") {
+              setAdvancedSettingSelections((current) => ({
+                ...current,
+                ...values
+              }));
+              return;
+            }
+
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              videoMainModelSectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
           }}
           onUploadModels={tool.key === "video-main" ? onUploadModels : undefined}
           selectedValues={advancedSettingSelections}
@@ -21617,39 +21660,9 @@ function ConfigPanel({
           onGenerateBaselineModel={onGenerateBaselineModel}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            const sectionKeys = [
-              "videoMainScriptMode",
-              "videoMainScriptModeLabel",
-              "videoMainSellingPoint",
-              "videoMainType",
-              "videoMainMarketingNeed",
-              "videoMainRhythm",
-              "videoMainMusicMood",
-              "videoMainVisualStyle",
-              "videoMainAudience",
-              "videoMainCharacterFit",
-              "videoMainVoiceEnabled",
-              "videoMainVoiceLanguage",
-              "videoMainVoiceTone",
-              "videoMainVoiceCopy",
-              "videoMainModelEnabled",
-              "videoMainModelSourceTab",
-              "videoMainModelSourceType",
-              "videoMainSelectedModelId",
-              "videoMainSelectedModelName",
-              "videoMainModelGender",
-              "videoMainModelAppearance",
-              "videoMainModelAge",
-              "videoMainModelPersona",
-              "videoMainModelBodyType",
-              "videoMainModelDetailSupplement",
-              "videoMainModelEthnicity",
-              "videoMainModelGenderSpecies",
-              "videoMainModelAgeRange"
-            ];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
-              sectionKeys.forEach((key) => {
+              videoMainScriptSectionKeys.forEach((key) => {
                 delete nextSelections[key];
               });
               return { ...nextSelections, ...values };
