@@ -365,6 +365,9 @@ type ResultItem = {
   overlayText?: string;
 };
 
+type ResultTransferScope = "current" | "all";
+type ResultEditorTarget = "canvas" | "design";
+
 type CaseTemplate = {
   id: string;
   toolKey: string;
@@ -3874,14 +3877,13 @@ const videoMainScriptModeOptions = [
 const videoMainScriptSectionKeys = [
   "videoMainScriptMode",
   "videoMainScriptModeLabel",
-  "videoMainSellingPoint",
   "videoMainType",
   "videoMainMarketingNeed",
   "videoMainRhythm",
   "videoMainMusicMood",
   "videoMainVisualStyle",
   "videoMainAudience",
-  "videoMainCharacterFit",
+  "videoMainCharacterParticipation",
   "videoMainVoiceEnabled",
   "videoMainVoiceLanguage",
   "videoMainVoiceTone",
@@ -3911,7 +3913,9 @@ const videoMainHotTypeOptions = [
   "TVC广告",
   "痛点解决",
   "开箱种草",
-  "反应展示"
+  "反应展示",
+  "对比测评",
+  "穿搭上身"
 ] as const;
 const spokespersonInteractionOptions = ["穿戴展示", "手持展示", "使用状态展示", "推荐代言", "产品静置人物出现", "身体局部展示"];
 const spokespersonCharacterOptions = [
@@ -16069,11 +16073,11 @@ function VideoMainModelSection({
     const nextSelectionMap: AdvancedSelectionMap = {
       videoMainModelEnabled: String(modelEnabled)
     };
-    const currentCharacterFit = selectedValues?.videoMainCharacterFit ?? "";
+    const currentCharacterParticipation = selectedValues?.videoMainCharacterParticipation ?? selectedValues?.videoMainCharacterFit ?? "";
 
     if (modelEnabled) {
-      if (!currentCharacterFit || currentCharacterFit === "无人物") {
-        nextSelectionMap.videoMainCharacterFit = "局部出境";
+      if (!currentCharacterParticipation || currentCharacterParticipation === "无人物") {
+        nextSelectionMap.videoMainCharacterParticipation = "局部出镜";
       }
       nextSelectionMap.videoMainModelSourceTab = activeTab;
       if (activeTab === "ai") {
@@ -19642,12 +19646,24 @@ function SetPackTypeSection({
   }, [modalMode]);
 
   useEffect(() => {
-    onSelectionMapChange?.({
+    const nextSelectionMap = {
       setPackSelectedTypes: JSON.stringify(selectedTypes),
       setPackSelectedTypeNames: selectedTypes.map((item) => item.category).join(" / "),
       setPackSavedTypeTemplates: JSON.stringify(savedTemplates)
+    };
+    const nextSelectionValues = selectedTypes.map((item) => item.category);
+    const nextEmitSignature = JSON.stringify({
+      nextSelectionMap,
+      nextSelectionValues
     });
-    onSelectionChange?.(selectedTypes.map((item) => item.category));
+
+    if (nextEmitSignature === lastEmitSignatureRef.current) {
+      return;
+    }
+
+    lastEmitSignatureRef.current = nextEmitSignature;
+    onSelectionMapChange?.(nextSelectionMap);
+    onSelectionChange?.(nextSelectionValues);
   }, [onSelectionChange, onSelectionMapChange, savedTemplates, selectedTypes]);
 
   const openManualModal = () => {
@@ -23322,7 +23338,8 @@ function ResultDetailModal({
   onDownloadCurrent,
   onDownloadAll,
   onDeleteCurrent,
-  onUseTool
+  onUseTool,
+  onSendToEditor
 }: {
   item: ResultItem | null;
   task: TaskRecord | null;
@@ -23334,9 +23351,16 @@ function ResultDetailModal({
   onDownloadCurrent: (item: ResultItem) => void;
   onDownloadAll: (task: TaskRecord) => void;
   onDeleteCurrent: (item: ResultItem, taskItems: ResultItem[]) => void;
-  onUseTool: (toolKey: string, label: string, item: ResultItem) => void;
+  onUseTool: (toolKey: string, label: string, scope: ResultTransferScope, item: ResultItem, taskItems: ResultItem[]) => void;
+  onSendToEditor: (
+    target: ResultEditorTarget,
+    label: string,
+    scope: ResultTransferScope,
+    item: ResultItem,
+    taskItems: ResultItem[]
+  ) => void;
 }) {
-  const renderDetailGlyph = (type: "video" | "upscale" | "download" | "delete" | "close") => {
+  const renderDetailGlyph = (type: "video" | "upscale" | "canvas" | "design" | "download" | "delete" | "close") => {
     if (type === "video") {
       return (
         <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
@@ -23361,6 +23385,21 @@ function ResultDetailModal({
           <path d="M8 2.5v7.1" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
           <path d="m5.1 7.6 2.9 3 2.9-3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" />
           <path d="M2.8 12.5h10.4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+        </svg>
+      );
+    }
+    if (type === "canvas") {
+      return (
+        <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+          <rect height="9.6" rx="1.6" stroke="currentColor" strokeWidth="1.4" width="11" x="2.5" y="3.2" />
+          <path d="M5.1 6.1h5.8M5.1 8h5.8M5.1 9.9h3.1" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+        </svg>
+      );
+    }
+    if (type === "design") {
+      return (
+        <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+          <path d="M6.1 3.2A2.3 2.3 0 1 1 3.8 5.5a2.3 2.3 0 0 1 2.3-2.3ZM9.9 3.2h1.1a1.9 1.9 0 0 1 0 3.8H9.9a1.9 1.9 0 1 1 0-3.8ZM6.1 8a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8ZM9.9 8a2.3 2.3 0 0 1 0 4.6c-.9 0-1.6-.7-1.6-1.6V10a2 2 0 0 1 1.6-2Z" stroke="currentColor" strokeWidth="1.2" />
         </svg>
       );
     }
@@ -23393,6 +23432,10 @@ function ResultDetailModal({
   const toolbarActions = [
     { key: "video-main", label: "生成视频", icon: "video" as const },
     { key: "image-upscale", label: "4K放大", icon: "upscale" as const }
+  ];
+  const editorActions = [
+    { key: "canvas" as const, label: "进画布编辑", icon: "canvas" as const },
+    { key: "design" as const, label: "进设计页编辑", icon: "design" as const }
   ];
   const infoItems = [
     { label: "功能模块：", value: toolLabel },
@@ -23473,15 +23516,43 @@ function ResultDetailModal({
                   <div className="ck-result-detail-toolbar">
                     <div className="ck-result-detail-tool-actions">
                       {toolbarActions.map((action) => (
-                        <button key={`${action.key}-${action.label}`} onClick={() => onUseTool(action.key, action.label, item)} type="button">
-                          <span className="ck-result-detail-tool-icon" aria-hidden="true">
-                            {renderDetailGlyph(action.icon)}
-                          </span>
-                          <span>{action.label}</span>
-                        </button>
+                        <div className="ck-result-detail-action-menu" key={`${action.key}-${action.label}`}>
+                          <button className="ck-result-detail-action-trigger" type="button">
+                            <span className="ck-result-detail-tool-icon" aria-hidden="true">
+                              {renderDetailGlyph(action.icon)}
+                            </span>
+                            <span>{action.label}</span>
+                          </button>
+                          <div className="ck-result-detail-action-popover">
+                            <button onClick={() => onUseTool(action.key, action.label, "current", item, taskItems)} type="button">
+                              当前结果
+                            </button>
+                            <button onClick={() => onUseTool(action.key, action.label, "all", item, taskItems)} type="button">
+                              全部结果
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                     <div className="ck-result-detail-core-actions">
+                      {editorActions.map((action) => (
+                        <div className="ck-result-detail-action-menu" key={`${action.key}-${action.label}`}>
+                          <button className="ck-result-detail-action-trigger editor" type="button">
+                            <span className="ck-result-detail-tool-icon" aria-hidden="true">
+                              {renderDetailGlyph(action.icon)}
+                            </span>
+                            <span>{action.label}</span>
+                          </button>
+                          <div className="ck-result-detail-action-popover">
+                            <button onClick={() => onSendToEditor(action.key, action.label, "current", item, taskItems)} type="button">
+                              当前结果
+                            </button>
+                            <button onClick={() => onSendToEditor(action.key, action.label, "all", item, taskItems)} type="button">
+                              全部结果
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                       <button className="secondary outlined" onClick={() => onDownloadCurrent(item)} type="button">
                         <span className="ck-result-detail-core-icon" aria-hidden="true">
                           {renderDetailGlyph("download")}
@@ -25258,30 +25329,76 @@ export const App = () => {
     }));
   };
 
-  const handleUseResultTool = (toolKey: string, actionLabel: string, item: ResultItem) => {
+  const buildUploadItemsFromResults = (items: ResultItem[]) =>
+    items
+      .filter((resultItem) => Boolean(resultItem.src))
+      .map((resultItem) => ({
+        id: generateRandomTenDigitId(),
+        name: `${resultItem.fileName}.${inferExtensionFromResult(resultItem)}`,
+        src: resultItem.src,
+        previewSrc: resultItem.src,
+        mediaKind: resultItem.mediaKind,
+        sizeMb: 6,
+        status: "ready" as const
+      }));
+
+  const getTransferResultItems = (scope: ResultTransferScope, item: ResultItem, taskItems: ResultItem[]) =>
+    (scope === "current" ? [item] : taskItems).filter((taskItem) => Boolean(taskItem.src));
+
+  const handleUseResultTool = (
+    toolKey: string,
+    actionLabel: string,
+    scope: ResultTransferScope,
+    item: ResultItem,
+    taskItems: ResultItem[]
+  ) => {
     const targetTool = toolMap[toolKey];
-    if (!targetTool || !item.src) return;
+    const transferItems = buildUploadItemsFromResults(getTransferResultItems(scope, item, taskItems));
+    if (!targetTool) return;
+    if (!transferItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "当前没有可带入的结果图",
+        tone: "warning"
+      });
+      return;
+    }
     setActivePage("workspace");
     setActivePrimary(targetTool.primaryKey);
     setActiveTool(targetTool.key);
     setCollapsed(false);
     setUploads((current) => ({
       ...current,
-      [`${toolKey}:main`]: [
-        {
-          id: generateRandomTenDigitId(),
-          name: `${item.fileName}.png`,
-          src: item.src,
-          previewSrc: item.src,
-          sizeMb: 6,
-          status: "ready"
-        }
-      ]
+      [`${toolKey}:main`]: transferItems
     }));
     navigate(`/tools/${toolKey}`);
     setToast({
       id: Date.now(),
-      message: `已将当前图片送入${actionLabel}`
+      message: scope === "current" ? `已将当前结果送入${actionLabel}` : `已将该任务组 ${transferItems.length} 张结果送入${actionLabel}`
+    });
+  };
+
+  const handleSendResultToEditor = (
+    target: ResultEditorTarget,
+    actionLabel: string,
+    scope: ResultTransferScope,
+    item: ResultItem,
+    taskItems: ResultItem[]
+  ) => {
+    const transferItems = buildUploadItemsFromResults(getTransferResultItems(scope, item, taskItems));
+    if (!transferItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "当前没有可带入的结果图",
+        tone: "warning"
+      });
+      return;
+    }
+    const targetName = target === "canvas" ? actionLabel || "画布编辑" : actionLabel || "设计页编辑";
+    setToast({
+      id: Date.now(),
+      message:
+        scope === "current" ? `已准备当前结果，待进入${targetName}` : `已准备该任务组 ${transferItems.length} 张结果，待进入${targetName}`
     });
   };
 
@@ -25904,6 +26021,7 @@ export const App = () => {
           onDownloadCurrent={handleDownloadItem}
           onNavigate={handleNavigateResultDetail}
           onSelectItem={(item) => navigate(buildResultDetailPath(item, detailRoute.source), { replace: true })}
+          onSendToEditor={handleSendResultToEditor}
           onUseTool={handleUseResultTool}
           task={detailTask}
           taskItems={detailTaskItems}

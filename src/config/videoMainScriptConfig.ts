@@ -1,5 +1,4 @@
 export type VideoMainScriptFieldKey =
-  | "videoMainSellingPoint"
   | "videoMainType"
   | "videoMainMarketingNeed"
   | "videoMainRhythm"
@@ -18,13 +17,6 @@ export type VideoMainScriptFieldConfig = {
 
 export const videoMainScriptFieldConfigs: VideoMainScriptFieldConfig[] = [
   {
-    key: "videoMainSellingPoint",
-    label: "卖点名称",
-    options: ["智能识别"],
-    prompt: "提炼产品最核心卖点名称，简短直接，适合视频脚本标题化表达。",
-    aiKeywords: ["卖点", "主图", "细节", "对比", "展示"]
-  },
-  {
     key: "videoMainType",
     label: "视频类型",
     options: [
@@ -35,7 +27,9 @@ export const videoMainScriptFieldConfigs: VideoMainScriptFieldConfig[] = [
       "TVC广告",
       "痛点解决",
       "开箱种草",
-      "反应展示"
+      "反应展示",
+      "对比测评",
+      "穿搭上身"
     ],
     prompt: "按商品属性与营销目标匹配最合适的视频内容类型。",
     aiKeywords: ["开箱", "测评", "展示", "场景", "教程", "直播"]
