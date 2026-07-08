@@ -20910,9 +20910,13 @@ function ConfigPanel({
   const isFashionTool = tool.key === "set-fashion";
   const showAplusPlanStep = isAplusTool && aplusPlanStep === 2;
   const showFashionPlanStep = isFashionTool && fashionPlanStep === 2;
+  const isSetReplicaTool = tool.key === "set-replica";
   const modelGenerateProtectTarget = modelGenerateProtectTargetByType[advancedSettingSelections.modelGenerateTypeKey ?? ""] ?? "apparel";
   const modelGenerateProtectLabel = modelGenerateProtectTarget === "hair" ? "头发保护区" : "服饰保护区";
   const editingUploadItem = editingUploadState ? uploads[editingUploadState.fieldKey]?.[editingUploadState.index] ?? null : null;
+  const setReplicaProgressSteps = ["参考图分析中", "商品图分析中", "复刻方案规划中", "提交生成任务中"] as const;
+  const [setReplicaProgressIndex, setSetReplicaProgressIndex] = useState<number | null>(null);
+  const setReplicaProgressTimersRef = useRef<number[]>([]);
   const effectiveGenerateCostLabel =
     showFashionPlanStep && fashionPlan?.modules.length
       ? (() => {
@@ -20923,10 +20927,21 @@ function ConfigPanel({
       : generateCostLabel;
 
   useEffect(() => {
+    setReplicaProgressTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    setReplicaProgressTimersRef.current = [];
+    setSetReplicaProgressIndex(null);
     setAdvancedSettingValues([]);
     setAdvancedSettingSelections({});
     setTargetLanguageValue("");
   }, [tool.key]);
+
+  useEffect(
+    () => () => {
+      setReplicaProgressTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      setReplicaProgressTimersRef.current = [];
+    },
+    []
+  );
 
   useEffect(() => {
     setAdvancedSettingValues(
@@ -22311,7 +22326,36 @@ function ConfigPanel({
       return;
     }
 
+    if (isSetReplicaTool) {
+      setReplicaProgressTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      setReplicaProgressTimersRef.current = [];
+      setSetReplicaProgressIndex(0);
+
+      setReplicaProgressSteps.forEach((_, index) => {
+        if (index === 0) return;
+        const timerId = window.setTimeout(() => {
+          setSetReplicaProgressIndex(index);
+        }, index * 900);
+        setReplicaProgressTimersRef.current.push(timerId);
+      });
+
+      const submitTimerId = window.setTimeout(() => {
+        setReplicaProgressTimersRef.current = [];
+        setSetReplicaProgressIndex(null);
+        onGenerate(tool, payload);
+      }, setReplicaProgressSteps.length * 900);
+      setReplicaProgressTimersRef.current.push(submitTimerId);
+      return;
+    }
+
     onGenerate(tool, payload);
+  };
+
+  const handleCancelSetReplicaProgress = () => {
+    setReplicaProgressTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    setReplicaProgressTimersRef.current = [];
+    setSetReplicaProgressIndex(null);
+    onToast("已取消本次复刻分析", "warning");
   };
 
   return (
@@ -22370,12 +22414,38 @@ function ConfigPanel({
             />
           ) : null}
 
-          <div className="ck-panel-footer">
-            <button className={`ck-generate-btn${isFashionTool ? " fashion-step-btn" : ""}`} disabled={tool.key === "set-main" && isGeneratingLocked} onClick={handleGenerateClick} type="button">
+          <div className={`ck-panel-footer${isSetReplicaTool ? " ck-panel-footer-set-replica" : ""}`}>
+            {isSetReplicaTool && setReplicaProgressIndex !== null ? (
+              <div className="ck-set-replica-progress-popover" role="status" aria-live="polite">
+                <div className="ck-set-replica-progress-title">分析进展</div>
+                <div className="ck-set-replica-progress-list">
+                  {setReplicaProgressSteps.map((step, index) => {
+                    const status = index < setReplicaProgressIndex ? "completed" : index === setReplicaProgressIndex ? "active" : "pending";
+                    return (
+                      <div className={`ck-set-replica-progress-item ${status}`} key={step}>
+                        <span className="ck-set-replica-progress-dot" />
+                        <span>{step}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button className="ck-set-replica-progress-cancel" onClick={handleCancelSetReplicaProgress} type="button">
+                  停止
+                </button>
+              </div>
+            ) : null}
+            <button
+              className={`ck-generate-btn${isFashionTool ? " fashion-step-btn" : ""}`}
+              disabled={(tool.key === "set-main" && isGeneratingLocked) || (isSetReplicaTool && setReplicaProgressIndex !== null)}
+              onClick={handleGenerateClick}
+              type="button"
+            >
               {isAplusTool || isFashionTool ? null : <img alt="" className="ck-generate-icon" src={figmaIcons.generateButton} />}
               <span>
                 {tool.key === "set-main" && isGeneratingLocked
                   ? "套图生成中..."
+                  : isSetReplicaTool && setReplicaProgressIndex !== null
+                    ? "分析中..."
                   : isAplusTool
                     ? "生成详情页规划方案"
                     : isFashionTool
@@ -22388,6 +22458,8 @@ function ConfigPanel({
                 <em>
                   {tool.key === "set-main" && isGeneratingLocked
                     ? "请等待当前任务完成"
+                    : isSetReplicaTool && setReplicaProgressIndex !== null
+                      ? "可随时取消"
                     : generateCostLabel}
                 </em>
               )}

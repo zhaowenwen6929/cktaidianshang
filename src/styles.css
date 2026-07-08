@@ -1454,6 +1454,105 @@ a {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, #ffffff 18%);
 }
 
+.ck-panel-footer-set-replica {
+  position: sticky;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.ck-set-replica-progress-popover {
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  bottom: 34px;
+  min-height: 430px;
+  padding: 28px 32px 24px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 40px rgba(31, 35, 41, 0.14);
+  border: 1px solid rgba(99, 95, 242, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.ck-set-replica-progress-title {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+  color: #262626;
+}
+
+.ck-set-replica-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.ck-set-replica-progress-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 18px;
+  line-height: 28px;
+  color: #a8adb7;
+}
+
+.ck-set-replica-progress-item.completed {
+  color: #6d7380;
+}
+
+.ck-set-replica-progress-item.active {
+  color: #2d2f36;
+  font-weight: 600;
+}
+
+.ck-set-replica-progress-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 3px solid #d9dce6;
+  background: #fff;
+  box-sizing: border-box;
+  flex: 0 0 18px;
+}
+
+.ck-set-replica-progress-item.completed .ck-set-replica-progress-dot {
+  border-color: #635ff2;
+  background: #635ff2;
+}
+
+.ck-set-replica-progress-item.active .ck-set-replica-progress-dot {
+  border-color: #635ff2;
+  border-top-color: rgba(99, 95, 242, 0.2);
+  animation: ck-set-replica-progress-spin 0.9s linear infinite;
+}
+
+.ck-set-replica-progress-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 128px;
+  height: 52px;
+  margin-top: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #f2f3f7;
+  color: #262626;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+@keyframes ck-set-replica-progress-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ck-panel-tool-set-main {
   position: relative;
   padding: 0;
