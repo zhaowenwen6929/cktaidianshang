@@ -78,6 +78,8 @@ type UploadItem = {
   name?: string;
   src?: string;
   previewSrc?: string;
+  sourceLabel?: string;
+  sourceLink?: string;
   mediaKind?: ResultMediaKind;
   format?: string;
   width?: number;
@@ -88,6 +90,10 @@ type UploadItem = {
   sizeMb: number;
   status: "loading" | "ready";
 };
+
+type LinkImportTarget = "image" | "video";
+
+const LINK_IMPORT_AUTH_STORAGE_KEY = "ck-link-import-authorized";
 
 type ToastState = {
   id: number;
@@ -7906,7 +7912,7 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
   },
   "image-remove": {
     creationModeConfigKey: "default",
-    sectionOrder: ["upload-main", "mask-draw"],
+    sectionOrder: ["upload-main", "mode-choice", "mask-draw"],
     uploads: {
       main: {
         label: "上传商品图",
@@ -9075,6 +9081,118 @@ function canRenderVideoPreview(src?: string) {
   return src.startsWith("blob:") || src.startsWith("data:video") || src.endsWith(".mp4") || src.endsWith(".mov");
 }
 
+function resolveLinkImportPlatform(hostname: string) {
+  const normalizedHost = hostname.toLowerCase();
+  if (normalizedHost.includes("tiktok")) return "TikTok";
+  if (normalizedHost.includes("douyin")) return "抖音";
+  if (normalizedHost.includes("xiaohongshu") || normalizedHost.includes("xhslink") || normalizedHost.includes("rednote")) return "小红书";
+  return "";
+}
+
+function isValidLinkImportContentUrl(url: URL, platform: string) {
+  const hostname = url.hostname.toLowerCase();
+  const pathname = url.pathname.toLowerCase();
+  const search = url.search.toLowerCase();
+  const joined = `${pathname}${search}`;
+
+  if (platform === "TikTok") {
+    return ["/video/", "/photo/", "/t/", "/@"] .some((pattern) => joined.includes(pattern));
+  }
+
+  if (platform === "抖音") {
+    return hostname.includes("v.douyin.com") || ["/video/", "/note/", "/share/", "/discover"] .some((pattern) => joined.includes(pattern));
+  }
+
+  if (platform === "小红书") {
+    return hostname.includes("xhslink.com") || ["/explore/", "/discovery/item/", "/note/", "/item/"] .some((pattern) => joined.includes(pattern));
+  }
+
+  return false;
+}
+
+function getValidatedLinkImportInfo(rawUrl: string, target?: LinkImportTarget) {
+  const trimmedUrl = rawUrl.trim();
+  let parsedUrl: URL;
+
+  try {
+    parsedUrl = new URL(trimmedUrl);
+  } catch {
+    throw new Error("请输入有效的内容链接");
+  }
+
+  const platform = resolveLinkImportPlatform(parsedUrl.hostname);
+  if (!platform || !isValidLinkImportContentUrl(parsedUrl, platform)) {
+    throw new Error("请输入有效的内容链接");
+  }
+
+  const sourceKind = inferLinkImportSourceKind(parsedUrl);
+  if (target === "image" && sourceKind !== "image") {
+    throw new Error("参考图仅支持导入图片内容链接");
+  }
+  if (target === "video" && sourceKind !== "video") {
+    throw new Error("参考视频仅支持导入视频内容链接");
+  }
+
+  return {
+    trimmedUrl,
+    parsedUrl,
+    platform,
+    sourceKind
+  };
+}
+
+function inferLinkImportSourceKind(url: URL) {
+  const joined = `${url.hostname}${url.pathname}${url.search}`.toLowerCase();
+  if (joined.includes("/video/") || joined.includes("video") || joined.includes("v.douyin")) {
+    return "video" as const;
+  }
+  return "image" as const;
+}
+
+async function buildImportedUploadItemsFromLink(rawUrl: string, target: LinkImportTarget, remainingCount: number): Promise<UploadItem[]> {
+  const { trimmedUrl, parsedUrl, platform, sourceKind } = getValidatedLinkImportInfo(rawUrl, target);
+
+  if (remainingCount <= 0) {
+    return [];
+  }
+
+  const imagePool = sourceKind === "video" ? ["/assets/task-gallery-7.png", "/assets/task-gallery-8.png", "/assets/result-4.png"] : ["/assets/task-gallery-4.png"];
+
+  await new Promise((resolve) => window.setTimeout(resolve, 900));
+
+  if (target === "video") {
+    return [
+      {
+        id: generateRandomTenDigitId(),
+        name: `${platform}参考视频.mp4`,
+        src: "",
+        previewSrc: "/assets/task-gallery-6.png",
+        sourceLabel: platform,
+        sourceLink: trimmedUrl,
+        mediaKind: "video",
+        format: "MP4",
+        durationSeconds: 9,
+        sizeMb: 18.6,
+        status: "ready"
+      }
+    ];
+  }
+
+  const extractedCount = Math.min(remainingCount, sourceKind === "video" ? 3 : 1);
+  return imagePool.slice(0, extractedCount).map((src, index) => ({
+    id: generateRandomTenDigitId(),
+    name: sourceKind === "video" ? `${platform}关键帧-${index + 1}.png` : `${platform}参考图.png`,
+    src,
+    previewSrc: src,
+    sourceLabel: platform,
+    sourceLink: trimmedUrl,
+    mediaKind: "image",
+    format: "PNG",
+    sizeMb: 2.4,
+    status: "ready"
+  }));
+}
+
 function buildUploadItemsFromFiles(files: FileList | File[]) {
   return Array.from(files).map<UploadItem>((file) => {
     const objectUrl = URL.createObjectURL(file);
@@ -9367,7 +9485,9 @@ function UploadField({
   prompt = "点击或拖拽上传",
   maxCount = DEFAULT_UPLOAD_LIMIT,
   remainingStorageMb,
-  hint = `最多${maxCount}张，支持JPG/PNG/WebP`
+  hint = `最多${maxCount}张，支持JPG/PNG/WebP`,
+  linkImportTarget,
+  onToast
 }: {
   fieldKey: string;
   label: string;
@@ -9386,6 +9506,8 @@ function UploadField({
   hint?: string;
   maxCount?: number;
   remainingStorageMb: number;
+  linkImportTarget?: LinkImportTarget;
+  onToast?: (message: string, tone?: "warning") => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const galleryRef = useRef<HTMLDivElement | null>(null);
@@ -9575,6 +9697,16 @@ function UploadField({
     };
   }, [values.length]);
 
+  const handleImportFromLink = async (url: string) => {
+    const nextItems = await buildImportedUploadItemsFromLink(url, linkImportTarget ?? "image", Math.max(0, maxCount - values.length));
+    if (!nextItems.length) {
+      onAtLimit();
+      return 0;
+    }
+    onAdd(fieldKey, [...nextItems, ...values]);
+    return nextItems.length;
+  };
+
   return (
     <div
       className={`ck-form-block ck-upload-dropzone${isDragging ? " dragging" : ""}`}
@@ -9634,6 +9766,7 @@ function UploadField({
               ) : null}
               {values.map((value, index) => (
                 <div className={`ck-upload-filled${previewIds.includes(value.id) ? " previewing" : ""}`} key={`${fieldKey}-${index}`}>
+                  {value.status === "ready" && value.sourceLink ? <UploadSourceLinkBadge sourceLabel={value.sourceLabel} sourceLink={value.sourceLink} /> : null}
                   {value.status === "ready" && value.src ? (
                     previewIds.includes(value.id) && value.maskDataUrl ? (
                       <div className="ck-upload-preview-stage">
@@ -9705,6 +9838,13 @@ function UploadField({
           </div>
         </div>
       )}
+      {linkImportTarget && onToast ? (
+        <LinkImportBar
+          onImport={handleImportFromLink}
+          onToast={onToast}
+          target={linkImportTarget}
+        />
+      ) : null}
     </div>
   );
 }
@@ -9727,7 +9867,9 @@ function UploadVideoField({
   hint = `最多${maxCount}个，支持MP4/MOV`,
   maxFileSizeMb,
   minDurationSeconds,
-  maxDurationSeconds
+  maxDurationSeconds,
+  linkImportTarget,
+  onToast
 }: {
   fieldKey: string;
   label: string;
@@ -9747,6 +9889,8 @@ function UploadVideoField({
   maxFileSizeMb?: number;
   minDurationSeconds?: number;
   maxDurationSeconds?: number;
+  linkImportTarget?: LinkImportTarget;
+  onToast?: (message: string, tone?: "warning") => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const galleryRef = useRef<HTMLDivElement | null>(null);
@@ -9944,6 +10088,16 @@ function UploadVideoField({
     };
   }, [values.length]);
 
+  const handleImportFromLink = async (url: string) => {
+    const nextItems = await buildImportedUploadItemsFromLink(url, linkImportTarget ?? "video", Math.max(0, maxCount - values.length));
+    if (!nextItems.length) {
+      onAtLimit();
+      return 0;
+    }
+    onAdd(fieldKey, [...nextItems, ...values]);
+    return nextItems.length;
+  };
+
   return (
     <div
       className={`ck-form-block ck-upload-dropzone${isDragging ? " dragging" : ""}`}
@@ -10010,6 +10164,7 @@ function UploadVideoField({
               ) : null}
               {values.map((value, index) => (
                 <div className="ck-upload-filled video" key={`${fieldKey}-${index}`}>
+                  {value.status === "ready" && value.sourceLink ? <UploadSourceLinkBadge sourceLabel={value.sourceLabel} sourceLink={value.sourceLink} /> : null}
                   {value.status === "ready" ? (
                     canRenderVideoPreview(value.src) ? (
                       <video className="ck-upload-video" muted playsInline preload="metadata" src={value.src} />
@@ -10036,6 +10191,179 @@ function UploadVideoField({
           </div>
         </div>
       )}
+      {linkImportTarget && onToast ? (
+        <LinkImportBar
+          onImport={handleImportFromLink}
+          onToast={onToast}
+          target={linkImportTarget}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function LinkImportBar({
+  target,
+  onImport,
+  onToast
+}: {
+  target: LinkImportTarget;
+  onImport: (url: string) => Promise<number>;
+  onToast: (message: string, tone?: "warning") => void;
+}) {
+  const [value, setValue] = useState("");
+  const [confirmed, setConfirmed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(LINK_IMPORT_AUTH_STORAGE_KEY) === "1";
+  });
+  const [loading, setLoading] = useState(false);
+  const [inlineError, setInlineError] = useState("");
+
+  const updateConfirmed = (nextConfirmed: boolean) => {
+    setConfirmed(nextConfirmed);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LINK_IMPORT_AUTH_STORAGE_KEY, nextConfirmed ? "1" : "0");
+    }
+  };
+
+  const handleSubmit = async () => {
+    const trimmedValue = value.trim();
+    setInlineError("");
+    if (!trimmedValue) {
+      onToast("请先输入需要提取的链接", "warning");
+      return;
+    }
+
+    try {
+      getValidatedLinkImportInfo(trimmedValue, target);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "请输入有效的内容链接";
+      setInlineError(message);
+      onToast(message, "warning");
+      return;
+    }
+
+    if (!confirmed) {
+      onToast("请先确认已获得链接内容使用授权", "warning");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const importedCount = await onImport(trimmedValue);
+      if (!importedCount) return;
+      onToast(target === "video" ? "已提取参考视频并填入上传框" : `已提取${importedCount}个参考素材并填入上传框`);
+      setValue("");
+      setInlineError("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "链接提取失败，请重试";
+      setInlineError(message);
+      onToast(message, "warning");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="ck-link-import">
+      <div className="ck-link-import-row">
+        <span className="ck-link-import-icon" aria-hidden="true">
+          <svg fill="none" height="16" viewBox="0 0 16 16" width="16" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M6.2 9.8L9.8 6.2M5.067 11.067L3.8 12.333a2.357 2.357 0 103.333 3.334L8.4 14.4M10.933 4.933L12.2 3.667a2.357 2.357 0 113.333 3.333L14.267 8.267"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.4"
+            />
+          </svg>
+        </span>
+        <input
+          className="ck-link-import-input"
+          onChange={(event) => {
+            setValue(event.target.value);
+            if (inlineError) {
+              setInlineError("");
+            }
+          }}
+          placeholder="支持导入TikTok、抖音、小红书链接。"
+          type="text"
+          value={value}
+        />
+        <button className="ck-link-import-submit" disabled={loading} onClick={() => void handleSubmit()} type="button">
+          {loading ? "提取中" : "导入"}
+        </button>
+      </div>
+      {inlineError ? <div className="ck-link-import-error">{inlineError}</div> : null}
+      <label className="ck-link-import-check">
+        <input checked={confirmed} onChange={(event) => updateConfirmed(event.target.checked)} type="checkbox" />
+        <span className="ck-link-import-check-box" aria-hidden="true" />
+        <span>我已获得使用该链接内容的必要授权，且依法有权对其进行使用。</span>
+      </label>
+    </div>
+  );
+}
+
+function UploadSourceLinkBadge({
+  sourceLabel,
+  sourceLink
+}: {
+  sourceLabel?: string;
+  sourceLink: string;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const [placement, setPlacement] = useState<"bottom-left" | "bottom-right" | "top-left" | "top-right">("bottom-left");
+
+  const updatePlacement = () => {
+    const container = containerRef.current;
+    const tooltip = tooltipRef.current;
+    if (!container || !tooltip || typeof window === "undefined") return;
+
+    const containerRect = container.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const spaceRight = viewportWidth - containerRect.left;
+    const spaceBottom = viewportHeight - containerRect.top;
+    const shouldFlipLeft = spaceRight < tooltipRect.width + 16;
+    const shouldFlipTop = spaceBottom < tooltipRect.height + 16;
+
+    if (shouldFlipTop && shouldFlipLeft) {
+      setPlacement("top-right");
+      return;
+    }
+    if (shouldFlipTop) {
+      setPlacement("top-left");
+      return;
+    }
+    if (shouldFlipLeft) {
+      setPlacement("bottom-right");
+      return;
+    }
+    setPlacement("bottom-left");
+  };
+
+  return (
+    <div
+      className="ck-upload-source-link"
+      onMouseEnter={updatePlacement}
+      onFocus={updatePlacement}
+      ref={containerRef}
+    >
+      <button aria-label="查看提取链接" className="ck-upload-source-link-trigger" type="button">
+        i
+      </button>
+      <div className={`ck-upload-source-link-tooltip ${placement}`} ref={tooltipRef}>
+        <div className="ck-upload-source-link-row">
+          <span className="ck-upload-source-link-label">来源：</span>
+          <span className="ck-upload-source-link-value">{sourceLabel ?? "未知来源"}</span>
+        </div>
+        <div className="ck-upload-source-link-row">
+          <span className="ck-upload-source-link-label">导入链接：</span>
+          <span className="ck-upload-source-link-value">{sourceLink}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -16738,7 +17066,9 @@ function ReferenceUploadSection({
   onRejectedUpload,
   onAtLimit,
   remainingStorageMb,
-  hideLabel = false
+  hideLabel = false,
+  linkImportTarget,
+  onToast
 }: {
   fieldKey: string;
   config: UploadModuleFieldConfig;
@@ -16752,6 +17082,8 @@ function ReferenceUploadSection({
   onAtLimit: () => void;
   remainingStorageMb: number;
   hideLabel?: boolean;
+  linkImportTarget?: LinkImportTarget;
+  onToast?: (message: string, tone?: "warning") => void;
 }) {
   return (
     <UploadField
@@ -16767,6 +17099,8 @@ function ReferenceUploadSection({
       onRemove={onRemove}
       optional={config.optional}
       remainingStorageMb={remainingStorageMb}
+      linkImportTarget={linkImportTarget}
+      onToast={onToast}
       values={values}
     />
   );
@@ -16930,6 +17264,132 @@ function WatermarkModeSection({
           <p>通过手动圈定或涂抹区域，更精准地处理复杂水印。上传后仅支持单张图片。</p>
         </button>
       </div>
+    </div>
+  );
+}
+
+const imageRemoveSmartTargetOptions = ["文字", "水印", "路人", "眼镜", "反光", "Logo"] as const;
+
+function ImageRemoveModeSection({
+  selectedValues,
+  onSelectionChange,
+  onSelectionMapChange
+}: {
+  selectedValues?: AdvancedSelectionMap;
+  onSelectionChange?: (values: string[]) => void;
+  onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
+}) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
+  const [mode, setMode] = useState<"smart" | "manual">(selectedValues?.imageRemoveModeKey === "manual" ? "manual" : "smart");
+  const [smartTargets, setSmartTargets] = useState<string[]>(
+    (selectedValues?.imageRemoveSmartTargets ?? "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item): item is (typeof imageRemoveSmartTargetOptions)[number] =>
+        imageRemoveSmartTargetOptions.includes(item as (typeof imageRemoveSmartTargetOptions)[number])
+      )
+  );
+
+  useEffect(() => {
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+
+    const nextMode = selectedValues?.imageRemoveModeKey === "manual" ? "manual" : "smart";
+    const nextSmartTargets =
+      nextMode === "smart"
+        ? (selectedValues?.imageRemoveSmartTargets ?? "")
+            .split(",")
+            .map((item) => item.trim())
+            .filter((item): item is (typeof imageRemoveSmartTargetOptions)[number] =>
+              imageRemoveSmartTargetOptions.includes(item as (typeof imageRemoveSmartTargetOptions)[number])
+            )
+        : [];
+    const nextSignature = JSON.stringify({
+      imageRemoveModeKey: nextMode,
+      imageRemoveSmartTargets: nextSmartTargets
+    });
+    if (nextSignature === lastSelectedValuesSignatureRef.current) return;
+    lastSelectedValuesSignatureRef.current = nextSignature;
+    setMode((current) => (current === nextMode ? current : nextMode));
+    setSmartTargets((current) => (JSON.stringify(current) === JSON.stringify(nextSmartTargets) ? current : nextSmartTargets));
+  }, [selectedValues]);
+
+  useEffect(() => {
+    const modeLabel = mode === "manual" ? "手动涂抹" : "智能消除";
+    const nextMap: AdvancedSelectionMap = {
+      imageRemoveModeKey: mode,
+      imageRemoveMode: modeLabel
+    };
+    if (mode === "smart" && smartTargets.length > 0) {
+      nextMap.imageRemoveSmartTargets = smartTargets.join(",");
+    }
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({
+      imageRemoveModeKey: mode,
+      imageRemoveSmartTargets: mode === "smart" ? smartTargets : []
+    });
+    onSelectionMapChange?.(nextMap);
+    onSelectionChange?.([modeLabel, mode === "smart" && smartTargets.length > 0 ? `消除内容 ${smartTargets.join("、")}` : ""].filter(Boolean));
+  }, [mode, onSelectionChange, onSelectionMapChange, smartTargets]);
+
+  const toggleSmartTarget = (target: (typeof imageRemoveSmartTargetOptions)[number]) => {
+    setSmartTargets((current) => (current.includes(target) ? current.filter((item) => item !== target) : [...current, target]));
+  };
+
+  return (
+    <div className="ck-form-block">
+      <FieldTitle label="选择模式" required />
+      <div className="ck-choice-row ck-choice-row-retouch ck-choice-row-retouch-primary">
+        <button
+          className={`ck-mode-card ck-mode-card-primary${mode === "smart" ? " active" : ""}`}
+          onClick={() => setMode("smart")}
+          type="button"
+        >
+          <div className="ck-mode-card-head">
+            <strong>智能消除</strong>
+            <span className={`ck-check${mode === "smart" ? " active" : ""}`} />
+          </div>
+          <p>自动识别指定干扰元素并完成消除，适合常规商品图清理。</p>
+        </button>
+        <button
+          className={`ck-mode-card ck-mode-card-primary${mode === "manual" ? " active" : ""}`}
+          onClick={() => setMode("manual")}
+          type="button"
+        >
+          <div className="ck-mode-card-head">
+            <strong>手动涂抹</strong>
+            <span className={`ck-check${mode === "manual" ? " active" : ""}`} />
+          </div>
+          <p>手动标注需要消除的区域，适合复杂背景或局部精细处理。</p>
+        </button>
+      </div>
+
+      {mode === "smart" ? (
+        <div className="ck-form-block ck-image-remove-smart-targets-block">
+          <FieldTitle label="消除内容" />
+          <div className="ck-image-remove-smart-target-grid">
+            {imageRemoveSmartTargetOptions.map((option) => {
+              const active = smartTargets.includes(option);
+              return (
+                <button
+                  className={`ck-image-remove-smart-target-card${active ? " active" : ""}`}
+                  key={option}
+                  onClick={() => toggleSmartTarget(option)}
+                  type="button"
+                >
+                  <span>{option}</span>
+                  <span className={`ck-image-remove-smart-target-switch${active ? " active" : ""}`}>
+                    <i />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -21892,6 +22352,25 @@ function ConfigPanel({
       );
     }
 
+    if (section === "mode-choice" && tool.key === "image-remove") {
+      return (
+        <ImageRemoveModeSection
+          onSelectionChange={setAdvancedSettingValues}
+          onSelectionMapChange={(values) => {
+            const sectionKeys = ["imageRemoveModeKey", "imageRemoveMode", "imageRemoveSmartTargets"];
+            setAdvancedSettingSelections((current) => {
+              const nextSelections = { ...current };
+              sectionKeys.forEach((key) => {
+                delete nextSelections[key];
+              });
+              return { ...nextSelections, ...values };
+            });
+          }}
+          selectedValues={advancedSettingSelections}
+        />
+      );
+    }
+
     if (section === "mode-choice" && tool.key === "video-watermark") {
       return (
         <VideoWatermarkModeSection
@@ -22029,6 +22508,9 @@ function ConfigPanel({
     }
 
     if (section === "mask-draw" && tool.key === "image-remove") {
+      if (advancedSettingSelections.imageRemoveModeKey !== "manual") {
+        return null;
+      }
       return (
         <MaskDrawSection
           buttonText="开始涂抹"
@@ -22091,12 +22573,14 @@ function ConfigPanel({
           fieldKey={refUploadKey}
           hint={refUploadHint}
           hideLabel={tool.key === "image-expand"}
+          linkImportTarget={tool.key === "set-replica" ? "image" : undefined}
           maxCount={refUploadCountLimit}
           onAdd={onAddUpload}
           onAtLimit={onAtLimit}
           onOpenLibrary={onOpenLibrary}
           onRejectedUpload={onRejectedUpload}
           onRemove={onRemoveUpload}
+          onToast={tool.key === "set-replica" ? onToast : undefined}
           remainingStorageMb={remainingStorageMb}
           values={uploads[refUploadKey] ?? []}
         />
@@ -22109,6 +22593,7 @@ function ConfigPanel({
           fieldKey={videoUploadKey}
           hint={videoUploadHint}
           label={videoUploadConfig.label}
+          linkImportTarget={tool.key === "video-replica" ? "video" : undefined}
           maxCount={videoUploadCountLimit}
           maxDurationSeconds={videoUploadConfig.maxDurationSeconds}
           maxFileSizeMb={videoUploadConfig.maxFileSizeMb}
@@ -22119,6 +22604,7 @@ function ConfigPanel({
           onOpenLibrary={onOpenLibrary}
           onRejectedUpload={onRejectedUpload}
           onRemove={onRemoveUpload}
+          onToast={tool.key === "video-replica" ? onToast : undefined}
           optional={videoUploadConfig.optional}
           remainingStorageMb={remainingStorageMb}
           required={videoUploadConfig.required}
