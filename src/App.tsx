@@ -114,6 +114,10 @@ type ExportPendingAction =
   | {
       type: "batch";
       tool: ToolConfig;
+    }
+  | {
+      type: "long-image";
+      tool: ToolConfig;
     };
 
 type ResultActionConfirmState =
@@ -2739,6 +2743,78 @@ async function addAiVisibleWatermark(blob: Blob, item: ResultItem) {
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
+}
+
+async function loadImageElementFromBlob(blob: Blob, errorMessage: string) {
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    return await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(errorMessage));
+      image.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function createMergedLongImageBlob(items: ResultItem[], preserveVisibleMark: boolean) {
+  if (!items.length) {
+    throw new Error("请先选择需要下载的结果");
+  }
+
+  const preparedImages = await Promise.all(
+    items.map(async (item) => {
+      const originalBlob = await getResultBlob(item);
+      const processedBlob = preserveVisibleMark ? await addAiVisibleWatermark(originalBlob, item) : originalBlob;
+      const image = await loadImageElementFromBlob(processedBlob, `长图合成失败: ${item.fileName}`);
+      return {
+        image,
+        width: image.naturalWidth || image.width,
+        height: image.naturalHeight || image.height
+      };
+    })
+  );
+
+  const targetWidth = Math.max(...preparedImages.map((entry) => entry.width));
+  const totalHeight = preparedImages.reduce((sum, entry) => {
+    const scaledHeight = Math.max(1, Math.round((entry.height * targetWidth) / Math.max(entry.width, 1)));
+    return sum + scaledHeight;
+  }, 0);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = totalHeight;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("当前环境不支持长图合成");
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  let offsetY = 0;
+  preparedImages.forEach(({ image, width, height }) => {
+    const scaledHeight = Math.max(1, Math.round((height * targetWidth) / Math.max(width, 1)));
+    context.drawImage(image, 0, offsetY, targetWidth, scaledHeight);
+    offsetY += scaledHeight;
+  });
+
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
+        reject(new Error("长图导出失败，请稍后重试"));
+      },
+      "image/png",
+      0.96
+    );
+  });
 }
 
 const crc32Table = (() => {
@@ -23117,6 +23193,7 @@ function ResultPanel({
   activeTab,
   items,
   onDownload,
+  onDownloadLongImage,
   onDownloadItem,
   onOpenCase,
   onApplyCase,
@@ -23144,6 +23221,7 @@ function ResultPanel({
   activeTab: ResultTabKey;
   items: ResultItem[];
   onDownload: (tool: ToolConfig) => void;
+  onDownloadLongImage: (tool: ToolConfig) => void;
   onDownloadItem: (item: ResultItem) => void;
   onOpenCase: (template: CaseTemplate) => void;
   onApplyCase: (template: CaseTemplate) => void;
@@ -23175,6 +23253,7 @@ function ResultPanel({
   const allReadySelected = readyItems.length > 0 && readyItems.every((item) => item.selected);
   const resultCountText = `(${items.length})`;
   const downloadDisabled = effectiveActiveTab !== "results" || selectedReadyCount === 0;
+  const showLongImageDownload = tool.key === "set-aplus";
   const showEmptyState = effectiveActiveTab === "results" && items.length === 0;
   const showNoMore = effectiveActiveTab === "results" && items.length > 0;
   const isNarrow = collapsed;
@@ -23219,6 +23298,11 @@ function ResultPanel({
               <span className="ck-results-check-box">{allReadySelected ? "✓" : ""}</span>
               全选
             </label>
+            {showLongImageDownload ? (
+              <button className="secondary" disabled={downloadDisabled} onClick={() => onDownloadLongImage(tool)} type="button">
+                下载长图
+              </button>
+            ) : null}
             <button disabled={downloadDisabled} onClick={() => onDownload(tool)} type="button">
               <img alt="" src={figmaIcons.download} />
               立即下载
@@ -25480,6 +25564,35 @@ export const App = () => {
     }
   };
 
+  const performLongImageDownload = async (tool: ToolConfig, preserveVisibleMark: boolean) => {
+    const selectedItems = (resultItemsByTool[tool.key] ?? []).filter((item) => item.status === "ready" && item.selected);
+    if (!selectedItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "请先选择需要下载的结果",
+        tone: "warning"
+      });
+      return;
+    }
+
+    try {
+      const mergedBlob = await createMergedLongImageBlob(selectedItems, preserveVisibleMark);
+      const taskId = selectedItems[0]?.taskId ?? generateRandomTenDigitId();
+      const fileName = `${tool.panelTitle}_${taskId}_长图_${formatTaskTimestamp(Date.now())}.png`;
+      triggerDownload(mergedBlob, fileName);
+      setToast({
+        id: Date.now(),
+        message: `已下载 ${selectedItems.length} 张图片合成的长图`
+      });
+    } catch (error) {
+      setToast({
+        id: Date.now(),
+        message: error instanceof Error ? error.message : "长图下载失败，请稍后重试",
+        tone: "warning"
+      });
+    }
+  };
+
   const handleExportConfirm = async (preserveVisibleMark: boolean, skipForSevenDays: boolean) => {
     const pendingAction = exportPendingAction;
     setExportPendingAction(null);
@@ -25497,6 +25610,11 @@ export const App = () => {
 
     if (pendingAction.type === "single") {
       await performSingleDownload(pendingAction.item, preserveVisibleMark);
+      return;
+    }
+
+    if (pendingAction.type === "long-image") {
+      await performLongImageDownload(pendingAction.tool, preserveVisibleMark);
       return;
     }
 
@@ -25547,6 +25665,35 @@ export const App = () => {
 
     setExportPendingAction({
       type: "batch",
+      tool
+    });
+  };
+
+  const handleDownloadLongImage = async (tool: ToolConfig) => {
+    const selectedItems = (resultItemsByTool[tool.key] ?? []).filter((item) => item.status === "ready" && item.selected);
+    if (!selectedItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "请先选择需要下载的结果",
+        tone: "warning"
+      });
+      return;
+    }
+
+    const isMemberUser = currentUserId !== "free";
+    if (!isMemberUser) {
+      await performLongImageDownload(tool, false);
+      return;
+    }
+
+    const preference = loadExportPreference();
+    if (preference) {
+      await performLongImageDownload(tool, preference.preserveVisibleMark);
+      return;
+    }
+
+    setExportPendingAction({
+      type: "long-image",
       tool
     });
   };
@@ -26509,6 +26656,7 @@ export const App = () => {
               onCancelQueued={(toolKey, itemId) => setResultActionConfirm({ type: "cancel-queued", toolKey, itemId })}
               onDeleteFailed={(toolKey, itemId) => setResultActionConfirm({ type: "delete-failed", toolKey, itemId })}
               onDownload={handleDownloadResults}
+              onDownloadLongImage={handleDownloadLongImage}
               onOpenCase={handleOpenCaseTemplate}
               onPreviewItem={handlePreviewResult}
               onEditItemText={handleOpenEditResultText}

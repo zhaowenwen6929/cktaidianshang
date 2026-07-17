@@ -7317,15 +7317,33 @@ a {
   transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.ck-results-actions button.secondary {
+  border: 1px solid #d7dcf8;
+  background: #ffffff;
+  color: #5d5bf1;
+  box-shadow: none;
+  padding: 0 16px;
+}
+
 .ck-results-actions button:disabled {
   background: #e0dffc;
   box-shadow: none;
   cursor: not-allowed;
 }
 
+.ck-results-actions button.secondary:disabled {
+  border-color: #e6e8f3;
+  background: #ffffff;
+  color: #adb2c2;
+}
+
 .ck-results-actions button:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 22px rgba(99, 95, 242, 0.24);
+}
+
+.ck-results-actions button.secondary:not(:disabled):hover {
+  box-shadow: 0 8px 18px rgba(93, 91, 241, 0.12);
 }
 
 .ck-results-actions button img {
