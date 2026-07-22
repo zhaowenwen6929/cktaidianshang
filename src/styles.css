@@ -13347,17 +13347,19 @@ textarea {
 }
 
 .ck-video-clarify-scene-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  min-height: 92px;
+  justify-content: center;
+  min-height: 72px;
   padding: 14px 16px;
   border: 1px solid #dbe3f0;
   border-radius: 14px;
   background: #fff;
   text-align: left;
   transition: none;
+  outline: none;
 }
 
 .ck-video-clarify-scene-card strong {
@@ -13366,16 +13368,58 @@ textarea {
   line-height: 20px;
 }
 
-.ck-video-clarify-scene-card span {
-  color: #6c7892;
-  font-size: 12px;
-  line-height: 18px;
-}
-
 .ck-video-clarify-scene-card.active {
   border-color: #635ff2;
   background: linear-gradient(180deg, rgba(109, 114, 248, 0.08) 0%, rgba(99, 95, 242, 0.02) 100%);
   box-shadow: 0 10px 24px rgba(99, 95, 242, 0.12);
+}
+
+.ck-video-clarify-scene-card::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  max-width: min(260px, calc(100vw - 48px));
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(27, 35, 55, 0.94);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: left;
+  white-space: normal;
+  transform: translate(-50%, 4px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.ck-video-clarify-scene-card::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  width: 10px;
+  height: 10px;
+  background: rgba(27, 35, 55, 0.94);
+  transform: translateX(-50%) rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.ck-video-clarify-scene-card:hover::after,
+.ck-video-clarify-scene-card:hover::before,
+.ck-video-clarify-scene-card:focus-visible::after,
+.ck-video-clarify-scene-card:focus-visible::before {
+  opacity: 1;
+}
+
+.ck-video-clarify-scene-card:hover::after,
+.ck-video-clarify-scene-card:focus-visible::after {
+  transform: translate(-50%, 0);
 }
 
 .ck-video-clarify-tip {

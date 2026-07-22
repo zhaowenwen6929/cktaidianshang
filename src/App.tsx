@@ -12168,21 +12168,41 @@ function VideoClarifyResolutionSection({
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
+  const skipSelectedValuesSyncRef = useRef(false);
+  const lastSelectedValuesSignatureRef = useRef("");
   const defaultScene = selectedValues?.videoClarifyScene ?? videoClarifySceneOptions[0].key;
   const defaultResolution = selectedValues?.videoClarifyResolution ?? videoClarifyResolutionOptions[0];
   const [scene, setScene] = useState(defaultScene);
   const [resolution, setResolution] = useState(defaultResolution);
 
   useEffect(() => {
-    if (selectedValues?.videoClarifyScene && selectedValues.videoClarifyScene !== scene) {
-      setScene(selectedValues.videoClarifyScene);
+    if (!selectedValues) {
+      return;
     }
-    if (selectedValues?.videoClarifyResolution && selectedValues.videoClarifyResolution !== resolution) {
-      setResolution(selectedValues.videoClarifyResolution);
+    if (skipSelectedValuesSyncRef.current) {
+      skipSelectedValuesSyncRef.current = false;
+      return;
+    }
+
+    const nextScene = selectedValues.videoClarifyScene ?? videoClarifySceneOptions[0].key;
+    const nextResolution = selectedValues.videoClarifyResolution ?? videoClarifyResolutionOptions[0];
+    const nextSignature = JSON.stringify({ scene: nextScene, resolution: nextResolution });
+    if (nextSignature === lastSelectedValuesSignatureRef.current) {
+      return;
+    }
+    lastSelectedValuesSignatureRef.current = nextSignature;
+
+    if (nextScene !== scene) {
+      setScene(nextScene);
+    }
+    if (nextResolution !== resolution) {
+      setResolution(nextResolution);
     }
   }, [resolution, scene, selectedValues]);
 
   useEffect(() => {
+    skipSelectedValuesSyncRef.current = true;
+    lastSelectedValuesSignatureRef.current = JSON.stringify({ scene, resolution });
     onSelectionChange?.([scene, resolution]);
     onSelectionMapChange?.({ videoClarifyScene: scene, videoClarifyResolution: resolution });
     onCreationModeChange?.({
@@ -12203,12 +12223,13 @@ function VideoClarifyResolutionSection({
           {videoClarifySceneOptions.map((option) => (
             <button
               className={`ck-video-clarify-scene-card${scene === option.key ? " active" : ""}`}
+              data-tooltip={option.description}
               key={option.key}
               onClick={() => setScene(option.key)}
+              title={option.description}
               type="button"
             >
               <strong>{option.label}</strong>
-              <span>{option.description}</span>
             </button>
           ))}
         </div>
