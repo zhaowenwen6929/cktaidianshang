@@ -3427,7 +3427,34 @@ const videoPrintExtendBaseRatioOptions = ["1:1", "1:2", "2:1", "2:3", "3:2", "3:
 const videoPrintExtendOutputCountOptions = ["1", "2", "3", "4"] as const;
 const VIDEO_PRINT_EXTEND_UNIT_CREDIT_COST = 5;
 const defaultResolutionOptions = ["1K", "2K", "4K"];
-const videoClarifyResolutionOptions = ["原画增强", "2K", "4K"] as const;
+const videoClarifyResolutionOptions = ["720P", "1080P", "2K", "4K"] as const;
+const videoClarifySceneOptions = [
+  {
+    key: "真人场景",
+    label: "真人场景",
+    description: "适合口播、剧情、带货和真人出镜视频，优先提升人物与商品主体细节。"
+  },
+  {
+    key: "真人场景-小脸优化",
+    label: "真人场景-小脸优化",
+    description: "适合真人近景内容，在增强清晰度的同时兼顾人物面部轮廓优化。"
+  },
+  {
+    key: "漫剧场景",
+    label: "漫剧场景",
+    description: "适合动漫、漫剧和二次元内容，重点保留线条、色块和画面层次。"
+  },
+  {
+    key: "漫剧场景-小脸优化",
+    label: "漫剧场景-小脸优化",
+    description: "适合人物面部占比较高的漫剧内容，兼顾线条稳定和面部观感优化。"
+  },
+  {
+    key: "老片/低清场景",
+    label: "老片/低清场景",
+    description: "适合老旧或低清素材修复，默认保持原始帧率节奏，重点减少糊感与噪点。"
+  }
+] as const;
 const videoOnlyToolKeys = ["video-clarify", "video-watermark", "video-translate", "video-remove-bg"] as const;
 const videoTranslateModeCards = [
   {
@@ -4500,7 +4527,7 @@ const supplementAiPolishConfigs: Partial<Record<string, SupplementAiPolishConfig
   },
   "video-clarify": {
     modelLabel: "创客贴AI视频增强润色",
-    prompt: "优化视频清晰化补充说明，强调保留原视频节奏与构图，同时提升主体细节、边缘锐度、画面纯净度和整体稳定性。"
+    prompt: "优化视频清晰化补充说明，强调先明确适配场景与目标分辨率，再保留原视频节奏与构图，同时提升主体细节、边缘锐度、画面纯净度和整体稳定性。"
   },
   "video-watermark": {
     modelLabel: "创客贴AI视频去水印润色",
@@ -4556,7 +4583,7 @@ const supplementPlaceholderOverrides: Partial<Record<string, string>> = {
   "goods-detail": "请输入您对图片的细节补充描述，例如：色调、构图、氛围等。",
   "model-try": "请输入模特试穿细节补充，例如：希望突出上身效果、面料垂感、搭配氛围或人物状态。",
   "video-replace": "请输入视频描述，例如：保留原视频全部动作和镜头节奏，将原商品替换为上传商品，重点突出瓶身高光、标签清晰和开箱拿取时的真实手部接触。",
-  "video-clarify": "请输入清晰化要求，例如：保留原视频镜头与节奏，重点提升人物主体、商品细节和字幕边缘清晰度，避免过度锐化与闪烁。",
+  "video-clarify": "请输入清晰化要求，例如：先说明适配场景和目标分辨率，再写清保留原视频镜头与节奏、提升人物主体与商品细节、避免过度锐化与闪烁。",
   "video-watermark": "请输入处理要求，例如：去除右上角平台水印和底部字幕，保持人物、商品和背景纹理完整自然。",
   "video-translate": "请输入翻译要求，例如：翻译成英文，保留原视频节奏与卖点表达，字幕语气更适合跨境电商投放。",
   "video-remove-bg": "请输入处理要求，例如：完整保留人物和商品主体，发丝边缘干净，输出适合后续换背景或二次剪辑。"
@@ -7779,10 +7806,10 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
         ratioOptions: ["原视频比例"],
         countOptions: ["1"],
         resolutionOptions: [...videoClarifyResolutionOptions],
-        resolutionUnitCreditCosts: { 原画质增强: 1, "720p": 1, "1080p": 1, "2K": 1 },
+        resolutionUnitCreditCosts: { "720P": 1, "1080P": 1, "2K": 1, "4K": 1 },
         defaultRatio: "原视频比例",
         defaultCount: "1",
-        defaultResolution: "原画质增强"
+        defaultResolution: "720P"
       },
       {
         id: "advanced",
@@ -7792,10 +7819,10 @@ const creationModeConfigs: Record<string, CreationModeConfig> = {
         ratioOptions: ["原视频比例"],
         countOptions: ["1"],
         resolutionOptions: [...videoClarifyResolutionOptions],
-        resolutionUnitCreditCosts: { 原画质增强: 1, "720p": 1, "1080p": 1, "2K": 1 },
+        resolutionUnitCreditCosts: { "720P": 1, "1080P": 1, "2K": 1, "4K": 1 },
         defaultRatio: "原视频比例",
         defaultCount: "1",
-        defaultResolution: "原画质增强"
+        defaultResolution: "720P"
       }
     ]
   }
@@ -12141,37 +12168,66 @@ function VideoClarifyResolutionSection({
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
+  const defaultScene = selectedValues?.videoClarifyScene ?? videoClarifySceneOptions[0].key;
   const defaultResolution = selectedValues?.videoClarifyResolution ?? videoClarifyResolutionOptions[0];
+  const [scene, setScene] = useState(defaultScene);
   const [resolution, setResolution] = useState(defaultResolution);
 
   useEffect(() => {
+    if (selectedValues?.videoClarifyScene && selectedValues.videoClarifyScene !== scene) {
+      setScene(selectedValues.videoClarifyScene);
+    }
     if (selectedValues?.videoClarifyResolution && selectedValues.videoClarifyResolution !== resolution) {
       setResolution(selectedValues.videoClarifyResolution);
     }
-  }, [resolution, selectedValues]);
+  }, [resolution, scene, selectedValues]);
 
   useEffect(() => {
-    onSelectionChange?.([resolution]);
-    onSelectionMapChange?.({ videoClarifyResolution: resolution });
+    onSelectionChange?.([scene, resolution]);
+    onSelectionMapChange?.({ videoClarifyScene: scene, videoClarifyResolution: resolution });
     onCreationModeChange?.({
       modeId: "video-clarify",
-      modeLabel: resolution,
+      modeLabel: `${scene} · ${resolution}`,
       ratio: "原视频比例",
       resolution,
       count: 1,
       unitCreditCost: 1
     });
-  }, [onCreationModeChange, onSelectionChange, onSelectionMapChange, resolution]);
+  }, [onCreationModeChange, onSelectionChange, onSelectionMapChange, resolution, scene]);
 
   return (
-    <AdaptiveChoiceField
-      columns={3}
-      label="选择模式"
-      onChange={setResolution}
-      options={videoClarifyResolutionOptions.map((option) => ({ key: option, label: option }))}
-      required
-      value={resolution}
-    />
+    <div className="ck-video-clarify-panel">
+      <div className="ck-form-block">
+        <FieldTitle label="选择场景" required />
+        <div className="ck-video-clarify-scene-grid">
+          {videoClarifySceneOptions.map((option) => (
+            <button
+              className={`ck-video-clarify-scene-card${scene === option.key ? " active" : ""}`}
+              key={option.key}
+              onClick={() => setScene(option.key)}
+              type="button"
+            >
+              <strong>{option.label}</strong>
+              <span>{option.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <AdaptiveChoiceField
+        columns={4}
+        label="输出分辨率"
+        onChange={setResolution}
+        options={videoClarifyResolutionOptions.map((option) => ({ key: option, label: option }))}
+        required
+        value={resolution}
+      />
+      <div className="ck-video-clarify-tip">
+        <strong>当前模式</strong>
+        <span>
+          {scene} / {resolution}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -21967,7 +22023,7 @@ function ConfigPanel({
           onCreationModeChange={setCreationModeSelection}
           onSelectionChange={setAdvancedSettingValues}
           onSelectionMapChange={(values) => {
-            const sectionKeys = ["videoClarifyResolution"];
+            const sectionKeys = ["videoClarifyScene", "videoClarifyResolution"];
             setAdvancedSettingSelections((current) => {
               const nextSelections = { ...current };
               sectionKeys.forEach((key) => {
