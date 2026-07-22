@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes
 } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { ExportArtworkModal } from "./components/ExportArtworkModal";
@@ -3436,7 +3437,7 @@ const videoClarifySceneOptions = [
   },
   {
     key: "真人场景-小脸优化",
-    label: "真人场景-小脸优化",
+    label: "真人小脸优化",
     description: "适合真人近景内容，在增强清晰度的同时兼顾人物面部轮廓优化。"
   },
   {
@@ -3446,7 +3447,7 @@ const videoClarifySceneOptions = [
   },
   {
     key: "漫剧场景-小脸优化",
-    label: "漫剧场景-小脸优化",
+    label: "漫剧小脸优化",
     description: "适合人物面部占比较高的漫剧内容，兼顾线条稳定和面部观感优化。"
   },
   {
@@ -12168,6 +12169,12 @@ function VideoClarifyResolutionSection({
   onSelectionMapChange?: (values: AdvancedSelectionMap) => void;
   onCreationModeChange?: (selection: CreationModeSelection) => void;
 }) {
+  const [hoveredSceneTooltip, setHoveredSceneTooltip] = useState<{
+    label: string;
+    description: string;
+    top: number;
+    left: number;
+  } | null>(null);
   const skipSelectedValuesSyncRef = useRef(false);
   const lastSelectedValuesSignatureRef = useRef("");
   const defaultScene = selectedValues?.videoClarifyScene ?? videoClarifySceneOptions[0].key;
@@ -12215,6 +12222,16 @@ function VideoClarifyResolutionSection({
     });
   }, [onCreationModeChange, onSelectionChange, onSelectionMapChange, resolution, scene]);
 
+  useEffect(() => {
+    const clearTooltip = () => setHoveredSceneTooltip(null);
+    window.addEventListener("scroll", clearTooltip, true);
+    window.addEventListener("resize", clearTooltip);
+    return () => {
+      window.removeEventListener("scroll", clearTooltip, true);
+      window.removeEventListener("resize", clearTooltip);
+    };
+  }, []);
+
   return (
     <div className="ck-video-clarify-panel">
       <div className="ck-form-block">
@@ -12223,10 +12240,28 @@ function VideoClarifyResolutionSection({
           {videoClarifySceneOptions.map((option) => (
             <button
               className={`ck-video-clarify-scene-card${scene === option.key ? " active" : ""}`}
-              data-tooltip={option.description}
               key={option.key}
               onClick={() => setScene(option.key)}
-              title={option.description}
+              onBlur={() => setHoveredSceneTooltip((current) => (current?.label === option.label ? null : current))}
+              onFocus={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                setHoveredSceneTooltip({
+                  label: option.label,
+                  description: option.description,
+                  top: rect.top - 12,
+                  left: rect.left + rect.width / 2
+                });
+              }}
+              onMouseEnter={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                setHoveredSceneTooltip({
+                  label: option.label,
+                  description: option.description,
+                  top: rect.top - 12,
+                  left: rect.left + rect.width / 2
+                });
+              }}
+              onMouseLeave={() => setHoveredSceneTooltip((current) => (current?.label === option.label ? null : current))}
               type="button"
             >
               <strong>{option.label}</strong>
@@ -12242,12 +12277,17 @@ function VideoClarifyResolutionSection({
         required
         value={resolution}
       />
-      <div className="ck-video-clarify-tip">
-        <strong>当前模式</strong>
-        <span>
-          {scene} / {resolution}
-        </span>
-      </div>
+      {hoveredSceneTooltip
+        ? createPortal(
+            <div
+              className="ck-video-clarify-scene-tooltip"
+              style={{ left: hoveredSceneTooltip.left, top: hoveredSceneTooltip.top, transform: "translate(-50%, -100%)" }}
+            >
+              {hoveredSceneTooltip.description}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

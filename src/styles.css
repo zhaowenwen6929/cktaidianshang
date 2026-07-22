@@ -13360,6 +13360,7 @@ textarea {
   text-align: left;
   transition: none;
   outline: none;
+  overflow: visible;
 }
 
 .ck-video-clarify-scene-card strong {
@@ -13374,76 +13375,20 @@ textarea {
   box-shadow: 0 10px 24px rgba(99, 95, 242, 0.12);
 }
 
-.ck-video-clarify-scene-card::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 10px);
-  width: max-content;
-  max-width: min(260px, calc(100vw - 48px));
-  padding: 8px 10px;
+.ck-video-clarify-scene-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(27, 35, 55, 0.94);
+  background: rgba(27, 35, 55, 0.96);
   color: #fff;
   font-size: 12px;
   line-height: 18px;
-  text-align: left;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
   white-space: normal;
-  transform: translate(-50%, 4px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
-  opacity: 0;
+  overflow-wrap: anywhere;
   pointer-events: none;
-  z-index: 6;
-}
-
-.ck-video-clarify-scene-card::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 4px);
-  width: 10px;
-  height: 10px;
-  background: rgba(27, 35, 55, 0.94);
-  transform: translateX(-50%) rotate(45deg);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.ck-video-clarify-scene-card:hover::after,
-.ck-video-clarify-scene-card:hover::before,
-.ck-video-clarify-scene-card:focus-visible::after,
-.ck-video-clarify-scene-card:focus-visible::before {
-  opacity: 1;
-}
-
-.ck-video-clarify-scene-card:hover::after,
-.ck-video-clarify-scene-card:focus-visible::after {
-  transform: translate(-50%, 0);
-}
-
-.ck-video-clarify-tip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid #e1e6f2;
-  border-radius: 12px;
-  background: #f8faff;
-}
-
-.ck-video-clarify-tip strong {
-  color: #25324b;
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.ck-video-clarify-tip span {
-  color: #635ff2;
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 600;
 }
 
 .ck-set-pack-type-modal {
