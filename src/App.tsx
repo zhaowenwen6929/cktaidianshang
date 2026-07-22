@@ -8078,8 +8078,8 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       video: {
         label: "上传视频",
         required: true,
-        maxCount: 1,
-        singleUploadMeta: "（单次最多上传1个）",
+        maxCount: 10,
+        singleUploadMeta: "（单次最多上传10个）",
         hintTemplate: "最多{count}个，支持MP4/MOV",
         maxFileSizeMb: 500,
         maxDurationSeconds: 300
@@ -8098,8 +8098,8 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       video: {
         label: "上传视频",
         required: true,
-        maxCount: 1,
-        singleUploadMeta: "（单次最多上传1个）",
+        maxCount: 10,
+        singleUploadMeta: "（单次最多上传10个）",
         hintTemplate: "最多{count}个，支持MP4/MOV",
         maxFileSizeMb: 500,
         maxDurationSeconds: 300
@@ -8118,8 +8118,8 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       video: {
         label: "上传视频",
         required: true,
-        maxCount: 1,
-        singleUploadMeta: "（单次最多上传1个）",
+        maxCount: 10,
+        singleUploadMeta: "（单次最多上传10个）",
         hintTemplate: "最多{count}个，支持MP4/MOV",
         maxFileSizeMb: 500,
         maxDurationSeconds: 300
@@ -8138,8 +8138,8 @@ const toolModuleConfigs: Record<string, ToolModuleConfig> = {
       video: {
         label: "上传视频",
         required: true,
-        maxCount: 1,
-        singleUploadMeta: "（单次最多上传1个）",
+        maxCount: 10,
+        singleUploadMeta: "（单次最多上传10个）",
         hintTemplate: "最多{count}个，支持MP4/MOV",
         maxFileSizeMb: 500,
         maxDurationSeconds: 300
