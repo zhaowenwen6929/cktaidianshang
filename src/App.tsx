@@ -24446,13 +24446,25 @@ function LongImagePreviewModal({
 }) {
   if (!preview) return null;
 
+  const handleDragStart = (event: React.DragEvent<HTMLButtonElement>, index: number) => {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLButtonElement>, index: number) => {
+    event.preventDefault();
+    const fromIndex = Number.parseInt(event.dataTransfer.getData("text/plain"), 10);
+    if (Number.isNaN(fromIndex) || fromIndex === index) return;
+    onMoveItem(fromIndex, index);
+  };
+
   return (
     <div className="ck-result-confirm-mask ck-long-image-preview-mask" onClick={onClose}>
       <div className="ck-long-image-preview-modal" onClick={(event) => event.stopPropagation()}>
         <div className="ck-long-image-preview-head">
           <div>
             <strong>{preview.title}</strong>
-            <p>左侧调整图片顺序，右侧实时预览拼接后的长图效果。</p>
+            <p>左侧拖动调整顺序，右侧实时预览拼接后的长图效果。</p>
           </div>
           <button onClick={onClose} type="button">
             ×
@@ -24460,31 +24472,30 @@ function LongImagePreviewModal({
         </div>
         <div className="ck-long-image-preview-body">
           <div className="ck-long-image-preview-order">
-            <div className="ck-long-image-preview-title">图片顺序</div>
+            <div className="ck-long-image-preview-note">拖动缩略图调整顺序</div>
             <div className="ck-long-image-preview-order-list">
               {preview.items.map((previewItem, index) => (
-                <div className="ck-long-image-preview-order-item" key={previewItem.id}>
+                <button
+                  className="ck-long-image-preview-order-item"
+                  draggable
+                  key={previewItem.id}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => handleDrop(event, index)}
+                  onDragStart={(event) => handleDragStart(event, index)}
+                  type="button"
+                >
                   <div className="ck-long-image-preview-order-media">
                     {previewItem.src ? <img alt={previewItem.label} src={previewItem.src} /> : null}
                   </div>
-                  <div className="ck-long-image-preview-order-copy">
-                    <span>{`${index + 1}. ${previewItem.roleLabel ?? previewItem.label}`}</span>
-                    <em>{previewItem.fileName}</em>
+                  <div className="ck-long-image-preview-order-index">{index + 1}</div>
+                  <div className="ck-long-image-preview-order-handle" aria-hidden="true">
+                    ⋮⋮
                   </div>
-                  <div className="ck-long-image-preview-order-actions">
-                    <button disabled={index === 0} onClick={() => onMoveItem(index, index - 1)} type="button">
-                      上移
-                    </button>
-                    <button disabled={index === preview.items.length - 1} onClick={() => onMoveItem(index, index + 1)} type="button">
-                      下移
-                    </button>
-                  </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
           <div className="ck-long-image-preview-result">
-            <div className="ck-long-image-preview-title">长图预览</div>
             <div className="ck-long-image-preview-canvas">
               <div className="ck-long-image-preview-stack">
                 {preview.items.map((previewItem) =>
@@ -25896,7 +25907,7 @@ export const App = () => {
 
     const taskId = selectedItems[0]?.taskId ?? generateRandomTenDigitId();
     setLongImagePreview({
-      title: `${tool.panelTitle}长图预览`,
+      title: "导出长图预览",
       items: selectedItems,
       fileName: `${tool.panelTitle}_${taskId}_长图_${formatTaskTimestamp(Date.now())}.png`,
       successMessage: `已下载 ${selectedItems.length} 张图片合成的长图`
@@ -25959,7 +25970,7 @@ export const App = () => {
     }
     if (mode === "long-image") {
       setLongImagePreview({
-        title: "长图预览",
+        title: "导出长图预览",
         items: taskReadyItems,
         fileName: `${task.toolKey}_${task.taskId}_长图_${formatTaskTimestamp(Date.now())}.png`,
         successMessage: `已下载该任务下 ${taskReadyItems.length} 张图片合成的长图`
