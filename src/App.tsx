@@ -118,8 +118,17 @@ type ExportPendingAction =
     }
   | {
       type: "long-image";
-      tool: ToolConfig;
+      items: ResultItem[];
+      fileName: string;
+      successMessage: string;
     };
+
+type LongImagePreviewState = {
+  title: string;
+  items: ResultItem[];
+  fileName: string;
+  successMessage: string;
+};
 
 type ResultActionConfirmState =
   | {
@@ -24424,6 +24433,80 @@ function ResultDetailModal({
   );
 }
 
+function LongImagePreviewModal({
+  preview,
+  onClose,
+  onExport,
+  onMoveItem
+}: {
+  preview: LongImagePreviewState | null;
+  onClose: () => void;
+  onExport: () => void;
+  onMoveItem: (fromIndex: number, toIndex: number) => void;
+}) {
+  if (!preview) return null;
+
+  return (
+    <div className="ck-result-confirm-mask ck-long-image-preview-mask" onClick={onClose}>
+      <div className="ck-long-image-preview-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="ck-long-image-preview-head">
+          <div>
+            <strong>{preview.title}</strong>
+            <p>左侧调整图片顺序，右侧实时预览拼接后的长图效果。</p>
+          </div>
+          <button onClick={onClose} type="button">
+            ×
+          </button>
+        </div>
+        <div className="ck-long-image-preview-body">
+          <div className="ck-long-image-preview-order">
+            <div className="ck-long-image-preview-title">图片顺序</div>
+            <div className="ck-long-image-preview-order-list">
+              {preview.items.map((previewItem, index) => (
+                <div className="ck-long-image-preview-order-item" key={previewItem.id}>
+                  <div className="ck-long-image-preview-order-media">
+                    {previewItem.src ? <img alt={previewItem.label} src={previewItem.src} /> : null}
+                  </div>
+                  <div className="ck-long-image-preview-order-copy">
+                    <span>{`${index + 1}. ${previewItem.roleLabel ?? previewItem.label}`}</span>
+                    <em>{previewItem.fileName}</em>
+                  </div>
+                  <div className="ck-long-image-preview-order-actions">
+                    <button disabled={index === 0} onClick={() => onMoveItem(index, index - 1)} type="button">
+                      上移
+                    </button>
+                    <button disabled={index === preview.items.length - 1} onClick={() => onMoveItem(index, index + 1)} type="button">
+                      下移
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="ck-long-image-preview-result">
+            <div className="ck-long-image-preview-title">长图预览</div>
+            <div className="ck-long-image-preview-canvas">
+              <div className="ck-long-image-preview-stack">
+                {preview.items.map((previewItem) =>
+                  previewItem.src ? <img alt={previewItem.label} key={previewItem.id} src={previewItem.src} /> : null
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="ck-long-image-preview-actions">
+          <button className="secondary" onClick={onClose} type="button">
+            取消
+          </button>
+          <button className="primary" onClick={onExport} type="button">
+            立即导出
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const App = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -24453,6 +24536,7 @@ export const App = () => {
   const [pointsRecordTab, setPointsRecordTab] = useState<PointsRecordTab>("consume");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [exportPendingAction, setExportPendingAction] = useState<ExportPendingAction | null>(null);
+  const [longImagePreview, setLongImagePreview] = useState<LongImagePreviewState | null>(null);
   const [resultActionConfirm, setResultActionConfirm] = useState<ResultActionConfirmState | null>(null);
   const [currentUserId, setCurrentUserId] = useState<UserTierId>("advanced-team");
   const [userMetrics, setUserMetrics] = useState<Record<UserTierId, UserTierMetrics>>(defaultUserMetrics);
@@ -25701,25 +25785,18 @@ export const App = () => {
     }
   };
 
-  const performLongImageDownload = async (tool: ToolConfig, preserveVisibleMark: boolean) => {
-    const selectedItems = (resultItemsByTool[tool.key] ?? []).filter((item) => item.status === "ready" && item.selected);
-    if (!selectedItems.length) {
-      setToast({
-        id: Date.now(),
-        message: "请先选择需要下载的结果",
-        tone: "warning"
-      });
-      return;
-    }
-
+  const performLongImageDownload = async (
+    items: ResultItem[],
+    fileName: string,
+    successMessage: string,
+    preserveVisibleMark: boolean
+  ) => {
     try {
-      const mergedBlob = await createMergedLongImageBlob(selectedItems, preserveVisibleMark);
-      const taskId = selectedItems[0]?.taskId ?? generateRandomTenDigitId();
-      const fileName = `${tool.panelTitle}_${taskId}_长图_${formatTaskTimestamp(Date.now())}.png`;
+      const mergedBlob = await createMergedLongImageBlob(items, preserveVisibleMark);
       triggerDownload(mergedBlob, fileName);
       setToast({
         id: Date.now(),
-        message: `已下载 ${selectedItems.length} 张图片合成的长图`
+        message: successMessage
       });
     } catch (error) {
       setToast({
@@ -25751,7 +25828,7 @@ export const App = () => {
     }
 
     if (pendingAction.type === "long-image") {
-      await performLongImageDownload(pendingAction.tool, preserveVisibleMark);
+      await performLongImageDownload(pendingAction.items, pendingAction.fileName, pendingAction.successMessage, preserveVisibleMark);
       return;
     }
 
@@ -25817,21 +25894,12 @@ export const App = () => {
       return;
     }
 
-    const isMemberUser = currentUserId !== "free";
-    if (!isMemberUser) {
-      await performLongImageDownload(tool, false);
-      return;
-    }
-
-    const preference = loadExportPreference();
-    if (preference) {
-      await performLongImageDownload(tool, preference.preserveVisibleMark);
-      return;
-    }
-
-    setExportPendingAction({
-      type: "long-image",
-      tool
+    const taskId = selectedItems[0]?.taskId ?? generateRandomTenDigitId();
+    setLongImagePreview({
+      title: `${tool.panelTitle}长图预览`,
+      items: selectedItems,
+      fileName: `${tool.panelTitle}_${taskId}_长图_${formatTaskTimestamp(Date.now())}.png`,
+      successMessage: `已下载 ${selectedItems.length} 张图片合成的长图`
     });
   };
 
@@ -25873,7 +25941,11 @@ export const App = () => {
     }
   };
 
-  const performTaskLongImageDownload = async (task: TaskRecord, preserveVisibleMark: boolean) => {
+  const handleDownloadTaskResults = async (task: TaskRecord, mode: "batch" | "long-image" = "batch") => {
+    if (task.toolKey === "more-title") {
+      handleExportMoreTitleTask(task.taskId);
+      return;
+    }
     const taskReadyItems = (resultItemsByTool[task.toolKey] ?? []).filter(
       (resultItem) => resultItem.taskId === task.taskId && resultItem.status === "ready"
     );
@@ -25885,53 +25957,68 @@ export const App = () => {
       });
       return;
     }
-
-    try {
-      const mergedBlob = await createMergedLongImageBlob(taskReadyItems, preserveVisibleMark);
-      const fileName = `${task.toolKey}_${task.taskId}_长图_${formatTaskTimestamp(Date.now())}.png`;
-      triggerDownload(mergedBlob, fileName);
-      setToast({
-        id: Date.now(),
-        message: `已下载该任务下 ${taskReadyItems.length} 张图片合成的长图`
+    if (mode === "long-image") {
+      setLongImagePreview({
+        title: "长图预览",
+        items: taskReadyItems,
+        fileName: `${task.toolKey}_${task.taskId}_长图_${formatTaskTimestamp(Date.now())}.png`,
+        successMessage: `已下载该任务下 ${taskReadyItems.length} 张图片合成的长图`
       });
-    } catch (error) {
-      setToast({
-        id: Date.now(),
-        message: error instanceof Error ? error.message : "长图下载失败，请稍后重试",
-        tone: "warning"
-      });
-    }
-  };
-
-  const handleDownloadTaskResults = async (task: TaskRecord, mode: "batch" | "long-image" = "batch") => {
-    if (task.toolKey === "more-title") {
-      handleExportMoreTitleTask(task.taskId);
       return;
     }
     const isMemberUser = currentUserId !== "free";
     if (!isMemberUser) {
-      if (mode === "long-image") {
-        await performTaskLongImageDownload(task, false);
-        return;
-      }
       await performTaskBatchDownload(task, false);
       return;
     }
 
     const preference = loadExportPreference();
     if (preference) {
-      if (mode === "long-image") {
-        await performTaskLongImageDownload(task, preference.preserveVisibleMark);
-        return;
-      }
       await performTaskBatchDownload(task, preference.preserveVisibleMark);
       return;
     }
-    if (mode === "long-image") {
-      await performTaskLongImageDownload(task, false);
+    await performTaskBatchDownload(task, false);
+  };
+
+  const handleMoveLongImagePreviewItem = (fromIndex: number, toIndex: number) => {
+    setLongImagePreview((current) => {
+      if (!current) return current;
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= current.items.length || toIndex >= current.items.length) {
+        return current;
+      }
+      const nextItems = [...current.items];
+      const [movedItem] = nextItems.splice(fromIndex, 1);
+      nextItems.splice(toIndex, 0, movedItem);
+      return {
+        ...current,
+        items: nextItems
+      };
+    });
+  };
+
+  const handleExportLongImagePreview = async () => {
+    if (!longImagePreview) return;
+    const { items, fileName, successMessage } = longImagePreview;
+    setLongImagePreview(null);
+
+    const isMemberUser = currentUserId !== "free";
+    if (!isMemberUser) {
+      await performLongImageDownload(items, fileName, successMessage, false);
       return;
     }
-    await performTaskBatchDownload(task, false);
+
+    const preference = loadExportPreference();
+    if (preference) {
+      await performLongImageDownload(items, fileName, successMessage, preference.preserveVisibleMark);
+      return;
+    }
+
+    setExportPendingAction({
+      type: "long-image",
+      items,
+      fileName,
+      successMessage
+    });
   };
 
   const handleDownloadModel = async (item: ModelAsset) => {
@@ -26960,6 +27047,12 @@ export const App = () => {
           </div>
         </div>
       ) : null}
+      <LongImagePreviewModal
+        onClose={() => setLongImagePreview(null)}
+        onExport={handleExportLongImagePreview}
+        onMoveItem={handleMoveLongImagePreviewItem}
+        preview={longImagePreview}
+      />
       <ExportArtworkModal
         onClose={() => setExportPendingAction(null)}
         onConfirm={handleExportConfirm}
