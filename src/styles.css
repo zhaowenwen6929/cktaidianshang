@@ -450,6 +450,27 @@
   color: #ffffff;
 }
 
+.ck-result-detail-download-all-menu {
+  align-self: stretch;
+}
+
+.ck-result-detail-download-all-trigger {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #635ff2;
+  border-radius: 8px;
+  background: #635ff2;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ck-result-detail-download-all-menu .ck-result-detail-action-popover {
+  min-width: 124px;
+}
+
 .ck-result-detail-core-actions .ghost.icon-only {
   width: 36px;
   min-width: 36px;
@@ -636,6 +657,13 @@
   }
 
   .ck-result-detail-core-actions > button {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+
+  .ck-result-detail-download-all-trigger {
     height: 36px;
     padding: 0 12px;
     font-size: 12px;

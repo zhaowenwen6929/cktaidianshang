@@ -24108,7 +24108,7 @@ function ResultDetailModal({
   onNavigate: (direction: -1 | 1) => void;
   onSelectItem: (item: ResultItem) => void;
   onDownloadCurrent: (item: ResultItem) => void;
-  onDownloadAll: (task: TaskRecord) => void;
+  onDownloadAll: (task: TaskRecord, mode: "batch" | "long-image") => void;
   onDeleteCurrent: (item: ResultItem, taskItems: ResultItem[]) => void;
   onUseTool: (toolKey: string, label: string, scope: ResultTransferScope, item: ResultItem, taskItems: ResultItem[]) => void;
   onSendToEditor: (
@@ -24183,6 +24183,7 @@ function ResultDetailModal({
   const hasOriginalImage = Boolean(task?.snapshot.mainUploads[0]?.previewSrc || task?.snapshot.mainUploads[0]?.src);
   const originalImageSrc = task?.snapshot.mainUploads[0]?.previewSrc ?? task?.snapshot.mainUploads[0]?.src ?? "";
   const createdAtLabel = task ? formatTaskRecordDateTime(task.createdAt) : "--";
+  const showDownloadAllMenu = task?.toolKey === "set-aplus";
   const modeSelection = task?.snapshot.creationModeSelection;
   const videoReplicaSummary = task?.snapshot.advancedSelections.videoReplicaPromptSummary;
   const videoReplicaUserDescription = task?.snapshot.advancedSelections.videoReplicaUserDescription;
@@ -24318,12 +24319,31 @@ function ResultDetailModal({
                         </span>
                         下载当前图
                       </button>
-                      <button className="primary" onClick={() => onDownloadAll(task)} type="button">
-                        <span className="ck-result-detail-core-icon" aria-hidden="true">
-                          {renderDetailGlyph("download")}
-                        </span>
-                        下载全部图
-                      </button>
+                      {showDownloadAllMenu ? (
+                        <div className="ck-result-detail-action-menu ck-result-detail-download-all-menu">
+                          <button className="primary ck-result-detail-download-all-trigger" type="button">
+                            <span className="ck-result-detail-core-icon" aria-hidden="true">
+                              {renderDetailGlyph("download")}
+                            </span>
+                            下载全部图
+                          </button>
+                          <div className="ck-result-detail-action-popover">
+                            <button onClick={() => onDownloadAll(task, "long-image")} type="button">
+                              合并长图
+                            </button>
+                            <button onClick={() => onDownloadAll(task, "batch")} type="button">
+                              直接导出
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button className="primary" onClick={() => onDownloadAll(task, "batch")} type="button">
+                          <span className="ck-result-detail-core-icon" aria-hidden="true">
+                            {renderDetailGlyph("download")}
+                          </span>
+                          下载全部图
+                        </button>
+                      )}
                       <button className="ghost icon-only" onClick={() => onDeleteCurrent(item, taskItems)} type="button">
                         <span className="ck-result-detail-core-icon" aria-hidden="true">
                           {renderDetailGlyph("delete")}
@@ -25853,20 +25873,62 @@ export const App = () => {
     }
   };
 
-  const handleDownloadTaskResults = async (task: TaskRecord) => {
+  const performTaskLongImageDownload = async (task: TaskRecord, preserveVisibleMark: boolean) => {
+    const taskReadyItems = (resultItemsByTool[task.toolKey] ?? []).filter(
+      (resultItem) => resultItem.taskId === task.taskId && resultItem.status === "ready"
+    );
+    if (!taskReadyItems.length) {
+      setToast({
+        id: Date.now(),
+        message: "当前任务暂无可下载结果",
+        tone: "warning"
+      });
+      return;
+    }
+
+    try {
+      const mergedBlob = await createMergedLongImageBlob(taskReadyItems, preserveVisibleMark);
+      const fileName = `${task.toolKey}_${task.taskId}_长图_${formatTaskTimestamp(Date.now())}.png`;
+      triggerDownload(mergedBlob, fileName);
+      setToast({
+        id: Date.now(),
+        message: `已下载该任务下 ${taskReadyItems.length} 张图片合成的长图`
+      });
+    } catch (error) {
+      setToast({
+        id: Date.now(),
+        message: error instanceof Error ? error.message : "长图下载失败，请稍后重试",
+        tone: "warning"
+      });
+    }
+  };
+
+  const handleDownloadTaskResults = async (task: TaskRecord, mode: "batch" | "long-image" = "batch") => {
     if (task.toolKey === "more-title") {
       handleExportMoreTitleTask(task.taskId);
       return;
     }
     const isMemberUser = currentUserId !== "free";
     if (!isMemberUser) {
+      if (mode === "long-image") {
+        await performTaskLongImageDownload(task, false);
+        return;
+      }
       await performTaskBatchDownload(task, false);
       return;
     }
 
     const preference = loadExportPreference();
     if (preference) {
+      if (mode === "long-image") {
+        await performTaskLongImageDownload(task, preference.preserveVisibleMark);
+        return;
+      }
       await performTaskBatchDownload(task, preference.preserveVisibleMark);
+      return;
+    }
+    if (mode === "long-image") {
+      await performTaskLongImageDownload(task, false);
       return;
     }
     await performTaskBatchDownload(task, false);
