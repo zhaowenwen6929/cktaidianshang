@@ -383,6 +383,15 @@
   transform: translate(-50%, -5px) rotate(45deg);
 }
 
+.ck-result-detail-action-popover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 14px;
+}
+
 .ck-result-detail-action-menu:hover .ck-result-detail-action-popover,
 .ck-result-detail-action-menu:focus-within .ck-result-detail-action-popover {
   opacity: 1;
@@ -11322,7 +11331,7 @@ a {
 }
 
 .ck-long-image-preview-mask {
-  z-index: 74;
+  z-index: 120;
 }
 
 .ck-long-image-preview-modal {
