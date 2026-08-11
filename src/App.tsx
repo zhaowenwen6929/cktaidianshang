@@ -23564,7 +23564,7 @@ function ResultPanel({
                   {activeTab === "results" && item.status === "ready" ? (
                     <button
                       className="ck-card-download"
-                      data-label={isSetPackLikeTool(tool.key) ? "下载图" : "下载"}
+                      data-label="下载"
                       onClick={(event) => {
                         event.stopPropagation();
                         onDownloadItem(item);

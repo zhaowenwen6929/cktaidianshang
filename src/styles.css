@@ -14864,6 +14864,52 @@ textarea {
   line-height: 16px;
 }
 
+.ck-results-tool-set-main .ck-set-pack-role-pill,
+.ck-results-tool-set-aplus .ck-set-pack-role-pill,
+.ck-results-tool-set-fashion .ck-set-pack-role-pill,
+.ck-results-tool-set-replica .ck-set-pack-role-pill {
+  display: none;
+}
+
+.ck-results-tool-set-main .ck-card-download,
+.ck-results-tool-set-aplus .ck-card-download,
+.ck-results-tool-set-fashion .ck-card-download,
+.ck-results-tool-set-replica .ck-card-download {
+  right: 12px;
+  top: 12px;
+  width: auto;
+  min-width: 48px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ck-results-tool-set-main .ck-card-download img,
+.ck-results-tool-set-aplus .ck-card-download img,
+.ck-results-tool-set-fashion .ck-card-download img,
+.ck-results-tool-set-replica .ck-card-download img {
+  display: none;
+}
+
+.ck-results-tool-set-main .ck-card-download::after,
+.ck-results-tool-set-aplus .ck-card-download::after,
+.ck-results-tool-set-fashion .ck-card-download::after,
+.ck-results-tool-set-replica .ck-card-download::after {
+  position: static;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  transform: none;
+  line-height: 1;
+}
+
 .ck-set-pack-overlay-text {
   position: absolute;
   left: 10px;
