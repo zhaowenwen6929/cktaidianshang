@@ -3468,19 +3468,29 @@ const videoClarifySceneOptions = [
 const videoOnlyToolKeys = ["video-clarify", "video-watermark", "video-translate", "video-remove-bg"] as const;
 const videoTranslateModeCards = [
   {
-    key: "翻译视频语音",
-    label: "翻译视频语音",
-    description: "识别视频语音内容为字幕"
+    key: "翻译视频配音及字幕",
+    label: "翻译视频配音及字幕",
+    description: "识别视频语音/字幕分别翻译成目标语言语音/字幕"
   },
   {
-    key: "翻译视频文字、字幕",
-    label: "翻译视频文字、字幕",
-    description: "仅翻译视频中的文字及字幕内容"
+    key: "视频语音转字幕",
+    label: "视频语音转字幕",
+    description: "识别视频语音内容并生成目标语言字幕"
   },
   {
-    key: "提取语音字幕",
-    label: "提取语音字幕",
-    description: "仅将视频语音翻译成字幕"
+    key: "视频字幕转语音",
+    label: "视频字幕转语音",
+    description: "识别视频字幕内容并生成目标语言语音"
+  },
+  {
+    key: "翻译视频文字/字幕",
+    label: "翻译视频文字/字幕",
+    description: "识别视频字幕并翻译成目标语言字幕"
+  },
+  {
+    key: "翻译视频配音",
+    label: "翻译视频配音",
+    description: "识别视频语音并翻译成目标语言语音"
   }
 ] as const;
 const podCropModeOptions = [
@@ -12314,8 +12324,17 @@ function VideoTranslateModeSection({
 }) {
   const skipSelectedValuesSyncRef = useRef(false);
   const lastSelectedValuesSignatureRef = useRef("");
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  const onSelectionMapChangeRef = useRef(onSelectionMapChange);
+  const onCreationModeChangeRef = useRef(onCreationModeChange);
   const defaultMode = selectedValues?.videoTranslateMode ?? videoTranslateModeCards[0].key;
   const [mode, setMode] = useState(defaultMode);
+
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+    onSelectionMapChangeRef.current = onSelectionMapChange;
+    onCreationModeChangeRef.current = onCreationModeChange;
+  }, [onCreationModeChange, onSelectionChange, onSelectionMapChange]);
 
   useEffect(() => {
     if (!selectedValues) {
@@ -12341,16 +12360,16 @@ function VideoTranslateModeSection({
   useEffect(() => {
     skipSelectedValuesSyncRef.current = true;
     lastSelectedValuesSignatureRef.current = JSON.stringify({ mode });
-    onSelectionMapChange?.({ videoTranslateMode: mode });
-    onSelectionChange?.([mode]);
-    onCreationModeChange?.({
+    onSelectionMapChangeRef.current?.({ videoTranslateMode: mode });
+    onSelectionChangeRef.current?.([mode]);
+    onCreationModeChangeRef.current?.({
       modeId: "video-translate",
       modeLabel: mode,
       ratio: "原视频比例",
       count: 1,
       unitCreditCost: 1
     });
-  }, [mode, onCreationModeChange, onSelectionChange, onSelectionMapChange]);
+  }, [mode]);
 
   return (
     <div className="ck-form-block">
